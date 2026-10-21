@@ -1,70 +1,70 @@
-# Omarchy Nightly auf dem ASUS ProArt P16 RTX Spark
+# Omarchy Nightly on the ASUS ProArt P16 RTX Spark
 
-Installationsanleitung für **ASUS ProArt P16 H7607BA**, NVIDIA RTX Spark **N1X / AArch64**, BIOS **H7607BA.300**, EC **2.16**. Diese Dateien sind für das ARM-Modell bestimmt; sie passen nicht zu den AMD-/Intel-P16-Modellen.
+Installation guide for the **ASUS ProArt P16 H7607BA** with **NVIDIA RTX Spark N1X / AArch64**, BIOS **H7607BA.300** and EC **2.16**.
 
-Die Installation besteht aus dem offiziellen ARM64-Nightly und einem separat paketierten P16-Kernel. Das Kernelrezept ist auf Omarchy **7.2.8-14** festgelegt und erzeugt **7.2.8-14-omarchy-p16-asus**. Ein neueres Nightly kann einen neueren Standardkernel enthalten; der zusätzliche P16-Kernel wird daneben installiert. Die Patches nicht auf einen beliebigen neueren Kernel anwenden.
+Start with the official ARM64 Nightly, then install the separately packaged P16 kernel. The kernel recipe pins Omarchy **7.2.8-14** and produces **7.2.8-14-omarchy-p16-asus**. A newer Nightly may ship a newer stock kernel; the P16 kernel is installed alongside it. Apply the included patches only to the pinned kernel source.
 
-Enthalten sind die Quellen und Buildrezepte für Tastatur/Touchpad, ACPI-/Akku-Korrekturen, SPI-HID, ASUS-Steuerung, Temperaturanzeige sowie ein CUDA-Funktionstest. Linux wird beim Build von kernel.org heruntergeladen und anhand der Prüfsummen und Signaturen des enthaltenen Omarchy-Rezepts geprüft. Firmwaretabellen werden auf dem Zielrechner ausgelesen und daraus erzeugt.
+This repository contains the build recipes and sources for keyboard/touchpad support, ACPI and battery fixes, SPI-HID, ASUS controls, temperature monitoring and a CUDA test. The kernel build downloads Linux from kernel.org and verifies it using the checksums and signatures in the included Omarchy recipe. ACPI overrides are generated from the target machine's own firmware tables.
 
-## 1. ARM64-Nightly installieren
+## 1. Install the ARM64 Nightly
 
-Repository auf den Rechner laden, mit dem der Installationsstick vorbereitet wird:
+Clone this repository on the machine used to prepare the installation USB drive:
 
 ```bash
 git clone https://github.com/johannhartmann/p16rtx_linux.git
 cd p16rtx_linux
 ```
 
-Benötigt werden ein USB-Stick mit mindestens 8 GB, eine USB-Tastatur für die Ersteinrichtung und Netzteil/Internet. Secure Boot im UEFI ausschalten. Die Installation auf ein Laufwerk löscht dessen Daten, wenn die vollständige Laufwerksinstallation gewählt wird.
+You need a USB drive of at least 8 GB, a USB keyboard for initial setup, AC power and internet access. Disable Secure Boot in UEFI. Selecting a full-disk installation erases the selected drive.
 
-Aktuelles ARM64-Nightly herunterladen und prüfen:
+Download and verify the current ARM64 Nightly:
 
 ```bash
 python3 scripts/download-nightly.py
 ```
 
-Das Skript verwendet ausschließlich das [ARM64-Nightly-Manifest](https://nightly.omarchy.org/edge-aarch64/latest.json), prüft Architektur, Dateigröße und SHA-256 und speichert ISO und Manifest unter `build/iso/`. Das allgemeine `edge/latest.json` verweist auf das x86_64-Image.
+The script reads the [ARM64 Nightly manifest](https://nightly.omarchy.org/edge-aarch64/latest.json), checks the architecture, file size and SHA-256, and saves the ISO and manifest under `build/iso/`. The separate `edge/latest.json` points to the x86_64 image.
 
-ISO mit einem Image-Schreibprogramm auf den USB-Stick schreiben. Vom Stick über das UEFI-Bootmenü starten und Omarchy installieren. Im Installer deutsche Tastatur wählen. Für den P16 muss die Linux-Kommandozeile diese Parameter enthalten:
+Write the ISO to the USB drive using an image writer. Select the drive in the UEFI boot menu and install Omarchy. Choose your keyboard layout in the installer. The P16 kernel command line needs these parameters:
 
 ```text
 console=tty0 acpi=nospcr acpi_osi="!Windows 2022"
 ```
 
-`console=tty0 acpi=nospcr` gehört zur Omarchy-N1X-Konfiguration. `acpi_osi="!Windows 2022"` sorgt auf diesem BIOS für die SSPM-/I²C-Erkennung und damit für interne Tastatur und Touchpad. Falls die interne Eingabe im Installer fehlt, die USB-Tastatur verwenden; der zusätzliche P16-Kernel erhält die Einstellung in Schritt 5 dauerhaft.
+`console=tty0 acpi=nospcr` is part of Omarchy's N1X configuration. On this BIOS, `acpi_osi="!Windows 2022"` enables SSPM/I²C enumeration needed by the internal keyboard and touchpad. Use the USB keyboard if internal input is unavailable in the installer. Step 5 embeds the required parameters in the P16 kernel's boot image.
 
-Nach der Installation vom internen Laufwerk in die normale Omarchy-Sitzung starten. Alle folgenden Befehle aus dem Wurzelverzeichnis dieses Repositorys ausführen. `sudo` nur bei den ausdrücklich gekennzeichneten Schritten verwenden.
+After installation, boot the installed system into the regular Omarchy session. Make this repository available on that system and run the remaining commands from its root directory. Use `sudo` where shown.
 
-## 2. Buildwerkzeuge und Plattformpakete
+## 2. Install build tools and platform packages
 
 ```bash
 omarchy pkg add base-devel bc cpio gettext libelf pahole python git gnupg clang llvm lld rust rust-bindgen rust-src xxhash zstd
 omarchy pkg add nvidia-open-dkms nvidia-utils python-gobject
 ```
 
-Das Nightly richtet die N1X-Plattform einschließlich NVIDIA-Grafik, verschlüsseltem Start und Limine ein. Keine x86_64-NVIDIA-Pakete oder NVIDIA-`.run`-Installer verwenden.
+The Nightly configures the N1X platform, NVIDIA graphics, encrypted boot and Limine. Use the NVIDIA packages from Omarchy's AArch64 repositories.
 
-Für CPU-Energieprofile wird Omarchys NVIDIA-fähiger Daemon benötigt:
+Install Omarchy's NVIDIA-aware power profile daemon:
 
 ```bash
 sudo pacman -S --needed omarchy-power-profiles-daemon
 sudo systemctl enable power-profiles-daemon.service
 ```
 
-Falls Pacman nach dem Austausch von `power-profiles-daemon` fragt, den Austausch bestätigen. Das Omarchy-Paket stellt denselben Dienst und `powerprofilesctl` bereit.
+Confirm replacement of `power-profiles-daemon` if Pacman prompts for it. The Omarchy package provides the same service and `powerprofilesctl` command.
 
-## 3. ACPI-Dateien erzeugen
+## 3. Generate the ACPI overrides
 
-Die Originaltabellen vom normalen Nightly-Kernel auslesen, **bevor** ein Kernel mit ACPI-Overrides gestartet wird:
+Dump the original firmware tables while running the stock Nightly kernel, **before booting a kernel with ACPI overrides**:
 
 ```bash
 sudo ./scripts/dump-acpi.sh
 python3 scripts/build-acpi.py
 ```
 
-Der Build verwendet das enthaltene ACPICA **20260408** und prüft die Originaltabellen sowie beide erzeugten Tabellen per SHA-256. Andere BIOS-Versionen oder bereits gepatchte Tabellen werden abgewiesen. Das übergeordnete `build/` wird beim Dump für den später kompilierenden Benutzer angelegt. Ein bereits vorhandenes `build/firmware/` wird nicht überschrieben.
+The build uses the included ACPICA **20260408** source and checks the original tables and both generated overrides against pinned SHA-256 hashes. It rejects other firmware tables and tables that have already been patched. The dump script creates the parent `build/` directory with ownership assigned to the user who will compile the sources. It refuses to overwrite an existing `build/firmware/` directory.
 
-Ausgaben:
+Outputs:
 
 ```text
 build/acpi/kernel/firmware/acpi/DSDT.aml
@@ -72,57 +72,57 @@ build/acpi/kernel/firmware/acpi/SSDT.aml
 build/acpi/manifest.json
 ```
 
-Die DSDT aktiviert die korrekte SSPM-Erkennung; die SSDT korrigiert die EC-/Akku-Methoden. Der Kernel enthält dazu den erforderlichen ARM64-Allocator-Patch. Die ACPI-Dateien ausschließlich über den mitgelieferten Hook in den zusätzlichen P16-Kernel einbinden. Es wird kein BIOS geflasht.
+The DSDT corrects SSPM enumeration; the SSDT corrects EC and battery methods. The kernel includes the ARM64 allocation fix required for these overrides. Load the tables through the included initramfs hook for the P16 kernel. This does not flash the BIOS.
 
-## 4. P16-Kernel bauen
+## 4. Build the P16 kernel
 
-Als normaler Benutzer:
+Run as your regular user:
 
 ```bash
 ./scripts/build-kernel.sh
 ```
 
-Die erste Ausführung lädt die Linux-Quellen. Die Signaturprüfung bleibt eingeschaltet; ein separates GPG-Verzeichnis liegt unter `build/gnupg/`. Der Build benötigt mehrere zehn GB freien Platz und erzeugt:
+The first run downloads the Linux source. Signature verification remains enabled, using an isolated GPG directory under `build/gnupg/`. Allow several tens of GB of free disk space. The build produces:
 
 ```text
 kernel/linux-p16-asus-7.2.8-14-aarch64.pkg.tar.zst
 kernel/linux-p16-asus-headers-7.2.8-14-aarch64.pkg.tar.zst
 ```
 
-Das Headerpaket ist für NVIDIA-DKMS erforderlich. Kernel und Module werden durch Pacman verwaltet. Der Buildbaum wird nach der Installation nicht als Modul-/Headerquelle benötigt.
+NVIDIA-DKMS requires the headers package. Pacman owns the installed kernel and modules; the installed headers allow DKMS builds after the source build directory has been removed.
 
-Die Patchreihenfolge und SHA-256-/BLAKE2-Prüfsummen stehen vollständig in `kernel/PKGBUILD`. Der kombinierte ASUS-Patch enthält bereits die ARM64-WMI-Portierung, die Verschiebung nach `drivers/platform/asus/` und die modellspezifische RSOC-Korrektur. Diese Änderungen nicht ein zweites Mal anwenden.
+`kernel/PKGBUILD` specifies the patch order and SHA-256/BLAKE2 checksums. The combined ASUS patch already includes ARM64 WMI support, relocation to `drivers/platform/asus/` and the P16 RSOC fix. Apply it once as part of the recipe.
 
-## 5. Kernel und Systemdateien installieren
+## 5. Install the kernel and system configuration
 
-Vom installierten Omarchy aus:
+From the installed Omarchy system:
 
 ```bash
 sudo ./scripts/install-kernel.sh
 ```
 
-Das Skript:
+The installer:
 
-- prüft AArch64, Modell, BIOS, EFI-Mount und ACPI-Dateien;
-- sichert die betroffenen Konfigurationen und vollständigen vorhandenen EFI-Images samt Prüfsummen unter `/root/p16-install.<Kennung>/`;
-- installiert Kernel und Header, baut NVIDIA-DKMS und erzeugt die Modulabhängigkeiten;
-- installiert die frühen Eingabetreiber, den begrenzten ACPI-Hook und die ASUS-Dienste;
-- übernimmt die Root-/LUKS-Parameter des Zielrechners und ergänzt die P16-Kerneloptionen;
-- baut einen zusätzlichen UKI und prüft Kernelinhalt, ACPI-Tabellen und benötigte Module;
-- legt den Limine-Eintrag `linux-p16-asus` an und prüft die BLAKE2b-Hashes;
-- zeigt das Bootmenü zehn Sekunden an und erhält den vorhandenen Standard-Eintrag.
+- checks the architecture, model, BIOS, mounted EFI partition and ACPI files;
+- backs up affected configuration files and complete existing EFI images, with checksums, under `/root/p16-install.XXXXXXXX/`;
+- installs the kernel and headers, builds NVIDIA-DKMS and generates module dependencies;
+- installs early input drivers, the kernel-specific ACPI hook and ASUS services;
+- preserves the target machine's root/LUKS parameters and adds the P16 boot parameters;
+- builds an additional unified kernel image (UKI) and verifies its kernel, ACPI tables and required modules;
+- registers `linux-p16-asus` with Limine and verifies EFI BLAKE2b hashes;
+- displays the boot menu for ten seconds while preserving the existing default entry.
 
-Vorhandene EFI-Images werden nicht neu gebaut. Für die vollständige EFI-Sicherung muss zusätzlich zur Buildkapazität Platz auf dem Root-Dateisystem verfügbar sein. Der Installer sperrt die Bootpartition gegen parallele Limine-Schreibvorgänge.
+Existing EFI images are preserved. The root filesystem needs enough space for their complete backup, in addition to the kernel build space. The installer locks the boot partition against concurrent Limine writes.
 
-Bei einem Fehler oder Abbruch per Strg+C setzt der Installer Bootdateien und Systemkonfiguration auf den gesicherten Stand zurück. Bereits installierte Kernel-/Headerpakete bleiben erhalten. Nach Beheben des Fehlers dieselbe Installation mit denselben Paketdateien fortsetzen:
+On an error or Ctrl+C, the installer restores the backed-up boot files and system configuration. Installed kernel/header packages remain in place. After resolving the error, resume using the same package files:
 
 ```bash
-sudo ./scripts/install-kernel.sh --resume /root/p16-install.<Kennung>
+sudo ./scripts/install-kernel.sh --resume /root/p16-install.XXXXXXXX
 ```
 
-`<Kennung>` durch den beim Start ausgegebenen Sicherungsnamen ersetzen. Die Wiederaufnahme prüft den root-eigenen Checkpoint, alle Sicherungsdateien und die Prüfsummen beider Kernelpakete. Sie stellt zuerst den Ausgangszustand der Bootdateien her und wiederholt die Installation. Das gilt auch nach einer Unterbrechung, bei der der Prozess keine automatische Wiederherstellung mehr ausführen konnte. Nach erfolgreich abgeschlossener Installation wird eine Wiederaufnahme abgewiesen.
+Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed.
 
-Neustarten und **`linux-p16-asus`** im sichtbaren Limine-Menü auswählen. Danach prüfen:
+Reboot and select **`linux-p16-asus`** in the Limine menu. Then check:
 
 ```bash
 uname -r
@@ -130,20 +130,22 @@ uname -r
 sudo python3 scripts/verify-boot.py
 ```
 
-`uname -r` muss `7.2.8-14-omarchy-p16-asus` melden. Der Akku muss plausible Werte liefern, NVIDIA muss in `nvidia-smi` erscheinen und die drei Dienste müssen erfolgreich gestartet sein. `powerprofilesctl list` soll `nvidia_rtx_spark` und `platform_profile` als Treiber melden.
+`uname -r` must report `7.2.8-14-omarchy-p16-asus`. Battery readings should be plausible, `nvidia-smi` should list the GPU, and the three services should have started successfully. `powerprofilesctl list` should report `nvidia_rtx_spark` and `platform_profile` as drivers.
 
-## 6. Deutsche Tastatur
+## 6. Configure a German keyboard layout
 
-In der angemeldeten grafischen Sitzung als normaler Benutzer:
+For a German layout, run these commands as your regular user in the graphical session:
 
 ```bash
 python3 scripts/set-german-keyboard.py
 sudo localectl --no-convert set-keymap de
 ```
 
-Das Skript verwendet Omarchys installierte Tastaturlogik, setzt Desktop und Fcitx gemeinsam auf `de` und lädt Hyprland neu. Es schreibt nicht in `/usr/share/omarchy/`. `hid_asus` wird im initramfs vor der I²C-HID-Erkennung geladen, damit die interne Tastatur auch am LUKS-Prompt verfügbar ist.
+The script uses Omarchy's installed keyboard configuration logic to set both the desktop and Fcitx to `de`, then reloads Hyprland. The `hid_asus` driver is included in the initramfs for input at the LUKS prompt.
 
-## 7. ASUS-Profile, Akku und Temperaturen
+## 7. ASUS profiles, battery and temperatures
+
+Select a power profile:
 
 ```bash
 powerprofilesctl set balanced
@@ -151,11 +153,11 @@ powerprofilesctl set performance
 powerprofilesctl set power-saver
 ```
 
-Die Zuordnung lautet Balanced → ASUS Balanced, Performance → ASUS Performance, Power Saver → ASUS Quiet. Der Daemon steuert daneben das NVIDIA-CPU-Backend.
+Balanced maps to ASUS Balanced, Performance to ASUS Performance, and Power Saver to ASUS Quiet. The daemon also controls the NVIDIA CPU backend.
 
-`p16-asus-controls.service` lädt den ASUS-Treiber vor der Profilerkennung. `p16-charge-limit.service` setzt nach der Registrierung des Akkus ein Ladelimit von **100 %**. Beide Dienste sind auf den enthaltenen Kernelrelease begrenzt. Die Hersteller-Lüfterkurven bleiben aktiv.
+`p16-asus-controls.service` loads the ASUS driver before power profile discovery. `p16-charge-limit.service` sets the charge limit to **100%** after battery registration. Both services are restricted to the included kernel release. The factory fan curves remain active.
 
-Temperaturen anzeigen:
+Display temperatures:
 
 ```bash
 p16-temperatures
@@ -163,9 +165,9 @@ p16-temperatures --watch
 p16-temperatures --json
 ```
 
-Die Anzeige liest ACPI-, NVIDIA-, NVMe-, WLAN- und Lüfterschnittstellen. PSYS/PSOC werden durch den Kernelpatch von echten Temperaturzonen getrennt. Acht Firmwarezonen enthalten ungültige `_CRT`-Grenzen (`0x7fffffff`); ihre Temperaturmessungen sind nutzbar, aber es werden keine Ersatzgrenzen erfunden. Die vorhandenen THRM-Grenzen von 100 °C passiv und 103 °C kritisch bleiben erhalten.
+The monitor reads ACPI, NVIDIA, NVMe, Wi-Fi and fan interfaces. The kernel excludes PSYS/PSOC power telemetry from thermal zone registration. Eight firmware zones have invalid `_CRT` limits (`0x7fffffff`); their temperature readings work, but no replacement thresholds are introduced. THRM's existing 100 °C passive and 103 °C critical limits are preserved.
 
-## 8. CUDA und GPU-Container
+## 8. CUDA and GPU containers
 
 ```bash
 omarchy pkg add cuda
@@ -174,9 +176,9 @@ nvcc --version
 ./scripts/check-cuda.sh
 ```
 
-Das Toolkit liegt unter `/opt/cuda`. Der Test kompiliert für **`sm_121`** und kontrolliert 4096 Ergebnisse einer Vektoraddition auf der GPU. Bei Erfolg erscheint `"result":"passed"`. NVIDIA-SMIs CUDA-Anzeige beschreibt die Treiberfähigkeit; `nvcc --version` zeigt die installierte Toolkit-Version. Für vorgefertigte PyTorch-Wheels gilt zusätzlich deren eigene CUDA-Runtime-Version.
+The toolkit is installed under `/opt/cuda`. The test compiles for **`sm_121`** and verifies all 4096 results of a GPU vector addition. Success produces `"result":"passed"`. NVIDIA-SMI reports the driver's CUDA capability; `nvcc --version` reports the installed toolkit version. Prebuilt PyTorch wheels also have their own CUDA runtime version.
 
-Für Docker-GPU-Zugriff:
+To enable GPU access in Docker:
 
 ```bash
 omarchy install docker
@@ -185,23 +187,23 @@ sudo nvidia-ctk runtime configure --runtime=docker --set-as-default
 sudo systemctl restart docker
 ```
 
-Container anschließend mit `docker run --gpus all ...` starten. Ein Docker-Neustart unterbricht laufende Container. Python-/Trainingsprojekte und Kubernetes sind unabhängig von den Hardwareanpassungen einzurichten.
+Start GPU containers with `docker run --gpus all ...`. Restarting Docker interrupts running containers. Python training environments and Kubernetes are separate from this hardware setup.
 
-## 9. Boot-Reparatur und Updates
+## 9. Boot recovery and updates
 
-Bei einem fehlgeschlagenen P16-Start im Limine-Menü den vorhandenen `linux-omarchy`-Eintrag wählen. Bei schwarzem Bildschirm `linux-omarchy-fallback` verwenden. `Esc` blendet ein durch andere Einstellungen verstecktes Bootmenü ein. Auf dem Standardkernel werden die P16-ACPI-Overrides und die beiden P16-Dienste nicht aktiviert.
+If the P16 kernel fails to boot, select the existing `linux-omarchy` entry in Limine. Use `linux-omarchy-fallback` if the display stays black. Press `Esc` to reveal a hidden boot menu. The stock kernel does not activate the P16 ACPI overrides or the two P16 services.
 
-Für die vollständige Wiederherstellung vom Standardkernel aus:
+To restore the original configuration, boot the stock kernel and run:
 
 ```bash
-sudo ./scripts/restore-install.sh /root/p16-install.<Kennung>
+sudo ./scripts/restore-install.sh /root/p16-install.XXXXXXXX
 ```
 
-Das Skript prüft zuerst sämtliche Sicherungsdateien. Danach stellt es die gesicherten EFI-Images, das zugehörige Limine-Menü und die Systemkonfiguration einschließlich des vorherigen Dienst-Startlinks wieder her. Neu angelegte P16-Bootdateien werden entfernt; Kernel-/Headerpakete bleiben installiert. Ein explizit zurückgesetzter Checkpoint ist abgeschlossen und kann nicht per `--resume` erneut gestartet werden.
+Use the actual backup suffix. The script validates all backups before restoring the EFI images, matching Limine configuration, system files and previous service enablement link. It removes newly created P16 boot files while leaving kernel/header packages installed. An explicitly restored checkpoint cannot be resumed.
 
-Bei einer BLAKE2b-Meldung EFI-Image und Eintrag gemeinsam wiederherstellen. Keine EFI-Datei nach der Registrierung verändern. PE-Sektionen ausschließlich lesend untersuchen; `scripts/verify-boot.py` verändert keine Images und weist auch fehlende P16-Einträge sowie fehlende oder falsch formatierte Hashes ab.
+For a BLAKE2b mismatch, restore the EFI image and its matching menu entry together. Do not modify an EFI image after registering its hash. Inspect PE sections with read-only tools. `scripts/verify-boot.py` does not modify images and rejects missing P16 entries as well as missing, malformed or incorrect hashes.
 
-Nach NVIDIA-Paketupdates muss DKMS auch für den P16-Kernel erfolgreich bauen:
+After an NVIDIA package update, ensure DKMS builds successfully for the P16 kernel:
 
 ```bash
 dkms status
@@ -209,49 +211,49 @@ sudo dkms autoinstall -k 7.2.8-14-omarchy-p16-asus
 sudo depmod -a 7.2.8-14-omarchy-p16-asus
 ```
 
-Anschließend den UKI über Omarchys regulären `limine-mkinitcpio`-Ablauf erneuern und `sudo python3 scripts/verify-boot.py` ausführen, damit Treiber im initramfs und im Root-Dateisystem übereinstimmen. Vor Kerneländerungen den Standardkernel und dessen Fallback-Eintrag erhalten.
+Then rebuild the UKI through Omarchy's `limine-mkinitcpio` workflow and run `sudo python3 scripts/verify-boot.py` so the initramfs and root filesystem contain matching drivers. Preserve the stock kernel and its fallback entry when changing kernels.
 
-Bei einem BIOS-Update die alten ACPI-Overrides nicht übernehmen. Für einen anderen Kernelrelease müssen Patches, mkinitcpio-Hook, Drop-in und `ConditionKernelVersion` der Dienste gemeinsam angepasst und geprüft werden.
+After a BIOS update, do not reuse the old ACPI overrides. Supporting a different kernel release requires updating and checking the patches, mkinitcpio hook, drop-in and service `ConditionKernelVersion` settings together.
 
-## Hardware und Grenzen
+## Hardware and limitations
 
-| Hardware | Identität |
+| Hardware | Identity |
 |---|---|
-| GPU | NVIDIA `10de:2e03`, Subsystem `1043:1484`, Compute Capability 12.1 |
-| Interne Tastatur | HID `0b05:4b42`, ACPI `MKB0001`, `hid_asus` |
+| GPU | NVIDIA `10de:2e03`, subsystem `1043:1484`, compute capability 12.1 |
+| Internal keyboard | HID `0b05:4b42`, ACPI `MKB0001`, `hid_asus` |
 | Touchpad | HID `093a:4f01`, `hid-multitouch` |
-| SPI-Sensorhub | `MSFW1111` / `PNP0C51`, virtueller GPIO/IRQ 190, `spi_hid_acpi` |
-| ASUS-WMI | Management `97845ED0-4E6D-11DE-8A39-0800200C9A66`, Event `0B3CBB35-E3C2-45ED-91C2-4C5A6D195D1C` |
+| SPI sensor hub | `MSFW1111` / `PNP0C51`, virtual GPIO/IRQ 190, `spi_hid_acpi` |
+| ASUS WMI | Management `97845ED0-4E6D-11DE-8A39-0800200C9A66`, event `0B3CBB35-E3C2-45ED-91C2-4C5A6D195D1C` |
 
-SPI-HID transportiert den Sensorhub; die Vollständigkeit der Sensormessungen, physischer Ladestopp, Lüfterreaktionen, Suspend/Resume, NVENC/NVDEC und thermische Abschaltung sind durch diese Installation nicht automatisch nachgewiesen. ASUS Armoury und eigene Lüfterkurven werden nicht aktiviert. Optionale NVML-Leistungs-/Speicheranzeigen können auf N1X fehlen.
+SPI-HID provides the sensor hub transport. Complete sensor measurements, physical charge cutoff, fan response, suspend/resume, NVENC/NVDEC and thermal shutdown require separate testing. ASUS Armoury and custom fan curves are not enabled. Some optional NVML power and memory metrics may be unavailable on N1X.
 
-## Dateistruktur und Quellen
+## Repository layout and sources
 
 ```text
-kernel/       vollständiges Omarchy-Kernelrezept, Konfiguration, Signaturen, P16-Patches
-acpi/         ACPI-Builder, Transformationsquellen, ACPICA-Quellarchiv, MIT-Lizenz
-config/       mkinitcpio-/Limine-Dateien und systemd-Dienste
-scripts/      Build, Installation, Tastatur, Temperaturanzeige und Prüfungen
-cuda/         CUDA-C++-Testprogramm
-sources.json  Herkunft und feste Upstream-Commits
-SHA256SUMS    Prüfsummen der Repository-Dateien
-tests/        Regressionstests für Fehlerfälle und Wiederherstellung
-build/        lokale Downloads und Buildausgaben; nicht versioniert
+kernel/       complete Omarchy kernel recipe, configuration, signatures and P16 patches
+acpi/         ACPI builder, transformations, ACPICA source archive and MIT license
+config/       mkinitcpio/Limine configuration and systemd services
+scripts/      build, installation, keyboard, temperature and verification tools
+cuda/         CUDA C++ test program
+sources.json  provenance and pinned upstream commits
+SHA256SUMS    repository file checksums
+tests/        failure handling and recovery regression tests
+build/        local downloads and build outputs; excluded from Git
 ```
 
-- [Omarchy ARM64-/N1X-Installation](https://github.com/omacom/omarchy-iso/blob/quattro/N1X.md)
-- [Nightly-Build und ARM64-Publikation](https://github.com/omacom/omarchy-iso/blob/quattro/.github/workflows/nightly-build.yml)
-- [Omarchy-Kernelrezept](https://github.com/omacom/omarchy-pkgs/tree/a8f9d7512a7fe61561c9fba908545f70ff631ede/pkgbuilds/linux-omarchy-aarch64)
-- [P16-ACPI-Quellen](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430)
+- [Omarchy ARM64/N1X installation](https://github.com/omacom/omarchy-iso/blob/quattro/N1X.md)
+- [Nightly build and ARM64 publication](https://github.com/omacom/omarchy-iso/blob/quattro/.github/workflows/nightly-build.yml)
+- [Omarchy kernel recipe](https://github.com/omacom/omarchy-pkgs/tree/a8f9d7512a7fe61561c9fba908545f70ff631ede/pkgbuilds/linux-omarchy-aarch64)
+- [P16 ACPI sources](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430)
 - [SPI-HID v5](https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/)
 
-Prüfsummen prüfen: `sha256sum -c SHA256SUMS`. Lizenzzuordnung: [LICENSES.md](LICENSES.md).
+Verify repository checksums with `sha256sum -c SHA256SUMS`. See [LICENSES.md](LICENSES.md) for licensing.
 
-## Skripte prüfen
+## Check the scripts
 
 ```bash
 python3 -m unittest discover -s tests -v
 PYTHONOPTIMIZE=1 python3 -m unittest discover -s tests -v
 ```
 
-Die Tests verwenden temporäre Dateisysteme. Sie prüfen unter anderem ungültige Boot-Einträge, unveränderte EFI-Sicherungen, Wiederaufnahme nach Abbruch, beschädigte Sicherungen und ausgeschaltete Python-Assertions. Die tatsächlichen Validierungen bleiben auch mit Python-Optimierung aktiv. Die Tests installieren keinen Kernel und ändern keine laufende Systemkonfiguration.
+The tests use temporary filesystems to check invalid boot entries, complete EFI backups, interrupted installation recovery, corrupted backups and operation with Python assertions disabled. Runtime validation remains active under Python optimization. The tests do not install a kernel or change the running system configuration.
