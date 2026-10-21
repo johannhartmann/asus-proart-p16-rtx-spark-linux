@@ -120,7 +120,7 @@ On an error or Ctrl+C, the installer restores the backed-up boot files and syste
 sudo ./scripts/install-kernel.sh --resume /root/p16-install.XXXXXXXX
 ```
 
-Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed.
+Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
 
 Reboot and select **`linux-p16-asus`** in the Limine menu. Then check:
 
@@ -139,9 +139,11 @@ For a German layout, run these commands as your regular user in the graphical se
 ```bash
 python3 scripts/set-german-keyboard.py
 sudo localectl --no-convert set-keymap de
+sudo limine-mkinitcpio
+sudo python3 scripts/verify-boot.py
 ```
 
-The script uses Omarchy's installed keyboard configuration logic to set both the desktop and Fcitx to `de`, then reloads Hyprland. The `hid_asus` driver is included in the initramfs for input at the LUKS prompt.
+The script sets the desktop and Fcitx to `de` using Omarchy's installed keyboard configuration logic, then reloads Hyprland. `localectl` sets the console keymap; rebuilding the UKIs embeds it for the LUKS prompt on the next boot. The `hid_asus` driver is included in the initramfs for internal keyboard input.
 
 ## 7. ASUS profiles, battery and temperatures
 
@@ -199,7 +201,7 @@ To restore the original configuration, boot the stock kernel and run:
 sudo ./scripts/restore-install.sh /root/p16-install.XXXXXXXX
 ```
 
-Use the actual backup suffix. The script validates all backups before restoring the EFI images, matching Limine configuration, system files and previous service enablement link. It removes newly created P16 boot files while leaving kernel/header packages installed. An explicitly restored checkpoint cannot be resumed.
+Use the actual backup suffix. The script validates all backups and compares the stock kernel images and installed Linux/NVIDIA package versions against the checkpoint before writing any files. Changed versions or missing compatibility metadata cause restoration to stop without changing the current boot files. For a matching environment, it restores the EFI images, matching Limine configuration, system files (including the original console keymap) and previous service enablement link. It removes newly created P16 boot files while leaving kernel/header packages installed. To install again after restoration, use `install-kernel.sh --resume` with that same checkpoint and unchanged package files.
 
 For a BLAKE2b mismatch, restore the EFI image and its matching menu entry together. Do not modify an EFI image after registering its hash. Inspect PE sections with read-only tools. `scripts/verify-boot.py` does not modify images and rejects missing P16 entries as well as missing, malformed or incorrect hashes.
 
@@ -213,7 +215,7 @@ sudo depmod -a 7.2.8-14-omarchy-p16-asus
 
 Then rebuild the UKI through Omarchy's `limine-mkinitcpio` workflow and run `sudo python3 scripts/verify-boot.py` so the initramfs and root filesystem contain matching drivers. Preserve the stock kernel and its fallback entry when changing kernels.
 
-After a BIOS update, do not reuse the old ACPI overrides. Supporting a different kernel release requires updating and checking the patches, mkinitcpio hook, drop-in and service `ConditionKernelVersion` settings together.
+After a BIOS update, do not boot the P16 kernel with the old ACPI overrides. Boot the stock kernel and use the restore command to remove the P16 setup. Restoration checks the model but allows a changed BIOS; installation continues to require H7607BA.300. If stock kernels or NVIDIA packages were also updated, the old backup cannot safely restore their boot files: keep the current stock images and repair from the stock kernel instead of copying old EFI files back. Supporting a different kernel release requires updating and checking the patches, mkinitcpio hook, drop-in and service `ConditionKernelVersion` settings together.
 
 ## Hardware and limitations
 
@@ -256,4 +258,4 @@ python3 -m unittest discover -s tests -v
 PYTHONOPTIMIZE=1 python3 -m unittest discover -s tests -v
 ```
 
-The tests use temporary filesystems to check invalid boot entries, complete EFI backups, interrupted installation recovery, corrupted backups and operation with Python assertions disabled. Runtime validation remains active under Python optimization. The tests do not install a kernel or change the running system configuration.
+The tests use temporary filesystems to check invalid boot entries, complete EFI backups, interrupted installation recovery, boot-version mismatches, restored-checkpoint reuse, corrupted backups and operation with Python assertions disabled. Runtime validation remains active under Python optimization. The tests do not install a kernel or change the running system configuration.

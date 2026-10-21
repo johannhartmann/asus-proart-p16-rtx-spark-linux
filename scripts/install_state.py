@@ -11,7 +11,7 @@ import tempfile
 RELEASE = '7.2.8-14-omarchy-p16-asus'
 TARGET = '/boot/EFI/Linux/omarchy_linux-p16-asus.efi'
 CONFIG_PATHS = [
-    '/boot/limine.conf', '/etc/initcpio/install/p16-acpi',
+    '/boot/limine.conf', '/etc/vconsole.conf', '/etc/initcpio/install/p16-acpi',
     '/etc/mkinitcpio.conf.d/zz-p16-hardware-fixes.conf',
     '/etc/mkinitcpio.conf.d/zz-p16-keyboard.conf',
     '/etc/mkinitcpio.conf.d/zz-p16-input.conf',
@@ -33,6 +33,30 @@ def require(condition, message):
 def digest(path):
     with Path(path).open('rb') as stream:
         return hashlib.file_digest(stream, 'blake2b').hexdigest()
+
+
+def boot_environment(root):
+    """Only versions relevant to restored UKIs; exclude our added kernel."""
+    packages = {}
+    for desc in (root / 'var/lib/pacman/local').glob('*/desc'):
+        fields = desc.read_text().splitlines()
+        name = fields[fields.index('%NAME%') + 1]
+        version = fields[fields.index('%VERSION%') + 1]
+        if name in ('linux-p16-asus', 'linux-p16-asus-headers'):
+            continue
+        if name.startswith(('linux-', 'nvidia', 'libnvidia', 'opencl-nvidia')):
+            packages[name] = version
+    kernels = {p.parent.name: digest(p) for p in (root / 'usr/lib/modules').glob('*/vmlinuz')
+               if p.parent.name != RELEASE}
+    return {'packages': packages, 'kernels': kernels}
+
+
+def require_compatible_boot(state, root):
+    require('boot_environment' in state,
+            'This backup lacks boot compatibility metadata; automatic restoration is refused.')
+    require(state['boot_environment'] == boot_environment(root),
+            'Stock kernels or NVIDIA packages changed since this backup. '
+            'Restoration is refused before changing files; keep the current stock boot images.')
 
 
 def save(backup, state):
@@ -66,11 +90,14 @@ def load(backup):
 
 def begin(backup, packages, root=Path('/')):
     require(not (backup / 'state.json').exists(), 'Checkpoint existiert bereits')
+    environment = boot_environment(root)
+    require(environment['packages'] and environment['kernels'], 'Stock kernel/package metadata is required for a restorable backup.')
     images = root / 'boot/EFI/Linux'
     names = list(dict.fromkeys(CONFIG_PATHS + ['/' + p.relative_to(root).as_posix()
                 for p in sorted(images.glob('*.efi'))] + [TARGET]))
     state = {'schema': 1, 'release': RELEASE, 'status': 'running',
-             'packages': {p.name: digest(p) for p in packages}, 'files': {}}
+             'packages': {p.name: digest(p) for p in packages},
+             'boot_environment': environment, 'files': {}}
     for name in names:
         source = root / name.lstrip('/')
         if source.is_symlink():
@@ -94,7 +121,7 @@ def begin(backup, packages, root=Path('/')):
 
 def resume(backup, packages, root=Path('/')):
     state = load(backup)
-    require(state['status'] in ('running', 'failed'), 'Installation ist bereits abgeschlossen oder zurückgesetzt')
+    require(state['status'] in ('running', 'failed', 'restored'), 'Installation ist bereits abgeschlossen')
     require({p.name: digest(p) for p in packages} == state['packages'],
             'Zur Wiederaufnahme dieselben unveränderten Kernelpakete verwenden')
     restore(backup, root=root, status='failed')
@@ -116,8 +143,9 @@ def verify_preserved(backup, root=Path('/')):
 
 
 def restore(backup, root=Path('/'), status='restored'):
-    # Validate every backup before changing any live file. Restore menu last.
+    # Check installed boot versions before changing any live file. Restore menu last.
     state = load(backup)
+    require_compatible_boot(state, root)
     for name in sorted(state['files'], key=lambda name: name == '/boot/limine.conf'):
         info = state['files'][name]
         destination = root / name.lstrip('/')

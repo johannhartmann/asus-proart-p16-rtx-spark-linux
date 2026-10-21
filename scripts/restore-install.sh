@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
 require_root
-check_machine
+check_model
 [[ $# == 1 ]] || { echo "Aufruf: sudo $0 /root/p16-install.<Kennung>" >&2; exit 1; }
 mountpoint -q /boot
 [[ $(findmnt -n -o FSTYPE /boot) == vfat ]]

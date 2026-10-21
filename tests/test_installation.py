@@ -99,6 +99,14 @@ class BackupTests(unittest.TestCase):
         self.enabled = self.root / 'etc/systemd/system/multi-user.target.wants/p16-charge-limit.service'
         self.enabled.parent.mkdir(parents=True)
         self.enabled.symlink_to('/original/charge.service')
+        self.console=self.root/'etc/vconsole.conf'
+        self.console.write_text('KEYMAP=us\n')
+        self.stock_modules = self.root/'usr/lib/modules/7.2.8-23-omarchy'
+        self.stock_modules.mkdir(parents=True)
+        (self.stock_modules/'vmlinuz').write_bytes(b'original stock kernel')
+        self.nvidia_desc = self.root/'var/lib/pacman/local/nvidia-utils-615/desc'
+        self.nvidia_desc.parent.mkdir(parents=True)
+        self.nvidia_desc.write_text('%NAME%\nnvidia-utils\n\n%VERSION%\n615.78.08-1\n')
         self.packages = [self.base/'kernel.pkg.tar.zst', self.base/'headers.pkg.tar.zst']
         for package in self.packages:
             package.write_bytes(package.name.encode())
@@ -106,6 +114,7 @@ class BackupTests(unittest.TestCase):
 
     def change_live_files(self):
         self.efi.write_bytes(b'broken EFI')
+        self.console.write_text('KEYMAP=de\n')
         self.menu.write_text('default_entry: 3\nbroken menu\n')
         (self.root / state.TARGET.lstrip('/')).write_bytes(b'new incomplete P16 image')
         self.enabled.unlink()
@@ -125,6 +134,7 @@ class BackupTests(unittest.TestCase):
         self.assertFalse((self.root / state.TARGET.lstrip('/')).exists())
         self.assertFalse((self.root / 'usr/local/libexec/p16-charge-limit').exists())
         self.assertEqual(os.readlink(self.enabled), '/original/charge.service')
+        self.assertEqual(self.console.read_text(), 'KEYMAP=us\n')
         self.assertEqual(state.load(self.backup)['status'], 'failed')
 
     def test_resume_after_interruption_keeps_packages_and_original_backup(self):
@@ -171,6 +181,46 @@ class BackupTests(unittest.TestCase):
             state.resume(self.backup, self.packages, self.root)
         self.assertEqual(self.menu.read_text(), 'default_entry: 3\nbroken menu\n')
 
+    def test_manual_restore_can_be_resumed_with_original_packages(self):
+        self.change_live_files()
+        state.restore(self.backup, self.root)
+        self.assertEqual(state.load(self.backup)['status'], 'restored')
+        state.resume(self.backup, self.packages, self.root)
+        self.assertEqual(state.load(self.backup)['status'], 'running')
+
+    def test_missing_stock_modules_block_restore_before_any_write(self):
+        self.change_live_files()
+        shutil.rmtree(self.stock_modules)
+        with self.assertRaisesRegex(ValueError, 'Stock kernels or NVIDIA'):
+            state.restore(self.backup, self.root)
+        self.assertEqual(self.efi.read_bytes(), b'broken EFI')
+        self.assertEqual(self.menu.read_text(), 'default_entry: 3\nbroken menu\n')
+
+    def test_changed_stock_kernel_blocks_restore(self):
+        (self.stock_modules/'vmlinuz').write_bytes(b'updated stock kernel')
+        with self.assertRaisesRegex(ValueError, 'Stock kernels or NVIDIA'):
+            state.restore(self.backup, self.root)
+
+    def test_nvidia_update_blocks_restore_before_any_write(self):
+        self.change_live_files()
+        self.nvidia_desc.write_text('%NAME%\nnvidia-utils\n\n%VERSION%\n615.84.00-1\n')
+        with self.assertRaisesRegex(ValueError, 'Stock kernels or NVIDIA'):
+            state.restore(self.backup, self.root)
+        self.assertEqual(self.efi.read_bytes(), b'broken EFI')
+
+    def test_legacy_backup_without_compatibility_metadata_is_refused(self):
+        saved=state.load(self.backup)
+        del saved['boot_environment']
+        state.save(self.backup, saved)
+        with self.assertRaisesRegex(ValueError, 'lacks boot compatibility'):
+            state.restore(self.backup, self.root)
+
+    def test_unrelated_package_changes_do_not_block_restore(self):
+        desc=self.root/'var/lib/pacman/local/bottom-1/desc'
+        desc.parent.mkdir()
+        desc.write_text('%NAME%\nbottom\n\n%VERSION%\n1.0-1\n')
+        state.restore(self.backup, self.root)
+
     def test_complete_checkpoint_cannot_be_resumed(self):
         saved = state.load(self.backup)
         saved['status'] = 'complete'
@@ -205,6 +255,22 @@ class ValidationTests(unittest.TestCase):
             build = root/'build'
             self.assertEqual(build.stat().st_uid, os.getuid())
             (build/'compiler').mkdir()
+
+    def test_model_check_allows_updated_bios_but_install_check_rejects_it(self):
+        shell = r'''uname() { printf aarch64; }
+cat() {
+  case "$1" in
+    */sys_vendor) printf ASUS ;;
+    */product_name) printf 'ProArt P16 H7607BA' ;;
+    */bios_version) printf H7607BA.301 ;;
+    *) return 1 ;;
+  esac
+}
+source "$1"
+'''
+        for check, expected in [('check_model', 0), ('check_machine', 1)]:
+            result=subprocess.run(['bash','-c',shell+check,'bash',str(REPO/'scripts/common.sh')], capture_output=True, text=True)
+            self.assertEqual(result.returncode, expected, result.stderr)
 
     def test_wrong_kernel_identity_is_rejected(self):
         # Minimal ARM64 PE carrying a .uname section, independent of a host kernel.
