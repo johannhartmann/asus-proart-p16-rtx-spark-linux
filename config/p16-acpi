@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 build() {
-    [[ $KERNELVERSION == 7.2.8-14-omarchy-p16-asus ]] || {
+    [[ $KERNELVERSION == 7.2.8-14-omarchy-p16 || $KERNELVERSION == 7.2.8-14-omarchy-p16-asus || $KERNELVERSION == 7.2.8-23-omarchy-p16-asus ]] || {
         error 'P16 ACPI override requires the dedicated kernel allocation fix'
         return 1
     }

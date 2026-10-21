@@ -2,7 +2,7 @@
 
 Installation guide for the **ASUS ProArt P16 H7607BA** with **NVIDIA RTX Spark N1X / AArch64**, BIOS **H7607BA.300** and EC **2.16**.
 
-Start with the official ARM64 Nightly, then install the separately packaged P16 kernel. The kernel recipe pins Omarchy **7.2.8-14** and produces **7.2.8-14-omarchy-p16-asus**. A newer Nightly may ship a newer stock kernel; the P16 kernel is installed alongside it. Apply the included patches only to the pinned kernel source.
+Start with the official ARM64 Nightly, then install the separately packaged P16 kernel. The kernel recipe pins Omarchy **7.2.8-23** and produces **7.2.8-23-omarchy-p16-asus**. A newer Nightly may ship a newer stock kernel; the P16 kernel is installed alongside it. Apply the included patches only to the pinned kernel source.
 
 This repository contains the build recipes and sources for keyboard/touchpad support, ACPI and battery fixes, SPI-HID, ASUS controls, temperature monitoring and a CUDA test. The kernel build downloads Linux from kernel.org and verifies it using the checksums and signatures in the included Omarchy recipe. ACPI overrides are generated from the target machine's own firmware tables.
 
@@ -85,15 +85,17 @@ Run as your regular user:
 The first run downloads the Linux source. Signature verification remains enabled, using an isolated GPG directory under `build/gnupg/`. Allow several tens of GB of free disk space. The build produces:
 
 ```text
-kernel/linux-p16-asus-7.2.8-14-aarch64.pkg.tar.zst
-kernel/linux-p16-asus-headers-7.2.8-14-aarch64.pkg.tar.zst
+kernel/linux-p16-asus-23-7.2.8-23-aarch64.pkg.tar.zst
+kernel/linux-p16-asus-23-headers-7.2.8-23-aarch64.pkg.tar.zst
 ```
 
 NVIDIA-DKMS requires the headers package. Pacman owns the installed kernel and modules; the installed headers allow DKMS builds after the source build directory has been removed.
 
-`kernel/PKGBUILD` specifies the patch order and SHA-256/BLAKE2 checksums. The combined ASUS patch already includes ARM64 WMI support, relocation to `drivers/platform/asus/` and the P16 RSOC fix. Apply it once as part of the recipe.
+`kernel/PKGBUILD` specifies the patch order and SHA-256/BLAKE2 checksums. Omarchy already includes the SPI-HID transport series; the remaining P16 patches add the ACPI IRQ retry, virtual GPIOs, thermal filtering and ACPI allocation fix. The combined ASUS patch already includes ARM64 WMI support, relocation to `drivers/platform/asus/` and the P16 RSOC fix. Apply it once as part of the recipe.
 
 ## 5. Install the kernel and system configuration
+
+The new package is named `linux-p16-asus-23` so an existing `linux-p16-asus` package and its `7.2.8-14-omarchy-p16-asus` kernel stay installed. Keep the old kernel and boot entry until the new kernel has booted successfully. The ACPI hook and ASUS services continue to support that older P16 kernel.
 
 From the installed Omarchy system:
 
@@ -109,7 +111,7 @@ The installer:
 - installs early input drivers, the kernel-specific ACPI hook and ASUS services;
 - preserves the target machine's root/LUKS parameters and adds the P16 boot parameters;
 - builds an additional unified kernel image (UKI) and verifies its kernel, ACPI tables and required modules;
-- registers `linux-p16-asus` with Limine and verifies EFI BLAKE2b hashes;
+- registers `linux-p16-asus-23` with Limine and verifies EFI BLAKE2b hashes;
 - displays the boot menu for ten seconds while preserving the existing default entry.
 
 Existing EFI images are preserved. The root filesystem needs enough space for their complete backup, in addition to the kernel build space. The installer locks the boot partition against concurrent Limine writes.
@@ -122,7 +124,7 @@ sudo ./scripts/install-kernel.sh --resume /root/p16-install.XXXXXXXX
 
 Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
 
-Reboot and select **`linux-p16-asus`** in the Limine menu. Then check:
+Reboot and select **`linux-p16-asus-23`** in the Limine menu. Then check:
 
 ```bash
 uname -r
@@ -130,7 +132,7 @@ uname -r
 sudo python3 scripts/verify-boot.py
 ```
 
-`uname -r` must report `7.2.8-14-omarchy-p16-asus`. Battery readings should be plausible, `nvidia-smi` should list the GPU, and the three services should have started successfully. `powerprofilesctl list` should report `nvidia_rtx_spark` and `platform_profile` as drivers.
+`uname -r` must report `7.2.8-23-omarchy-p16-asus`. Battery readings should be plausible, `nvidia-smi` should list the GPU, and the three services should have started successfully. `powerprofilesctl list` should report `nvidia_rtx_spark` and `platform_profile` as drivers.
 
 ## 6. Configure a German keyboard layout
 
@@ -157,7 +159,7 @@ powerprofilesctl set power-saver
 
 Balanced maps to ASUS Balanced, Performance to ASUS Performance, and Power Saver to ASUS Quiet. The daemon also controls the NVIDIA CPU backend.
 
-`p16-asus-controls.service` loads the ASUS driver before power profile discovery. `p16-charge-limit.service` sets the charge limit to **100%** after battery registration. Both services are restricted to the included kernel release. The factory fan curves remain active.
+`p16-asus-controls.service` loads the ASUS driver before power profile discovery. `p16-charge-limit.service` sets the charge limit to **100%** after battery registration. Both services are restricted to the validated ASUS P16 kernel releases (`7.2.8-14` and `7.2.8-23`). The factory fan curves remain active.
 
 Display temperatures:
 
@@ -209,8 +211,8 @@ After an NVIDIA package update, ensure DKMS builds successfully for the P16 kern
 
 ```bash
 dkms status
-sudo dkms autoinstall -k 7.2.8-14-omarchy-p16-asus
-sudo depmod -a 7.2.8-14-omarchy-p16-asus
+sudo dkms autoinstall -k 7.2.8-23-omarchy-p16-asus
+sudo depmod -a 7.2.8-23-omarchy-p16-asus
 ```
 
 Then rebuild the UKI through Omarchy's `limine-mkinitcpio` workflow and run `sudo python3 scripts/verify-boot.py` so the initramfs and root filesystem contain matching drivers. Preserve the stock kernel and its fallback entry when changing kernels.
@@ -245,7 +247,7 @@ build/        local downloads and build outputs; excluded from Git
 
 - [Omarchy ARM64/N1X installation](https://github.com/omacom/omarchy-iso/blob/quattro/N1X.md)
 - [Nightly build and ARM64 publication](https://github.com/omacom/omarchy-iso/blob/quattro/.github/workflows/nightly-build.yml)
-- [Omarchy kernel recipe](https://github.com/omacom/omarchy-pkgs/tree/a8f9d7512a7fe61561c9fba908545f70ff631ede/pkgbuilds/linux-omarchy-aarch64)
+- [Omarchy kernel recipe](https://github.com/omacom/omarchy-pkgs/tree/9db7ac36d410aca6d571975be1a5a77677918569/pkgbuilds/linux-omarchy-aarch64)
 - [P16 ACPI sources](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430)
 - [SPI-HID v5](https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/)
 

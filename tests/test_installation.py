@@ -35,7 +35,7 @@ class MenuTests(unittest.TestCase):
         self.images = self.root / 'EFI/Linux'
         self.images.mkdir(parents=True)
         self.config = self.root / 'limine.conf'
-        for name in ['stock.efi', 'omarchy_linux-p16-asus.efi']:
+        for name in ['stock.efi', 'omarchy_linux-p16-asus-23.efi']:
             (self.images / name).write_bytes(name.encode())
 
     def entry(self, name):
@@ -47,7 +47,7 @@ class MenuTests(unittest.TestCase):
         boot.verify_menu(self.config, self.root)
 
     def test_valid_stock_and_p16(self):
-        self.verify(self.entry('omarchy_linux-p16-asus.efi'))
+        self.verify(self.entry('omarchy_linux-p16-asus-23.efi'))
 
     def test_missing_p16_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'P16-Eintrag fehlt'):
@@ -57,25 +57,25 @@ class MenuTests(unittest.TestCase):
         for suffix in ['', '#INVALID', '#'+'a'*127, '#'+'a'*129, '#'+'a'*128+'junk']:
             with self.subTest(suffix=suffix):
                 with self.assertRaisesRegex(ValueError, 'gültigen BLAKE2b'):
-                    self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus.efi'+suffix+'\n')
+                    self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus-23.efi'+suffix+'\n')
 
     def test_wrong_hash_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Hash stimmt nicht'):
-            self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus.efi#'+'0'*128+'\n')
+            self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus-23.efi#'+'0'*128+'\n')
 
     def test_missing_image_is_rejected(self):
-        entry = self.entry('omarchy_linux-p16-asus.efi')
-        (self.images / 'omarchy_linux-p16-asus.efi').unlink()
+        entry = self.entry('omarchy_linux-p16-asus-23.efi')
+        (self.images / 'omarchy_linux-p16-asus-23.efi').unlink()
         with self.assertRaises(OSError):
             self.verify(entry)
 
     def test_comments_do_not_supply_missing_entry(self):
         with self.assertRaisesRegex(ValueError, 'P16-Eintrag fehlt'):
-            self.verify('# '+self.entry('omarchy_linux-p16-asus.efi'))
+            self.verify('# '+self.entry('omarchy_linux-p16-asus-23.efi'))
 
     def test_conflicting_menu_options_are_rejected(self):
         with self.assertRaises(ValueError):
-            self.verify(self.entry('omarchy_linux-p16-asus.efi'), 'quiet: yes\nquiet: no\ntimeout: 10\n')
+            self.verify(self.entry('omarchy_linux-p16-asus-23.efi'), 'quiet: yes\nquiet: no\ntimeout: 10\n')
 
     def test_path_traversal_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'außerhalb'):

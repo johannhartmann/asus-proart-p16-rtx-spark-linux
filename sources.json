@@ -1,15 +1,15 @@
 {
   "kernel": {
     "repository": "https://github.com/omacom/omarchy-pkgs",
-    "commit": "a8f9d7512a7fe61561c9fba908545f70ff631ede",
+    "commit": "9db7ac36d410aca6d571975be1a5a77677918569",
     "path": "pkgbuilds/linux-omarchy-aarch64",
-    "version": "7.2.8-14"
+    "version": "7.2.8-23"
   },
   "acpi": {
     "repository": "https://github.com/pfeifferj/archlinuxarm-proart-p16",
     "commit": "3484cc008a9ee00b34c086c729e28e935cbc3430"
   },
-  "spi_hid": "https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/",
+  "spi_hid": "Included by Omarchy patches 2110-2120; see pinned kernel source",
   "wmi_arm64": "https://lore.kernel.org/all/20260917021055.8029-2-chipang_kao@asus.com/",
   "asus_arm64": "https://lore.kernel.org/all/20260922032157.120188-1-chipang_kao@asus.com/",
   "acpica": {

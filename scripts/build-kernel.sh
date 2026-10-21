@@ -7,4 +7,4 @@ export GNUPGHOME="$REPO/build/gnupg"
 install -d -m700 "$GNUPGHOME"
 gpg --batch --import "$REPO"/kernel/keys/pgp/*.asc
 cd "$REPO/kernel"
-makepkg --syncdeps --cleanbuild "$@"
+PKGEXT=.pkg.tar.zst makepkg --syncdeps --cleanbuild "$@"
