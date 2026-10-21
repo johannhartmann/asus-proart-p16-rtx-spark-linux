@@ -8,6 +8,13 @@ Enthalten sind die Quellen und Buildrezepte für Tastatur/Touchpad, ACPI-/Akku-K
 
 ## 1. ARM64-Nightly installieren
 
+Repository auf den Rechner laden, mit dem der Installationsstick vorbereitet wird:
+
+```bash
+git clone https://github.com/johannhartmann/p16rtx_linux.git
+cd p16rtx_linux
+```
+
 Benötigt werden ein USB-Stick mit mindestens 8 GB, eine USB-Tastatur für die Ersteinrichtung und Netzteil/Internet. Secure Boot im UEFI ausschalten. Die Installation auf ein Laufwerk löscht dessen Daten, wenn die vollständige Laufwerksinstallation gewählt wird.
 
 Aktuelles ARM64-Nightly herunterladen und prüfen:
@@ -55,7 +62,7 @@ sudo ./scripts/dump-acpi.sh
 python3 scripts/build-acpi.py
 ```
 
-Der Build verwendet das enthaltene ACPICA **20260408** und prüft die Originaltabellen sowie beide erzeugten Tabellen per SHA-256. Andere BIOS-Versionen oder bereits gepatchte Tabellen werden abgewiesen. Ein bereits vorhandenes `build/firmware/` wird nicht überschrieben.
+Der Build verwendet das enthaltene ACPICA **20260408** und prüft die Originaltabellen sowie beide erzeugten Tabellen per SHA-256. Andere BIOS-Versionen oder bereits gepatchte Tabellen werden abgewiesen. Das übergeordnete `build/` wird beim Dump für den später kompilierenden Benutzer angelegt. Ein bereits vorhandenes `build/firmware/` wird nicht überschrieben.
 
 Ausgaben:
 
@@ -97,7 +104,7 @@ sudo ./scripts/install-kernel.sh
 Das Skript:
 
 - prüft AArch64, Modell, BIOS, EFI-Mount und ACPI-Dateien;
-- sichert die betroffenen Konfigurationen unter `/root/p16-install.<Kennung>/`;
+- sichert die betroffenen Konfigurationen und vollständigen vorhandenen EFI-Images samt Prüfsummen unter `/root/p16-install.<Kennung>/`;
 - installiert Kernel und Header, baut NVIDIA-DKMS und erzeugt die Modulabhängigkeiten;
 - installiert die frühen Eingabetreiber, den begrenzten ACPI-Hook und die ASUS-Dienste;
 - übernimmt die Root-/LUKS-Parameter des Zielrechners und ergänzt die P16-Kerneloptionen;
@@ -105,7 +112,15 @@ Das Skript:
 - legt den Limine-Eintrag `linux-p16-asus` an und prüft die BLAKE2b-Hashes;
 - zeigt das Bootmenü zehn Sekunden an und erhält den vorhandenen Standard-Eintrag.
 
-Vorhandene EFI-Images werden nicht neu gebaut. Eine bereits installierte P16-Kernelversion wird nicht überschrieben. Wenn ein Schritt fehlschlägt, den Fehler vor einem Neustart beheben; die Sicherung liegt im oben genannten Verzeichnis.
+Vorhandene EFI-Images werden nicht neu gebaut. Für die vollständige EFI-Sicherung muss zusätzlich zur Buildkapazität Platz auf dem Root-Dateisystem verfügbar sein. Der Installer sperrt die Bootpartition gegen parallele Limine-Schreibvorgänge.
+
+Bei einem Fehler oder Abbruch per Strg+C setzt der Installer Bootdateien und Systemkonfiguration auf den gesicherten Stand zurück. Bereits installierte Kernel-/Headerpakete bleiben erhalten. Nach Beheben des Fehlers dieselbe Installation mit denselben Paketdateien fortsetzen:
+
+```bash
+sudo ./scripts/install-kernel.sh --resume /root/p16-install.<Kennung>
+```
+
+`<Kennung>` durch den beim Start ausgegebenen Sicherungsnamen ersetzen. Die Wiederaufnahme prüft den root-eigenen Checkpoint, alle Sicherungsdateien und die Prüfsummen beider Kernelpakete. Sie stellt zuerst den Ausgangszustand der Bootdateien her und wiederholt die Installation. Das gilt auch nach einer Unterbrechung, bei der der Prozess keine automatische Wiederherstellung mehr ausführen konnte. Nach erfolgreich abgeschlossener Installation wird eine Wiederaufnahme abgewiesen.
 
 Neustarten und **`linux-p16-asus`** im sichtbaren Limine-Menü auswählen. Danach prüfen:
 
@@ -176,7 +191,15 @@ Container anschließend mit `docker run --gpus all ...` starten. Ein Docker-Neus
 
 Bei einem fehlgeschlagenen P16-Start im Limine-Menü den vorhandenen `linux-omarchy`-Eintrag wählen. Bei schwarzem Bildschirm `linux-omarchy-fallback` verwenden. `Esc` blendet ein durch andere Einstellungen verstecktes Bootmenü ein. Auf dem Standardkernel werden die P16-ACPI-Overrides und die beiden P16-Dienste nicht aktiviert.
 
-Bei einer BLAKE2b-Meldung das betroffene EFI-Image und den Eintrag wieder gemeinsam aus derselben Sicherung herstellen oder mit `limine-entry-tool` neu registrieren. Keine EFI-Datei nach der Registrierung verändern. PE-Sektionen ausschließlich lesend untersuchen; `scripts/verify-boot.py` verändert keine Images.
+Für die vollständige Wiederherstellung vom Standardkernel aus:
+
+```bash
+sudo ./scripts/restore-install.sh /root/p16-install.<Kennung>
+```
+
+Das Skript prüft zuerst sämtliche Sicherungsdateien. Danach stellt es die gesicherten EFI-Images, das zugehörige Limine-Menü und die Systemkonfiguration einschließlich des vorherigen Dienst-Startlinks wieder her. Neu angelegte P16-Bootdateien werden entfernt; Kernel-/Headerpakete bleiben installiert. Ein explizit zurückgesetzter Checkpoint ist abgeschlossen und kann nicht per `--resume` erneut gestartet werden.
+
+Bei einer BLAKE2b-Meldung EFI-Image und Eintrag gemeinsam wiederherstellen. Keine EFI-Datei nach der Registrierung verändern. PE-Sektionen ausschließlich lesend untersuchen; `scripts/verify-boot.py` verändert keine Images und weist auch fehlende P16-Einträge sowie fehlende oder falsch formatierte Hashes ab.
 
 Nach NVIDIA-Paketupdates muss DKMS auch für den P16-Kernel erfolgreich bauen:
 
@@ -212,6 +235,7 @@ scripts/      Build, Installation, Tastatur, Temperaturanzeige und Prüfungen
 cuda/         CUDA-C++-Testprogramm
 sources.json  Herkunft und feste Upstream-Commits
 SHA256SUMS    Prüfsummen der Repository-Dateien
+tests/        Regressionstests für Fehlerfälle und Wiederherstellung
 build/        lokale Downloads und Buildausgaben; nicht versioniert
 ```
 
@@ -222,3 +246,12 @@ build/        lokale Downloads und Buildausgaben; nicht versioniert
 - [SPI-HID v5](https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/)
 
 Prüfsummen prüfen: `sha256sum -c SHA256SUMS`. Lizenzzuordnung: [LICENSES.md](LICENSES.md).
+
+## Skripte prüfen
+
+```bash
+python3 -m unittest discover -s tests -v
+PYTHONOPTIMIZE=1 python3 -m unittest discover -s tests -v
+```
+
+Die Tests verwenden temporäre Dateisysteme. Sie prüfen unter anderem ungültige Boot-Einträge, unveränderte EFI-Sicherungen, Wiederaufnahme nach Abbruch, beschädigte Sicherungen und ausgeschaltete Python-Assertions. Die tatsächlichen Validierungen bleiben auch mit Python-Optimierung aktiv. Die Tests installieren keinen Kernel und ändern keine laufende Systemkonfiguration.

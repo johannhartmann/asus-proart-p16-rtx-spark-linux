@@ -11,3 +11,11 @@ check_machine() {
   }
 }
 require_root() { [[ $EUID == 0 ]] || { echo "Mit sudo ausführen: $0" >&2; exit 1; }; }
+
+# The dump runs as root, but all subsequent compilation runs as the owner.
+prepare_build_dir() {
+  local build_uid=${SUDO_UID:-$(stat -c %u "$REPO")}
+  local build_gid=${SUDO_GID:-$(stat -c %g "$REPO")}
+  [[ $build_uid != 0 ]] || { echo 'Repository eines normalen Benutzers verwenden.' >&2; return 1; }
+  install -d -m755 -o "$build_uid" -g "$build_gid" "$REPO/build"
+}

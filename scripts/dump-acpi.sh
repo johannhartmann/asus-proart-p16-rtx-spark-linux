@@ -2,6 +2,7 @@
 source "$(dirname "$0")/common.sh"
 require_root
 check_machine
+prepare_build_dir
 out="$REPO/build/firmware"
 [[ ! -e $out ]] || { echo "$out existiert bereits; zum erneuten Dump umbenennen." >&2; exit 1; }
 install -d -m755 "$out"

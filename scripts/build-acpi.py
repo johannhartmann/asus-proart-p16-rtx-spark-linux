@@ -6,10 +6,10 @@ from pathlib import Path
 import hashlib
 import shutil
 import subprocess
-
 repo = Path(__file__).resolve().parents[1]
 archive = repo / 'acpi/acpica-unix-20260408.tar.gz'
-assert hashlib.sha256(archive.read_bytes()).hexdigest() == 'e66ceb26d6d514ce164fe22f5a4f7ca165cc38349d7a97f41a21f19b364647a2'
+if not hashlib.sha256(archive.read_bytes()).hexdigest() == 'e66ceb26d6d514ce164fe22f5a4f7ca165cc38349d7a97f41a21f19b364647a2':
+    raise ValueError('Validierung fehlgeschlagen')
 build = repo / 'build'
 build.mkdir(exist_ok=True)
 compiler = build / 'acpica-unix-20260408'
@@ -26,8 +26,8 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 report = module.build(build / 'firmware', repo=out, iasl=str(compiler / 'generate/unix/bin/iasl'))
 (out / 'manifest.json').write_text(json.dumps(report, indent=2) + '\n')
-# Extract the deterministic, uncompressed early CPIO created by the builder.
 subprocess.run(['bsdtar', '-xf', str(out / module.ARCHIVE_PATH), '-C', str(out)], check=True)
 for name, expected in [('DSDT.aml', module.DSDT_OUTPUT), ('SSDT.aml', module.SSDT_OUTPUT)]:
-    assert hashlib.sha256((out / 'kernel/firmware/acpi' / name).read_bytes()).hexdigest() == expected
+    if not hashlib.sha256((out / 'kernel/firmware/acpi' / name).read_bytes()).hexdigest() == expected:
+        raise ValueError('Validierung fehlgeschlagen')
 print('ACPI-Dateien:', out / 'kernel/firmware/acpi')

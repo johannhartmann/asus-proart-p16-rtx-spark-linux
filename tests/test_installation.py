@@ -1,0 +1,251 @@
+"""Regression tests using temporary roots; no live installation is performed."""
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import runpy
+import shutil
+import struct
+import subprocess
+import tempfile
+import unittest
+from unittest.mock import patch
+
+REPO = Path(__file__).resolve().parents[1]
+
+
+def module(name, filename):
+    spec = importlib.util.spec_from_file_location(name, REPO / 'scripts' / filename)
+    loaded = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(loaded)
+    return loaded
+
+
+boot = module('verify_boot', 'verify-boot.py')
+state = module('install_state', 'install_state.py')
+
+
+class MenuTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.images = self.root / 'EFI/Linux'
+        self.images.mkdir(parents=True)
+        self.config = self.root / 'limine.conf'
+        for name in ['stock.efi', 'omarchy_linux-p16-asus.efi']:
+            (self.images / name).write_bytes(name.encode())
+
+    def entry(self, name):
+        pin = hashlib.blake2b((self.images / name).read_bytes()).hexdigest()
+        return '  path: boot():/EFI/Linux/' + name + '#' + pin + '\n'
+
+    def verify(self, extra, options='quiet: no\ntimeout: 10\n'):
+        self.config.write_text(options + self.entry('stock.efi') + extra)
+        boot.verify_menu(self.config, self.root)
+
+    def test_valid_stock_and_p16(self):
+        self.verify(self.entry('omarchy_linux-p16-asus.efi'))
+
+    def test_missing_p16_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'P16-Eintrag fehlt'):
+            self.verify('')
+
+    def test_malformed_and_missing_hashes_are_rejected(self):
+        for suffix in ['', '#INVALID', '#'+'a'*127, '#'+'a'*129, '#'+'a'*128+'junk']:
+            with self.subTest(suffix=suffix):
+                with self.assertRaisesRegex(ValueError, 'gültigen BLAKE2b'):
+                    self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus.efi'+suffix+'\n')
+
+    def test_wrong_hash_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'Hash stimmt nicht'):
+            self.verify('path: boot():/EFI/Linux/omarchy_linux-p16-asus.efi#'+'0'*128+'\n')
+
+    def test_missing_image_is_rejected(self):
+        entry = self.entry('omarchy_linux-p16-asus.efi')
+        (self.images / 'omarchy_linux-p16-asus.efi').unlink()
+        with self.assertRaises(OSError):
+            self.verify(entry)
+
+    def test_comments_do_not_supply_missing_entry(self):
+        with self.assertRaisesRegex(ValueError, 'P16-Eintrag fehlt'):
+            self.verify('# '+self.entry('omarchy_linux-p16-asus.efi'))
+
+    def test_conflicting_menu_options_are_rejected(self):
+        with self.assertRaises(ValueError):
+            self.verify(self.entry('omarchy_linux-p16-asus.efi'), 'quiet: yes\nquiet: no\ntimeout: 10\n')
+
+    def test_path_traversal_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'außerhalb'):
+            self.verify('path: boot():/EFI/Linux/../../elsewhere.efi#'+'0'*128+'\n')
+
+
+class BackupTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.base = Path(self.temp.name)
+        self.root = self.base / 'root'
+        self.backup = self.base / 'backup'
+        self.backup.mkdir()
+        self.menu = self.root / 'boot/limine.conf'
+        self.menu.parent.mkdir(parents=True)
+        self.menu.write_text('default_entry: 2\noriginal menu\n')
+        self.efi = self.root / 'boot/EFI/Linux/stock.efi'
+        self.efi.parent.mkdir(parents=True)
+        self.efi.write_bytes(b'original complete EFI bytes')
+        self.enabled = self.root / 'etc/systemd/system/multi-user.target.wants/p16-charge-limit.service'
+        self.enabled.parent.mkdir(parents=True)
+        self.enabled.symlink_to('/original/charge.service')
+        self.packages = [self.base/'kernel.pkg.tar.zst', self.base/'headers.pkg.tar.zst']
+        for package in self.packages:
+            package.write_bytes(package.name.encode())
+        state.begin(self.backup, self.packages, self.root)
+
+    def change_live_files(self):
+        self.efi.write_bytes(b'broken EFI')
+        self.menu.write_text('default_entry: 3\nbroken menu\n')
+        (self.root / state.TARGET.lstrip('/')).write_bytes(b'new incomplete P16 image')
+        self.enabled.unlink()
+        self.enabled.symlink_to('/new/charge.service')
+        helper = self.root / 'usr/local/libexec/p16-charge-limit'
+        helper.parent.mkdir(parents=True)
+        helper.write_text('new helper')
+
+    def test_full_efi_bytes_are_backed_up(self):
+        self.assertEqual((self.backup/'files/boot/EFI/Linux/stock.efi').read_bytes(), self.efi.read_bytes())
+
+    def test_failure_restores_menu_images_symlinks_and_absent_files(self):
+        self.change_live_files()
+        state.restore(self.backup, self.root, status='failed')
+        self.assertEqual(self.menu.read_text(), 'default_entry: 2\noriginal menu\n')
+        self.assertEqual(self.efi.read_bytes(), b'original complete EFI bytes')
+        self.assertFalse((self.root / state.TARGET.lstrip('/')).exists())
+        self.assertFalse((self.root / 'usr/local/libexec/p16-charge-limit').exists())
+        self.assertEqual(os.readlink(self.enabled), '/original/charge.service')
+        self.assertEqual(state.load(self.backup)['status'], 'failed')
+
+    def test_resume_after_interruption_keeps_packages_and_original_backup(self):
+        self.change_live_files()
+        installed = self.root / 'usr/lib/modules' / state.RELEASE / 'vmlinuz'
+        installed.parent.mkdir(parents=True)
+        installed.write_bytes(b'installed kernel')
+        state.resume(self.backup, self.packages, self.root)
+        self.assertEqual(state.load(self.backup)['status'], 'running')
+        self.assertEqual(installed.read_bytes(), b'installed kernel')
+        self.assertEqual(self.efi.read_bytes(), b'original complete EFI bytes')
+        state.verify_preserved(self.backup, self.root)
+
+    def test_shell_failure_handler_restores_and_preserves_exit_code(self):
+        self.change_live_files()
+        commands = self.base/'commands'
+        commands.mkdir()
+        python = commands/'python3'
+        python.write_text('#!/usr/bin/python3\n'
+                          'import importlib.util, os, pathlib, sys\n'
+                          'spec=importlib.util.spec_from_file_location("state", os.environ["TEST_STATE_MODULE"])\n'
+                          'm=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\n'
+                          'm.restore(pathlib.Path(sys.argv[3]), pathlib.Path(os.environ["TEST_ROOT"]), status="failed")\n')
+        python.chmod(0o755)
+        for name in ['systemctl', 'sync']:
+            executable=commands/name
+            executable.write_text('#!/bin/sh\nexit 0\n')
+            executable.chmod(0o755)
+        source=(REPO/'scripts/install-kernel.sh').read_text()
+        handler=source[source.index('finish() {'):source.index('if [[ -n $resume_backup ]]; then')]
+        env=dict(os.environ, REPO=str(REPO), backup=str(self.backup), hooks='',
+                 PATH=str(commands)+':'+os.environ['PATH'], TEST_ROOT=str(self.root),
+                 TEST_STATE_MODULE=str(REPO/'scripts/install_state.py'))
+        process=subprocess.run(['bash', '-c', handler+'\nexit 7\n'], env=env, capture_output=True, text=True)
+        self.assertEqual(process.returncode, 7, process.stderr)
+        self.assertIn('--resume', process.stderr)
+        self.assertEqual(self.efi.read_bytes(), b'original complete EFI bytes')
+        self.assertEqual(state.load(self.backup)['status'], 'failed')
+
+    def test_resume_refuses_changed_packages_before_restoration(self):
+        self.change_live_files()
+        self.packages[0].write_bytes(b'changed package')
+        with self.assertRaisesRegex(ValueError, 'unveränderten Kernelpakete'):
+            state.resume(self.backup, self.packages, self.root)
+        self.assertEqual(self.menu.read_text(), 'default_entry: 3\nbroken menu\n')
+
+    def test_complete_checkpoint_cannot_be_resumed(self):
+        saved = state.load(self.backup)
+        saved['status'] = 'complete'
+        state.save(self.backup, saved)
+        with self.assertRaises(ValueError):
+            state.resume(self.backup, self.packages, self.root)
+
+    def test_corrupt_backup_stops_restore_before_any_live_write(self):
+        self.change_live_files()
+        (self.backup/'files/boot/EFI/Linux/stock.efi').write_bytes(b'corrupt backup')
+        with self.assertRaisesRegex(ValueError, 'beschädigt'):
+            state.restore(self.backup, self.root)
+        self.assertEqual(self.efi.read_bytes(), b'broken EFI')
+        self.assertEqual(self.menu.read_text(), 'default_entry: 3\nbroken menu\n')
+
+    def test_preservation_detects_changed_existing_image(self):
+        self.efi.write_bytes(b'wrong')
+        with self.assertRaisesRegex(ValueError, 'EFI-Image verändert'):
+            state.verify_preserved(self.backup, self.root)
+
+
+class ValidationTests(unittest.TestCase):
+    def test_fresh_build_directory_has_compiling_users_owner(self):
+        if os.geteuid() == 0:
+            self.skipTest('Run permission regression as the compiling user')
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root/'scripts').mkdir()
+            shutil.copy2(REPO/'scripts/common.sh', root/'scripts/common.sh')
+            env = dict(os.environ, SUDO_UID=str(os.getuid()), SUDO_GID=str(os.getgid()))
+            subprocess.run(['bash', '-c', 'source "$1"; prepare_build_dir', 'bash', str(root/'scripts/common.sh')], env=env, check=True)
+            build = root/'build'
+            self.assertEqual(build.stat().st_uid, os.getuid())
+            (build/'compiler').mkdir()
+
+    def test_wrong_kernel_identity_is_rejected(self):
+        # Minimal ARM64 PE carrying a .uname section, independent of a host kernel.
+        raw = bytearray(256)
+        raw[:2] = b'MZ'
+        struct.pack_into('<I', raw, 0x3c, 64)
+        raw[64:68] = b'PE\0\0'
+        struct.pack_into('<HH', raw, 68, 0xaa64, 1)
+        raw[88:96] = b'.uname\0\0'
+        name = b'wrong-kernel\0'
+        struct.pack_into('<II', raw, 104, len(name), 192)
+        raw[192:192+len(name)] = name
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp)/'image.efi'
+            image.write_bytes(raw)
+            with self.assertRaises(ValueError):
+                boot.verify_image(image)
+
+    def test_corrupt_acpica_archive_is_rejected_before_build(self):
+        with patch.object(Path, 'read_bytes', return_value=b'corrupt archive'), patch('subprocess.run') as run:
+            with self.assertRaises(ValueError):
+                runpy.run_path(str(REPO/'scripts/build-acpi.py'))
+            run.assert_not_called()
+
+    def test_charge_helper_rejects_wrong_model_before_write(self):
+        with patch.object(Path, 'read_text', return_value='another laptop'), patch.object(Path, 'write_text') as write:
+            with self.assertRaises(ValueError):
+                runpy.run_path(str(REPO/'scripts/p16-charge-limit'))
+            write.assert_not_called()
+
+    def test_downloader_rejects_wrong_architecture_before_curl(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp)/'scripts/download-nightly.py'
+            script.parent.mkdir()
+            shutil.copy2(REPO/'scripts/download-nightly.py', script)
+            response = io.BytesIO(json.dumps({'arch':'x86_64', 'channel':'edge'}).encode())
+            with patch('urllib.request.urlopen', return_value=response), patch('subprocess.run') as run:
+                with self.assertRaises(ValueError):
+                    runpy.run_path(str(script))
+                run.assert_not_called()
+
+
+if __name__ == '__main__':
+    unittest.main()
