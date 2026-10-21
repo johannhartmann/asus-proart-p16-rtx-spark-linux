@@ -1,0 +1,20 @@
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -789,6 +789,17 @@
+  */
+ static const struct dmi_system_id acpi_thermal_power_telemetry_dmi[] = {
+ 	{
++		/* H7607BA.300 publishes the same raw PSYS/PSOC telemetry.
++		 * _CRT is 0x7fffffff for both: neither is a usable thermal zone.
++		 * Keep this firmware-specific; leave physical temperature zones alone.
++		 */
++		.matches = {
++			DMI_EXACT_MATCH(DMI_SYS_VENDOR, "ASUS"),
++			DMI_EXACT_MATCH(DMI_PRODUCT_NAME, "ProArt P16 H7607BA"),
++			DMI_EXACT_MATCH(DMI_BIOS_VERSION, "H7607BA.300"),
++		},
++	},
++	{
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 16 DX16263"),

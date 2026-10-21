@@ -1,0 +1,2 @@
+# Unified-diff context and signed upstream inputs must remain byte-exact.
+kernel/*.patch -whitespace

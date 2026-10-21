@@ -1,0 +1,9 @@
+[Unit]
+Description=Initialize validated P16 ASUS controls before power profile discovery
+ConditionKernelVersion=7.2.8-14-omarchy-p16-asus
+Before=power-profiles-daemon.service p16-charge-limit.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/modprobe asus_nb_wmi
+RemainAfterExit=yes

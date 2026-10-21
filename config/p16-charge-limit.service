@@ -1,0 +1,14 @@
+[Unit]
+Description=Apply P16 battery charge limit (100 percent)
+After=systemd-udev-trigger.service p16-asus-controls.service
+Wants=p16-asus-controls.service
+ConditionKernelVersion=7.2.8-14-omarchy-p16-asus
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/p16-charge-limit
+RemainAfterExit=yes
+TimeoutStartSec=20
+
+[Install]
+WantedBy=multi-user.target

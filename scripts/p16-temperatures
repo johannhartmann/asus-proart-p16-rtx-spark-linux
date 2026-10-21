@@ -1,0 +1,78 @@
+#!/usr/bin/python3
+"""Read-only P16 thermal monitor. Firmware thresholds are reported, never invented."""
+import argparse,datetime,json,subprocess,time,sys
+from pathlib import Path
+
+def read(path):
+ try:return Path(path).read_text().strip()
+ except OSError:return None
+
+def number(path,scale=1):
+ try:return int(read(path))/scale
+ except (ValueError,TypeError):return None
+
+def snapshot(gpu=True):
+ result={'time':datetime.datetime.now().astimezone().isoformat(timespec='seconds'),'kernel':read('/proc/sys/kernel/osrelease'),'temperatures':[],'fans':[],'errors':[]}
+ for zone in sorted(Path('/sys/class/thermal').glob('thermal_zone*'),key=lambda p:int(p.name[12:])):
+  identity=read(zone/'device/path') or read(zone/'type') or zone.name
+  trips=[]
+  for p in sorted(zone.glob('trip_point_*_temp')):
+   trips.append({'type':read(p.with_name(p.name[:-5]+'_type')),'celsius':number(p,1000)})
+  result['temperatures'].append({'name':identity,'source':str(zone/'temp'),'celsius':number(zone/'temp',1000),'trips':trips})
+ for hw in sorted(Path('/sys/class/hwmon').glob('hwmon*')):
+  name=read(hw/'name') or hw.name
+  if name=='acpitz':continue # Already identified by ACPI path above.
+  for p in sorted(hw.glob('temp*_input')):
+   stem=p.name[:-6];label=read(hw/(stem+'_label')) or stem
+   trips=[]
+   # Only driver-provided critical thresholds; omit nonsensical NVMe auxiliary limits.
+   crit=number(hw/(stem+'_crit'),1000)
+   if crit is not None and -50<crit<200:trips.append({'type':'critical','celsius':crit})
+   result['temperatures'].append({'name':f'{name}: {label}','source':str(p),'celsius':number(p,1000),'trips':trips})
+  if name in ('asus','acpi_fan'):
+   for p in sorted(hw.glob('fan*_input')):
+    label=read(hw/(p.name[:-6]+'_label')) or p.name[:-6]
+    result['fans'].append({'name':f'{name}: {label}','rpm':number(p),'source':str(p)})
+ if gpu:
+  try:
+   proc=subprocess.run(['nvidia-smi','--query-gpu=temperature.gpu','--format=csv,noheader,nounits'],capture_output=True,text=True,timeout=3)
+   if proc.returncode!=0:raise ValueError(proc.stderr.strip() or 'nvidia-smi failed')
+   for i,value in enumerate(proc.stdout.splitlines()):result['temperatures'].append({'name':f'NVIDIA GPU {i}','source':'NVML/nvidia-smi','celsius':float(value.strip()),'trips':[]})
+  except (OSError,ValueError,subprocess.TimeoutExpired) as exc:result['errors'].append(str(exc))
+ result['firmware_warning_zones']=[t['name'] for t in result['temperatures'] if t['name'].startswith('\\_TZ_.') and not t['trips']]
+ return result
+
+def render(data):
+ print(f"P16 Temperaturen | {data['time']} | {data['kernel']}")
+ print(f"{'Sensor':<28} {'Temperatur':>11}  Firmware-/Treibergrenzen")
+ for item in data['temperatures']:
+  value='unbekannt' if item['celsius'] is None else f"{item['celsius']:.1f} °C"
+  trips=', '.join(f"{t['type']} {t['celsius']:.1f} °C" for t in item['trips'] if t['celsius'] is not None) or 'keine angegeben'
+  print(f"{item['name']:<28} {value:>11}  {trips}")
+ print('\nLüfter:')
+ for item in data['fans']:print(f"  {item['name']:<26} {'unbekannt' if item['rpm'] is None else str(int(item['rpm']))+' RPM'}")
+ print(f"\n{len(data['firmware_warning_zones'])} ACPI-Zonen ohne gültige Schwellen; Messwerte sind separat verfügbar.")
+ print('Nur Anzeige; Lüfterregelung und Abschaltschwellen werden nicht verändert.')
+ for error in data['errors']:print('Abfragefehler: '+error)
+
+def main():
+ parser=argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--watch',action='store_true',help='fortlaufende Live-Anzeige, Strg+C beendet')
+ parser.add_argument('--samples',type=int,default=1,help='Anzahl Messungen für ein Protokoll')
+ parser.add_argument('--interval',type=float,default=2,help='Abstand in Sekunden (mindestens 0.5)')
+ parser.add_argument('--json',action='store_true',help='eine JSON-Zeile je Messung')
+ parser.add_argument('--no-gpu',action='store_true',help='NVIDIA-Abfrage auslassen')
+ args=parser.parse_args()
+ if args.samples<1 or args.interval<0.5:parser.error('samples muss positiv, interval mindestens 0.5 sein')
+ count=0
+ try:
+  while args.watch or count<args.samples:
+   started=time.monotonic();data=snapshot(not args.no_gpu)
+   if args.json:print(json.dumps(data,ensure_ascii=False),flush=True)
+   else:
+    if args.watch and sys.stdout.isatty():print('\033[H\033[2J',end='')
+    render(data)
+   count+=1
+   if args.watch or count<args.samples:time.sleep(max(0,args.interval-(time.monotonic()-started)))
+ except KeyboardInterrupt:pass
+if __name__=='__main__':main()

@@ -1,0 +1,13 @@
+#!/usr/bin/python3
+from pathlib import Path
+import time
+assert Path('/sys/class/dmi/id/product_name').read_text().strip() == 'ProArt P16 H7607BA'
+p=Path('/sys/class/power_supply/BAT0/charge_control_end_threshold')
+for attempt in range(75):
+ if p.exists():
+  p.write_text('100\n')
+  assert p.read_text().strip() == '100'
+  break
+ time.sleep(0.2)
+else:
+ raise SystemExit('ASUS battery threshold interface did not appear within 15 seconds')
