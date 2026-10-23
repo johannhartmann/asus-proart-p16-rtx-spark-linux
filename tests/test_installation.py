@@ -25,6 +25,7 @@ def module(name, filename):
 
 boot = module('verify_boot', 'verify-boot.py')
 state = module('install_state', 'install_state.py')
+cmdline = module('kernel_cmdline', 'kernel_cmdline.py')
 
 
 class MenuTests(unittest.TestCase):
@@ -122,6 +123,24 @@ class BackupTests(unittest.TestCase):
         helper = self.root / 'usr/local/libexec/p16-charge-limit'
         helper.parent.mkdir(parents=True)
         helper.write_text('new helper')
+
+    def test_new_driver_configs_are_removed_on_rollback(self):
+        for name in state.ADDED_CONFIG_PATHS:
+            path = self.root / name.lstrip('/')
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('new configuration')
+        state.restore(self.backup, self.root, status='failed')
+        for name in state.ADDED_CONFIG_PATHS:
+            self.assertFalse((self.root / name.lstrip('/')).exists())
+
+    def test_older_checkpoints_remain_readable(self):
+        checkpoint = state.load(self.backup)
+        for name in state.ADDED_CONFIG_PATHS:
+            del checkpoint['files'][name]
+        state.save(self.backup, checkpoint)
+        state.load(self.backup)
+        with self.assertRaisesRegex(ValueError, 'older checkpoint'):
+            state.resume(self.backup, self.packages, self.root)
 
     def test_full_efi_bytes_are_backed_up(self):
         self.assertEqual((self.backup/'files/boot/EFI/Linux/stock.efi').read_bytes(), self.efi.read_bytes())
@@ -311,6 +330,48 @@ source "$1"
                 with self.assertRaises(ValueError):
                     runpy.run_path(str(script))
                 run.assert_not_called()
+
+
+class CommandLineTests(unittest.TestCase):
+    def test_fresh_install_preserves_encryption_and_adds_platform_options(self):
+        import shlex
+        host = 'cryptdevice=UUID=example:root root=/dev/mapper/root rootflags=subvol=@ rw'
+        result = cmdline.build(host)
+        args = shlex.split(result)
+        for arg in shlex.split(host) + cmdline.PLATFORM_OPTIONS:
+            self.assertIn(arg, args)
+        self.assertIn('initcall_blacklist=simpledrm_platform_driver_init', args)
+        self.assertIn('acpi_osi="!Windows 2022"', result)
+        self.assertEqual(cmdline.build(result), result)
+
+    def test_conflicts_and_recovery_flags_are_replaced(self):
+        import shlex
+        args = shlex.split(cmdline.build(
+            'root=/dev/mapper/root pci=nomsi mem_sleep_default=deep acpi=off '
+            'module_blacklist=nvidia systemd.unit=emergency.target '
+            'initcall_blacklist=other_init'))
+        self.assertNotIn('pci=nomsi', args)
+        self.assertNotIn('acpi=off', args)
+        self.assertNotIn('systemd.unit=emergency.target', args)
+        self.assertNotIn('module_blacklist=nvidia', args)
+        self.assertIn('initcall_blacklist=simpledrm_platform_driver_init,other_init', args)
+
+    def test_limine_dropins_preserve_option_boundaries(self):
+        import shlex
+        files = [REPO/'config'/name for name in (
+            '00-omarchy-n1x-usb4.conf', '00-omarchy-n1x-gpu.conf',
+            '00-omarchy-n1x-sleep.conf', 'limine-p16-keyboard.conf')]
+        script = 'declare -A KERNEL_CMDLINE; KERNEL_CMDLINE[default]="root=/dev/mapper/root"; '
+        script += '; '.join('source ' + shlex.quote(str(p)) for p in files)
+        script += '; printf "%s" "${KERNEL_CMDLINE[default]}"'
+        args = shlex.split(subprocess.check_output(['bash', '-c', script], text=True))
+        self.assertIn('root=/dev/mapper/root', args)
+        for arg in cmdline.PLATFORM_OPTIONS[2:]:
+            self.assertIn(arg, args)
+
+    def test_live_iso_is_rejected(self):
+        with self.assertRaises(ValueError):
+            cmdline.build('quiet splash')
 
 
 if __name__ == '__main__':

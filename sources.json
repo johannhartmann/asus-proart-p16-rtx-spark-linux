@@ -16,5 +16,10 @@
     "version": "20260408",
     "url": "https://github.com/acpica/acpica/releases/download/20260408/acpica-unix-20260408.tar.gz",
     "sha256": "e66ceb26d6d514ce164fe22f5a4f7ca165cc38349d7a97f41a21f19b364647a2"
+  },
+  "spark_hwmon": {
+    "repository": "https://github.com/johannhartmann/spark_hwmon.git",
+    "commit": "ef94faace8a44380e8ba8c8bd8cffd185c82af67",
+    "version": "0.3.0.rtxspark.5"
   }
 }

@@ -25,6 +25,17 @@ CONFIG_PATHS = [
 ]
 
 
+# Older checkpoints predate these files; keep them restorable. New checkpoints
+# include every additional path before the installer writes it.
+ADDED_CONFIG_PATHS = [
+    '/etc/modprobe.d/nvidia.conf',
+    '/etc/modprobe.d/omarchy-n1x-nvidiafb.conf',
+    '/etc/limine-entry-tool.d/00-omarchy-n1x-usb4.conf',
+    '/etc/limine-entry-tool.d/00-omarchy-n1x-gpu.conf',
+    '/etc/limine-entry-tool.d/00-omarchy-n1x-sleep.conf',
+]
+
+
 def require(condition, message):
     if not condition:
         raise ValueError(message)
@@ -78,7 +89,7 @@ def load(backup):
     require(set(state['files']).issuperset(CONFIG_PATHS + [TARGET]), 'Unvollständige Sicherung')
     for name, info in state['files'].items():
         path = Path(name)
-        require(name in CONFIG_PATHS or (path.parent == Path('/boot/EFI/Linux') and path.suffix == '.efi'),
+        require(name in CONFIG_PATHS + ADDED_CONFIG_PATHS or (path.parent == Path('/boot/EFI/Linux') and path.suffix == '.efi'),
                 'Unzulässiger Sicherungspfad: ' + name)
         require(info['kind'] in ('file', 'link', 'absent'), 'Ungültiger Dateityp')
         if info['kind'] == 'file':
@@ -93,7 +104,7 @@ def begin(backup, packages, root=Path('/')):
     environment = boot_environment(root)
     require(environment['packages'] and environment['kernels'], 'Stock kernel/package metadata is required for a restorable backup.')
     images = root / 'boot/EFI/Linux'
-    names = list(dict.fromkeys(CONFIG_PATHS + ['/' + p.relative_to(root).as_posix()
+    names = list(dict.fromkeys(CONFIG_PATHS + ADDED_CONFIG_PATHS + ['/' + p.relative_to(root).as_posix()
                 for p in sorted(images.glob('*.efi'))] + [TARGET]))
     state = {'schema': 1, 'release': RELEASE, 'status': 'running',
              'packages': {p.name: digest(p) for p in packages},
@@ -121,6 +132,8 @@ def begin(backup, packages, root=Path('/')):
 
 def resume(backup, packages, root=Path('/')):
     state = load(backup)
+    require(set(ADDED_CONFIG_PATHS).issubset(state['files']),
+            'This older checkpoint can be restored, but resume requires the original installer revision.')
     require(state['status'] in ('running', 'failed', 'restored'), 'Installation ist bereits abgeschlossen')
     require({p.name: digest(p) for p in packages} == state['packages'],
             'Zur Wiederaufnahme dieselben unveränderten Kernelpakete verwenden')

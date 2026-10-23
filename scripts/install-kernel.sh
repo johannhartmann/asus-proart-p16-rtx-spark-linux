@@ -28,20 +28,8 @@ for name, pin in {'DSDT.aml':'80e0ad4a051704003d09029cb600a9814e1cd370ce774b9749
         raise ValueError('ACPI-Prüfsumme stimmt nicht: ' + name)
 PY
 # Validate the host command line before package installation or live writes.
-python3 - "$REPO/build/p16.cmdline" <<'PY'
-from pathlib import Path
-import shlex,sys
-args=shlex.split(Path('/proc/cmdline').read_text())
-if not any(a.startswith(('root=','rd.luks.name=','cryptdevice=')) for a in args):
-    raise ValueError('Vom installierten System starten, nicht vom Live-ISO')
-blocked=('BOOT_IMAGE=', 'initrd=', 'acpi_osi=', 'console=', 'acpi=', 'systemd.unit=', 'rd.driver.blacklist=', 'module_blacklist=', 'modprobe.blacklist=')
-args=[a for a in args if not a.startswith(blocked)]
-def quote(a):
-    if '"' in a or '\n' in a:
-        raise ValueError('Ungültiges Zeichen in Kernel-Kommandozeile')
-    return '"'+a+'"' if any(c.isspace() for c in a) else a
-Path(sys.argv[1]).write_text(' '.join(map(quote,args))+' console=tty0 acpi=nospcr acpi_osi="!Windows 2022"\n')
-PY
+python3 "$REPO/scripts/kernel_cmdline.py" /proc/cmdline "$REPO/build/p16.cmdline"
+
 backup=""
 hooks=""
 finish() {
@@ -87,6 +75,12 @@ install -Dm644 "$REPO/config/zz-p16-hardware-fixes.conf" /etc/mkinitcpio.conf.d/
 install -Dm644 "$REPO/config/zz-p16-keyboard.conf" /etc/mkinitcpio.conf.d/zz-p16-keyboard.conf
 install -Dm644 "$REPO/config/limine-p16-keyboard.conf" /etc/limine-entry-tool.d/zz-p16-keyboard.conf
 install -Dm644 "$REPO/config/zz-p16-input.conf" /etc/mkinitcpio.conf.d/zz-p16-input.conf
+for conf in nvidia.conf omarchy-n1x-nvidiafb.conf; do
+  install -Dm644 "$REPO/config/$conf" "/etc/modprobe.d/$conf"
+done
+for conf in 00-omarchy-n1x-usb4.conf 00-omarchy-n1x-gpu.conf 00-omarchy-n1x-sleep.conf; do
+  install -Dm644 "$REPO/config/$conf" "/etc/limine-entry-tool.d/$conf"
+done
 for table in DSDT.aml SSDT.aml; do
   install -Dm644 "$REPO/build/acpi/kernel/firmware/acpi/$table" "/etc/initcpio/p16-acpi/$table"
 done

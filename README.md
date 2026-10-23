@@ -109,10 +109,29 @@ The installer:
 - backs up affected configuration files and complete existing EFI images, with checksums, under `/root/p16-install.XXXXXXXX/`;
 - installs the kernel and headers, builds NVIDIA-DKMS and generates module dependencies;
 - installs early input drivers, the kernel-specific ACPI hook and ASUS services;
-- preserves the target machine's root/LUKS parameters and adds the P16 boot parameters;
+- preserves the target machine's root/LUKS parameters and adds the validated P16 boot parameters;
+- installs NVIDIA DRM modesetting/fbdev configuration and blocks the conflicting legacy `nvidiafb` driver;
 - builds an additional unified kernel image (UKI) and verifies its kernel, ACPI tables and required modules;
 - registers `linux-p16-asus-23` with Limine and verifies EFI BLAKE2b hashes;
 - displays the boot menu for ten seconds while preserving the existing default entry.
+
+The generated P16 UKI explicitly includes `power_wrap_drv.usb4_release=0`,
+`pci=hpbussize=0x80,hpmmiosize=32M,hpmmioprefsize=32G`,
+`mem_sleep_default=s2idle` and
+`initcall_blacklist=simpledrm_platform_driver_init`, in addition to the console
+and ACPI options above. These retain USB4 resources, reserve PCI hotplug space,
+select suspend-to-idle and avoid the conflicting SimpleDRM initialization.
+The corresponding Limine drop-ins preserve these options during later UKI
+rebuilds. They apply to the normal default command line; keep Omarchy's separate
+fallback command line for recovery. Existing `pci=` settings are replaced with
+the validated P16 values; unrelated initcall blacklist entries are preserved.
+
+NVIDIA `modeset=1` and `fbdev=1` are installed before the new initramfs is built.
+Use the packaged Omarchy Hyprland NVIDIA defaults for the graphics environment.
+With the validated NVIDIA 615.78.08 open driver, the packaged
+`NVreg_UseKernelSuspendNotifiers=1` configuration handles suspend; do not add the
+legacy NVIDIA suspend services alongside it. This is configuration coverage,
+not a claim that every suspend or hibernation scenario has been tested.
 
 Existing EFI images are preserved. The root filesystem needs enough space for their complete backup, in addition to the kernel build space. The installer locks the boot partition against concurrent Limine writes.
 
@@ -122,7 +141,7 @@ On an error or Ctrl+C, the installer restores the backed-up boot files and syste
 sudo ./scripts/install-kernel.sh --resume /root/p16-install.XXXXXXXX
 ```
 
-Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
+Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. Checkpoints created before the NVIDIA/platform configuration additions can still be restored, but must be resumed using their original installer revision. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
 
 Reboot and select **`linux-p16-asus-23`** in the Limine menu. Then check:
 
@@ -170,6 +189,34 @@ p16-temperatures --json
 ```
 
 The monitor reads ACPI, NVIDIA, NVMe, Wi-Fi and fan interfaces. The kernel excludes PSYS/PSOC power telemetry from thermal zone registration. Eight firmware zones have invalid `_CRT` limits (`0x7fffffff`); their temperature readings work, but no replacement thresholds are introduced. THRM's existing 100 °C passive and 103 °C critical limits are preserved.
+
+### RTX Spark power and temperature telemetry
+
+After rebooting successfully into `7.2.8-23-omarchy-p16-asus`, install the
+validated `spark_hwmon` backend. Its complete source and tests are fetched from
+the immutable commit in `sources.json`, version **0.3.0.rtxspark.5**:
+
+```bash
+omarchy pkg add dkms
+./scripts/prepare-spark-hwmon.sh
+sudo ./build/spark_hwmon/scripts/install-dkms.sh
+cat /sys/module/spbm/version
+python3 build/spark_hwmon/tests/check-n1x.py --require-all --require-mmio
+```
+
+The installer requires headers for the running kernel, builds before replacing
+the module, and restores the previous DKMS version if replacement fails. Its
+ACPI aliases load `spbm` automatically on subsequent boots; no extra service is
+needed. DKMS rebuilds it for future kernels with installed headers. This module
+is installed separately from the kernel transaction; the kernel restore command
+does not uninstall it.
+
+On this model and BIOS it exposes 15 power readings, eight temperatures, four
+reduction-only power-limit controls and raw status/energy/diagnostic words under
+`/sys/class/hwmon/` (`name=spbm_n1x`). Installation does not change power limits.
+Absolute energy calibration, PROCHOT polarity and some diagnostic meanings remain
+unresolved; raw values must not be presented as calibrated energy or alarms.
+See the fetched driver's README and validation reports before using controls.
 
 ## 8. CUDA and GPU containers
 
