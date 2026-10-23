@@ -354,6 +354,15 @@ build/        local downloads and build outputs; excluded from Git
 - [P16 ACPI sources](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430)
 - [SPI-HID v5](https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/)
 
+The large `kernel/` file count comes from the pinned Omarchy recipe: its local
+source inputs include patches, detached signatures and the ARM64 configuration.
+Every bundled patch/signature is referenced by `PKGBUILD`; the three public
+keys verify upstream signatures. The inherited recipe also carries patches for
+other architectures. They are retained to reproduce the validated kernel base,
+rather than selectively changing it for this laptop. Local kernel source trees,
+packages and other build outputs are ignored by Git. Generated `.SRCINFO`
+metadata is not stored; it can be recreated with `makepkg --printsrcinfo`.
+
 Verify repository checksums with `sha256sum -c SHA256SUMS`. See [LICENSES.md](LICENSES.md) for licensing.
 
 ## Check the scripts

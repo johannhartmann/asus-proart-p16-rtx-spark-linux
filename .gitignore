@@ -5,3 +5,6 @@ kernel/*.pkg.tar.*
 kernel/linux-*.tar.*
 __pycache__/
 *.pyc
+
+# Generated package metadata; regenerate with makepkg --printsrcinfo if needed.
+kernel/.SRCINFO
