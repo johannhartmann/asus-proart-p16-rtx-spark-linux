@@ -1,18 +1,74 @@
-# Omarchy Nightly on the ASUS ProArt P16 RTX Spark
+# Linux support for the ASUS ProArt P16 RTX Spark
 
-Installation guide for the **ASUS ProArt P16 H7607BA** with **NVIDIA RTX Spark N1X / AArch64**, BIOS **H7607BA.300** and EC **2.16**.
+Kernel patches, driver setup and a reproducible installation guide for running
+**Omarchy Linux ARM64 on the ASUS ProArt P16 H7607BA**, powered by the
+**NVIDIA RTX Spark N1X** platform.
 
-Start with the official ARM64 Nightly, then install the separately packaged P16 kernel. The kernel recipe pins Omarchy **7.2.8-23** and produces **7.2.8-23-omarchy-p16-asus**. A newer Nightly may ship a newer stock kernel; the P16 kernel is installed alongside it. Apply the included patches only to the pinned kernel source.
+This repository supplies the machine-specific fixes needed to turn an Omarchy
+ARM64 Nightly installation into the P16 setup used on the validated hardware.
+It covers internal input, ACPI and battery reporting, ASUS controls, NVIDIA
+graphics configuration, USB4 boot settings and power/temperature telemetry.
+The guide below takes you from the Nightly installation through building,
+installing and checking the patched kernel, with recovery instructions.
 
-This repository contains the build recipes and sources for keyboard/touchpad support, ACPI and battery fixes, SPI-HID, ASUS controls, temperature monitoring and a CUDA test. The kernel build downloads Linux from kernel.org and verifies it using the checksums and signatures in the included Omarchy recipe. ACPI overrides are generated from the target machine's own firmware tables.
+## What this repository provides
+
+| Area | Included support |
+|---|---|
+| Internal keyboard and touchpad | ACPI/SSPM enumeration fixes, early input modules and keyboard support at the encrypted-disk prompt |
+| Kernel and firmware interfaces | A separately packaged P16 kernel, ARM64 ACPI override allocation fix, firmware-table transformations and SPI-HID fixes |
+| ASUS controls | ARM64 WMI support, power-profile integration and a battery charge-limit service |
+| NVIDIA graphics | NVIDIA open DKMS setup, early module loading, DRM modesetting/fbdev and a block on the conflicting legacy `nvidiafb` driver |
+| USB4 and boot configuration | Explicit USB4 resource retention, PCI hotplug reservations, suspend-to-idle selection and the SimpleDRM workaround |
+| Power and temperature monitoring | A temperature CLI and the pinned [RTX Spark `spark_hwmon` driver](https://github.com/johannhartmann/spark_hwmon/tree/rtx-spark), with 15 power readings, eight temperatures and four reduction-only power-limit controls on the validated firmware |
+| CUDA | Toolkit installation, an `sm_121` GPU verification program and NVIDIA container setup instructions |
+| Installation and recovery | Checked source inputs, a separate kernel/UKI, configuration and EFI backups, Limine hash verification and rollback tools |
+
+The kernel recipe and P16 patches are included here. The `spark_hwmon` source,
+installer and tests are fetched at an immutable commit by
+`scripts/prepare-spark-hwmon.sh`; `sources.json` records the upstream source pins.
+ACPI overrides are generated from the target machine's own firmware tables.
+
+## Supported hardware and software
+
+| Component | Validated target |
+|---|---|
+| Laptop | **ASUS ProArt P16 H7607BA** |
+| Platform / GPU | **NVIDIA RTX Spark N1X**, AArch64, GPU `10de:2e03`, CUDA compute capability **12.1** |
+| Firmware | BIOS **H7607BA.300**, EC **2.16** |
+| Base installation | Official **Omarchy ARM64 Nightly** |
+| Patched kernel | Omarchy recipe **7.2.8-23**, producing **7.2.8-23-omarchy-p16-asus** |
+| Validated NVIDIA driver | **615.78.08**, open kernel modules |
+
+The install scripts check the laptop model and BIOS. The ACPI builder checks
+firmware-table hashes; the expanded `spark_hwmon` register backend has its own
+model/BIOS checks. Other ProArt P16 variants, RTX Spark machines and firmware
+versions require separate validation.
+
+A newer Nightly may ship a newer stock kernel. This guide installs the pinned
+P16 kernel alongside it and preserves the existing boot entries. Apply these
+patches only to the pinned source; see [boot recovery and updates](#9-boot-recovery-and-updates)
+for upgrades.
+
+## Scope and remaining limitations
+
+This is a hardware enablement and installation repository. Application choices,
+desktop appearance and Python/model-training environments are configured
+separately. Factory fan curves remain active; custom ASUS fan control is not
+provided. Some sensor functions and suspend/hibernate scenarios still require
+testing. Energy calibration, PROCHOT polarity and some `spark_hwmon` diagnostic
+fields remain unresolved and are exposed only as raw data. See
+[hardware and limitations](#hardware-and-limitations) for the remaining checks.
+
+## Installation
 
 ## 1. Install the ARM64 Nightly
 
 Clone this repository on the machine used to prepare the installation USB drive:
 
 ```bash
-git clone https://github.com/johannhartmann/p16rtx_linux.git
-cd p16rtx_linux
+git clone https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux.git
+cd asus-proart-p16-rtx-spark-linux
 ```
 
 You need a USB drive of at least 8 GB, a USB keyboard for initial setup, AC power and internet access. Disable Secure Boot in UEFI. Selecting a full-disk installation erases the selected drive.
