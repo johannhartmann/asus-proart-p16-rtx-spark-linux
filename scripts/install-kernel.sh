@@ -29,6 +29,7 @@ for name, pin in {'DSDT.aml':'80e0ad4a051704003d09029cb600a9814e1cd370ce774b9749
 PY
 # Validate the host command line before package installation or live writes.
 python3 "$REPO/scripts/kernel_cmdline.py" /proc/cmdline "$REPO/build/p16.cmdline"
+python3 "$REPO/scripts/peripherals.py" check-inputs
 
 backup=""
 hooks=""
@@ -60,6 +61,7 @@ else
   python3 "$REPO/scripts/install_state.py" begin "$backup" "${packages[@]}"
 fi
 printf 'Sicherung und Checkpoint: %s\n' "$backup"
+python3 "$REPO/scripts/peripherals.py" apply --backup "$backup"
 # Only this transaction masks package hooks; rebuild the single new UKI below.
 hooks=$(mktemp -d /run/p16-hooks.XXXXXXXX)
 for directory in /usr/share/libalpm/hooks /etc/pacman.d/hooks; do

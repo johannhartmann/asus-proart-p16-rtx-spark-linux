@@ -1,0 +1,8 @@
+[ASUS ProArt P16 Touchpad]
+MatchBus=i2c
+MatchUdevType=touchpad
+MatchVendor=0x093A
+MatchProduct=0x4F01
+MatchDMIModalias=dmi:*svnASUS*:pn*H7607BA*
+AttrPressureRange=none
+AttrPalmPressureThreshold=0

@@ -1,0 +1,29 @@
+{
+  "source": "https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/07-build/media/payload/locks/hardware.json",
+  "archive": {
+    "url": "https://dlcdnets.asus.com/pub/ASUS/nb/Image/Driver/Audio/49783/Audio_Driver_ARM_Cirrus_Z_V1.0.678.52824Sub3_49783.exe",
+    "bytes": 4750256,
+    "sha256": "01ffa79558813cf9e943d63b4a39289471915ab865c32a1138ffe8382175355f",
+    "offset": 4284504
+  },
+  "files": [
+    {
+      "name": "cs35l56-b0-dsp1-misc-10431484-spkid0.wmfw",
+      "member": "XU_Ext/fw/35L56/3.13.4/dflt/b0_dflt_35l56_3.13.4.wmfw",
+      "bytes": 35764,
+      "sha256": "828f2822701d06cb95d8da5ec8e2a5033b901ec4609a9a31e4336c38d133bdc3"
+    },
+    {
+      "name": "cs35l56-b0-dsp1-misc-10431484-spkid0-l1u0.bin",
+      "member": "XU_Ext/tn/35L56/1484/dflt/b0_dflt_1484_lw_l1u0.bin",
+      "bytes": 11748,
+      "sha256": "46a6a2d55786a661c1a21c8ea4a2d0bbf9d87bb28342750699c012743a2773ac"
+    },
+    {
+      "name": "cs35l56-b0-dsp1-misc-10431484-spkid0-l1u1.bin",
+      "member": "XU_Ext/tn/35L56/1484/dflt/b0_dflt_1484_rw_l1u1.bin",
+      "bytes": 11748,
+      "sha256": "d9795f52b7c62f01de42a57b6a6f584e011746d1d48b99f62017a15b8199aedc"
+    }
+  ]
+}

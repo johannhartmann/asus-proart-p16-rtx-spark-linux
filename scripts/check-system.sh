@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
 check_machine
+python3 "$REPO/scripts/peripherals.py" check-installed
 [[ $(uname -r) == "$RELEASE" ]]
 printf '\nKernel\n'; uname -r
 printf '\nASUS-Module\n'; lsmod | rg 'asus|wmi|spi_hid|hid_sensor'

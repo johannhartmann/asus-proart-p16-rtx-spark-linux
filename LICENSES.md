@@ -6,3 +6,9 @@
 - New installation scripts, `scripts/p16-temperatures`, `scripts/p16-charge-limit`, `cuda/vector-add.cu`, configuration files, tests and documentation in this repository: MIT; see `licenses/MIT.txt`.
 
 Machine firmware dumps, generated EFI images, kernel packages, passwords, private keys and machine-specific UUIDs are excluded from this repository.
+
+`config/speaker-firmware.json` records extraction metadata from Josephine
+Pfeiffer's MIT-licensed hardware lock at the commit linked inside it. The
+downloaded ASUS/Cirrus firmware retains its OEM license and stays in ignored
+`build/` output; it is not redistributed here. The source license is retained
+in `acpi/LICENSE`.

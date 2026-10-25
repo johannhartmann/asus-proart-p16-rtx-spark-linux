@@ -21,5 +21,11 @@
     "repository": "https://github.com/johannhartmann/spark_hwmon.git",
     "commit": "ef94faace8a44380e8ba8c8bd8cffd185c82af67",
     "version": "0.3.0.rtxspark.5"
+  },
+  "speaker_firmware": {
+    "manifest": "config/speaker-firmware.json",
+    "vendor": "ASUS/Cirrus",
+    "version": "1.0.678.52824Sub3_49783",
+    "redistributed": false
   }
 }

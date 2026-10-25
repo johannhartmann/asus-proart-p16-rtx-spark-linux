@@ -33,6 +33,11 @@ ADDED_CONFIG_PATHS = [
     '/etc/limine-entry-tool.d/00-omarchy-n1x-usb4.conf',
     '/etc/limine-entry-tool.d/00-omarchy-n1x-gpu.conf',
     '/etc/limine-entry-tool.d/00-omarchy-n1x-sleep.conf',
+    '/etc/libinput/local-overrides.quirks',
+    '/etc/mkinitcpio.conf.d/zz-p16-speakers.conf',
+    '/usr/lib/firmware/cirrus/cs35l56-b0-dsp1-misc-10431484-spkid0.wmfw',
+    '/usr/lib/firmware/cirrus/cs35l56-b0-dsp1-misc-10431484-spkid0-l1u0.bin',
+    '/usr/lib/firmware/cirrus/cs35l56-b0-dsp1-misc-10431484-spkid0-l1u1.bin',
 ]
 
 

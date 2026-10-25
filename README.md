@@ -11,11 +11,18 @@ graphics configuration, USB4 boot settings and power/temperature telemetry.
 The guide below takes you from the Nightly installation through building,
 installing and checking the patched kernel, with recovery instructions.
 
+This setup builds on Josephine Pfeiffer's
+[Arch Linux ARM ProArt P16 work (`pfeifferj/archlinuxarm-proart-p16`)](https://github.com/pfeifferj/archlinuxarm-proart-p16).
+The ACPI implementation, ARM64 ACPI allocation fix, touchpad workaround and
+speaker-firmware extraction metadata used here are described with their exact
+origins and local adaptations in [Provenance and local additions](#provenance-and-local-additions).
+
 ## What this repository provides
 
 | Area | Included support |
 |---|---|
 | Internal keyboard and touchpad | ACPI/SSPM enumeration fixes, early input modules and keyboard support at the encrypted-disk prompt |
+| Touchpad pressure and speakers | Idempotent PixArt pressure quirk and checksum-verified ASUS/Cirrus speaker firmware extraction, included in installation backups |
 | Kernel and firmware interfaces | A separately packaged P16 kernel, ARM64 ACPI override allocation fix, firmware-table transformations and SPI-HID fixes |
 | ASUS controls | ARM64 WMI support, power-profile integration and a battery charge-limit service |
 | NVIDIA graphics | NVIDIA open DKMS setup, early module loading, DRM modesetting/fbdev and a block on the conflicting legacy `nvidiafb` driver |
@@ -111,6 +118,11 @@ Confirm replacement of `power-profiles-daemon` if Pacman prompts for it. The Oma
 
 ## 3. Generate the ACPI overrides
 
+The [ACPI builder and battery-method transformations](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430/01-platform/acpi/payload/provenance/hardware)
+come from Josephine Pfeiffer's repository. Their source is retained unchanged;
+this repository adds the Omarchy build/install wrappers and kernel-specific
+initramfs integration. See [the retained MIT license](acpi/LICENSE).
+
 Dump the original firmware tables while running the stock Nightly kernel, **before booting a kernel with ACPI overrides**:
 
 ```bash
@@ -151,6 +163,59 @@ NVIDIA-DKMS requires the headers package. Pacman owns the installed kernel and m
 
 ## 5. Install the kernel and system configuration
 
+First prepare the P16 speaker firmware as your regular user:
+
+```bash
+python3 scripts/peripherals.py prepare
+python3 scripts/peripherals.py check-inputs
+```
+
+This downloads the pinned ASUS audio driver archive and uses `bsdtar` (provided
+by Arch's `libarchive` package) to extract three CS35L56 firmware/tuning files.
+The Windows executable is never run. Archive size, SHA-256, embedded archive
+offset, member paths and output hashes are fixed in
+`config/speaker-firmware.json`. Downloads and extracted firmware stay under
+`build/speaker-firmware/`; no OEM firmware is redistributed in this repository.
+Preparation needs internet on the first run; a verified cached archive works
+offline. A failed download or hash mismatch stops installation before live writes.
+
+The ASUS download URL, archive offset, member paths, sizes and SHA-256 values
+come unchanged from Pfeiffer's
+[hardware lock](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/07-build/media/payload/locks/hardware.json).
+Her [speaker-tuning installer](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/06-installation/archinstall/payload/src/h7607a/archinstall_adapter.py)
+documents the same extraction workflow. The firmware itself is ASUS/Cirrus
+material. Our [peripheral helper](scripts/peripherals.py) implements this
+workflow for the existing Omarchy installation transaction.
+
+The installer appends the P16 PixArt `093a:4f01` pressure workaround to
+`/etc/libinput/local-overrides.quirks`, preserving other device settings and
+leaving an identical existing P16 entry unchanged. A conflicting P16 entry
+requires reconciliation rather than silently adding another policy. The three
+firmware files and an explicit mkinitcpio `FILES` drop-in are installed before
+building the new UKI, so early audio probing can also find the tuning. Different existing
+firmware is not overwritten. Both the quirks file and firmware destinations
+are covered by the same backup/rollback as the kernel installation.
+
+The pressure settings match Pfeiffer's
+[P16 libinput quirk](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/03-system/input-audio/payload/runtime/usr/share/libinput/60-h7607a-touchpad.quirks):
+`AttrPressureRange=none` and `AttrPalmPressureThreshold=0`. Our
+[quirk file](config/p16-touchpad.quirks) retains the existing local section name
+and DMI match pattern. The local additions are duplicate/conflict detection,
+preservation of other quirks, explicit initramfs firmware inclusion and coverage
+by the installer's backup/restore mechanism.
+
+These files target the observed `spkid0` speaker configuration on H7607BA.300.
+The existing Omarchy audio machine driver and UCM provide routing; this step
+does not replace UCM, mixer settings or microphone policy. Other speaker IDs
+need separate qualification. On an already configured machine, check the
+installed files without reinstalling the kernel:
+
+```bash
+python3 scripts/peripherals.py check-installed
+```
+
+This checks file contents, not touchpad gestures or audible speaker output.
+
 The new package is named `linux-p16-asus-23` so an existing `linux-p16-asus` package and its `7.2.8-14-omarchy-p16-asus` kernel stay installed. Keep the old kernel and boot entry until the new kernel has booted successfully. The ACPI hook and ASUS services continue to support that older P16 kernel.
 
 From the installed Omarchy system:
@@ -165,6 +230,7 @@ The installer:
 - backs up affected configuration files and complete existing EFI images, with checksums, under `/root/p16-install.XXXXXXXX/`;
 - installs the kernel and headers, builds NVIDIA-DKMS and generates module dependencies;
 - installs early input drivers, the kernel-specific ACPI hook and ASUS services;
+- installs the P16 touchpad pressure quirk and verified speaker firmware;
 - preserves the target machine's root/LUKS parameters and adds the validated P16 boot parameters;
 - installs NVIDIA DRM modesetting/fbdev configuration and blocks the conflicting legacy `nvidiafb` driver;
 - builds an additional unified kernel image (UKI) and verifies its kernel, ACPI tables and required modules;
@@ -197,7 +263,7 @@ On an error or Ctrl+C, the installer restores the backed-up boot files and syste
 sudo ./scripts/install-kernel.sh --resume /root/p16-install.XXXXXXXX
 ```
 
-Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. Checkpoints created before the NVIDIA/platform configuration additions can still be restored, but must be resumed using their original installer revision. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
+Replace `XXXXXXXX` with the actual backup suffix printed when installation started. Resume validates the root-owned checkpoint, all backup files and both package checksums. It restores the original boot files before repeating installation. This also supports recovery from an interruption that prevented automatic restoration. A successfully completed installation cannot be resumed. Checkpoints created before the NVIDIA/platform or peripheral configuration additions can still be restored, but must be resumed using their original installer revision. A manually restored checkpoint can be resumed with the same package files while the boot environment still matches.
 
 Reboot and select **`linux-p16-asus-23`** in the Limine menu. Then check:
 
@@ -334,6 +400,56 @@ After a BIOS update, do not boot the P16 kernel with the old ACPI overrides. Boo
 
 SPI-HID provides the sensor hub transport. Complete sensor measurements, physical charge cutoff, fan response, suspend/resume, NVENC/NVDEC and thermal shutdown require separate testing. ASUS Armoury and custom fan curves are not enabled. Some optional NVML power and memory metrics may be unavailable on N1X.
 
+### NVIDIA DRM mapping review (2026-10-25)
+
+Josephine Pfeiffer's [Normal-NC candidate patch](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/02-drivers/nvidia-display/patches/provenance/hardware/drm.patch)
+applies without offsets or fuzz to the installed `nvidia-open-dkms 615.78.08-3`
+source. On ARM64 it changes uncached RAM-backed GEM `vmap` mappings from
+Device-nGnRnE to Normal-NC and adds a write barrier before PRIME unmapping.
+The two affected callers map RAM pages; cached user-memory mappings and the
+non-RAM `ioremap_wc` path retain their existing memory types. Normal-NC matches
+the DRM core's write-combined userspace mapping. This is a plausible mapping
+correction, not evidence of a measured performance gain or an observed crash.
+
+An isolated build against `7.2.8-23-omarchy-p16-asus` succeeded. The candidate
+`nvidia-drm.ko` imports the same 280 versioned symbols as the installed module,
+with identical CRCs. Compiler warnings were in unchanged driver files. This
+establishes source/build compatibility only. The patch affects ARM64 generally,
+not just this laptop, and remains outside the default installation pending
+physical display/PRIME and suspend/resume qualification. No installed driver,
+loaded module or boot image was changed during this review.
+
+## Provenance and local additions
+
+References to Pfeiffer's work below are pinned to commit
+[`3484cc008a9ee00b34c086c729e28e935cbc3430`](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430).
+They identify the inputs used here, independently of later upstream changes.
+
+| Component | Source and treatment in this repository |
+|---|---|
+| ACPI builder and battery transformations | [Pfeiffer's ACPI sources](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430/01-platform/acpi/payload/provenance/hardware): `acpi_builder.py`, `power-method-changes.json`, `power-source.sed` and `power-splice.json` are byte-identical copies under `acpi/`. Our scripts wrap them for local firmware dumps, builds and Omarchy installation. |
+| ARM64 ACPI allocation fix | [Source patch](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/01-platform/kernel/patches/provenance/hardware/backports/acpi/0001-arm64-bound-acpi-override-allocation.patch): copied unchanged as [kernel/arm64-acpi-allocation.patch](kernel/arm64-acpi-allocation.patch), integrated into the Omarchy kernel recipe. |
+| Touchpad pressure workaround | [Source quirk](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/03-system/input-audio/payload/runtime/usr/share/libinput/60-h7607a-touchpad.quirks): same device IDs and pressure settings; local section name/DMI pattern and installation into `/etc/libinput/local-overrides.quirks` instead of a packaged `/usr/share/libinput/` file. |
+| Speaker firmware | [Source lock](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/07-build/media/payload/locks/hardware.json): extraction metadata for the three `spkid0` files is retained in [config/speaker-firmware.json](config/speaker-firmware.json). Firmware is downloaded from ASUS and extracted locally; no firmware binaries are redistributed. |
+| NVIDIA DRM Normal-NC patch | [Source patch](https://github.com/pfeifferj/archlinuxarm-proart-p16/blob/3484cc008a9ee00b34c086c729e28e935cbc3430/02-drivers/nvidia-display/patches/provenance/hardware/drm.patch): reviewed and built unchanged in an isolated local tree. It is **not included in the installed driver or enabled by this installer**. |
+
+The peripheral integration added here on **2026-10-25** consists of
+[scripts/peripherals.py](scripts/peripherals.py), the local configuration and
+firmware manifest, installer/checkpoint integration and
+[regression tests](tests/test_peripherals.py). The actual ASUS download and
+extraction were verified against all three pinned hashes, and the installed
+files matched. The boot log also showed both amplifiers loading these files
+and applying calibration. The full 44-test suite passed normally and with
+Python assertions disabled. This did not include a fresh OS installation,
+an audible playback test or a physical test of the DRM candidate.
+
+The surrounding kernel recipe and many device patches come from Omarchy and
+their credited upstream authors. Our P16-specific additions and integration
+include ASUS RSOC handling, the virtual-GPIO/IRQ and thermal corrections,
+Limine installation/recovery, and the separately pinned `spark_hwmon` N1X
+backend. Original source notices are retained; see [sources.json](sources.json)
+and [LICENSES.md](LICENSES.md) for provenance and licenses.
+
 ## Repository layout and sources
 
 ```text
@@ -351,7 +467,7 @@ build/        local downloads and build outputs; excluded from Git
 - [Omarchy ARM64/N1X installation](https://github.com/omacom/omarchy-iso/blob/quattro/N1X.md)
 - [Nightly build and ARM64 publication](https://github.com/omacom/omarchy-iso/blob/quattro/.github/workflows/nightly-build.yml)
 - [Omarchy kernel recipe](https://github.com/omacom/omarchy-pkgs/tree/9db7ac36d410aca6d571975be1a5a77677918569/pkgbuilds/linux-omarchy-aarch64)
-- [P16 ACPI sources](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430)
+- [Josephine Pfeiffer's Arch Linux ARM ProArt P16 repository — ACPI, touchpad, speaker-firmware metadata and DRM candidate](https://github.com/pfeifferj/archlinuxarm-proart-p16/tree/3484cc008a9ee00b34c086c729e28e935cbc3430) (see [component provenance](#provenance-and-local-additions))
 - [SPI-HID v5](https://lore.kernel.org/all/20261009-send-upstream-v5-0-384af01da3ee@chromium.org/)
 
 The large `kernel/` file count comes from the pinned Omarchy recipe: its local
@@ -372,4 +488,4 @@ python3 -m unittest discover -s tests -v
 PYTHONOPTIMIZE=1 python3 -m unittest discover -s tests -v
 ```
 
-The tests use temporary filesystems to check invalid boot entries, complete EFI backups, interrupted installation recovery, boot-version mismatches, restored-checkpoint reuse, corrupted backups and operation with Python assertions disabled. Runtime validation remains active under Python optimization. The tests do not install a kernel or change the running system configuration.
+The tests use temporary filesystems to check invalid boot entries, complete EFI backups, interrupted installation recovery, boot-version mismatches, restored-checkpoint reuse, corrupted backups and operation with Python assertions disabled. Peripheral tests cover existing touchpad settings, conflicting policies, corrupted firmware, repeat installation and rollback. Runtime validation remains active under Python optimization. The tests do not install a kernel or change the running system configuration.
