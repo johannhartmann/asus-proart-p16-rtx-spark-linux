@@ -52,6 +52,17 @@ firmware-table hashes; the expanded `spark_hwmon` register backend has its own
 model/BIOS checks. Other ProArt P16 variants, RTX Spark machines and firmware
 versions require separate validation.
 
+Field report (2026-10-26): a second H7607BA (SKU 90NB16A1-M00Y90 per its order:
+64 GB, 3K OLED, 1 TB; BIOS H7607BA.300 and EC 2.16 per DMI) completed steps 1-5
+at commit `4b34f31` on a fresh full-disk installation of Nightly 2026.10.26.466,
+running `omarchy update -y` before step 2. On
+`7.2.8-23-omarchy-p16-asus`, `check-system.sh` and `verify-boot.py` passed. The
+internal keyboard (`Asus Keyboard`), the touchpad (`093A:4F01`) and the
+touchscreen/stylus (`222A:5554`) enumerated, and the touchpad worked in use. The
+battery reported its charge, `powerprofilesctl` listed `nvidia_rtx_spark` and
+`platform_profile`, the `mt8901-soundwire` card was present and `nvidia-smi`
+reported driver 615.78.08. Not tested: audible playback, CUDA and suspend.
+
 A newer Nightly may ship a newer stock kernel. This guide installs the pinned
 P16 kernel alongside it and preserves the existing boot entries. Apply these
 patches only to the pinned source; see [boot recovery and updates](#9-boot-recovery-and-updates)
@@ -99,6 +110,14 @@ console=tty0 acpi=nospcr acpi_osi="!Windows 2022"
 After installation, boot the installed system into the regular Omarchy session. Make this repository available on that system and run the remaining commands from its root directory. Use `sudo` where shown.
 
 ## 2. Install build tools and platform packages
+
+On a fresh installation of Nightly 2026.10.26.466, only the installer's offline package database (`/var/lib/pacman/sync/offline.db`) was present, so `pacman -S`, which `omarchy pkg add` runs, failed with `target not found`. Omarchy refuses a direct `sudo pacman -Syu` and points to its own updater. Bring a new installation up to date first:
+
+```bash
+omarchy update -y
+```
+
+Then install the packages:
 
 ```bash
 omarchy pkg add base-devel bc cpio gettext libelf pahole python git gnupg clang llvm lld rust rust-bindgen rust-src xxhash zstd
