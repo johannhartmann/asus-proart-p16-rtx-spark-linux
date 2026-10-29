@@ -36,6 +36,9 @@ installer and tests are fetched at an immutable commit by
 `scripts/prepare-spark-hwmon.sh`; `sources.json` records the upstream source pins.
 ACPI overrides are generated from the target machine's own firmware tables.
 
+For the installed machine's package-owned customization and boot-image update
+policy, see [Update-safe P16 installation](docs/update-safe.md).
+
 ## Supported hardware and software
 
 | Component | Validated target |

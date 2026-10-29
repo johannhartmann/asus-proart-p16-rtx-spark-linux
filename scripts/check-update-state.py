@@ -43,6 +43,14 @@ def main():
         issues.append('spark_hwmon/spbm module for the P16 kernel is missing')
     if not Path('/etc/pacman.d/hooks/zz-p16-boot-menu.hook').is_file():
         issues.append('P16 boot-menu update hook missing')
+    guard = Path('/etc/pacman.d/hooks/90-mkinitcpio-install.hook')
+    if not guard.is_file() or guard.read_bytes() != (ROOT / 'config/90-mkinitcpio-install.hook').read_bytes():
+        issues.append('managed-kernel mkinitcpio guard missing or changed')
+    if 'NoUpgrade = etc/pacman.d/hooks/90-mkinitcpio-install.hook' not in Path('/etc/pacman.conf').read_text():
+        issues.append('pacman NoUpgrade for mkinitcpio guard missing')
+    for name in ('p16-platform-policy', 'p16-speaker-firmware', 'p16-mayflower'):
+        if subprocess.run(['pacman', '-Qq', name], capture_output=True).returncode:
+            issues.append(f'{name} package missing')
     peripherals = subprocess.run(['python3', str(ROOT / 'scripts/peripherals.py'), 'check-installed'],
                                  text=True, capture_output=True)
     if peripherals.returncode:

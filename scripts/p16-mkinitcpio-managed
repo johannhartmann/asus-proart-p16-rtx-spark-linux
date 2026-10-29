@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Pacman's broad mkinitcpio triggers must not rewrite experimental P16 UKIs.
+set -euo pipefail
+export PATH=/usr/bin:/bin
+
+[[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 1; }
+plan=false
+if [[ ${1:-} == --plan ]]; then plan=true; fi
+declare -A managed=()
+while IFS= read -r package; do
+  [[ $package ]] || continue
+  pacman -Qq "$package" &>/dev/null || continue
+  managed["$package"]=1
+done < <(awk '/^[[:space:]]*comment: kernel-id=/ {
+  sub(/^[[:space:]]*comment: kernel-id=/, ""); print $1
+}' /boot/limine.conf | sort -u)
+
+((${#managed[@]})) || { echo 'No managed Limine kernel found.' >&2; exit 1; }
+declare -A selected=()
+broad=false
+while IFS= read -r target; do
+  case $target in
+    usr/lib/modules/*/modules.builtin|usr/lib/modules/*/pkgbase|usr/lib/modules/*/extramodules/*)
+      path=${target#usr/lib/modules/}
+      release=${path%%/*}
+      package=$(pacman -Qqo "/usr/lib/modules/$release/modules.builtin" 2>/dev/null || true)
+      if [[ -n $package && -n ${managed[$package]:-} ]]; then
+        selected["$package"]=1
+      fi
+      ;;
+    *) broad=true ;;
+  esac
+done
+
+if $broad; then
+  for package in "${!managed[@]}"; do selected["$package"]=1; done
+fi
+((${#selected[@]})) || { echo 'No managed kernel affected; experimental UKIs preserved.'; exit 0; }
+mapfile -t packages < <(printf '%s\n' "${!selected[@]}" | sort)
+echo "Rebuilding managed Limine kernels: ${packages[*]}"
+if $plan; then exit 0; fi
+started=$(date +%s)
+/usr/bin/limine-mkinitcpio "${packages[@]}"
+# The Limine wrapper can succeed after an individual kernel build failed.
+for package in "${packages[@]}"; do
+  image="/boot/EFI/Linux/omarchy_${package}.efi"
+  [[ -s $image && $(stat -c %Y "$image") -ge $started ]] || {
+    echo "Managed UKI was not refreshed: $image" >&2
+    exit 1
+  }
+done
