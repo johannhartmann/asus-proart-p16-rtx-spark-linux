@@ -12,6 +12,6 @@ Target = omarchy-settings*
 Target = plymouth*
 
 [Action]
-Description = Verifying P16 Limine images and restoring the 10-second menu timeout...
+Description = Verifying P16 Limine images and restoring the default boot policy...
 When = PostTransaction
 Exec = /usr/local/sbin/p16-boot-menu-policy

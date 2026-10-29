@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep the validated P16 Limine timeout after package-driven menu rewrites."""
+"""Keep a validated P16 Limine default and timeout after menu rewrites."""
 import fcntl
 import hashlib
 import os
@@ -8,6 +8,10 @@ import re
 import tempfile
 
 MENU = Path('/boot/limine.conf')
+VALID_DEFAULTS = {
+    'Omarchy/linux-p16-asus-23',
+    'Omarchy/linux-p16-asus-23-npu2',
+}
 
 
 def main():
@@ -17,8 +21,11 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX)
         original = MENU.read_text()
         defaults = re.findall(r'^default_entry:\s*(.*?)\s*$', original, re.M)
-        if defaults != ['Omarchy/linux-p16-asus-23']:
+        if len(defaults) != 1 or defaults[0] not in VALID_DEFAULTS:
             raise SystemExit(f'Unexpected Limine default: {defaults}')
+        default_kernel = defaults[0].rsplit('/', 1)[-1]
+        if not re.search(rf'^\s*//{re.escape(default_kernel)}\s*$', original, re.M):
+            raise SystemExit(f'Default Limine entry is missing: {defaults[0]}')
         timeouts = re.findall(r'^timeout:\s*(.*?)\s*$', original, re.M)
         if len(timeouts) != 1:
             raise SystemExit(f'Expected one Limine timeout, found {timeouts}')
@@ -30,7 +37,7 @@ def main():
             if not image.is_file() or hashlib.blake2b(image.read_bytes()).hexdigest() != digest.lower():
                 raise SystemExit(f'EFI image missing or checksum mismatch: {name}')
         if timeouts[0] == '10':
-            print('P16 Limine timeout already 10; EFI hashes valid')
+            print('P16 Limine default and timeout already correct; EFI hashes valid')
             return
         updated = re.sub(r'^timeout:.*$', 'timeout: 10', original, count=1, flags=re.M)
         descriptor, temp_name = tempfile.mkstemp(prefix='.p16-limine-', dir=MENU.parent)
@@ -46,7 +53,10 @@ def main():
             os.sync()
         finally:
             Path(temp_name).unlink(missing_ok=True)
-        print(f'P16 Limine timeout restored: {timeouts[0]} -> 10; EFI hashes valid')
+        print(
+            f'P16 Limine default verified: {defaults[0]}; '
+            f'timeout {timeouts[0]} -> 10; EFI hashes valid'
+        )
 
 
 if __name__ == '__main__':
