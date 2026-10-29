@@ -30,8 +30,11 @@ PLATFORM = [
     '/etc/systemd/system/p16-charge-limit.service',
     '/etc/systemd/system/power-profiles-daemon.service.d/20-p16-asus.conf',
     '/etc/libinput/local-overrides.quirks',
+    '/etc/pacman.d/hooks/00-p16-guard-preflight.hook',
     '/etc/pacman.d/hooks/zz-p16-boot-menu.hook',
     '/usr/local/sbin/p16-boot-menu-policy',
+    '/usr/local/sbin/p16-guard-preflight',
+    '/usr/share/p16-platform/90-mkinitcpio-install.hook',
     '/usr/local/libexec/p16-charge-limit',
     '/usr/local/bin/p16-temperatures',
 ]
@@ -54,6 +57,9 @@ PACKAGES = {
 }
 SOURCES = {
     '/usr/local/sbin/p16-mkinitcpio-managed': REPO / 'scripts/p16-mkinitcpio-managed',
+    '/usr/local/sbin/p16-guard-preflight': REPO / 'scripts/p16-guard-preflight',
+    '/usr/share/p16-platform/90-mkinitcpio-install.hook': REPO / 'config/90-mkinitcpio-install.hook',
+    '/etc/pacman.d/hooks/00-p16-guard-preflight.hook': REPO / 'config/00-p16-guard-preflight.hook',
 }
 
 
@@ -74,7 +80,8 @@ def snapshot(name, paths):
             target.symlink_to(os.readlink(source))
         else:
             shutil.copy2(source, target)
-        if destination == '/usr/local/sbin/p16-mkinitcpio-managed':
+        if destination in ('/usr/local/sbin/p16-mkinitcpio-managed',
+                           '/usr/local/sbin/p16-guard-preflight'):
             target.chmod(0o755)
     if name == 'p16-speaker-firmware':
         for record in SPEAKER_FILES:

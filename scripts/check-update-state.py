@@ -43,6 +43,10 @@ def main():
         issues.append('spark_hwmon/spbm module for the P16 kernel is missing')
     if not Path('/etc/pacman.d/hooks/zz-p16-boot-menu.hook').is_file():
         issues.append('P16 boot-menu update hook missing')
+    if not Path('/etc/pacman.d/hooks/00-p16-guard-preflight.hook').is_file():
+        issues.append('P16 pacman preflight hook missing')
+    if not Path('/home/johann/.config/omarchy/hooks/pre-refresh-pacman.d/omarchy-p16-pre-refresh-pacman').is_file():
+        issues.append('P16 Omarchy pre-refresh hook missing')
     guard = Path('/etc/pacman.d/hooks/90-mkinitcpio-install.hook')
     if not guard.is_file() or guard.read_bytes() != (ROOT / 'config/90-mkinitcpio-install.hook').read_bytes():
         issues.append('managed-kernel mkinitcpio guard missing or changed')

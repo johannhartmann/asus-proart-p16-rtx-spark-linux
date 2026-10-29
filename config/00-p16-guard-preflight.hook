@@ -1,0 +1,12 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Operation = Remove
+Target = *
+
+[Action]
+Description = Checking P16 boot-image update guard before package changes...
+When = PreTransaction
+Exec = /usr/local/sbin/p16-guard-preflight
+AbortOnFail

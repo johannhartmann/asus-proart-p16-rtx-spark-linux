@@ -1,0 +1,4 @@
+#!/bin/bash
+# Omarchy channel changes replace pacman.conf before starting pacman.
+set -euo pipefail
+sudo /usr/bin/bash /home/johann/p16rtx_linux/scripts/install-mkinitcpio-guard.sh

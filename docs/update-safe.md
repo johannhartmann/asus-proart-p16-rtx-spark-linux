@@ -45,6 +45,12 @@ and adapt the local hook if its trigger set changes. Run
 Omarchy post-update hook runs that check automatically, but a post-transaction
 check cannot undo an already finished transaction.
 
+Omarchy channel changes replace `/etc/pacman.conf`. The installed
+`pre-refresh-pacman` hook reapplies this policy immediately after the refresh.
+The package-owned `00-p16-guard-preflight.hook` blocks a Pacman transaction if
+the policy is still missing. This prevents a broad initcpio rebuild from
+silently rewriting the experimental UKIs.
+
 ## NPU and out-of-tree modules
 
 The audited NPU bootstrap module is packaged separately in `n1x-lab/npu`.

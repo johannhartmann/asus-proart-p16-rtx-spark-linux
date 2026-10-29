@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Fail closed when a channel refresh has replaced pacman.conf without our guard.
+set -euo pipefail
+export PATH=/usr/bin:/bin
+[[ $EUID == 0 ]] || { echo 'Run as root.' >&2; exit 1; }
+hook=/etc/pacman.d/hooks/90-mkinitcpio-install.hook
+template=/usr/share/p16-platform/90-mkinitcpio-install.hook
+if ! pacman-conf NoUpgrade | grep -Fxq 'etc/pacman.d/hooks/90-mkinitcpio-install.hook'; then
+  echo 'P16: NoUpgrade for the mkinitcpio hook is missing. Restore the guard before updating.' >&2
+  exit 1
+fi
+if ! cmp -s "$template" "$hook" || [[ ! -x /usr/local/sbin/p16-mkinitcpio-managed ]]; then
+  echo 'P16: managed-kernel mkinitcpio hook or wrapper is missing. Restore the guard before updating.' >&2
+  exit 1
+fi
