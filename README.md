@@ -364,6 +364,20 @@ Start GPU containers with `docker run --gpus all ...`. Restarting Docker interru
 
 ## 9. Boot recovery and updates
 
+On this P16, the installed NPU2 test kernel is also allowed by the P16 ACPI
+initramfs hook and ASUS control services. `scripts/install-npu2-policy.sh`
+installs those narrowly scoped additions; it does not rebuild an experimental
+UKI. The read-only `scripts/check-update-state.py` checks installed P16 config,
+touchpad and speaker firmware after an Omarchy update. The user-owned
+`post-update` hook runs it automatically.
+
+The separate `zz-p16-boot-menu.hook` runs after package-driven Limine rebuilds.
+It verifies every hashed EFI image and restores the validated ten-second P16
+menu timeout. The Mayflower Plymouth logo is maintained by its own package
+hook and root-owned source under `/etc/mayflower-boot/`. Neither hook claims
+that a future kernel automatically supports the NPU; that requires a new
+kernel build and physical qualification.
+
 If the P16 kernel fails to boot, select the existing `linux-omarchy` entry in Limine. Use `linux-omarchy-fallback` if the display stays black. Press `Esc` to reveal a hidden boot menu. The stock kernel does not activate the P16 ACPI overrides or the two P16 services.
 
 To restore the original configuration, boot the stock kernel and run:

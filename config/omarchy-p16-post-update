@@ -1,0 +1,6 @@
+#!/bin/bash
+# Read-only validation after Omarchy package and migration work.
+repo=/home/johann/p16rtx_linux
+if [[ -f $repo/scripts/check-update-state.py ]]; then
+  /usr/bin/python3 "$repo/scripts/check-update-state.py" || true
+fi

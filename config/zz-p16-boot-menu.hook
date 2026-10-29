@@ -1,0 +1,17 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux-omarchy
+Target = linux-p16-asus-23
+Target = linux-p16-asus-23-npu2
+Target = limine
+Target = limine-mkinitcpio-hook
+Target = mkinitcpio
+Target = omarchy-settings*
+Target = plymouth*
+
+[Action]
+Description = Verifying P16 Limine images and restoring the 10-second menu timeout...
+When = PostTransaction
+Exec = /usr/local/sbin/p16-boot-menu-policy
