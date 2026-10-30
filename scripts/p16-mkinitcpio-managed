@@ -39,13 +39,14 @@ fi
 mapfile -t packages < <(printf '%s\n' "${!selected[@]}" | sort)
 echo "Rebuilding managed Limine kernels: ${packages[*]}"
 if $plan; then exit 0; fi
-started=$(date +%s)
 /usr/bin/limine-mkinitcpio "${packages[@]}"
-# The Limine wrapper can succeed after an individual kernel build failed.
+# The Limine wrapper can succeed after an individual kernel build failed. It
+# also deliberately keeps an identical UKI without changing its mtime, so
+# validate the deployed file and its managed menu entry rather than freshness.
 for package in "${packages[@]}"; do
   image="/boot/EFI/Linux/omarchy_${package}.efi"
-  [[ -s $image && $(stat -c %Y "$image") -ge $started ]] || {
-    echo "Managed UKI was not refreshed: $image" >&2
+  [[ -s $image ]] && grep -q "comment: kernel-id=${package} " /boot/limine.conf || {
+    echo "Managed UKI or Limine entry is missing: $package" >&2
     exit 1
   }
 done

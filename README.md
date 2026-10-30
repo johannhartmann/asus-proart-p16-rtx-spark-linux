@@ -367,10 +367,10 @@ Start GPU containers with `docker run --gpus all ...`. Restarting Docker interru
 
 ## 9. Boot recovery and updates
 
-On this P16, the installed NPU2 test kernel is also allowed by the P16 ACPI
-initramfs hook and ASUS control services. `scripts/install-npu2-policy.sh`
-installs those narrowly scoped additions; it does not rebuild an experimental
-UKI. The read-only `scripts/check-update-state.py` checks installed P16 config,
+On this P16, the RTX Spark NPU kernel is also allowed by the P16 ACPI
+initramfs hook and ASUS control services. `scripts/install-npu-policy.sh`
+installs those narrowly scoped host integrations; it does not build or replace
+an NPU kernel. The read-only `scripts/check-update-state.py` checks installed P16 config,
 touchpad and speaker firmware after an Omarchy update. The user-owned
 `post-update` hook runs it automatically.
 
