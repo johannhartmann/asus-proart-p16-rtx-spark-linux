@@ -1,6 +1,6 @@
 pkgname=n1x-adsp-dkms
 pkgver=0.1.18
-pkgrel=1
+pkgrel=2
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -41,7 +41,7 @@ sha256sums=('6871612fa16531f8e0d02771057536904aac4fccc2026f50657e9f5c39b3754b'
             '24082950b0c75b38e937c20ce2795f620af52a8ed7aacc6971364361a711f334'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
             '6ae7b254086c4ece4efce01e235e5bc4886158924b1a751ab73d00a1d359ac53'
-            'eb80a4f2ef99e1f68d468b59e1d180b7f4ac896b1e83ee137a3e2f58ea4b541d'
+            '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'
             'fcc9ebb0d2e808cc635d5d73190e55852a4e6c6df571c3816c3e3dc3809d0c31')
 
 check() {

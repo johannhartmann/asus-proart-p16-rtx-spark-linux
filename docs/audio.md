@@ -71,6 +71,11 @@ stays inactive on the preserved ordinary boot. It initializes firmware in the
 kernel and verifies readiness; it never performs userspace firmware uploads,
 unbinds a driver, resets hardware or unloads a published instance.
 
+IOMMU domain selection requires both `CAP_SYS_ADMIN` and `CAP_SYS_RAWIO`.
+The service retains those capabilities and `CAP_SYS_MODULE`; it uses a closed
+device policy and blocks raw-I/O syscalls. `PrivateDevices` must remain off
+because systemd removes `CAP_SYS_RAWIO` when that option is enabled.
+
 The automatic path runs before `multi-user.target`. PipeWire and WirePlumber
 then see a normal sound card. Use normal desktop sound settings for output,
 microphone and jack selection. No separate per-user DSP service is needed.
