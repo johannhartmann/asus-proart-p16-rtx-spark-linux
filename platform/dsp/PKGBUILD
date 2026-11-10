@@ -1,6 +1,6 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.18
-pkgrel=2
+pkgver=0.1.19
+pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -15,11 +15,11 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py'
         'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('6871612fa16531f8e0d02771057536904aac4fccc2026f50657e9f5c39b3754b'
+sha256sums=('7e7d2cfff00569ac0f97cdc5777ff520facdca29d3c889b2e76e9b8fe246b1e1'
             'd68ffe347aa22c2b9318e4f199e4001b85ed471ad40efe5dc789049965cfec5c'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '2634a21e5a7ed579e8aed49729401a3cd1e86d75d7c39c22f70e3203370f686b'
+            '0f59fd0e0ce0e53f43b8aa1090d56345ec62ff4cf64cf3cdde01220d90f18b9e'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
             '09092fa06397294e4540d8df94cfb509a762a271f571d4323e806dbd92b24372'
             'a3e0aff964e80740b7880f048bbb3f785def0cb4d6d1c7ad06dec83c0977a12f'
@@ -28,17 +28,17 @@ sha256sums=('6871612fa16531f8e0d02771057536904aac4fccc2026f50657e9f5c39b3754b'
             '9323e9df871b5b0db92aa85a3ee6d06d9ad4acdcb224217e4b9a8b4c5cac821b'
             'e9aa0dcc0da19dd325a05c645cc3e7cbf4889bfdbd585ab3e84f5ec60afb7eed'
             '4179280ce67720d36b3eb23b86159a3bac59a26e855c717f5cf7ec6081478b7a'
-            'b3d215821c5cdca6b586fdec94a2d8a53840372a51bbeed565999deb0e9ac8c7'
+            '2a7653ed87ae78941bcb402abf92c26f420ec0a6e56431e966828fe8b0a1beb8'
             '5ea01466df828631abebe5399071b15a6bde11ec7a70a9d11c384684ce55ccce'
             '0de1ec9e583636b6a7362de3cc4e42a64a0056062a37323b37ecbb95dccb62a2'
-            '7f696a92fbe1cd1d45922b158a9ffd32ae89cde5c4c6578abd68a4f431ee541c'
-            '433f6618cedfb6abbf7c3993d6ac36d44863848548ab5026528162f5935784c8'
+            '01b7fdc92982dc3061f46ce1500574b7340bd74815f4dbd2fe5bd520424b97ac'
+            'b2d8f46fc0071b3fdf711c93ac653c6b73aef504811b55c61bc3dbaf6530acf8'
             '09d29a5dd216e00bd03d770e726721cad97867952d5451d8ebb7b83fa88af7b1'
-            'b6fbced79bdc92c280d0460f079883c7254cabd4e0378059d02d1cb028874ccb'
+            'd4652a8737138fa8e4e43cfdeca55bc84ed69fc4114570390510a6b7877d7f23'
             'b1660652305eb73686e0c0f3bc931f1a64f0c9f5ed61caf444c9c91d1c9c9b3d'
             '1e9c5fc77c67ab8ff60e66fc9531e0badc441d7b5bbe914a2ffaa1a0e61f8d93'
             '36efa2df567968236d25fb0a756be4e2409805decac80b9eca021512c5cdfca6'
-            '24082950b0c75b38e937c20ce2795f620af52a8ed7aacc6971364361a711f334'
+            'cda4bd14d5f412bf9f0f823f93182863d303f0ad4cb57fbe2469da8089a59345'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
             '6ae7b254086c4ece4efce01e235e5bc4886158924b1a751ab73d00a1d359ac53'
             '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'

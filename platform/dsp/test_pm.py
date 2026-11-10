@@ -39,6 +39,8 @@ struct n1x_adsp {
  uint8_t *mailbox, *shared;
  int power_error, error, sleep_error, irq;
  unsigned sleep_cycles;
+ unsigned sleep_config_before[2], sleep_config_after[2];
+ bool sleep_config_valid, sleep_config_checked;
  uint64_t dma;
  struct target *target;
  struct work_struct power_work;
@@ -64,7 +66,7 @@ static sem_t entering;
 static unsigned warnings, suspends, resumes, gets, pm_puts, reads, disables, enables, flushes;
 static unsigned votes, wakes, runtime_suspends, runtime_resumes;
 static int suspend_result, resume_result, get_result, vote_result, wake_result;
-static bool privileged = true, tx_idle=true, pending, corrupted, worker_fault;
+static bool privileged = true, tx_idle=true, pending, corrupted, corrupted_bytes, worker_fault, consumed_boot_config;
 static void mutex_lock(pthread_mutex_t *lock)
 {
  assert(lock==&dsp.lock && !locked);
@@ -99,7 +101,7 @@ static int client_suspend(struct n1x_sroot_client *c)
 {assert(c==(void *)&dsp && dsp.sleep_suspended && dsp.sleep_irq_disabled && suspends);
  votes++;return vote_result;}
 static int client_resume(struct n1x_sroot_client *c)
-{assert(c==(void *)&dsp && locked && resumes && votes && !resume_result && !corrupted);
+{assert(c==(void *)&dsp && locked && resumes && votes && !resume_result && !corrupted && !corrupted_bytes);
  wakes++;return wake_result;}
 static const struct n1x_sroot_client_sleep_ops ops={.suspend=client_suspend,.resume=client_resume};
 static bool capable(int capability) {assert(capability==CAP_SYS_RAWIO);return privileged;}
@@ -111,8 +113,8 @@ static void pm_runtime_put_autosuspend(struct device *d)
 static uint32_t readl(const void *p)
 {assert(p && locked);reads++;
  if(p==dsp.mailbox+ADSP_OUT_STATUS)return pending;
- if(p==dsp.shared+ADSP_CONFIG_OFFSET)return corrupted?0:lower_32_bits(dsp.dma);
- if(p==dsp.shared+ADSP_CONFIG_OFFSET+8)return target.dram_bytes;
+ if(p==dsp.shared+ADSP_CONFIG_OFFSET)return consumed_boot_config || (corrupted && resumes)?0:lower_32_bits(dsp.dma);
+ if(p==dsp.shared+ADSP_CONFIG_OFFSET+8)return consumed_boot_config?0:target.dram_bytes-(unsigned)(corrupted_bytes && resumes);
  assert(0);return 0;}
 static int sysfs_emit(char *buffer, const char *format, ...)
 {assert(buffer && format && locked);return 1;}
@@ -141,7 +143,7 @@ static void reset(void)
  warnings=suspends=resumes=gets=pm_puts=reads=disables=enables=flushes=votes=wakes=0;
  runtime_suspends=runtime_resumes=0;
  suspend_result=resume_result=get_result=vote_result=wake_result=0;
- privileged=tx_idle=true;pending=corrupted=worker_fault=false;
+ privileged=tx_idle=true;pending=corrupted=corrupted_bytes=worker_fault=consumed_boot_config=false;
  enable_retention_sleep=false;pm_suspend_target_state=PM_SUSPEND_TO_IDLE;
  sram_votes=sram_wakes=0;afe_restored=true;
 }
@@ -189,6 +191,12 @@ int main(void)
   assert(dsp.published && dsp.boot_ready && !dsp.error && !dsp.sleep_prepared);
  }
  assert(votes==32 && wakes==32 && enables==32 && !gets && !pm_puts);
+ healthy();consumed_boot_config=true;
+ for(unsigned i=0;i<32;i++) {
+  assert(!sleep_cycle() && dsp.sleep_cycles==i+1 && !dsp.error);
+  assert(dsp.sleep_config_valid && !dsp.sleep_config_before[0] && !dsp.sleep_config_after[0]);
+  assert(!dsp.sleep_config_before[1] && !dsp.sleep_config_after[1]);
+ }
  healthy();assert(!n1x_adsp_prepare(&dev));n1x_adsp_complete(&dev);
  assert(!dsp.sleep_prepared && !suspends && !disables); /* Another prepare fails. */
  healthy();assert(!n1x_adsp_prepare(&dev) && !n1x_adsp_suspend(&dev));
@@ -222,6 +230,12 @@ int main(void)
  assert(sleep_cycle()==-EHOSTDOWN && wakes==1 && !enables && dsp.error);
  healthy();corrupted=true;
  assert(sleep_cycle()==-EIO && !wakes && !enables && dsp.error && dsp.sleep_suspended);
+ healthy();corrupted_bytes=true;
+ assert(sleep_cycle()==-EIO && !wakes && !enables && dsp.sleep_config_checked && dsp.sleep_suspended);
+ healthy();assert(!n1x_adsp_prepare(&dev) && !n1x_adsp_suspend(&dev));
+ dsp.sleep_config_valid=false;
+ assert(n1x_adsp_resume(&dev)==-EIO && !wakes && !enables && dsp.sleep_suspended);
+ n1x_adsp_complete(&dev);
  reset();assert(!n1x_adsp_prepare(&dev) && dsp.sleep_prepared);
  char buffer[1024];assert(inspect_show(&dev,NULL,buffer)==-EBUSY && !gets && !reads);
  n1x_adsp_complete(&dev);assert(!dsp.sleep_prepared);

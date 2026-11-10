@@ -212,8 +212,16 @@ fields are base, end-exclusive, read, write, byte length and data count.
 Read/write begin at base and data count begins at zero. Eight little-endian
 u32 fields follow: container bits, sample rate, channels, direction, start
 threshold, stop threshold, period frames and period count. Task 7 uses
-direction 1; its initial start threshold is period frames times period count,
+direction 1; the native initial start threshold is period frames times period count,
 with stop threshold `0xffffffff`.
+
+The Linux ALSA path explicitly starts all three descriptors with a one-frame
+threshold. ALSA has already decided when START is legal and can initially
+publish less than a whole ring. A second, full-ring firmware gate can therefore
+wait for frames that the host will only produce after the first consumed-data
+notification. The codec preserves the native full-ring default when its
+threshold override is zero and bounds explicit thresholds to the ring size.
+Actual firmware consumption still requires a fresh hardware test.
 
 The format word contains sample width in bits, not `snd_pcm_format_t`.
 The native ACX getter for container bits has index 46, channels index 43,
@@ -734,7 +742,7 @@ lease. ABI v4 votes order the idle-DSP D3/D0 transitions around the provider's
 existing checked DLA stop/restart. The optional s2idle path rejects uncertain
 uploads, poisoned IPC, legacy active audio clients lacking ASoC ordering. The automatic ASoC candidate
 coordinates card STOP and retained AFE SRAM, as described below. Retained
-DRAM descriptors are checked after D0, but firmware liveness, audio continuity,
+startup-mailbox contents are compared before D3 and after D0, but firmware liveness, audio continuity,
 physical sleep and power savings still require fresh-boot hardware tests.
 Whole-core shutdown, full DMA release, Hibernate and deep-sleep recovery are
 not implemented by this retention path.

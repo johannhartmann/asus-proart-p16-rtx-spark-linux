@@ -137,6 +137,8 @@ struct n1x_adsp {
 	bool sleep_pcm, sleep_messages, sleep_draining;
 	bool component_registered;
 	u32 sleep_cycles;
+	u32 sleep_config_before[2], sleep_config_after[2];
+	bool sleep_config_valid, sleep_config_checked;
 	int sleep_error;
 };
 
@@ -750,9 +752,12 @@ static ssize_t sleep_status_show(struct device *dev, struct device_attribute *at
 
 	mutex_lock(&dsp->lock);
 	size = sysfs_emit(buf,
-			  "enabled=%u prepared=%u suspended=%u irq_disabled=%u cycles=%u error=%d\n",
+			  "enabled=%u prepared=%u suspended=%u irq_disabled=%u cycles=%u error=%d config_valid=%u config_checked=%u config_before=%#x/%#x config_after=%#x/%#x\n",
 			 enable_retention_sleep, dsp->sleep_prepared, dsp->sleep_suspended,
-			 dsp->sleep_irq_disabled, dsp->sleep_cycles, dsp->sleep_error);
+			 dsp->sleep_irq_disabled, dsp->sleep_cycles, dsp->sleep_error,
+			 dsp->sleep_config_valid, dsp->sleep_config_checked,
+			 dsp->sleep_config_before[0], dsp->sleep_config_before[1],
+			 dsp->sleep_config_after[0], dsp->sleep_config_after[1]);
 	mutex_unlock(&dsp->lock);
 	return size;
 }
@@ -992,7 +997,7 @@ static int n1x_adsp_prepare(struct device *dev)
 
 	/* Admission must happen before any device suspends. Retention is not a
 	 * shutdown/reclamation contract and cannot support hibernation or deep
-	 * sleep. AFE-owned SRAM/tasks are not yet covered by this idle-core path.
+	 * sleep. ASoC ordering stops streams before the DSP/AFE retention path.
 	 */
 	mutex_lock(&dsp->lock);
 	if (dsp->published) {
@@ -1057,15 +1062,29 @@ static int n1x_adsp_retention_wake(struct n1x_adsp *dsp, bool voted)
 	err = n1x_adsp_retention_sram(dsp, true);
 	if (!err)
 		err = mtk_pwrap_dev_resume(dsp->pwrap, 1);
-	if (!err && (readl(dsp->shared + ADSP_CONFIG_OFFSET) != lower_32_bits(dsp->dma) ||
-		     readl(dsp->shared + ADSP_CONFIG_OFFSET + 8) != dsp->target->dram_bytes))
-		err = -EIO;
+	if (!err) {
+		dsp->sleep_config_after[0] = readl(dsp->shared + ADSP_CONFIG_OFFSET);
+		dsp->sleep_config_after[1] = readl(dsp->shared + ADSP_CONFIG_OFFSET + 8);
+		dsp->sleep_config_checked = true;
+		/* The firmware may consume startup fields after boot. Retention
+		 * preserves their pre-D3 contents, not necessarily the boot values.
+		 * This is a memory-retention check, not proof of firmware liveness.
+		 */
+		if (!dsp->sleep_config_valid ||
+		    memcmp(dsp->sleep_config_before, dsp->sleep_config_after,
+			   sizeof(dsp->sleep_config_before)))
+			err = -EIO;
+	}
 	if (!err && voted)
 		err = dsp->sleep_ops->resume(dsp->sroot_client);
 	if (err) {
 		dsp->sleep_error = err;
 		dsp->error = err;
-		dev_err(dsp->dev, "DSP retention resume failed (%d); DMA/leases retained\n", err);
+		dev_err(dsp->dev,
+			"DSP retention resume failed (%d), config valid=%u checked=%u before=%#x/%#x after=%#x/%#x; DMA/leases retained\n",
+			err, dsp->sleep_config_valid, dsp->sleep_config_checked,
+			dsp->sleep_config_before[0], dsp->sleep_config_before[1],
+			dsp->sleep_config_after[0], dsp->sleep_config_after[1]);
 		return err;
 	}
 	dsp->sleep_suspended = false;
@@ -1101,6 +1120,11 @@ static int n1x_adsp_suspend(struct device *dev)
 		err = -EBUSY;
 		goto enable;
 	}
+	dsp->sleep_config_before[0] = readl(dsp->shared + ADSP_CONFIG_OFFSET);
+	dsp->sleep_config_before[1] = readl(dsp->shared + ADSP_CONFIG_OFFSET + 8);
+	dsp->sleep_config_valid = true;
+	dsp->sleep_config_checked = false;
+	memset(dsp->sleep_config_after, 0, sizeof(dsp->sleep_config_after));
 	/* Windows PEP encodes SystemStateTransition in bit 0. Keep all published
 	 * memory, mappings, PM references and module leases across this request.
 	 * SET acknowledgment is not used as permission to free DSP memory.
@@ -1652,12 +1676,17 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 		.rate = params->rate, .channels = params->channels,
 		.sample_bits = params->sample_bits,
 		.period_frames = params->period_frames, .periods = params->periods,
+		/* ALSA has already selected when START is legal. Requiring a full
+		 * ring here can deadlock clients that prefill only part of the ring.
+		 */
+		.start_threshold = 1,
 	};
 	hardware = (struct n1x_adsp_pcm_config){
 		.address = dsp->target->image_id == 0xc0303 ? afe.memory.afe_address : afe.memory.dsp_address,
 		.bytes = afe.memory.bytes, .rate = afe.rate, .channels = afe.channels,
 		.sample_bits = afe.sample_bits, .period_frames = afe.period_frames,
 		.periods = afe.periods, .hardware = 1, .memif = afe.memif, .irq = afe.irq,
+		.start_threshold = 1,
 	};
 	err = n1x_adsp_pcm_encode(host_packet, sizeof(host_packet), &host);
 	if (!err)
@@ -2240,7 +2269,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.18");
+MODULE_VERSION("0.1.19");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

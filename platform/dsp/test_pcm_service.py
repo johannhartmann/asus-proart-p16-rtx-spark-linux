@@ -165,7 +165,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
   assert(get64(packet+32)==bytes && !get64(packet+40));
   assert(n1x_adsp_ipc_get32(packet+48)==16 && n1x_adsp_ipc_get32(packet+52)==48000);
   assert(n1x_adsp_ipc_get32(packet+56)==2 && n1x_adsp_ipc_get32(packet+60)==1);
-  assert(n1x_adsp_ipc_get32(packet+64)==(request->channel==7?1920:960) && n1x_adsp_ipc_get32(packet+68)==0xffffffff);
+  assert(n1x_adsp_ipc_get32(packet+64)==1 && n1x_adsp_ipc_get32(packet+68)==0xffffffff);
   assert(n1x_adsp_ipc_get32(packet+72)==480 && n1x_adsp_ipc_get32(packet+76)==(request->channel==7?4:2));
   assert(packet[80]==hardware && !packet[81] && !packet[82] && packet[83]==1);
   for(unsigned i=84;i<96;i++)assert(!packet[i]);

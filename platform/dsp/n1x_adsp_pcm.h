@@ -14,6 +14,8 @@ struct n1x_adsp_pcm_config {
 	__u32 sample_bits;
 	__u32 period_frames;
 	__u32 periods;
+	/* Zero preserves the native full-ring default; ALSA starts explicitly. */
+	__u32 start_threshold;
 	__u8 hardware;
 	__u8 memif;
 	__u8 irq;
@@ -69,6 +71,8 @@ static inline int n1x_adsp_pcm_encode(__u8 *packet, size_t capacity,
 		return -ERANGE;
 	if (config->bytes != frames * frame_bytes)
 		return -EINVAL;
+	if (config->start_threshold > frames)
+		return -ERANGE;
 
 	n1x_adsp_pcm_put64(prepared, config->address);
 	n1x_adsp_pcm_put64(prepared + 8, config->address + config->bytes);
@@ -79,7 +83,7 @@ static inline int n1x_adsp_pcm_encode(__u8 *packet, size_t capacity,
 	n1x_adsp_ipc_put32(prepared + 52, config->rate);
 	n1x_adsp_ipc_put32(prepared + 56, config->channels);
 	n1x_adsp_ipc_put32(prepared + 60, 1);
-	n1x_adsp_ipc_put32(prepared + 64, frames);
+	n1x_adsp_ipc_put32(prepared + 64, config->start_threshold ?: frames);
 	n1x_adsp_ipc_put32(prepared + 68, 0xffffffff);
 	n1x_adsp_ipc_put32(prepared + 72, config->period_frames);
 	n1x_adsp_ipc_put32(prepared + 76, config->periods);

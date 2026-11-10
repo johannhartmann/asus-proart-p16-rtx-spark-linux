@@ -53,6 +53,35 @@ static void test_vectors(void)
 	assert(n1x_adsp_ipc_get32(packet + 32) == 7680);
 }
 
+static void test_start_policy(void)
+{
+	struct n1x_adsp_pcm_config config = host;
+	__u8 packet[N1X_ADSP_PCM_BYTES], before[N1X_ADSP_PCM_BYTES];
+	unsigned int frames = host.period_frames * host.periods;
+
+	/* Windows' default full-ring gate exceeds a partial ALSA prefill. ALSA
+	 * already controls START, so the Linux pipeline uses one frame instead.
+	 */
+	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &config));
+	assert(n1x_adsp_ipc_get32(packet + 64) > host.period_frames * 2);
+	config.start_threshold = 1;
+	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &config));
+	assert(n1x_adsp_ipc_get32(packet + 64) == 1);
+	assert(!n1x_adsp_pcm_producer_encode(packet, sizeof(packet), &config,
+					  config.address, config.bytes / 2, 0));
+	assert(n1x_adsp_ipc_get32(packet + 64) == 1);
+	config.hardware = 1;
+	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &config));
+	assert(n1x_adsp_ipc_get32(packet + 64) == 1);
+	config.start_threshold = frames;
+	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &config));
+	assert(n1x_adsp_ipc_get32(packet + 64) == frames);
+	memcpy(before, packet, sizeof(packet));
+	config.start_threshold = frames + 1;
+	assert(n1x_adsp_pcm_encode(packet, sizeof(packet), &config) == -ERANGE);
+	assert(!memcmp(packet, before, sizeof(packet)));
+}
+
 static void test_rejections(void)
 {
 	__u8 packet[N1X_ADSP_PCM_BYTES], before[N1X_ADSP_PCM_BYTES];
@@ -279,6 +308,7 @@ static void test_producer_publication(void)
 int main(void)
 {
 	test_vectors();
+	test_start_policy();
 	test_rejections();
 	test_consumed_position();
 	test_producer_publication();

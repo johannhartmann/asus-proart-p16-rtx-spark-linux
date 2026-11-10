@@ -32,6 +32,13 @@ sleep qualification.** Keep the known-working boot entry and install the exact
 matching kernel, AFE/machine modules, DSP and SROOT provider as a separate test
 boot. Never replace an already-published live instance.
 
+DSP 0.1.19 removes the second full-ring start gate for the explicit ALSA START.
+It also compares mailbox state immediately before D3 and after D0 instead of
+assuming that startup fields retain their original boot values. `sleep_status`
+records the before/after words and whether the comparison ran. These are
+candidate corrections; matching mailbox words alone do not establish firmware
+liveness. Both streaming and sleep recovery still require physical tests.
+
 ## Build and install
 
 The kernel recipe includes the generated
