@@ -162,6 +162,38 @@ bool mt8901_afe_sram_busy(struct mtk_base_afe *afe)
 	return priv->sram && atomic_read(&priv->sram->users) && !priv->sram->sleep_saved;
 }
 
+/* Caller owns the ALSA stream lifetime; the returned card device is referenced. */
+struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd;
+	struct snd_soc_dai *dai;
+	struct mtk_base_afe *afe;
+	struct device *card = ERR_PTR(-EINVAL);
+
+	if (!substream || !substream->pcm || !substream->runtime ||
+	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+		return card;
+	rtd = snd_soc_substream_to_rtd(substream);
+	if (!rtd || !rtd->card || !snd_soc_card_is_instantiated(rtd->card) ||
+	    !rtd->card->dev || substream->pcm->card != rtd->card->snd_card)
+		return card;
+	dai = snd_soc_rtd_to_cpu(rtd, 0);
+	if (!dai || !dai->dev || dai->id != MT8901_AFE_MEMIF_DL0)
+		return card;
+	device_lock(dai->dev);
+	if (dai->dev->driver != &mt8901_afe_pcm_driver.driver)
+		goto unlock;
+	afe = snd_soc_dai_get_drvdata(dai);
+	if (!afe || afe->dev != dai->dev || dai->id >= afe->memif_size ||
+	    afe->memif[dai->id].substream != substream)
+		goto unlock;
+	card = get_device(rtd->card->dev);
+unlock:
+	device_unlock(dai->dev);
+	return card;
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_pcm_card_device);
+
 struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve(struct device *dev, size_t bytes)
 {
 	struct mt8901_afe_sram_buffer *buffer;
@@ -538,26 +570,14 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(mt8901_afe_sram_prepare);
 
-int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
+/* Both normal and prepared-after-resume START must restore volatile IRQ config. */
+static int mt8901_afe_sram_program_irq(struct mt8901_afe_sram_buffer *buffer,
+				       struct mtk_base_afe *afe)
 {
 	const struct mtk_base_irq_data *irq;
-	struct mtk_base_afe *afe;
 	u32 control;
 	int ret, fs, domain, cfg;
 
-	if (IS_ERR_OR_NULL(buffer) || buffer->ipc)
-		return -EINVAL;
-	device_lock(buffer->dev);
-	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, false);
-	if (ret)
-		goto unlock;
-	ret = buffer->prepare_error ?: buffer->irq_error ?: buffer->irq_stop_error;
-	if (ret || buffer->irq_prepared)
-		goto unlock;
-	if (!buffer->prepared) {
-		ret = -EINVAL;
-		goto unlock;
-	}
 	irq = afe->irqs[buffer->endpoint.irq].irq_data;
 	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
 	if (!irq || !afe->irq_fs || irq->id != buffer->endpoint.irq ||
@@ -565,37 +585,52 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
 	    irq->irq_domain_reg != cfg || irq->irq_domain_shift != 9 ||
 	    irq->irq_domain_maskbit != 7 || irq->irq_cnt_reg != cfg + 4 ||
 	    irq->irq_cnt_shift || irq->irq_cnt_maskbit != 0xffffff ||
-	    irq->irq_en_reg != cfg || irq->irq_en_shift) {
-		ret = -EOPNOTSUPP;
-		goto unlock;
-	}
+	    irq->irq_en_reg != cfg || irq->irq_en_shift)
+		return -EOPNOTSUPP;
 	fs = afe->irq_fs(buffer->substream, buffer->endpoint.rate);
 	domain = mt8901_afe_sram_domain(afe, buffer->endpoint.memif);
-	if (fs < 0 || domain < 0) {
-		ret = fs < 0 ? fs : domain;
-		goto unlock;
-	}
-	if (fs > 0x1f || domain > 7 || buffer->endpoint.period_frames > 0xffffff) {
-		ret = -ERANGE;
-		goto unlock;
-	}
+	if (fs < 0 || domain < 0)
+		return fs < 0 ? fs : domain;
+	if (fs > 0x1f || domain > 7 || buffer->endpoint.period_frames > 0xffffff)
+		return -ERANGE;
 	ret = regmap_read(afe->regmap, cfg, &control);
 	if (ret)
-		goto unlock;
-	if (control & BIT(irq->irq_en_shift)) {
-		ret = -EBUSY;
-		goto unlock;
-	}
+		return ret;
+	if (control & BIT(irq->irq_en_shift))
+		return -EBUSY;
 	ret = regmap_update_bits(afe->regmap, cfg + 4, 0xffffff,
 				 buffer->endpoint.period_frames);
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, cfg, 0x1f << 4, fs << 4);
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, cfg, 7 << 9, domain << 9);
-	if (ret) {
+	if (ret)
 		buffer->irq_error = ret;
+	return ret;
+}
+
+int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
+{
+	struct mtk_base_afe *afe;
+	int ret;
+
+	if (IS_ERR_OR_NULL(buffer) || buffer->ipc)
+		return -EINVAL;
+	device_lock(buffer->dev);
+	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, false);
+	if (ret)
+		goto unlock;
+	ret = buffer->prepare_error ?: buffer->irq_error ?: buffer->irq_stop_error ?:
+		buffer->start_error;
+	if (ret || buffer->irq_prepared)
+		goto unlock;
+	if (!buffer->prepared) {
+		ret = -EINVAL;
 		goto unlock;
 	}
+	ret = mt8901_afe_sram_program_irq(buffer, afe);
+	if (ret)
+		goto unlock;
 	buffer->irq_prepared = true;
 	buffer->irq_stopped = false;
 unlock:
@@ -658,6 +693,9 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 		ret = -EOPNOTSUPP;
 		goto unlock;
 	}
+	ret = mt8901_afe_sram_program_irq(buffer, afe);
+	if (ret)
+		goto unlock;
 	bit = BIT(buffer->endpoint.irq);
 	ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
 	if (!ret)

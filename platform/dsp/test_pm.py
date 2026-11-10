@@ -30,17 +30,27 @@ def main():
 #include <string.h>
 #include <sys/types.h>
 #include "n1x_sroot_client.h"
-struct device {int unused;};
+struct device {void *driver;};
 struct device_attribute {int unused;};
 struct work_struct {int unused;};
 struct target {unsigned dram_bytes;};
+struct device_link {struct device *consumer;};
+struct snd_pcm_substream {int unused;};
+struct n1x_adsp_primary {struct device_link *card_link;struct snd_pcm_substream *substream;};
+static struct n1x_adsp_primary primary;
+static struct device card_device;
+static struct device_link card_link;
+static struct snd_pcm_substream substream;
+static bool card_bound=true,card_api_missing;
+static unsigned card_refs;
 struct n1x_adsp {
  pthread_mutex_t lock;
  struct device *dev;
  bool published, sleep_prepared, sleep_suspended, sleep_irq_disabled;
  bool boot_ready, ipc_poisoned, primary_task_active, processing_active;
  bool component_registered, sleep_pcm, sleep_messages, sleep_draining, primary_running;
- void *pwrap, *primary_owner, *primary_sram, *processing_messages;
+ void *pwrap, *primary_sram, *processing_messages;
+ struct n1x_adsp_primary *primary_owner;
  uint8_t *mailbox, *shared;
  int power_error, error, sleep_error, irq;
  int primary_error, primary_task_error, primary_pcm_error, primary_period_error;
@@ -89,7 +99,7 @@ static void *dev_get_drvdata(struct device *d) {assert(d==&dev);return &dsp;}
 static int atomic_read(int *v) {return *v;}
 static int mtk_pwrap_dev_suspend(void *p, int flags)
 {assert(p==&dsp && flags==(dsp.published?1:0));
- if(dsp.published) assert(locked && dsp.sleep_irq_disabled && flushes && (!dsp.primary_owner || dsp.component_registered));
+ if(dsp.published) assert(locked && dsp.sleep_irq_disabled && flushes && (!dsp.primary_owner || dsp.primary_owner->card_link));
  suspends++;return suspend_result;}
 static int mtk_pwrap_dev_resume(void *p, int flags)
 {assert(p==&dsp && flags==(dsp.published?1:0));
@@ -139,7 +149,13 @@ static int mt8901_afe_sram_suspend(struct mt8901_afe_sram_buffer *b)
 {assert(b && locked && dsp.sleep_suspended && dsp.sleep_irq_disabled);sram_votes++;return 0;}
 static int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *b)
 {assert(b && locked && dsp.sleep_suspended && dsp.sleep_irq_disabled);sram_wakes++;return afe_restored?0:-EHOSTDOWN;}
-#define symbol_get(n) n
+static struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *s)
+{assert(s==&substream && locked);if(!card_bound)return (void *)(intptr_t)-EINVAL;card_refs++;return &card_device;}
+static void put_device(struct device *d) {assert(d==&card_device && card_refs);card_refs--;}
+static void *fake_get_symbol(void *symbol,const char *name)
+{return card_api_missing && !strcmp(name,"mt8901_afe_pcm_card_device")?NULL:symbol;}
+#define IS_ERR_OR_NULL(p) (!(p)||(uintptr_t)(p)>=(uintptr_t)-4095)
+#define symbol_get(n) ((typeof(&n))fake_get_symbol((void *)n,#n))
 #define symbol_put(n) ((void)0)
 ''' + failed + callbacks + inspect + ready + r'''
 static void reset(void)
@@ -152,7 +168,7 @@ static void reset(void)
  warnings=suspends=resumes=gets=pm_puts=reads=disables=enables=flushes=votes=wakes=0;
  runtime_suspends=runtime_resumes=0;
  suspend_result=resume_result=get_result=vote_result=wake_result=0;
- privileged=tx_idle=true;pending=corrupted=corrupted_bytes=worker_fault=consumed_boot_config=false;
+ assert(!card_refs);card_bound=true;card_api_missing=false;card_device.driver=&dsp;card_link.consumer=&card_device;primary.card_link=NULL;primary.substream=NULL;privileged=tx_idle=true;pending=corrupted=corrupted_bytes=worker_fault=consumed_boot_config=false;
  enable_retention_sleep=false;pm_suspend_target_state=PM_SUSPEND_TO_IDLE;
  sram_votes=sram_wakes=0;afe_restored=true;
 }
@@ -205,12 +221,26 @@ int main(void)
   assert(disables==1 && enables==1 && !dsp.sleep_irq_disabled);
   n1x_adsp_complete(&dev);assert(!dsp.sleep_prepared);
  }
- for(unsigned f=0;f<5;f++) {
-  healthy();switch(f){case 0:dsp.primary_owner=&dsp;break;case 1:dsp.primary_task_active=true;break;
-   case 2:dsp.processing_active=true;break;case 3:dsp.primary_sram=&dsp;break;
-   case 4:dsp.processing_messages=&dsp;break;}
+ for(unsigned registered=0;registered<2;registered++)for(unsigned f=0;f<3;f++) {
+  healthy();dsp.component_registered=registered;
+  switch(f){case 0:dsp.primary_owner=&primary;break;
+   case 1:dsp.primary_task_active=true;break;case 2:dsp.processing_active=true;break;}
   assert(sleep_cycle()==-EBUSY && !disables && !dsp.sleep_prepared);
  }
+ /* Closed retained memory needs its SRAM votes, not a fabricated active card. */
+ healthy();dsp.primary_sram=(void *)1;dsp.processing_messages=(void *)2;
+ assert(!sleep_cycle() && sram_votes==2 && sram_wakes==2);
+ for(unsigned f=0;f<5;f++) {
+  healthy();dsp.component_registered=true;dsp.primary_owner=&primary;
+  primary.card_link=&card_link;primary.substream=&substream;
+  switch(f){case 0:card_bound=false;break;case 1:card_api_missing=true;break;
+   case 2:card_link.consumer=&dev;break;case 3:card_device.driver=NULL;break;
+   case 4:primary.substream=NULL;break;}
+  assert(sleep_cycle()==-EBUSY && !disables && !card_refs);
+ }
+ /* A real card link permits even an idle OPEN with no configured ring. */
+ healthy();dsp.primary_owner=&primary;primary.card_link=&card_link;primary.substream=&substream;
+ assert(!sleep_cycle() && !sram_votes);
  healthy();for(unsigned i=0;i<32;i++) {
   assert(!sleep_cycle() && dsp.sleep_cycles==i+1 && !dsp.sleep_suspended && !dsp.sleep_irq_disabled);
   assert(dsp.published && dsp.boot_ready && !dsp.error && !dsp.sleep_prepared);
@@ -243,7 +273,7 @@ int main(void)
  assert(sleep_cycle()==-ETIMEDOUT && !enables && dsp.sleep_irq_disabled && dsp.error);
 
  healthy();dsp.component_registered=true;dsp.primary_task_active=dsp.processing_active=true;
- dsp.primary_owner=&dsp;dsp.primary_sram=(void *)1;dsp.processing_messages=(void *)2;
+ dsp.primary_owner=&primary;primary.card_link=&card_link;primary.substream=&substream;dsp.primary_sram=(void *)1;dsp.processing_messages=(void *)2;
  assert(!sleep_cycle() && sram_votes==2 && sram_wakes==2 && !dsp.sleep_pcm && !dsp.sleep_messages);
  healthy();dsp.component_registered=true;dsp.primary_running=true;
  assert(sleep_cycle()==-EBUSY && !disables && !suspends); /* Missing ALSA stop. */

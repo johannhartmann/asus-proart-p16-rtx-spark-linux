@@ -16,7 +16,7 @@ def main():
     close = source[source.index('static void n1x_adsp_primary_period_disable('):
                    source.index('EXPORT_SYMBOL_GPL(n1x_adsp_primary_close);')]
     api = source[source.index('int n1x_adsp_primary_set_period('):
-                 source.index('module_platform_driver(n1x_adsp_driver);')]
+                 source.index('/* Bind PM ordering to the actual ALSA card,')]
     code = r'''
 #include <assert.h>
 #include <errno.h>
@@ -74,6 +74,7 @@ static void device_lock(struct device *dev)
 static void device_unlock(struct device *dev)
 {assert(dev==&device);assert(!pthread_mutex_unlock(&device_mutex));}
 static void *dev_get_drvdata(struct device *dev) {assert(dev==&device);return &dsp;}
+static void device_link_del(struct device_link *link) {assert(!link);}
 static void put_device(struct device *dev) {assert(dev==&device);device_puts++;}
 static void kfree(void *p) {assert(p==primary);free(p);frees++;}
 static int n1x_adsp_primary_command(struct n1x_adsp *context,u8 task,u16 command,u32 parameter)

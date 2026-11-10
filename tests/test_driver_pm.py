@@ -13,6 +13,10 @@ class DriverPMTests(unittest.TestCase):
         subprocess.run(['python3', str(ROOT / 'platform/dsp/test_pm.py')],
                        check=True, timeout=40)
 
+    def test_typed_pcm_card_and_pm_link_ownership(self):
+        subprocess.run(['python3', str(ROOT / 'platform/dsp/test_card_client.py')],
+                       check=True, timeout=40)
+
     def test_scp_reads_are_serialized_with_sleep(self):
         subprocess.run(['python3', str(ROOT / 'platform/scp/test_pm.py')],
                        check=True, timeout=40)

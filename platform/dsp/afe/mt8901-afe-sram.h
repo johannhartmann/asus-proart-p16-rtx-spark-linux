@@ -25,6 +25,12 @@ struct mt8901_afe_sram_endpoint {
 	bool published, irq_prepared;
 };
 
+/* Return a referenced, instantiated sound-card device for a real owned DL0
+ * playback stream, or ERR_PTR(). No firmware or power operation. The caller
+ * serializes stream lifetime and must put_device() the returned reference.
+ */
+struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream);
+
 /* Reserve and zero a multiple of 16 bytes from the AFE-owned SRAM pool.
  * Holds a device, module and runtime-PM reference until an unpublished lease
  * is released. Returns an exclusive handle or ERR_PTR(); sleeps.

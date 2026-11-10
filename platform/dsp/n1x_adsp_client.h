@@ -100,6 +100,14 @@ int n1x_adsp_prepare_primary(struct device *dev);
  */
 struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
 
+/* ALSA frontend variant. Validates an actual AFE-owned playback substream and
+ * retains a card-to-DSP system-PM link until close. Even an unconfigured open
+ * stream is ordered before DSP D3. Legacy open() clients have no such grant.
+ * Does not bypass the exclusive OPEN, firmware or lifetime checks; sleeps.
+ */
+struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *dev,
+						   struct snd_pcm_substream *substream);
+
 /* Reattach the persistent AFE ring after successful HWFREE/CLOSE and a fresh
  * OPEN. ENOENT means no ring exists yet; reserve/bind an initial lease instead.
  * No firmware request, allocation or release. Requires serialized ALSA setup.

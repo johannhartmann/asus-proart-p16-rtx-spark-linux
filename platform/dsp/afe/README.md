@@ -44,7 +44,10 @@ not changed by this preparation.
 After both task START acknowledgements, the frontend asks the AFE owner to
 start its published DL0 lease. The owner checks the active substream, prepared
 ring, IRQ metadata and sleep state, removes the MCU target, selects HiFi1,
-enables DL0 and enables the IRQ. Each update is checked and preserves unrelated
+restores the period/rate/domain, enables DL0 and enables the IRQ. Shared IRQ
+configuration and routing registers are volatile because firmware/hardware
+can modify them. Restoring configuration on every START also covers a prepared
+stream whose AFE lost power before it started. Each update is checked and preserves unrelated
 bits. A partial failure is terminal; the frontend requests normal task STOP
 without retrying START or releasing published memory.
 
@@ -69,6 +72,7 @@ fail without dereferencing the retired substream. Retirement is not release.
 python3 scripts/prepare-afe-sram-patch.py --output /tmp/p16-afe-sram.patch
 python3 platform/dsp/afe/test_sram.py
 python3 platform/dsp/afe/test_frontend.py
+python3 platform/dsp/afe/test_irq_cache.py
 python3 -m unittest discover -s tests -v
 ```
 
@@ -91,7 +95,10 @@ over the published memory. Rebind validates an idle IRQ and complete new ring
 geometry within the retained capacity. STOP/PREPARE/START reprograms the IRQ
 and resets cursors without allocating another ring or message pool.
 
-The ASoC card's auxiliary DSP components provide card → DSP system-PM links;
+The ASoC card's auxiliary DSP components provide card → DSP system-PM links.
+The typed PCM client also retains its own explicit card → DSP link after
+validating the instantiated card and DL0 substream; PM revalidates the binding.
+Registration of an unbound component and raw clients do not grant PM admission;
 DSP → AFE links order SRAM lifetime without a circular dependency. Each owner
 declares retention capability during setup and votes only after acknowledged
 DSP D3. Prepare rejects unmatched leases and freezes allocations. SRAM is saved

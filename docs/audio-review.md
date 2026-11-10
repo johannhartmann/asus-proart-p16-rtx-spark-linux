@@ -16,12 +16,13 @@ cached regmap. A cached old bit can therefore request the value already present
 in hardware, rather than acknowledge the current event. Read-modify-write of
 shared routing registers can likewise use an outdated image.
 
-This is unresolved. Model separate cache/hardware state in the tests and make
-shared-register reads and updates coherent with their actual ownership. A fix
-must also preserve period/rate/domain configuration across AFE power loss;
-marking complete configuration registers volatile without restoring their
-configuration is insufficient. Normal capture and prepared-but-not-running
-playback must remain correct as well as active DSP playback.
+The source correction makes shared IRQ configuration and target registers
+volatile. Native playback/capture configure their IRQ on START; the DSP SRAM
+owner now restores period, rate and domain on every actual START as well as
+initial preparation. Checked failures block the stream. The cache/hardware
+regression uses the patched native callbacks and separate hardware/cache
+images, exercises stale ACK and target state, and repeats power-loss cycles.
+These are offline results; the correction is not installed on the running boot.
 
 ### Component registration is insufficient PM ownership evidence
 
@@ -31,12 +32,15 @@ binds the component. The same primary API remains available to kernel clients
 that are not managed by that card. The actual callback admits a bare primary
 owner with registration true; no card or retained PCM lease is needed.
 
-This is unresolved. Admission of an active client must establish its actual
-card/stream relationship and the corresponding card-to-DSP PM dependency.
-A registration flag alone cannot demonstrate that ASoC will stop that client
-before DSP D3. Preserve the existing DSP-to-AFE and HiFi5 secondary-to-primary
-ordering, without introducing a dependency cycle. Test unbound components,
-legacy clients, failed card binding, idle open handles and active ALSA streams.
+The source correction adds a typed PCM open API. The AFE validates the real
+instantiated card, DL0 CPU DAI, bound AFE driver and current memif substream.
+The client owns an explicit card-to-DSP PM link until CLOSE, and records it
+under the DSP device/mutex locks. PM prepare revalidates that card/stream
+relationship and bound driver; legacy clients and incomplete grants are refused.
+Failed OPEN releases its link. Offline regressions cover those refusals, idle
+and active typed owners, link failures and successful CLOSE. The existing
+DSP-to-AFE and secondary-to-primary ordering is preserved. This correction
+also awaits hardware qualification.
 
 ### Known service faults were omitted from readiness and PM admission
 
@@ -49,7 +53,7 @@ The source correction uses the same retained-fault predicate for readiness,
 PM preparation and the final drained pre-D3 check. It does not clear errors,
 retry firmware or release memory. Actual-function tests cover every fault
 with and without component registration, plus faults arriving after prepare.
-This software correction does not fix the two issues above or qualify sleep.
+This software correction does not establish working sample transfer or qualify sleep.
 
 ## Unresolved data path
 
@@ -58,9 +62,15 @@ and produces a moving hardware read cursor. ALSA's hardware pointer and the
 DSP consumed-position notification count still remain zero. Ordinary ALSA
 writes after START advance the producer generation but do not restore progress.
 Host receive-control slices remain empty during the bounded silent test.
-These observations do not distinguish missing task consumption from missing
-notification delivery; silent DMA movement cannot prove either sample copying
-or correct output.
+A later bounded S16_LE pseudorandom-pattern test found 24,600 nonzero bytes
+in the 32,768-byte host ring, while the entire AFE ring remained zero in two
+read-only snapshots 20 ms apart. Its hardware cursor moved between snapshots.
+Speaker amplifier gains were temporarily attenuated and restored exactly;
+PipeWire mute/volume were preserved. This rules out using cursor movement as
+evidence of sample copying. Missing task consumption, processing/gain state
+and address translation still require separation; no consumed-position
+notifications arrived. S16_LE/S24_LE tests with 2/4/8 periods and full-ring or
+partial prefill did not restore progress.
 
 A bounded probe of the actual transfer replies confirmed task/command echoes
 for OPEN, HWPARAM, PREPARE, START, STOP and CLOSE. START's second scalar echoes
@@ -88,6 +98,41 @@ ALSA progress or arbitrary register writes to make this test appear successful.
 - Lockdep disabled itself after exhausting its configured entry budget on the
   current debug boot. This is not a successful lockdep run. Hardware-independent
   sanitizer tests and module compilation do not replace kernel qualification.
+
+Offline inspection of the exact signed HiFi1 image identified separate ITCM
+and DTCM payloads and literal references to the shared-DRAM overflow diagnostic
+and consume-notification function name. The standard Ghidra Xtensa decoder
+cannot decode all HiFi FLIX instructions (see the
+[upstream decoder report](https://github.com/NationalSecurityAgency/ghidra/issues/6342)).
+No complete firmware check has yet been reconstructed. In particular, an
+exclusive DRAM end of 4 GiB is a hypothesis to investigate, not evidence for
+changing the DMA window. The Windows INF permits the same upper bound.
+
+The local Cadence reference corpus contains NatureDSP HiFi3/3z and HiFi5
+sources and HiFi5 NNLib sources. `NDSP_HiFi5s_V310.zip` additionally contains
+1,332 relocatable objects with symbols. Their `.xtensa.info` identifies
+`hifi5s_ao_7`, config IDs `0xc0038286`/`0x2d0b75ad`, and RJ-2024.4. These
+provide source/binary pairs for decoder validation; they do not establish
+that the MT8901 HiFi1 has the same instruction encoding. The NNLib compatibility
+header explicitly handles HiFi1, but the archives do not provide its generated
+ISA decoder or the MediaTek audio task/IPC firmware source. The build guides
+require a separately installed core configuration and toolchain.
+
+A bounded read of the ACPI-described HiFi1 DTCM host aperture returned only
+zeros across its 384 KiB extent while the firmware still acknowledged normal
+task requests. This view provides no usable firmware log or heap snapshot;
+it is not evidence that the running firmware's internal DTCM is empty. The
+temporary read-only diagnostic was unloaded and issued no firmware commands.
+
+## Source correction validation
+
+DSP 0.1.21 and the matching AFE module build with `W=1` against kernel
+`7.2.8-31-rtx-spark-npu` without warnings. The 14 existing DSP export CRCs
+remain unchanged; the typed PCM API is additive. Driver protocol/sanitizer
+checks pass, as do 126 repository unit tests (two skipped). Patch replay is
+exact, and package versions and source checksums agree. These built modules
+have not replaced the live 0.1.19 DSP/AFE pair. Streaming, real sleep and
+post-wake audio/NPU execution remain release blockers.
 
 The normal default boot and recovery must stay preserved. Another test boot
 is useful only when it exercises a reviewed correction with explicit pass/fail

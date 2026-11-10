@@ -69,6 +69,8 @@ struct n1x_adsp_target {
 struct n1x_adsp_primary {
 	struct device *dev;
 	struct n1x_adsp *dsp;
+	struct device_link *card_link;
+	struct snd_pcm_substream *substream;
 };
 
 static const struct n1x_adsp_target targets[] = {
@@ -1001,6 +1003,30 @@ static int n1x_adsp_runtime_resume(struct device *dev)
 	return mtk_pwrap_dev_resume(dsp->pwrap, 0);
 }
 
+/* The typed ALSA owner keeps stream lifetime until close. Recheck actual
+ * card binding and the owned PM link; an old registration flag is insufficient.
+ */
+static bool n1x_adsp_card_managed(struct n1x_adsp *dsp)
+{
+	typeof(mt8901_afe_pcm_card_device) *card_device;
+	struct n1x_adsp_primary *primary = dsp->primary_owner;
+	struct device *card;
+	bool managed;
+
+	if (!primary || !primary->card_link || !primary->substream)
+		return false;
+	card_device = symbol_get(mt8901_afe_pcm_card_device);
+	if (!card_device)
+		return false;
+	card = card_device(primary->substream);
+	symbol_put(mt8901_afe_pcm_card_device);
+	if (IS_ERR_OR_NULL(card))
+		return false;
+	managed = card == primary->card_link->consumer && READ_ONCE(card->driver);
+	put_device(card);
+	return managed;
+}
+
 static int n1x_adsp_prepare(struct device *dev)
 {
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
@@ -1017,10 +1043,9 @@ static int n1x_adsp_prepare(struct device *dev)
 		else if (!dsp->boot_ready || !dsp->loader.accepted ||
 			 !dsp->loader.staging_released || n1x_adsp_failed(dsp))
 			err = -ENOTRECOVERABLE;
-		else if (!dsp->component_registered &&
-			 (dsp->primary_owner || dsp->primary_task_active ||
-			  dsp->processing_active ||
-			  dsp->primary_sram || dsp->processing_messages))
+		else if ((dsp->primary_owner || dsp->primary_task_active ||
+			  dsp->processing_active) &&
+			 !n1x_adsp_card_managed(dsp))
 			err = -EBUSY;
 		if (err)
 			dev_warn_ratelimited(dev,
@@ -1437,6 +1462,8 @@ unlock:
 unlock_device:
 	device_unlock(dev);
 	put_device(dev);
+	if (primary->card_link)
+		device_link_del(primary->card_link);
 	kfree(primary);
 	return err;
 }
@@ -2271,6 +2298,44 @@ int n1x_adsp_primary_position(struct n1x_adsp_primary *primary,
 }
 EXPORT_SYMBOL_GPL(n1x_adsp_primary_position);
 
+/* Bind PM ordering to the actual ALSA card, not to component registration. */
+struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *dev,
+						   struct snd_pcm_substream *substream)
+{
+	typeof(mt8901_afe_pcm_card_device) *card_device;
+	struct n1x_adsp_primary *primary;
+	struct device_link *link;
+	struct device *card;
+
+	if (!dev || !substream)
+		return ERR_PTR(-EINVAL);
+	card_device = symbol_get(mt8901_afe_pcm_card_device);
+	if (!card_device)
+		return ERR_PTR(-EOPNOTSUPP);
+	card = card_device(substream);
+	symbol_put(mt8901_afe_pcm_card_device);
+	if (IS_ERR_OR_NULL(card))
+		return card ? ERR_CAST(card) : ERR_PTR(-ENODEV);
+	link = device_link_add(card, dev, DL_FLAG_STATELESS);
+	put_device(card);
+	if (!link)
+		return ERR_PTR(-EINVAL);
+	primary = n1x_adsp_primary_open(dev);
+	if (IS_ERR(primary)) {
+		device_link_del(link);
+	} else {
+		/* PM admission rejects the owner until both references are recorded. */
+		device_lock(dev);
+		mutex_lock(&primary->dsp->lock);
+		primary->substream = substream;
+		primary->card_link = link;
+		mutex_unlock(&primary->dsp->lock);
+		device_unlock(dev);
+	}
+	return primary;
+}
+EXPORT_SYMBOL_GPL(n1x_adsp_primary_open_pcm);
+
 u32 n1x_adsp_primary_abi(void)
 {
 	return N1X_ADSP_PRIMARY_ABI;
@@ -2280,7 +2345,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.20");
+MODULE_VERSION("0.1.21");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

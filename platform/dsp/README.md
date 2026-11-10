@@ -47,6 +47,13 @@ D3/D0 requests with `sys_trans=1`. Hibernate and deep sleep remain rejected.
 With the option absent, published instances reject sleep in `prepare` before
 any audio device suspends.
 
+An active primary client is admitted only through `n1x_adsp_primary_open_pcm()`:
+the AFE validates its instantiated card and actual DL0 substream, and the
+client owns an explicit card-to-DSP PM link. Prepare rechecks the live binding;
+component registration alone and legacy/raw clients cannot grant PM admission.
+The link is released at CLOSE, including terminal failures; retained fault
+predicates still block D3 after a failed operation.
+
 Prepare freezes new work but permits the typed task STOP needed by ASoC.
 After ASoC has stopped streams, DSP suspend freezes all IPC, disables and
 synchronizes the IRQ and drains power work. Pending mailbox packets and an

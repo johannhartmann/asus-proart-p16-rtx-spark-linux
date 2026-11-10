@@ -97,9 +97,11 @@ struct mtk_base_afe {struct device *dev;struct mt8901_afe_private *platform_priv
  int (*irq_fs)(struct snd_pcm_substream *,unsigned);
  struct mtk_base_afe_memif memif[16];struct mtk_base_afe_irq irqs[22];int memif_size,irqs_size;};
 struct snd_soc_dai {struct device *dev;int id;void *data;};
-struct snd_soc_pcm_runtime {struct snd_soc_dai *cpu;};
+struct snd_soc_card {struct device *dev;void *snd_card;bool instantiated;};
+struct snd_pcm {void *card;};
+struct snd_soc_pcm_runtime {struct snd_soc_dai *cpu;struct snd_soc_card *card;};
 struct snd_pcm_runtime {u32 rate,channels,sample_bits,periods;u64 period_size;bool running;};
-struct snd_pcm_substream {int stream;struct snd_pcm_runtime *runtime;struct snd_soc_pcm_runtime *rtd;};
+struct snd_pcm_substream {struct snd_pcm *pcm;int stream;struct snd_pcm_runtime *runtime;struct snd_soc_pcm_runtime *rtd;};
 #define MT8901_AFE_MEMIF_NUM 16
 #define MT8901_AFE_MEMIF_UL_START 7
 #define SNDRV_PCM_STREAM_PLAYBACK 0
@@ -108,7 +110,10 @@ struct resource {unsigned long start,end;const char *name;};
 struct gen_pool {unsigned long base;unsigned char used[5120];};
 ''' + header + r'''
 static struct platform_driver mt8901_afe_pcm_driver;
-static struct device device;
+static struct device device,card_device;
+static struct snd_soc_card card;
+static struct snd_pcm pcm;
+static unsigned card_refs;
 static struct mt8901_afe_private private;
 static struct mtk_base_afe afe;
 static struct snd_soc_dai dai;
@@ -143,6 +148,7 @@ static void device_unlock(struct device *dev)
 static void *dev_get_drvdata(struct device *dev) {assert(dev==&device);return dev->data;}
 static void *snd_soc_dai_get_drvdata(struct snd_soc_dai *d) {return d->data;}
 static struct snd_soc_pcm_runtime *snd_soc_substream_to_rtd(struct snd_pcm_substream *s) {return s->rtd;}
+static bool snd_soc_card_is_instantiated(struct snd_soc_card *c) {return c && c->instantiated;}
 static struct snd_soc_dai *snd_soc_rtd_to_cpu(struct snd_soc_pcm_runtime *r,unsigned i) {assert(!i);return r->cpu;}
 static bool snd_pcm_running(struct snd_pcm_substream *s) {return s->runtime->running;}
 static int mtk_afe_fe_startup(struct snd_pcm_substream *s,struct snd_soc_dai *d)
@@ -161,11 +167,11 @@ static int regmap_read(void *map,int reg,u32 *value)
  if(irq_read_error)return irq_read_error;*value=cfg_word;return 0;}
 static int regmap_update_bits(void *map,int reg,u32 mask,u32 value)
 {if(engine_starting){
- assert(locked && pm_refs && pm_active && map==afe.regmap && engine_updates<4);
- const int regs[]={AFE_IRQ_MCU_EN,AFE_IRQ_MCU_DSP_EN,AFE_DL0_CON0,AFE_IRQ0_MCU_CFG0};
- const u32 masks[]={BIT(0),BIT(0),BIT(28),BIT(0)},values[]={0,BIT(0),BIT(28),BIT(0)};
+ assert(locked && pm_refs && pm_active && map==afe.regmap && engine_updates<7);
+ const int regs[]={0x9d44,0x9d40,0x9d40,AFE_IRQ_MCU_EN,AFE_IRQ_MCU_DSP_EN,AFE_DL0_CON0,AFE_IRQ0_MCU_CFG0};
+ const u32 masks[]={0xffffff,0x1f<<4,7<<9,BIT(0),BIT(0),BIT(28),BIT(0)},values[]={480,10<<4,1<<9,0,BIT(0),BIT(28),BIT(0)};
  assert(reg==regs[engine_updates] && mask==masks[engine_updates] && value==values[engine_updates]);
- u32 *word=reg==AFE_IRQ_MCU_EN?&mcu_word:reg==AFE_IRQ_MCU_DSP_EN?&dsp_word:reg==AFE_DL0_CON0?&memif_word:&cfg_word;
+ u32 *word=reg==AFE_IRQ_MCU_EN?&mcu_word:reg==AFE_IRQ_MCU_DSP_EN?&dsp_word:reg==AFE_DL0_CON0?&memif_word:reg==0x9d44?&counter_word:&cfg_word;
  *word=(*word&~mask)|(value&mask);engine_updates++;return engine_updates==engine_fail_at?-EIO:0;
  }if(irq_stopping){
  assert(locked && pm_refs && pm_active && map==afe.regmap && stop_calls<6 && stop_calls!=2);
@@ -242,8 +248,8 @@ static void gen_pool_free(struct gen_pool *p,unsigned long address,size_t n)
 static bool try_module_get(void *module)
 {assert(module==THIS_MODULE && locked);if(!module_alive)return false;module_refs++;return true;}
 static void module_put(void *module) {assert(module==THIS_MODULE && module_refs);module_refs--;}
-static struct device *get_device(struct device *dev) {assert(dev==&device && locked);device_refs++;return dev;}
-static void put_device(struct device *dev) {assert(dev==&device && device_refs);device_refs--;}
+static struct device *get_device(struct device *dev) {assert(locked);if(dev==&card_device){card_refs++;return dev;}assert(dev==&device);device_refs++;return dev;}
+static void put_device(struct device *dev) {if(dev==&card_device){assert(card_refs);card_refs--;return;}assert(dev==&device && device_refs);device_refs--;}
 static bool pm_runtime_enabled(struct device *dev) {assert(dev==&device && locked);return pm_enabled;}
 static int pm_runtime_resume_and_get(struct device *dev)
 {assert(dev==&device && locked && module_refs);if(resume_error)return resume_error;pm_refs++;pm_active=true;return 0;}
@@ -282,8 +288,10 @@ static void reset(void)
  afe.dev=&device;afe.platform_priv=&private;afe.regmap=(void *)3;
  afe.memif_size=16;afe.irqs_size=22;
  dai=(struct snd_soc_dai){.dev=&device,.id=0,.data=&afe};rtd.cpu=&dai;
+ card=(struct snd_soc_card){.dev=&card_device,.snd_card=&pcm,.instantiated=true};
+ pcm.card=&pcm;rtd.card=&card;
  runtime=(struct snd_pcm_runtime){.rate=48000,.channels=2,.sample_bits=16,.period_size=480,.periods=2};
- stream=(struct snd_pcm_substream){.runtime=&runtime,.rtd=&rtd};
+ stream=(struct snd_pcm_substream){.pcm=&pcm,.runtime=&runtime,.rtd=&rtd};
  for(unsigned i=0;i<16;i++){afe.memif[i].substream=&stream;afe.memif[i].irq_usage=i;}
  for(unsigned i=0;i<22;i++)afe.irqs[i].irq_occupyed=true;
  init_fault=property_fault=property_changed=resume_error=datapath_error=0;dsp_enabled=false;
@@ -322,6 +330,17 @@ static void *irq_prepare_thread(void *arg)
 {assert(!mt8901_afe_sram_prepare_irq(arg));return NULL;}
 int main(void)
 {
+ reset();assert(IS_ERR(mt8901_afe_pcm_card_device(NULL)));
+ for(unsigned fault=0;fault<10;fault++) {
+  reset();
+  switch(fault){case 1:card.instantiated=false;break;case 2:card.dev=NULL;break;
+   case 3:pcm.card=NULL;break;case 4:stream.pcm=NULL;break;case 5:stream.stream=1;break;
+   case 6:afe.memif[0].substream=NULL;break;case 7:device.driver=NULL;break;
+   case 8:dai.id=1;break;case 9:rtd.card=NULL;break;}
+  struct device *result=mt8901_afe_pcm_card_device(&stream);
+  if(!fault){assert(result==&card_device && card_refs==1);put_device(result);}
+  else assert(IS_ERR(result) && !card_refs);
+ }
  reset();property_present=false;assert(!mt8901_afe_sram_init(&afe) && !private.sram && !managed_count);
  for(unsigned fault=0;fault<12;fault++){
   reset();if(fault==0)version=2;else if(fault==1)count=2;else if(fault==2)node_present=false;
@@ -587,7 +606,7 @@ int main(void)
  }
  assert(mt8901_afe_sram_start_pcm(NULL,&dai)==-EINVAL);
  assert(mt8901_afe_sram_start_pcm(&stream,NULL)==-EINVAL);
- for(unsigned fault=0;fault<27;fault++) {
+ for(unsigned fault=0;fault<30;fault++) {
   reset();init();child=fork();assert(child>=0);
   if(!child) {
    b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
@@ -596,26 +615,27 @@ int main(void)
    runtime.running=true;engine_starting=true;dsp_word&=~BIT(0);
    u32 old_memif=memif_word,old_cfg=cfg_word,old_mcu=mcu_word,old_dsp=dsp_word;
    switch(fault) {
-   case 1:case 2:case 3:case 4:engine_fail_at=fault;break;
-   case 5:b->irq_prepared=false;break;case 6:b->substream=NULL;break;
-   case 7:b->published=false;break;case 8:b->sram->sleep_prepared=true;break;
-   case 9:b->sram->sleep_saved=true;break;case 10:memif_data.enable_reg+=4;break;
-   case 11:memif_data.enable_shift=27;break;case 12:irq_data.irq_en_reg+=4;break;
-   case 13:device.driver=NULL;break;case 14:dai.id=1;break;
-   case 15:b->start_error=-EIO;break;case 16:runtime.rate++;break;
-   case 17:b->sram->memif[0]=NULL;break;case 18:b->prepared=false;break;
-   case 19:b->ipc=true;break;case 20:private.sram=NULL;break;
-   case 21:stream.stream=1;break;case 22:b->irq_stopped=true;break;
-   case 23:b->irq_stop_error=-EIO;break;case 24:irq_data.irq_mask_reg+=4;break;
-   case 25:irq_data.irq_en_shift=1;break;
-   case 26:dai.dev=NULL;break;
+   case 1:case 2:case 3:case 4:case 5:case 6:case 7:engine_fail_at=fault;break;
+   case 8:b->irq_prepared=false;break;case 9:b->substream=NULL;break;
+   case 10:b->published=false;break;case 11:b->sram->sleep_prepared=true;break;
+   case 12:b->sram->sleep_saved=true;break;case 13:memif_data.enable_reg+=4;break;
+   case 14:memif_data.enable_shift=27;break;case 15:irq_data.irq_en_reg+=4;break;
+   case 16:device.driver=NULL;break;case 17:dai.id=1;break;
+   case 18:b->start_error=-EIO;break;case 19:runtime.rate++;break;
+   case 20:b->sram->memif[0]=NULL;break;case 21:b->prepared=false;break;
+   case 22:b->ipc=true;break;case 23:private.sram=NULL;break;
+   case 24:stream.stream=1;break;case 25:b->irq_stopped=true;break;
+   case 26:b->irq_stop_error=-EIO;break;case 27:irq_data.irq_mask_reg+=4;break;
+   case 28:irq_data.irq_en_shift=1;break;
+   case 29:dai.dev=NULL;break;
    }
+   if(!fault){cfg_word&=~((0x1fU<<4)|(7U<<9));counter_word&=~0xffffffU;}
    int result=mt8901_afe_sram_start_pcm(&stream,&dai);
    if(!fault) {
-    assert(!result && b->started && engine_updates==4);
+    assert(!result && b->started && engine_updates==7);
     assert(memif_word==(old_memif|BIT(28)) && cfg_word==(old_cfg|1U));
     assert(mcu_word==(old_mcu&~1U) && dsp_word==(old_dsp|1U));
-    assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==4);
+    assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==7);
     for(unsigned cycle=0;cycle<32;cycle++) {
      engine_starting=false;irq_stopping=true;stop_calls=0;
      assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && !b->started);
@@ -623,14 +643,15 @@ int main(void)
      runtime.running=false;irq_stopping=false;irq_updates=0;
      assert(!mt8901_afe_sram_prepare_irq(b));
      runtime.running=true;engine_starting=true;engine_updates=0;
-     assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==4 && b->started);
+     assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==7 && b->started);
     }
-   } else if(fault<=4) {
-    assert(result==-EIO && engine_updates==fault && !b->started && b->start_error==-EIO);
+   } else if(fault<=7) {
+    assert(result==-EIO && engine_updates==fault && !b->started && (fault<=3?b->irq_error:b->start_error)==-EIO);
     engine_fail_at=0;assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && engine_updates==fault);
     assert(mt8901_afe_sram_pm_prepare(&afe)==-ENOTRECOVERABLE);
     engine_starting=false;irq_stopping=true;
-    assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && b->start_error==-EIO);
+    if(fault<=3)assert(mt8901_afe_sram_stop_irq(b,3)==-EIO && !stop_calls && b->irq_error==-EIO);
+    else assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && b->start_error==-EIO);
    } else {
     assert(result<0 && !engine_updates && !b->started);
     assert(memif_word==old_memif && cfg_word==old_cfg && mcu_word==old_mcu && dsp_word==old_dsp);

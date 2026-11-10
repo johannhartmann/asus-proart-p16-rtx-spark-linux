@@ -74,6 +74,8 @@ static void put_device(struct device *dev)
 static void *kzalloc(size_t bytes,int flags)
 {assert(bytes==sizeof(struct n1x_adsp_primary) && !flags && device_locked && request_locked);
  if(allocation_error)return NULL;void *p=calloc(1,bytes);assert(p);allocations++;return p;}
+static unsigned link_deletes;
+static void device_link_del(struct device_link *link) {assert(link==(void *)0x1234 && !device_locked && !request_locked);link_deletes++;}
 static void kfree(void *p) {assert(p && allocations);allocations--;free(p);}
 static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *context)
 {assert(context==&dsp && device_locked==1 && request_locked==1);prepares++;return prepare_error;}
@@ -113,7 +115,8 @@ int main(void)
  reset();struct n1x_adsp_primary *client=n1x_adsp_primary_open(&device);
  assert(!IS_ERR(client) && dsp.primary_owner==client && refs==1 && allocations==1 && calls==1);
  assert(PTR_ERR(n1x_adsp_primary_open(&device))==-EBUSY && calls==1 && prepares==1);
- assert(!n1x_adsp_primary_close(client) && calls==3 && !dsp.primary_task_active);
+ client->card_link=(void *)0x1234;
+ assert(!n1x_adsp_primary_close(client) && calls==3 && !dsp.primary_task_active && link_deletes==1);
  assert(!dsp.primary_owner && !dsp.primary_task_error);released();
  client=n1x_adsp_primary_open(&device);assert(!IS_ERR(client) && calls==4);
  assert(!n1x_adsp_primary_close(client) && calls==6);released();

@@ -1,5 +1,5 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.20
+pkgver=0.1.21
 pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
@@ -13,40 +13,42 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'n1x_adsp_ipc.h' 'n1x_adsp_client.h' 'test_transport.py' 'ipc_test.c' 'protocol.md'
         'test_primary.py' 'test_lifecycle.py' 'n1x_adsp_pcm.h' 'pcm_test.c'
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
-        'test_pm.py' 'test_device_lookup.py' 'test_provider.py'
+        'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
         'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('4cbb5285168eee8735045aefd68c971eff1b51c534d79c4e3af426bd39d6247e'
+sha256sums=('987d5a166d1b7bbaae8221d093d08db181dabfb16ae66489636ba9167ed67a3a'
             'd68ffe347aa22c2b9318e4f199e4001b85ed471ad40efe5dc789049965cfec5c'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '736b74c3237e4b99a416dd15d36f91cb85057bf52c15c9bb2da86788bf2c912d'
+            '3ef88fa2e3fc39ffd55cc01fab267755e2e0a648c4cfe8b281709b406318dec8'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
             '09092fa06397294e4540d8df94cfb509a762a271f571d4323e806dbd92b24372'
-            'fa400251131788ffc291b97155482ced68d30d502cf03997184d303b0d9258dc'
+            '372c80c3caaecf8b5f46466a9218029fe53132c807b551ccf014c7c81640e087'
             'c021112fb9e6754a60191461dfaccfb18aacf0b688eb8118ae02ea262c4185af'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
-            '9323e9df871b5b0db92aa85a3ee6d06d9ad4acdcb224217e4b9a8b4c5cac821b'
+            '7bad602f3e3694f2a1baa682af33a75294a987e9cab54983d3e5487a19fac9f1'
             'e9aa0dcc0da19dd325a05c645cc3e7cbf4889bfdbd585ab3e84f5ec60afb7eed'
             '4179280ce67720d36b3eb23b86159a3bac59a26e855c717f5cf7ec6081478b7a'
             '2a7653ed87ae78941bcb402abf92c26f420ec0a6e56431e966828fe8b0a1beb8'
             '5ea01466df828631abebe5399071b15a6bde11ec7a70a9d11c384684ce55ccce'
-            '0de1ec9e583636b6a7362de3cc4e42a64a0056062a37323b37ecbb95dccb62a2'
+            '625f3a3db17b928464ea0d31b98f538f88591297e3534e38ed0bde75b31e1180'
             '01b7fdc92982dc3061f46ce1500574b7340bd74815f4dbd2fe5bd520424b97ac'
             'b2d8f46fc0071b3fdf711c93ac653c6b73aef504811b55c61bc3dbaf6530acf8'
-            'e0ccd3b8aa5c449835b51546368addfa20fb3539c6f7dda40697c5c1dfe6defc'
-            'd4652a8737138fa8e4e43cfdeca55bc84ed69fc4114570390510a6b7877d7f23'
-            'b1660652305eb73686e0c0f3bc931f1a64f0c9f5ed61caf444c9c91d1c9c9b3d'
+            'edfc3726dca67733241ba2daf92d2451945ffe567302965a8ad9ea27655dcec5'
+            'fb2c76c7a425bb23996fd132b57449d911a344c2ce860c2145fe767ba606cf73'
+            '796211f2465f79036aa6020ad057ae87458435fb7406ac5f32afd2956618e8fc'
             '1e9c5fc77c67ab8ff60e66fc9531e0badc441d7b5bbe914a2ffaa1a0e61f8d93'
-            '36efa2df567968236d25fb0a756be4e2409805decac80b9eca021512c5cdfca6'
-            '0b1f7717557f14d43303034e9d013bb9ac3802da94e61c75d272c3549bc629f1'
+            '2bf7e06558e91c71420ff1e95912df855cbc985220ead6b2aa162c2ec8b293b7'
+            '04428c5cbce9b00603ad5f3fd3eddd51c779d98da6dddb790d5c3073b501f7dc'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
             '6ae7b254086c4ece4efce01e235e5bc4886158924b1a751ab73d00a1d359ac53'
+            '26c568e81d01fcd1b69c28dc4cf79a2f70942aa3f68ca1a7d5bd9ecf0413e74a'
             '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'
             'fcc9ebb0d2e808cc635d5d73190e55852a4e6c6df571c3816c3e3dc3809d0c31')
 
 check() {
   cd "$srcdir"
   python test_device_lookup.py
+  python test_card_client.py
   python test_provider.py
   python test_driver.py
   python test_pm.py

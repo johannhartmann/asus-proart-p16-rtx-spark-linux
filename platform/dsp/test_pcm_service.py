@@ -80,6 +80,7 @@ static struct device *get_device(struct device *dev) {assert(dev==&device && req
 static void put_device(struct device *dev) {assert(dev==&device && !dev_locked && refs);refs--;}
 static void *kzalloc(size_t n,int flags)
 {assert(n==sizeof(struct n1x_adsp_primary) && !flags && request_locked);void *p=calloc(1,n);assert(p);allocations++;return p;}
+static void device_link_del(struct device_link *link) {assert(!link);}
 static void kfree(void *p) {assert(p && allocations);allocations--;free(p);}
 static void dma_wmb(void) {assert(dev_locked && request_locked);barriers++;}
 static void wmb(void) {assert(dev_locked && request_locked);barriers++;}

@@ -39,7 +39,7 @@ struct mt8901_afe_dsp {
 	bool configured, prepared, listening, closing, running, samples;
 	int error;
 	typeof(n1x_adsp_primary_abi) *abi;
-	typeof(n1x_adsp_primary_open) *open;
+	typeof(n1x_adsp_primary_open_pcm) *open;
 	typeof(n1x_adsp_primary_rebind) *rebind;
 	typeof(n1x_adsp_primary_configure) *configure;
 	typeof(n1x_adsp_primary_prepare_pcm) *prepare;
@@ -73,7 +73,7 @@ static void mt8901_afe_dsp_put_ops(struct mt8901_afe_dsp *dsp)
 	if (dsp->abi)
 		symbol_put(n1x_adsp_primary_abi);
 	if (dsp->open)
-		symbol_put(n1x_adsp_primary_open);
+		symbol_put(n1x_adsp_primary_open_pcm);
 	if (dsp->rebind)
 		symbol_put(n1x_adsp_primary_rebind);
 	if (dsp->configure)
@@ -182,7 +182,7 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	if (!dsp)
 		return -ENOMEM;
 	dsp->abi = symbol_get(n1x_adsp_primary_abi);
-	dsp->open = symbol_get(n1x_adsp_primary_open);
+	dsp->open = symbol_get(n1x_adsp_primary_open_pcm);
 	dsp->rebind = symbol_get(n1x_adsp_primary_rebind);
 	dsp->configure = symbol_get(n1x_adsp_primary_configure);
 	dsp->prepare = symbol_get(n1x_adsp_primary_prepare_pcm);
@@ -214,7 +214,7 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 		ret = -ENODEV;
 		goto free;
 	}
-	dsp->primary = dsp->open(dev);
+	dsp->primary = dsp->open(dev, substream);
 	put_device(dev);
 	if (IS_ERR(dsp->primary)) {
 		ret = PTR_ERR(dsp->primary);

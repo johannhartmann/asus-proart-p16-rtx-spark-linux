@@ -53,6 +53,17 @@ def sources(base):
     path = 'sound/soc/mediatek/mt8901/mt8901-afe-pcm.c'
     after[path] = replace_once(after[path], '#include "mt8901-afe-clk.h"\n',
                               '#include "mt8901-afe-clk.h"\n#include "mt8901-afe-dsp.h"\n')
+    after[path] = replace_once(after[path],
+                              '\t/* registers with read-only bits cannot be cached */\n',
+                              '\t/* Firmware/hardware share IRQ targets and configuration. Never\n'
+                              '\t * acknowledge or update them from a stale cache image. Both native\n'
+                              '\t * and DSP START restore their period/rate/domain before enabling.\n'
+                              '\t */\n'
+                              '\tif ((reg >= AFE_IRQ0_MCU_CFG0 && reg <= AFE_IRQ21_MCU_CFG1) ||\n'
+                              '\t    reg == AFE_IRQ_MCU_EN || reg == AFE_IRQ_MCU_DSP_EN ||\n'
+                              '\t    reg == AFE_IRQ_MCU_DSP2_EN || reg == AFE_IRQ_MCU_SCP_EN)\n'
+                              '\t\treturn true;\n\n'
+                              '\t/* registers with read-only bits cannot be cached */\n')
     after[path] = replace_once(after[path], 'static int mt8901_afe_fe_trigger(',
                               'int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id)\n'
                               '{\n'

@@ -74,6 +74,7 @@ static struct device *get_device(struct device *dev) {assert(dev==&device && req
 static void put_device(struct device *dev) {assert(dev==&device && !dev_locked && refs);refs--;}
 static void *kzalloc(size_t bytes,int flags)
 {assert(request_locked && bytes==sizeof(struct n1x_adsp_primary) && !flags);void *p=calloc(1,bytes);assert(p);allocations++;return p;}
+static void device_link_del(struct device_link *link) {assert(!link);}
 static void kfree(void *p) {assert(allocations);allocations--;free(p);}
 static void synchronize_irq(int irq) {assert(irq==dsp.irq && request_locked);syncs++;}
 static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *context)

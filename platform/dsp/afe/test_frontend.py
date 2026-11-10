@@ -140,8 +140,8 @@ static void (*listener)(void *,const struct n1x_adsp_pcm_position *,int);
 static void *listener_data;
 ''' + header + r'''
 u32 n1x_adsp_primary_abi(void) {return abi_value;}
-struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *d)
-{assert(d==&dsp_dev);return open_error?ERR_PTR(-(int)open_error):&primary;}
+struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *d,struct snd_pcm_substream *s)
+{assert(d==&dsp_dev && s==&stream);return open_error?ERR_PTR(-(int)open_error):&primary;}
 int n1x_adsp_primary_rebind(struct n1x_adsp_primary *p,struct snd_pcm_substream *s)
 {assert(p==&primary && s==&stream);return -ENOENT;}
 int n1x_adsp_primary_configure(struct n1x_adsp_primary *p,const struct n1x_adsp_primary_pcm_params *params,
@@ -177,8 +177,8 @@ int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *b,struct snd_pcm_substre
 int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *b)
 {assert(b==&lease && !lease.published);releases++;return 0;}
 static void *get_symbol(const char *name)
-{const char *names[]={"abi","open","configure","prepare_pcm","pcm_view","commit","start","stop","set_period","position","close","rebind"};
- void *ops[]={(void *)n1x_adsp_primary_abi,(void *)n1x_adsp_primary_open,(void *)n1x_adsp_primary_configure,(void *)n1x_adsp_primary_prepare_pcm,
+{const char *names[]={"abi","open_pcm","configure","prepare_pcm","pcm_view","commit","start","stop","set_period","position","close","rebind"};
+ void *ops[]={(void *)n1x_adsp_primary_abi,(void *)n1x_adsp_primary_open_pcm,(void *)n1x_adsp_primary_configure,(void *)n1x_adsp_primary_prepare_pcm,
  (void *)n1x_adsp_primary_pcm_view,(void *)n1x_adsp_primary_commit,(void *)n1x_adsp_primary_start,(void *)n1x_adsp_primary_stop,
  (void *)n1x_adsp_primary_set_period,(void *)n1x_adsp_primary_position,(void *)n1x_adsp_primary_close,(void *)n1x_adsp_primary_rebind};
  assert(!strncmp(name,"n1x_adsp_primary_",17));name+=17;
