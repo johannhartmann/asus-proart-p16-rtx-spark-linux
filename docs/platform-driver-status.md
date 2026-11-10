@@ -6,7 +6,7 @@ results must be checked independently after a fresh boot.
 | Component | Implemented | Remaining work |
 | --- | --- | --- |
 | NPU/SROOT | Serialized secure upload, signed-container bounds checking, numerical task validation and boot service | Fresh-boot qualification of changed sources; upstream accelerator integration |
-| DSP | Secure load, boot notifications, bounded IPC and exclusive route-2 playback client | Complete-stream hardware qualification, restart, additional endpoints, verified shutdown and DMA reclamation |
+| DSP | Secure load, boot notifications, bounded IPC and exclusive route-2 playback client | Complete-stream and retained-sleep hardware qualification, HiFi5 DSP capture, runtime autosuspend, verified shutdown and DMA reclamation |
 | AFE | Firmware-described SRAM owner, PCM/IPC leases, checked ring/IRQ programming and DL0 DSP frontend | Hardware qualification with matching DSP/provider; published-buffer release |
 | SCP | Read-only firmware log snapshots and bounded version/descriptor queries | Subsystem/API review and support for additional firmware ABIs |
 | Pluton | ACPI PFI transport and typed PCBI metadata queries | Other services, including firmware control and key operations |

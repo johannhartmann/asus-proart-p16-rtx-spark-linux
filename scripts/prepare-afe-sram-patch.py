@@ -42,6 +42,10 @@ def sources(base):
                               'int mt8901_afe_sram_init(struct mtk_base_afe *afe);\n'
                               'size_t mt8901_afe_sram_size(struct mtk_base_afe *afe);\n'
                               'bool mt8901_afe_sram_busy(struct mtk_base_afe *afe);\n\n'
+                              'int mt8901_afe_sram_pm_prepare(struct mtk_base_afe *afe);\n'
+                              'void mt8901_afe_sram_pm_complete(struct mtk_base_afe *afe);\n'
+                              'int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe);\n'
+                              'void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);\n\n'
                               'int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);\n\n'
                               'int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,\n'
                               '\t\t\t    struct snd_soc_dai *dai);\n\n'
@@ -109,6 +113,13 @@ def sources(base):
     after[path] = replace_once(after[path],
                               '\tret = devm_snd_soc_register_component(dev, &mtk_afe_pcm_platform,',
                               '\tret = devm_snd_soc_register_component(dev, &mt8901_afe_dsp_platform,')
+    after[path] = replace_once(after[path], 'static const struct dev_pm_ops mt8901_afe_pm_ops = {',
+                              '#include "mt8901-afe-pm.h"\n\n'
+                              'static const struct dev_pm_ops mt8901_afe_pm_ops = {\n'
+                              '\t.prepare = pm_sleep_ptr(mt8901_afe_pm_prepare),\n'
+                              '\t.complete = pm_sleep_ptr(mt8901_afe_pm_complete),')
+    after[path] = replace_once(after[path], 'SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend, pm_runtime_force_resume)',
+                              'SYSTEM_SLEEP_PM_OPS(mt8901_afe_pm_suspend, mt8901_afe_pm_resume)')
     after[path] = replace_once(after[path], 'static struct platform_driver mt8901_afe_pcm_driver = {',
                               'struct platform_driver mt8901_afe_pcm_driver = {')
     after[path] = replace_once(after[path], '\t\t   .name = "mt8901-audio",\n',
@@ -117,10 +128,24 @@ def sources(base):
                               '\t\t   .suppress_bind_attrs = true,\n')
     after['sound/soc/mediatek/mt8901/mt8901-afe-sram.c'] = (CANONICAL / 'mt8901-afe-sram.c').read_text()
     after['include/sound/mt8901-afe-sram.h'] = (CANONICAL / 'mt8901-afe-sram.h').read_text()
-    for name in ('mt8901-afe-dsp.c', 'mt8901-afe-dsp.h'):
+    for name in ('mt8901-afe-dsp.c', 'mt8901-afe-dsp.h', 'mt8901-afe-pm.h'):
         after['sound/soc/mediatek/mt8901/' + name] = (CANONICAL / name).read_text()
     for name in ('n1x_adsp_client.h', 'n1x_adsp_pcm.h', 'n1x_adsp_ipc.h'):
         after['include/sound/' + name] = (CANONICAL.parent / name).read_text()
+    path = 'sound/soc/mediatek/mt8901/mt8901-acp-sdw-legacy-mach.c'
+    after[path] = replace_once(after[path], '#include <sound/soc_sdw_utils.h>\n',
+                              '#include <sound/soc_sdw_utils.h>\n#include "mt8901-dsp-card.h"\n')
+    after[path] = replace_once(after[path], 'static unsigned long soc_sdw_quirk;\n',
+                              'static bool dsp_playback;\nmodule_param(dsp_playback, bool, 0400);\n'
+                              'MODULE_PARM_DESC(dsp_playback, "Bind the firmware-backed N1X DSP audio components");\n\n'
+                              'static unsigned long soc_sdw_quirk;\n')
+    after[path] = replace_once(after[path], '\tcard->codec_conf = codec_conf;\n',
+                              '\tcard->aux_dev = soc_aux;\n\tcard->num_aux_devs = num_aux;\n'
+                              '\tcard->codec_conf = codec_conf;\n')
+    after[path] = replace_once(after[path], '\tret = devm_snd_soc_register_card(card->dev, card);\n',
+                              '\tret = mt8901_card_add_dsps(card, dsp_playback);\n\tif (ret)\n\t\treturn ret;\n\n'
+                              '\tret = devm_snd_soc_register_card(card->dev, card);\n')
+    after['sound/soc/mediatek/mt8901/mt8901-dsp-card.h'] = (CANONICAL / 'mt8901-dsp-card.h').read_text()
     return before, after
 
 

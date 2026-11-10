@@ -142,8 +142,8 @@ def main():
     source_version = run(["modinfo", "-F", "srcversion", candidate]).strip()
     if source_version != run(["modinfo", "-F", "srcversion", NPU / "driver/n1x_npu_bootstrap.ko"]).strip():
         parser.error("Candidate differs from the reviewed build used by numerical qualification")
-    if not re.search(r"\bT n1x_sroot_client_ops_v3$", run(["nm", "-g", candidate]), re.M):
-        parser.error("Candidate lacks the device-bound SROOT provider ABI v3")
+    if not re.search(r"\bT n1x_sroot_client_ops_v4$", run(["nm", "-g", candidate]), re.M):
+        parser.error("Candidate lacks the device-bound SROOT provider ABI v4")
     report = {"candidate": str(candidate), "candidate_srcversion": source_version,
               "candidate_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
               "old_module_unloaded": False, "new_module_loaded": False,

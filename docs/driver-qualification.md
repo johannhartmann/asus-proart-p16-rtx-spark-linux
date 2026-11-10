@@ -17,8 +17,8 @@ not the new context/client code.
 
 ## Reproducible candidates
 
-The device-bound DSP candidate requires NPU provider source
-[`976e392`](https://github.com/johannhartmann/n1x-npu-linux/commit/976e3925724de72adeb227a41c9864879254d837)
+The automatic ASoC DSP audio candidate requires NPU provider source
+[`aafca31`](https://github.com/johannhartmann/n1x-npu-linux/commit/aafca31b2dbf047111451b61f009bd15bc9d0aab)
 or an ABI-compatible merged revision. Use that checkout for the sibling NPU tree.
 First run the offline suites and pin the matching provider snapshot:
 
@@ -33,7 +33,7 @@ change running drivers, write boot entries or alter the power profile:
 
 ```sh
 python3 scripts/prepare-kernel-candidate.py \
-  --output build/context-kasan --release 29 --debug kasan --jobs 8 --build
+  --output build/context-kasan --release 31 --debug kasan --jobs 8 --build
 python3 scripts/prepare-platform-candidate.py \
   --kernel-candidate build/context-kasan --output build/context-kasan-modules \
   --hwmon-source build/spark_hwmon --nvidia-source /path/to/matching/nvidia-source \
@@ -41,7 +41,7 @@ python3 scripts/prepare-platform-candidate.py \
 ```
 
 Use a different output directory and release for `--debug kcsan` (for example,
-release 30). KASAN and KCSAN are separate kernel configurations. Both enable
+release 32). KASAN and KCSAN are separate kernel configurations. Both enable
 lockdep, DMA-API debugging and KUnit. Completed builds check that Kconfig kept
 the required options. The module builder also produces the native protocol
 KUnit module for debug candidates, the three matching DSP validation clients
@@ -68,14 +68,20 @@ against the old already-loaded modules.
 4. With unpublished DSP clients removed, qualify checked NPU stop/reload and
    numerical execution again. Reject mismatched source versions or retained
    module/firmware leases; do not reset or force unload after a failure.
-5. Explicitly boot DSP firmware using the matching ABI v3 bundle. Confirm all
+5. Explicitly boot DSP firmware using the matching ABI v4 bundle. Confirm all
    three ready replies, staging-release fields and provider links. Exercise
    the opt-in AFE route with real playback/capture and close/error cases.
-6. Repeated sleep requests after DSP publication must abort in PM `prepare`
-   without losing audio devices or changing published DMA state. This verifies
-   the guard, **not** DSP suspend/resume. Whole-core DMA quiescence, provider
-   lease release, firmware restart and normal published-device removal remain
-   unimplemented and must not be reported as passed.
+6. With the retention option absent, published DSPs must still reject sleep in
+   PM `prepare` without losing audio devices. With a separate candidate boot
+   using `n1x_adsp.enable_retention_sleep=1`, qualify the ASoC-ordered DSP s2idle path
+   described in [the DSP guide](../platform/dsp/README.md#hardware-qualification):
+   `pm_test=devices` first, then real/repeated sleep, firmware IPC, audio and
+   numerical NPU execution. All DSP DMA/provider leases must remain retained;
+   failed D3 completion or resume must remain terminal. This is retention,
+   not whole-core shutdown, lease release or removable published devices.
+   Hibernate, deep sleep and legacy active clients without ASoC ordering must
+   reject in `prepare`. Include running playback, CLOSE/OPEN reuse and ALSA
+   recovery after sleep; see [audio qualification](audio.md).
 
 Injected transport faults and allocation failures run in the hardware-free
 actual-function harnesses. Do not manufacture mailbox errors or power faults

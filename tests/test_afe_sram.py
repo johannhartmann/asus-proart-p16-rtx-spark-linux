@@ -9,6 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AFESRAMTests(unittest.TestCase):
+    def test_asoc_card_and_retained_sleep(self):
+        for name in ('test_card.py', 'test_pm.py'):
+            subprocess.run(['python3', str(ROOT / 'platform/dsp/afe' / name)],
+                           check=True, timeout=40)
+
     def test_dsp_frontend_producer_period_and_close_lifetime(self):
         subprocess.run(['python3', str(ROOT / 'platform/dsp/afe/test_frontend.py')],
                        check=True, timeout=40)

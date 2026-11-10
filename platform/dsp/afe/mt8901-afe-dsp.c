@@ -21,6 +21,11 @@ static bool dsp_playback;
 module_param(dsp_playback, bool, 0400);
 MODULE_PARM_DESC(dsp_playback, "Use experimental route-2 DSP playback on DL0; disabled by default");
 
+bool mt8901_afe_dsp_enabled(void)
+{
+	return dsp_playback;
+}
+
 struct mt8901_afe_dsp {
 	struct snd_pcm_substream *substream;
 	struct n1x_adsp_primary *primary;
@@ -35,6 +40,7 @@ struct mt8901_afe_dsp {
 	int error;
 	typeof(n1x_adsp_primary_abi) *abi;
 	typeof(n1x_adsp_primary_open) *open;
+	typeof(n1x_adsp_primary_rebind) *rebind;
 	typeof(n1x_adsp_primary_configure) *configure;
 	typeof(n1x_adsp_primary_prepare_pcm) *prepare;
 	typeof(n1x_adsp_primary_pcm_view) *pcm_view;
@@ -68,6 +74,8 @@ static void mt8901_afe_dsp_put_ops(struct mt8901_afe_dsp *dsp)
 		symbol_put(n1x_adsp_primary_abi);
 	if (dsp->open)
 		symbol_put(n1x_adsp_primary_open);
+	if (dsp->rebind)
+		symbol_put(n1x_adsp_primary_rebind);
 	if (dsp->configure)
 		symbol_put(n1x_adsp_primary_configure);
 	if (dsp->prepare)
@@ -175,6 +183,7 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 		return -ENOMEM;
 	dsp->abi = symbol_get(n1x_adsp_primary_abi);
 	dsp->open = symbol_get(n1x_adsp_primary_open);
+	dsp->rebind = symbol_get(n1x_adsp_primary_rebind);
 	dsp->configure = symbol_get(n1x_adsp_primary_configure);
 	dsp->prepare = symbol_get(n1x_adsp_primary_prepare_pcm);
 	dsp->pcm_view = symbol_get(n1x_adsp_primary_pcm_view);
@@ -184,7 +193,8 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	dsp->set_period = symbol_get(n1x_adsp_primary_set_period);
 	dsp->position = symbol_get(n1x_adsp_primary_position);
 	dsp->close = symbol_get(n1x_adsp_primary_close);
-	if (!dsp->abi || !dsp->open || !dsp->configure || !dsp->prepare || !dsp->pcm_view ||
+	if (!dsp->abi || !dsp->open || !dsp->rebind || !dsp->configure ||
+	    !dsp->prepare || !dsp->pcm_view ||
 	    !dsp->commit || !dsp->start || !dsp->stop || !dsp->set_period ||
 	    !dsp->position || !dsp->close) {
 		ret = -EOPNOTSUPP;
@@ -251,10 +261,17 @@ int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_d
 		return dsp->samples ? -EALREADY : 0;
 	/* ALSA assigns runtime format/period fields after hw_params returns. */
 	if (!dsp->configured) {
-		buffer = mt8901_afe_sram_reserve(dai->dev, snd_pcm_lib_buffer_bytes(substream));
-		if (IS_ERR(buffer))
-			return PTR_ERR(buffer);
-		ret = mt8901_afe_sram_bind(buffer, substream);
+		buffer = NULL;
+		ret = dsp->rebind(dsp->primary, substream);
+		if (ret == -ENOENT) {
+			/* One persistent maximum-size ring avoids growing allocations
+			 * across normal PipeWire close/open and format changes.
+			 */
+			buffer = mt8901_afe_sram_reserve(dai->dev, runtime->hw.buffer_bytes_max);
+			if (IS_ERR(buffer))
+				return PTR_ERR(buffer);
+			ret = mt8901_afe_sram_bind(buffer, substream);
+		}
 		params = (struct n1x_adsp_primary_pcm_params){
 			.rate = runtime->rate, .channels = runtime->channels,
 			.sample_bits = runtime->sample_bits,
@@ -280,6 +297,9 @@ int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_d
 		goto failed;
 	dsp->listening = true;
 	dsp->appl_ptr = 0;
+	dsp->irq_offset = 0;
+	dsp->period_remainder = 0;
+	dsp->period_pending = false;
 	dsp->prepared = true;
 	return 0;
 failed:
@@ -354,7 +374,7 @@ int mt8901_afe_dsp_trigger(struct snd_pcm_substream *substream, int command)
 	struct mt8901_afe_dsp *dsp = mt8901_afe_dsp_get(substream);
 	int ret;
 
-	if (!dsp || !dsp->prepared || dsp->closing)
+	if (!dsp || dsp->closing || (!dsp->prepared && command == SNDRV_PCM_TRIGGER_START))
 		return -EBADFD;
 	switch (command) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -369,6 +389,10 @@ int mt8901_afe_dsp_trigger(struct snd_pcm_substream *substream, int command)
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		WRITE_ONCE(dsp->running, false);
 		ret = dsp->stop(dsp->primary);
+		if (!ret) {
+			dsp->prepared = false;
+			dsp->samples = false;
+		}
 		break;
 	default:
 		return -EINVAL;

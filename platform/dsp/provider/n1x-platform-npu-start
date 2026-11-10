@@ -28,7 +28,7 @@ verify() {
     done
     grep -Eq '(^|[[:space:]])power_accepted=1([[:space:]]|$)' "$hfrp" || fail 'NPU power handshake failed'
     grep -Eq '(^|[[:space:]])error=0([[:space:]]|$)' "$hfrp" || fail 'HFRP error'
-    grep -q ' n1x_sroot_client_ops_v3[[:space:]]*\[n1x_npu_bootstrap\]' /proc/kallsyms || fail 'SROOT export missing'
+    grep -q ' n1x_sroot_client_ops_v4[[:space:]]*\[n1x_npu_bootstrap\]' /proc/kallsyms || fail 'SROOT export missing'
     local node found=false
     for node in /sys/class/accel/accel*; do
         if [[ $(readlink -e "$node/device") == "$(readlink -e "$dla")" &&

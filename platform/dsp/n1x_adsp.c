@@ -25,8 +25,10 @@
 #include <linux/slab.h>
 #include <linux/soc/mediatek/mtk-pwrap.h>
 #include <linux/spinlock.h>
+#include <linux/suspend.h>
 #include <linux/unaligned.h>
 #include <linux/workqueue.h>
+#include <sound/soc.h>
 #include "n1x_adsp_client.h"
 #include "mt8901-afe-sram.h"
 #include "n1x_sroot_client.h"
@@ -50,6 +52,14 @@
 static bool enable_boot;
 module_param(enable_boot, bool, 0400);
 MODULE_PARM_DESC(enable_boot, "Permit explicit one-shot secure boot; experimental, disabled by default");
+
+static bool auto_boot;
+module_param(auto_boot, bool, 0400);
+MODULE_PARM_DESC(auto_boot, "Start enabled DSP firmware at probe for automatic audio integration");
+
+static bool enable_retention_sleep;
+module_param(enable_retention_sleep, bool, 0400);
+MODULE_PARM_DESC(enable_retention_sleep, "Permit experimental idle-DSP s2idle retention; disabled until hardware qualification");
 
 struct n1x_adsp_target {
 	const char *hid, *firmware;
@@ -112,6 +122,7 @@ struct n1x_adsp {
 	void *primary_period_data;
 	struct n1x_sroot_client_result_v2 loader;
 	const struct n1x_sroot_client_ops *sroot_ops;
+	const struct n1x_sroot_client_sleep_ops *sleep_ops;
 	struct n1x_sroot_client *sroot_client;
 	struct work_struct power_work;
 	spinlock_t power_lock;
@@ -122,6 +133,11 @@ struct n1x_adsp {
 	int error, irq;
 	bool attempted, published, boot_ready;
 	bool sleep_prepared; /* Protected by lock, like firmware publication. */
+	bool sleep_suspended, sleep_irq_disabled;
+	bool sleep_pcm, sleep_messages, sleep_draining;
+	bool component_registered;
+	u32 sleep_cycles;
+	int sleep_error;
 };
 
 static int n1x_adsp_group_member(struct device *member, void *data)
@@ -210,6 +226,10 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *dsp,
 
 	if (request->token || request->ack_mode != 1)
 		return -EINVAL;
+	if (dsp->sleep_prepared &&
+	    (dsp->sleep_draining || request->command != 0x10 ||
+	     (request->channel != ADSP_PRIMARY_TASK && request->channel != ADSP_PROCESSING_TASK)))
+		return -EBUSY;
 	if (!dsp->published || !dsp->boot_ready || !dsp->loader.accepted || dsp->error)
 		return -EHOSTDOWN;
 	if (atomic_read(&dsp->power_error))
@@ -388,14 +408,14 @@ static irqreturn_t n1x_adsp_irq(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-static int n1x_adsp_boot(struct n1x_adsp *dsp)
+static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 {
 	const struct firmware *firmware;
 	u64 end;
 	u32 pending, previous_dma, previous_bytes;
 	int err;
 
-	if (!enable_boot || !capable(CAP_SYS_RAWIO))
+	if (!enable_boot || (!kernel_client && !capable(CAP_SYS_RAWIO)))
 		return -EPERM;
 	if (dsp->sleep_prepared)
 		return -EBUSY;
@@ -520,7 +540,7 @@ static ssize_t boot_store(struct device *dev, struct device_attribute *attribute
 	if (!sysfs_streq(buffer, "start"))
 		return -EINVAL;
 	mutex_lock(&dsp->lock);
-	err = n1x_adsp_boot(dsp);
+	err = n1x_adsp_boot(dsp, false);
 	if (err && !dsp->attempted)
 		dsp->error = err;
 	mutex_unlock(&dsp->lock);
@@ -590,6 +610,8 @@ static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *dsp)
 	unsigned int i;
 	int err;
 
+	if (dsp->sleep_prepared)
+		return -EBUSY;
 	if (dsp->primary_attempted && !dsp->primary_ready)
 		return dsp->primary_error;
 	if (!dsp->published || !dsp->boot_ready || !dsp->loader.accepted || dsp->error)
@@ -721,8 +743,36 @@ unlock:
 }
 static struct device_attribute dev_attr_inspect = __ATTR(inspect, 0400, inspect_show, NULL);
 
+static ssize_t sleep_status_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	ssize_t size;
+
+	mutex_lock(&dsp->lock);
+	size = sysfs_emit(buf,
+			  "enabled=%u prepared=%u suspended=%u irq_disabled=%u cycles=%u error=%d\n",
+			 enable_retention_sleep, dsp->sleep_prepared, dsp->sleep_suspended,
+			 dsp->sleep_irq_disabled, dsp->sleep_cycles, dsp->sleep_error);
+	mutex_unlock(&dsp->lock);
+	return size;
+}
+static DEVICE_ATTR_RO(sleep_status);
+
+static ssize_t asoc_ready_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	ssize_t size;
+
+	mutex_lock(&dsp->lock);
+	size = sysfs_emit(buf, "%u\n", dsp->component_registered && dsp->boot_ready && !dsp->error);
+	mutex_unlock(&dsp->lock);
+	return size;
+}
+static DEVICE_ATTR_RO(asoc_ready);
+
 static struct attribute *n1x_adsp_attrs[] = {
-	&dev_attr_boot.attr, &dev_attr_status.attr, &dev_attr_inspect.attr, NULL
+	&dev_attr_boot.attr, &dev_attr_status.attr, &dev_attr_inspect.attr,
+	&dev_attr_sleep_status.attr, &dev_attr_asoc_ready.attr, NULL
 };
 ATTRIBUTE_GROUPS(n1x_adsp);
 
@@ -732,26 +782,71 @@ static void n1x_adsp_put_provider(void *data)
 
 	/* Published handles deliberately retain their provider lifetime. */
 	dsp->sroot_ops->put(dsp->sroot_client);
-	symbol_put(n1x_sroot_client_ops_v3);
+	symbol_put(n1x_sroot_client_ops_v4);
 }
 
 static int n1x_adsp_get_provider(struct n1x_adsp *dsp)
 {
-	typeof(n1x_sroot_client_ops_v3) *get_ops;
+	typeof(n1x_sroot_client_ops_v4) *get_ops;
 
-	get_ops = symbol_get(n1x_sroot_client_ops_v3);
+	get_ops = symbol_get(n1x_sroot_client_ops_v4);
 	if (!get_ops)
 		return -EPROBE_DEFER;
-	dsp->sroot_ops = get_ops();
+	dsp->sleep_ops = get_ops();
+	dsp->sroot_ops = dsp->sleep_ops->client;
 	dsp->sroot_client = dsp->sroot_ops->get(dsp->dev);
 	if (IS_ERR(dsp->sroot_client)) {
 		int err = PTR_ERR(dsp->sroot_client);
 
-		symbol_put(n1x_sroot_client_ops_v3);
+		symbol_put(n1x_sroot_client_ops_v4);
 		return err;
 	}
 	return devm_add_action_or_reset(dsp->dev, n1x_adsp_put_provider, dsp);
 }
+
+static void n1x_adsp_del_link(void *data)
+{
+	device_link_del(data);
+}
+
+static int n1x_adsp_link_primary(struct n1x_adsp *dsp)
+{
+	struct device_link *link;
+	struct device *primary;
+
+	if (dsp->target->image_id != 0xc0305)
+		return 0;
+	primary = n1x_adsp_find_device(dsp->dev, "NVDA8301");
+	if (!primary)
+		return -EPROBE_DEFER;
+	/* HiFi5-1 shares control hardware with HiFi5-0: secondary suspends first
+	 * and resumes last. No runtime-PM reference is released by this link.
+	 */
+	link = device_link_add(dsp->dev, primary, DL_FLAG_STATELESS);
+	put_device(primary);
+	if (!link)
+		return -ENOMEM;
+	return devm_add_action_or_reset(dsp->dev, n1x_adsp_del_link, link);
+}
+
+static int n1x_adsp_link_afe(struct n1x_adsp *dsp)
+{
+	struct device_link *link;
+	struct device *afe;
+
+	afe = n1x_adsp_find_device(dsp->dev, "NVDA9022");
+	if (!afe)
+		return -EPROBE_DEFER;
+	link = device_link_add(dsp->dev, afe, DL_FLAG_STATELESS);
+	put_device(afe);
+	if (!link)
+		return -ENOMEM;
+	return devm_add_action_or_reset(dsp->dev, n1x_adsp_del_link, link);
+}
+
+static const struct snd_soc_component_driver n1x_adsp_component = {
+	.name = "n1x-adsp",
+};
 
 static int n1x_adsp_probe(struct platform_device *pdev)
 {
@@ -786,6 +881,12 @@ static int n1x_adsp_probe(struct platform_device *pdev)
 	err = n1x_adsp_get_provider(dsp);
 	if (err)
 		return dev_err_probe(dev, err, "no unique ready SROOT provider\n");
+	err = n1x_adsp_link_primary(dsp);
+	if (err)
+		return dev_err_probe(dev, err, "no HiFi5 primary PM dependency\n");
+	err = n1x_adsp_link_afe(dsp);
+	if (err)
+		return dev_err_probe(dev, err, "no unique AFE power supplier\n");
 	device_property_read_string(dev, "firmware-name", &dsp->firmware);
 	mutex_init(&dsp->lock);
 	init_completion(&dsp->ready);
@@ -830,6 +931,24 @@ static int n1x_adsp_probe(struct platform_device *pdev)
 	pm_runtime_enable(dev);
 	pm_runtime_mark_last_busy(dev);
 	pm_runtime_idle(dev);
+	if (auto_boot) {
+		mutex_lock(&dsp->lock);
+		err = n1x_adsp_boot(dsp, true);
+		mutex_unlock(&dsp->lock);
+		/* Never unwind devres after a possible DSP address publication. */
+		if (err) {
+			dev_err(dev, "automatic DSP boot failed (%d); instance retained\n", err);
+		} else {
+			err = devm_snd_soc_register_component(dev, &n1x_adsp_component, NULL, 0);
+			if (err) {
+				dsp->error = err;
+				dev_err(dev, "ASoC registration failed (%d); DSP retained\n", err);
+			} else {
+				dsp->component_registered = true;
+			}
+		}
+		return 0;
+	}
 	dev_info(dev, "secure-boot experiment available; enable_boot=%u; no firmware started\n", enable_boot);
 	return 0;
 }
@@ -871,19 +990,165 @@ static int n1x_adsp_prepare(struct device *dev)
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 	int err = 0;
 
-	/* Reject before any device is suspended. Runtime suspend's publication
-	 * guard is too late for system sleep: abort/resume can disrupt unrelated
-	 * ALSA devices. A started DSP still lacks a verified DMA-quiesce path.
-	 * Serialize with boot_store/inspect_show, including publication in flight.
+	/* Admission must happen before any device suspends. Retention is not a
+	 * shutdown/reclamation contract and cannot support hibernation or deep
+	 * sleep. AFE-owned SRAM/tasks are not yet covered by this idle-core path.
 	 */
 	mutex_lock(&dsp->lock);
 	if (dsp->published) {
-		dev_warn_ratelimited(dev,
-				     "system sleep blocked: DSP firmware active; "
-				     "shutdown unverified\n");
-		err = -EBUSY;
-	} else {
+		if (!enable_retention_sleep || pm_suspend_target_state != PM_SUSPEND_TO_IDLE)
+			err = -EOPNOTSUPP;
+		else if (!dsp->boot_ready || !dsp->loader.accepted ||
+			 !dsp->loader.staging_released || dsp->error || dsp->sleep_error ||
+			 READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error))
+			err = -ENOTRECOVERABLE;
+		else if (!dsp->component_registered &&
+			 (dsp->primary_owner || dsp->primary_task_active ||
+			  dsp->processing_active ||
+			  dsp->primary_sram || dsp->processing_messages))
+			err = -EBUSY;
+		if (err)
+			dev_warn_ratelimited(dev,
+					     "DSP retention sleep unavailable (%d)\n", err);
+	}
+	if (!err)
 		dsp->sleep_prepared = true;
+	mutex_unlock(&dsp->lock);
+	return err;
+}
+
+/* The card has stopped streams before this DSP suspends. The AFE owns the
+ * retained SRAM snapshot and will not power down until all DSP votes arrive.
+ */
+static int n1x_adsp_retention_sram(struct n1x_adsp *dsp, bool wake)
+{
+	typeof(mt8901_afe_sram_suspend) *vote;
+	struct mt8901_afe_sram_buffer *buffers[] = {dsp->primary_sram, dsp->processing_messages};
+	bool *voted[] = {&dsp->sleep_pcm, &dsp->sleep_messages};
+	unsigned int i;
+	int err = 0;
+
+	if (!buffers[0] && !buffers[1])
+		return 0;
+	vote = wake ? symbol_get(mt8901_afe_sram_resume) : symbol_get(mt8901_afe_sram_suspend);
+	if (!vote)
+		return -EOPNOTSUPP;
+	for (i = 0; i < ARRAY_SIZE(buffers); i++) {
+		if (!buffers[i] || (wake && !*voted[i]))
+			continue;
+		err = vote(buffers[i]);
+		if (err)
+			break;
+		*voted[i] = !wake;
+	}
+	if (wake)
+		symbol_put(mt8901_afe_sram_resume);
+	else
+		symbol_put(mt8901_afe_sram_suspend);
+	return err;
+}
+
+/* Called with dsp->lock held, only after an acknowledged D3 transition. */
+static int n1x_adsp_retention_wake(struct n1x_adsp *dsp, bool voted)
+{
+	int err;
+
+	/* Check AFE restoration before permitting DSP DMA to its SRAM again. */
+	err = n1x_adsp_retention_sram(dsp, true);
+	if (!err)
+		err = mtk_pwrap_dev_resume(dsp->pwrap, 1);
+	if (!err && (readl(dsp->shared + ADSP_CONFIG_OFFSET) != lower_32_bits(dsp->dma) ||
+		     readl(dsp->shared + ADSP_CONFIG_OFFSET + 8) != dsp->target->dram_bytes))
+		err = -EIO;
+	if (!err && voted)
+		err = dsp->sleep_ops->resume(dsp->sroot_client);
+	if (err) {
+		dsp->sleep_error = err;
+		dsp->error = err;
+		dev_err(dsp->dev, "DSP retention resume failed (%d); DMA/leases retained\n", err);
+		return err;
+	}
+	dsp->sleep_suspended = false;
+	dsp->sleep_irq_disabled = false;
+	enable_irq(dsp->irq);
+	return 0;
+}
+
+static int n1x_adsp_suspend(struct device *dev)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	int err, rollback;
+
+	if (!dsp->published)
+		return pm_runtime_force_suspend(dev);
+	mutex_lock(&dsp->lock);
+	if (!dsp->sleep_prepared || dsp->sleep_suspended || dsp->error || dsp->primary_running) {
+		err = -EBUSY;
+		goto unlock;
+	}
+	dsp->sleep_draining = true;
+	/* No new host IPC can enter after prepare. Disable/synchronize the IRQ
+	 * before flushing so it cannot queue a power request behind the flush.
+	 */
+	disable_irq(dsp->irq);
+	dsp->sleep_irq_disabled = true;
+	flush_work(&dsp->power_work);
+	if (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)) {
+		err = -ENOTRECOVERABLE;
+		goto enable;
+	}
+	if (!n1x_adsp_tx_idle(dsp) || readl(dsp->mailbox + ADSP_OUT_STATUS)) {
+		err = -EBUSY;
+		goto enable;
+	}
+	/* Windows PEP encodes SystemStateTransition in bit 0. Keep all published
+	 * memory, mappings, PM references and module leases across this request.
+	 * SET acknowledgment is not used as permission to free DSP memory.
+	 */
+	err = mtk_pwrap_dev_suspend(dsp->pwrap, 1);
+	if (err == -ETIMEDOUT) {
+		dsp->sleep_error = err;
+		dsp->error = err;
+		dev_err(dev, "DSP D3 completion unknown; IRQ disabled, DMA/leases retained\n");
+		goto unlock;
+	}
+	if (err)
+		goto enable;
+	dsp->sleep_suspended = true;
+	err = n1x_adsp_retention_sram(dsp, false);
+	if (!err)
+		err = dsp->sleep_ops->suspend(dsp->sroot_client);
+	if (err) {
+		/* The PM core does not resume the device whose suspend failed. */
+		rollback = n1x_adsp_retention_wake(dsp, false);
+		if (rollback)
+			err = rollback;
+		goto unlock;
+	}
+	dev_info(dev, "DSP retained in D3; operating DMA and provider lease kept\n");
+	goto unlock;
+enable:
+	dsp->sleep_irq_disabled = false;
+	enable_irq(dsp->irq);
+unlock:
+	mutex_unlock(&dsp->lock);
+	return err;
+}
+
+static int n1x_adsp_resume(struct device *dev)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	int err = 0;
+
+	if (!dsp->published)
+		return pm_runtime_force_resume(dev);
+	mutex_lock(&dsp->lock);
+	if (dsp->sleep_suspended) {
+		err = n1x_adsp_retention_wake(dsp, true);
+		if (!err) {
+			dsp->sleep_cycles++;
+			dev_info(dev, "DSP restored to D0; retained cycle %u\n", dsp->sleep_cycles);
+		}
 	}
 	mutex_unlock(&dsp->lock);
 	return err;
@@ -896,13 +1161,14 @@ static void n1x_adsp_complete(struct device *dev)
 	/* Also called when another device aborts the power transition. */
 	mutex_lock(&dsp->lock);
 	dsp->sleep_prepared = false;
+	dsp->sleep_draining = false;
 	mutex_unlock(&dsp->lock);
 }
 
 static const struct dev_pm_ops n1x_adsp_pm = {
 	.prepare = pm_sleep_ptr(n1x_adsp_prepare),
 	.complete = pm_sleep_ptr(n1x_adsp_complete),
-	SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend, pm_runtime_force_resume)
+	SYSTEM_SLEEP_PM_OPS(n1x_adsp_suspend, n1x_adsp_resume)
 	RUNTIME_PM_OPS(n1x_adsp_runtime_suspend, n1x_adsp_runtime_resume, NULL)
 };
 
@@ -1022,6 +1288,11 @@ struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev)
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (auto_boot && !dsp->attempted) {
+		err = n1x_adsp_boot(dsp, true);
+		if (err)
+			goto unlock;
+	}
 	if (dsp->primary_task_error) {
 		err = dsp->primary_task_error;
 		goto unlock;
@@ -1113,8 +1384,12 @@ int n1x_adsp_primary_close(struct n1x_adsp_primary *primary)
 		dsp->primary_task_error = err;
 	else {
 		dsp->primary_task_active = false;
+		dsp->primary_pcm_attempted = false;
 		dsp->primary_pcm_configured = false;
 		dsp->primary_pcm_prepared = false;
+		dsp->primary_start_attempted = false;
+		dsp->primary_running = false;
+		dsp->primary_stopped = false;
 		dsp->processing_active = false;
 	}
 	if (dsp->primary_retire) {
@@ -1175,6 +1450,7 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 	typeof(mt8901_afe_sram_view) *view = symbol_get(mt8901_afe_sram_view);
 	typeof(mt8901_afe_sram_publish_ipc) *publish = symbol_get(mt8901_afe_sram_publish_ipc);
 	typeof(mt8901_afe_sram_release) *release = symbol_get(mt8901_afe_sram_release);
+	typeof(mt8901_afe_sram_allow_retention) *retention;
 	struct mt8901_afe_sram_buffer *messages = NULL;
 	struct mt8901_afe_sram_view memory;
 	struct n1x_adsp_ipc_request request = {
@@ -1186,8 +1462,22 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 	unsigned int i;
 	int err;
 
-	if (!reserve || !view || !publish || !release) {
+	retention = symbol_get(mt8901_afe_sram_allow_retention);
+	if (!reserve || !view || !publish || !release || !retention) {
 		err = -EOPNOTSUPP;
+		goto put;
+	}
+	if (dsp->processing_messages) {
+		if (!dsp->processing_area || dsp->processing_active) {
+			err = -EBUSY;
+			goto put;
+		}
+		/* Successful HWFREE/CLOSE retired the stream, not its registered
+		 * message memory. Reuse those same retained task-owned slices.
+		 */
+		dsp->primary_pcm_attempted = true;
+		dsp->processing_active = true;
+		err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 1, 0);
 		goto put;
 	}
 	messages = reserve(peer, 2 * ADSP_MESSAGE_BYTES);
@@ -1215,6 +1505,9 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 	dsp->processing_area = memory.area;
 	dsp->processing_address = memory.afe_address;
 	messages = NULL;
+	err = retention(dsp->processing_messages);
+	if (err)
+		goto put;
 	for (i = 0; i < 2; i++) {
 		unsigned int offset = i * ADSP_MESSAGE_BYTES;
 		__le64 payload[4] = {
@@ -1240,6 +1533,8 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 put:
 	if (messages)
 		release(messages);
+	if (retention)
+		symbol_put(mt8901_afe_sram_allow_retention);
 	if (release)
 		symbol_put(mt8901_afe_sram_release);
 	if (publish)
@@ -1261,7 +1556,10 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	typeof(mt8901_afe_sram_prepare_irq) *prepare_irq;
 	typeof(mt8901_afe_sram_stop_irq) *stop_irq;
 	typeof(mt8901_afe_sram_retire) *retire;
+	typeof(mt8901_afe_sram_allow_retention) *retention;
 	struct mt8901_afe_sram_endpoint afe;
+	struct mt8901_afe_sram_buffer *buffer;
+	bool retained;
 	struct n1x_adsp_pcm_config host, hardware, bridge;
 	u8 host_packet[N1X_ADSP_PCM_BYTES], afe_packet[N1X_ADSP_PCM_BYTES];
 	u8 bridge_packet[N1X_ADSP_PCM_BYTES];
@@ -1270,7 +1568,7 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	u64 frames, bytes;
 	int err;
 
-	if (IS_ERR_OR_NULL(primary) || !params || !sram || IS_ERR_OR_NULL(*sram))
+	if (IS_ERR_OR_NULL(primary) || !params || !sram || IS_ERR(*sram))
 		return -EINVAL;
 	endpoint = symbol_get(mt8901_afe_sram_endpoint);
 	publish = symbol_get(mt8901_afe_sram_publish);
@@ -1278,34 +1576,12 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	prepare_irq = symbol_get(mt8901_afe_sram_prepare_irq);
 	stop_irq = symbol_get(mt8901_afe_sram_stop_irq);
 	retire = symbol_get(mt8901_afe_sram_retire);
-	if (!endpoint || !publish || !prepare || !prepare_irq || !stop_irq || !retire) {
+	retention = symbol_get(mt8901_afe_sram_allow_retention);
+	if (!endpoint || !publish || !prepare || !prepare_irq ||
+	    !stop_irq || !retire || !retention) {
 		err = -EOPNOTSUPP;
 		goto put;
 	}
-	err = endpoint(*sram, &afe, sizeof(afe));
-	if (err)
-		goto put;
-	if (afe.abi_version != 2 || afe.published || !afe.memory.area ||
-	    afe.memory.bytes > 0xffffffffU) {
-		err = -EINVAL;
-		goto put;
-	}
-	if (params->rate != afe.rate || params->channels != afe.channels ||
-	    params->sample_bits != afe.sample_bits) {
-		err = -EOPNOTSUPP;
-		goto put;
-	}
-	if (!params->channels || params->channels > 2 ||
-	    (params->sample_bits != 16 && params->sample_bits != 32)) {
-		err = -EINVAL;
-		goto put;
-	}
-	frames = (u64)params->period_frames * params->periods;
-	if (frames > 0xffffffffU / (params->channels * (params->sample_bits / 8))) {
-		err = -ERANGE;
-		goto put;
-	}
-	bytes = frames * params->channels * (params->sample_bits / 8);
 	dev = primary->dev;
 	device_lock(dev);
 	if (dev->driver != &n1x_adsp_driver.driver) {
@@ -1316,6 +1592,10 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (dsp->sleep_prepared) {
+		err = -EBUSY;
+		goto unlock;
+	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active) {
 		err = -EINVAL;
 		goto unlock;
@@ -1328,6 +1608,36 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 		err = -EALREADY;
 		goto unlock;
 	}
+	retained = !*sram;
+	buffer = retained ? dsp->primary_sram : *sram;
+	if (!buffer) {
+		err = -ENOENT;
+		goto unlock;
+	}
+	err = endpoint(buffer, &afe, sizeof(afe));
+	if (err)
+		goto unlock;
+	if (afe.abi_version != 2 || afe.published != retained || !afe.memory.area ||
+	    afe.memory.bytes > 0xffffffffU) {
+		err = -EINVAL;
+		goto unlock;
+	}
+	if (params->rate != afe.rate || params->channels != afe.channels ||
+	    params->sample_bits != afe.sample_bits) {
+		err = -EOPNOTSUPP;
+		goto unlock;
+	}
+	if (!params->channels || params->channels > 2 ||
+	    (params->sample_bits != 16 && params->sample_bits != 32)) {
+		err = -EINVAL;
+		goto unlock;
+	}
+	frames = (u64)params->period_frames * params->periods;
+	if (frames > 0xffffffffU / (params->channels * (params->sample_bits / 8))) {
+		err = -ERANGE;
+		goto unlock;
+	}
+	bytes = frames * params->channels * (params->sample_bits / 8);
 	if (dsp->target->image_id != 0xc0303) {
 		err = -EOPNOTSUPP;
 		goto unlock;
@@ -1358,7 +1668,7 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 		err = n1x_adsp_pcm_encode(bridge_packet, sizeof(bridge_packet), &bridge);
 	if (err)
 		goto unlock;
-	err = n1x_adsp_processing_open(dsp, *sram);
+	err = n1x_adsp_processing_open(dsp, buffer);
 	if (err) {
 		if (dsp->primary_pcm_attempted)
 			goto failed;
@@ -1372,13 +1682,16 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 4, host_packet);
 	if (err)
 		goto failed;
-	err = publish(*sram);
+	err = retained ? 0 : publish(buffer);
 	if (err)
 		goto failed;
-	dsp->primary_sram = *sram;
+	dsp->primary_sram = buffer;
 	/* The published lease pins its owner module after the lookup reference. */
 	dsp->primary_retire = retire;
 	*sram = NULL;
+	err = retention(buffer);
+	if (err)
+		goto failed;
 	err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 0x201, afe_packet);
 	if (!err)
 		err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 4, bridge_packet);
@@ -1398,6 +1711,8 @@ unlock:
 unlock_device:
 	device_unlock(dev);
 put:
+	if (retention)
+		symbol_put(mt8901_afe_sram_allow_retention);
 	if (retire)
 		symbol_put(mt8901_afe_sram_retire);
 	if (stop_irq)
@@ -1413,6 +1728,55 @@ put:
 	return err;
 }
 EXPORT_SYMBOL_GPL(n1x_adsp_primary_configure);
+
+int n1x_adsp_primary_rebind(struct n1x_adsp_primary *primary,
+			    struct snd_pcm_substream *substream)
+{
+	typeof(mt8901_afe_sram_rebind) *rebind;
+	typeof(mt8901_afe_sram_retire) *retire;
+	struct n1x_adsp *dsp;
+	struct device *dev;
+	int err;
+
+	if (IS_ERR_OR_NULL(primary) || !substream)
+		return -EINVAL;
+	rebind = symbol_get(mt8901_afe_sram_rebind);
+	retire = symbol_get(mt8901_afe_sram_retire);
+	if (!rebind || !retire) {
+		err = -EOPNOTSUPP;
+		goto put;
+	}
+	dev = primary->dev;
+	device_lock(dev);
+	if (dev->driver != &n1x_adsp_driver.driver) {
+		err = -ENODEV;
+		goto unlock_device;
+	}
+	dsp = dev_get_drvdata(dev);
+	mutex_lock(&dsp->lock);
+	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
+	    dsp->primary_pcm_attempted || dsp->sleep_prepared) {
+		err = -EBUSY;
+	} else if (dsp->primary_task_error || dsp->error) {
+		err = -ENOTRECOVERABLE;
+	} else if (!dsp->primary_sram) {
+		err = -ENOENT;
+	} else {
+		err = rebind(dsp->primary_sram, substream);
+		if (!err)
+			dsp->primary_retire = retire;
+	}
+	mutex_unlock(&dsp->lock);
+unlock_device:
+	device_unlock(dev);
+put:
+	if (retire)
+		symbol_put(mt8901_afe_sram_retire);
+	if (rebind)
+		symbol_put(mt8901_afe_sram_rebind);
+	return err;
+}
+EXPORT_SYMBOL_GPL(n1x_adsp_primary_rebind);
 
 int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 {
@@ -1445,6 +1809,10 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (dsp->sleep_prepared) {
+		err = -EBUSY;
+		goto unlock;
+	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
 	    !dsp->primary_pcm_configured || !dsp->primary_sram ||
 	    !dsp->processing_active || !dsp->processing_messages || !dsp->processing_area) {
@@ -1464,10 +1832,6 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 		goto unlock;
 	if (afe.abi_version != 2 || !afe.published) {
 		err = -EINVAL;
-		goto unlock;
-	}
-	if (dsp->primary_stopped) {
-		err = -EALREADY;
 		goto unlock;
 	}
 	if (dsp->primary_pcm_prepared) {
@@ -1504,6 +1868,8 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 		unsigned long flags;
 
 		dsp->primary_pcm_prepared = true;
+		dsp->primary_stopped = false;
+		dsp->primary_start_attempted = false;
 		spin_lock_irqsave(&dsp->ipc_lock, flags);
 		dsp->primary_position = (struct n1x_adsp_pcm_position){};
 		dsp->primary_read_address = dsp->primary_host_pcm.address;
@@ -1598,6 +1964,7 @@ static int n1x_adsp_primary_stop_locked(struct n1x_adsp *dsp)
 	} else {
 		dsp->primary_running = false;
 		dsp->primary_stopped = true;
+		dsp->primary_pcm_prepared = false;
 		n1x_adsp_primary_period_disable(dsp);
 	}
 	symbol_put(mt8901_afe_sram_stop_irq);
@@ -1629,8 +1996,13 @@ static int n1x_adsp_primary_trigger(struct n1x_adsp_primary *primary, bool start
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (start && dsp->sleep_prepared) {
+		err = -EBUSY;
+		goto unlock;
+	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
-	    !dsp->primary_pcm_prepared || !dsp->processing_active || !dsp->primary_sram) {
+	    (start && !dsp->primary_pcm_prepared) || !dsp->processing_active ||
+	    !dsp->primary_sram) {
 		err = -EINVAL;
 		goto unlock;
 	}
@@ -1737,6 +2109,10 @@ int n1x_adsp_primary_commit(struct n1x_adsp_primary *primary, u32 byte_offset)
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (dsp->sleep_prepared) {
+		err = -EBUSY;
+		goto unlock;
+	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
 	    !dsp->primary_pcm_configured || !dsp->primary_pcm_prepared || !dsp->dram) {
 		err = -EINVAL;
@@ -1864,7 +2240,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.17");
+MODULE_VERSION("0.1.18");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

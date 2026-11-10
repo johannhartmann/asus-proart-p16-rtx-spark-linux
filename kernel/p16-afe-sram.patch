@@ -16,7 +16,7 @@ streaming qualification.
 ---
 --- /dev/null
 +++ b/include/sound/mt8901-afe-sram.h
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,135 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef MT8901_AFE_SRAM_H
 +#define MT8901_AFE_SRAM_H
@@ -72,12 +72,20 @@ streaming qualification.
 +
 +/* Bind an unpublished lease during non-running playback stream setup, after
 + * the AFE DAI's hw_params. Derives memif, IRQ and format from that substream;
-+ * its complete ring must match the reservation. A bound memif cannot start
++ * its complete ring must fit the reservation. A bound memif cannot start
 + * another substream until the lease is released. The caller serializes ALSA
 + * setup/teardown around this call. It does not program or start the memif.
 + */
 +int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
-+			struct snd_pcm_substream *substream);
++			 struct snd_pcm_substream *substream);
++
++/* Reattach a retired, published lease after acknowledged DSP HWFREE/CLOSE.
++ * The DSP owner alone may call this; it must serialize task and stream state.
++ * Requires the same memif/IRQ, an idle IRQ, healthy owner state and a complete
++ * ring fitting the original allocation. No memory or PM references are freed.
++ */
++int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
++			   struct snd_pcm_substream *substream);
 +
 +/* Return a bound endpoint only while its original AFE substream still owns
 + * the memif and its format is unchanged. bytes must equal sizeof(*endpoint).
@@ -133,10 +141,20 @@ streaming qualification.
 + */
 +int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer);
 +
++/* Retained system-sleep protocol for published DSP-owned SRAM. The owner must
++ * have a DSP -> AFE PM link and participate in the sound card's ASoC ordering.
++ * allow_retention() is a capability declaration during successful setup.
++ * suspend() follows acknowledged DSP D3 and a stopped ALSA stream; resume()
++ * follows restored AFE SRAM and acknowledged DSP D0. Neither releases memory.
++ */
++int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer);
++int mt8901_afe_sram_suspend(struct mt8901_afe_sram_buffer *buffer);
++int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *buffer);
++
 +#endif
 --- /dev/null
 +++ b/include/sound/n1x_adsp_client.h
-@@ -0,0 +1,199 @@
+@@ -0,0 +1,209 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef N1X_ADSP_CLIENT_H
 +#define N1X_ADSP_CLIENT_H
@@ -147,6 +165,7 @@ streaming qualification.
 +struct device;
 +struct n1x_adsp_primary;
 +struct mt8901_afe_sram_buffer;
++struct snd_pcm_substream;
 +
 +#ifdef __KERNEL__
 +#include <linux/acpi.h>
@@ -187,10 +206,11 @@ streaming qualification.
 +}
 +#endif
 +
-+#define N1X_ADSP_PRIMARY_ABI 1U
++#define N1X_ADSP_PRIMARY_ABI 2U
 +
 +/* Query the typed playback client contract before opening a task. No firmware
-+ * access. ABI 1 includes end-boundary positions and close-time AFE retirement.
++ * access. ABI 2 adds retained-ring rebind, successful close/open reuse and
++ * STOP/PREPARE/START recovery to the original position/retirement contract.
 + */
 +__u32 n1x_adsp_primary_abi(void);
 +
@@ -232,10 +252,17 @@ streaming qualification.
 +/* Open the primary task exclusively after registering its message buffers.
 + * Returns an owned handle or ERR_PTR(). No PCM configuration or START is sent.
 + * A failed firmware request prevents reopening until device reinitialization.
-+ * A previous PCM configuration prevents reopening until device reinitialization.
++ * Successful HWFREE/CLOSE permits reopening with the same retained buffers.
 + * This call sleeps and requires process context.
 + */
 +struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
++
++/* Reattach the persistent AFE ring after successful HWFREE/CLOSE and a fresh
++ * OPEN. ENOENT means no ring exists yet; reserve/bind an initial lease instead.
++ * No firmware request, allocation or release. Requires serialized ALSA setup.
++ */
++int n1x_adsp_primary_rebind(struct n1x_adsp_primary *primary,
++			    struct snd_pcm_substream *substream);
 +
 +/* Register and open processing task 16 with AFE-owned SRAM message memory,
 + * then configure the task-7 host ring, task-16 AFE ring and bridge with
@@ -244,7 +271,8 @@ streaming qualification.
 + * must match; period sizes/counts may differ. Missing AFE support is rejected
 + * before any firmware request. A firmware-stage failure is terminal.
 + *
-+ * On publication, ownership of *sram transfers to the DSP boot state and
++ * After successful rebind, pass *sram=NULL to reuse the retained ring.
++ * Otherwise, on publication, ownership of *sram transfers to the DSP boot state and
 + * *sram becomes NULL, including if the following request fails. Otherwise
 + * the caller still owns its lease. Published memory remains retained until
 + * verified whole-core shutdown, which is not implemented yet. A failure before
@@ -298,7 +326,7 @@ streaming qualification.
 + * repetition sends no IPC or register writes. Synchronizes and detaches the
 + * period listener; the client must drain its own queued work before freeing
 + * listener data. Does not release memory or prove core quiescence. Restart
-+ * after this STOP requires reinitialization and is not implemented yet.
++ * requires a fresh PREPARE, listener and sample publication; no buffers are freed.
 + * A failed request is terminal. Requires process context; sleeps.
 + */
 +int n1x_adsp_primary_stop(struct n1x_adsp_primary *primary);
@@ -678,6 +706,40 @@ streaming qualification.
  	mt8901-afe-pcm.o \
  	mt8901-dai-soundwire.o
  
+--- a/sound/soc/mediatek/mt8901/mt8901-acp-sdw-legacy-mach.c
++++ b/sound/soc/mediatek/mt8901/mt8901-acp-sdw-legacy-mach.c
+@@ -13,6 +13,11 @@
+ #include <sound/soc.h>
+ #include <sound/soc-acpi.h>
+ #include <sound/soc_sdw_utils.h>
++#include "mt8901-dsp-card.h"
++
++static bool dsp_playback;
++module_param(dsp_playback, bool, 0400);
++MODULE_PARM_DESC(dsp_playback, "Bind the firmware-backed N1X DSP audio components");
+ 
+ static unsigned long soc_sdw_quirk;
+ static int quirk_override = -1;
+@@ -523,6 +528,8 @@
+ 	if (!dai_links)
+ 		return -ENOMEM;
+ 
++	card->aux_dev = soc_aux;
++	card->num_aux_devs = num_aux;
+ 	card->codec_conf = codec_conf;
+ 	card->num_configs = num_confs;
+ 	card->dai_link = dai_links;
+@@ -630,6 +637,10 @@
+ 	}
+ 
+ 	/* Register the card */
++	ret = mt8901_card_add_dsps(card, dsp_playback);
++	if (ret)
++		return ret;
++
+ 	ret = devm_snd_soc_register_card(card->dev, card);
+ 	if (ret) {
+ 		dev_err_probe(card->dev, ret,
 --- a/sound/soc/mediatek/mt8901/mt8901-afe-common.h
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-common.h
 @@ -75,7 +75,12 @@
@@ -693,7 +755,7 @@ streaming qualification.
  	u32 hw_ver;               /* acpi-asd-hw-ver from _DSD */
  	struct mtk_dai_memif_irq_priv irq_priv[MT8901_AFE_IRQ_NUM];
  	int pm_runtime_bypass_reg_ctl;
-@@ -86,6 +91,17 @@
+@@ -86,6 +91,22 @@
  	/* dai */
  	void *dai_priv[MT8901_DAI_NUM];
  };
@@ -704,6 +766,11 @@ streaming qualification.
 +size_t mt8901_afe_sram_size(struct mtk_base_afe *afe);
 +bool mt8901_afe_sram_busy(struct mtk_base_afe *afe);
 +
++int mt8901_afe_sram_pm_prepare(struct mtk_base_afe *afe);
++void mt8901_afe_sram_pm_complete(struct mtk_base_afe *afe);
++int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe);
++void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);
++
 +int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);
 +
 +int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,
@@ -713,7 +780,7 @@ streaming qualification.
  /* dai register */
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-dsp.c
-@@ -0,0 +1,441 @@
+@@ -0,0 +1,465 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/err.h>
 +#include <linux/interrupt.h>
@@ -737,6 +804,11 @@ streaming qualification.
 +module_param(dsp_playback, bool, 0400);
 +MODULE_PARM_DESC(dsp_playback, "Use experimental route-2 DSP playback on DL0; disabled by default");
 +
++bool mt8901_afe_dsp_enabled(void)
++{
++	return dsp_playback;
++}
++
 +struct mt8901_afe_dsp {
 +	struct snd_pcm_substream *substream;
 +	struct n1x_adsp_primary *primary;
@@ -751,6 +823,7 @@ streaming qualification.
 +	int error;
 +	typeof(n1x_adsp_primary_abi) *abi;
 +	typeof(n1x_adsp_primary_open) *open;
++	typeof(n1x_adsp_primary_rebind) *rebind;
 +	typeof(n1x_adsp_primary_configure) *configure;
 +	typeof(n1x_adsp_primary_prepare_pcm) *prepare;
 +	typeof(n1x_adsp_primary_pcm_view) *pcm_view;
@@ -784,6 +857,8 @@ streaming qualification.
 +		symbol_put(n1x_adsp_primary_abi);
 +	if (dsp->open)
 +		symbol_put(n1x_adsp_primary_open);
++	if (dsp->rebind)
++		symbol_put(n1x_adsp_primary_rebind);
 +	if (dsp->configure)
 +		symbol_put(n1x_adsp_primary_configure);
 +	if (dsp->prepare)
@@ -891,6 +966,7 @@ streaming qualification.
 +		return -ENOMEM;
 +	dsp->abi = symbol_get(n1x_adsp_primary_abi);
 +	dsp->open = symbol_get(n1x_adsp_primary_open);
++	dsp->rebind = symbol_get(n1x_adsp_primary_rebind);
 +	dsp->configure = symbol_get(n1x_adsp_primary_configure);
 +	dsp->prepare = symbol_get(n1x_adsp_primary_prepare_pcm);
 +	dsp->pcm_view = symbol_get(n1x_adsp_primary_pcm_view);
@@ -900,7 +976,8 @@ streaming qualification.
 +	dsp->set_period = symbol_get(n1x_adsp_primary_set_period);
 +	dsp->position = symbol_get(n1x_adsp_primary_position);
 +	dsp->close = symbol_get(n1x_adsp_primary_close);
-+	if (!dsp->abi || !dsp->open || !dsp->configure || !dsp->prepare || !dsp->pcm_view ||
++	if (!dsp->abi || !dsp->open || !dsp->rebind || !dsp->configure ||
++	    !dsp->prepare || !dsp->pcm_view ||
 +	    !dsp->commit || !dsp->start || !dsp->stop || !dsp->set_period ||
 +	    !dsp->position || !dsp->close) {
 +		ret = -EOPNOTSUPP;
@@ -967,10 +1044,17 @@ streaming qualification.
 +		return dsp->samples ? -EALREADY : 0;
 +	/* ALSA assigns runtime format/period fields after hw_params returns. */
 +	if (!dsp->configured) {
-+		buffer = mt8901_afe_sram_reserve(dai->dev, snd_pcm_lib_buffer_bytes(substream));
-+		if (IS_ERR(buffer))
-+			return PTR_ERR(buffer);
-+		ret = mt8901_afe_sram_bind(buffer, substream);
++		buffer = NULL;
++		ret = dsp->rebind(dsp->primary, substream);
++		if (ret == -ENOENT) {
++			/* One persistent maximum-size ring avoids growing allocations
++			 * across normal PipeWire close/open and format changes.
++			 */
++			buffer = mt8901_afe_sram_reserve(dai->dev, runtime->hw.buffer_bytes_max);
++			if (IS_ERR(buffer))
++				return PTR_ERR(buffer);
++			ret = mt8901_afe_sram_bind(buffer, substream);
++		}
 +		params = (struct n1x_adsp_primary_pcm_params){
 +			.rate = runtime->rate, .channels = runtime->channels,
 +			.sample_bits = runtime->sample_bits,
@@ -996,6 +1080,9 @@ streaming qualification.
 +		goto failed;
 +	dsp->listening = true;
 +	dsp->appl_ptr = 0;
++	dsp->irq_offset = 0;
++	dsp->period_remainder = 0;
++	dsp->period_pending = false;
 +	dsp->prepared = true;
 +	return 0;
 +failed:
@@ -1070,7 +1157,7 @@ streaming qualification.
 +	struct mt8901_afe_dsp *dsp = mt8901_afe_dsp_get(substream);
 +	int ret;
 +
-+	if (!dsp || !dsp->prepared || dsp->closing)
++	if (!dsp || dsp->closing || (!dsp->prepared && command == SNDRV_PCM_TRIGGER_START))
 +		return -EBADFD;
 +	switch (command) {
 +	case SNDRV_PCM_TRIGGER_START:
@@ -1085,6 +1172,10 @@ streaming qualification.
 +	case SNDRV_PCM_TRIGGER_SUSPEND:
 +		WRITE_ONCE(dsp->running, false);
 +		ret = dsp->stop(dsp->primary);
++		if (!ret) {
++			dsp->prepared = false;
++			dsp->samples = false;
++		}
 +		break;
 +	default:
 +		return -EINVAL;
@@ -1157,7 +1248,7 @@ streaming qualification.
 +};
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-dsp.h
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,22 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef MT8901_AFE_DSP_H
 +#define MT8901_AFE_DSP_H
@@ -1173,6 +1264,7 @@ streaming qualification.
 +int mt8901_afe_dsp_hw_params(struct snd_pcm_substream *substream);
 +int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai);
 +bool mt8901_afe_dsp_active(struct snd_pcm_substream *substream);
++bool mt8901_afe_dsp_enabled(void);
 +int mt8901_afe_dsp_trigger(struct snd_pcm_substream *substream, int command);
 +int mt8901_afe_dsp_hw_free(struct snd_pcm_substream *substream, struct snd_soc_dai *dai);
 +void mt8901_afe_dsp_shutdown(struct snd_pcm_substream *substream, struct snd_soc_dai *dai);
@@ -1320,7 +1412,18 @@ streaming qualification.
  					      afe->dai_drivers,
  					      afe->num_dai_drivers);
  	if (ret) {
-@@ -2330,9 +2393,11 @@
+@@ -2324,15 +2387,21 @@
+ };
+ MODULE_DEVICE_TABLE(acpi, mt8901_afe_acpi_match);
+ 
++#include "mt8901-afe-pm.h"
++
+ static const struct dev_pm_ops mt8901_afe_pm_ops = {
+-	SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend, pm_runtime_force_resume)
++	.prepare = pm_sleep_ptr(mt8901_afe_pm_prepare),
++	.complete = pm_sleep_ptr(mt8901_afe_pm_complete),
++	SYSTEM_SLEEP_PM_OPS(mt8901_afe_pm_suspend, mt8901_afe_pm_resume)
+ 	RUNTIME_PM_OPS(mt8901_afe_runtime_suspend,
  		       mt8901_afe_runtime_resume, NULL)
  };
  
@@ -1334,8 +1437,51 @@ streaming qualification.
  		   .pm = &mt8901_afe_pm_ops,
  	},
 --- /dev/null
++++ b/sound/soc/mediatek/mt8901/mt8901-afe-pm.h
+@@ -0,0 +1,40 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef MT8901_AFE_PM_H
++#define MT8901_AFE_PM_H
++
++static int mt8901_afe_pm_prepare(struct device *dev)
++{
++	return mt8901_afe_sram_pm_prepare(dev_get_drvdata(dev));
++}
++
++static void mt8901_afe_pm_complete(struct device *dev)
++{
++	mt8901_afe_sram_pm_complete(dev_get_drvdata(dev));
++}
++
++static int mt8901_afe_pm_resume(struct device *dev)
++{
++	int ret = pm_runtime_force_resume(dev);
++
++	if (!ret)
++		mt8901_afe_sram_pm_restore(dev_get_drvdata(dev));
++	return ret;
++}
++
++static int mt8901_afe_pm_suspend(struct device *dev)
++{
++	int ret;
++
++	ret = mt8901_afe_sram_pm_save(dev_get_drvdata(dev));
++	if (ret)
++		return ret;
++	ret = pm_runtime_force_suspend(dev);
++	/* A device whose suspend fails is not resumed by the PM core. Restore
++	 * its SRAM only after successful force-resume; otherwise keep the saved
++	 * state and DSP votes so consumers cannot resume against an off AFE.
++	 */
++	if (ret)
++		mt8901_afe_pm_resume(dev);
++	return ret;
++}
++#endif
+--- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-sram.c
-@@ -0,0 +1,658 @@
+@@ -0,0 +1,836 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/atomic.h>
 +#include <linux/err.h>
@@ -1350,6 +1496,7 @@ streaming qualification.
 +#include <sound/mt8901-afe-sram.h>
 +
 +#include "mt8901-afe-common.h"
++#include "mt8901-afe-dsp.h"
 +#include "mt8901-reg.h"
 +#include "../common/mtk-afe-fe-dai.h"
 +
@@ -1360,6 +1507,9 @@ streaming qualification.
 +	void __iomem *base;
 +	u32 cpu, vad, dsp, bytes;
 +	atomic_t users;
++	atomic_t retention_users, sleeping_users;
++	void *snapshot;
++	bool sleep_prepared, sleep_saved;
 +	struct mt8901_afe_sram_buffer *memif[MT8901_AFE_MEMIF_NUM];
 +};
 +
@@ -1369,6 +1519,7 @@ streaming qualification.
 +	unsigned long address;
 +	size_t bytes;
 +	bool published, ipc;
++	bool retention, asleep;
 +	bool prepared, irq_prepared, irq_stopped;
 +	int prepare_error, irq_error, irq_stop_error;
 +	struct snd_pcm_substream *substream;
@@ -1438,6 +1589,11 @@ streaming qualification.
 +		ret = -ENOMEM;
 +		goto release;
 +	}
++	sram->snapshot = devm_kzalloc(dev, values[0], GFP_KERNEL);
++	if (!sram->snapshot) {
++		ret = -ENOMEM;
++		goto release;
++	}
 +	resource = (struct resource)DEFINE_RES_MEM(values[1], values[0]);
 +	resource.name = "mt8901-afe-sram";
 +	sram->base = devm_ioremap_resource(dev, &resource);
@@ -1457,6 +1613,8 @@ streaming qualification.
 +		goto release;
 +	}
 +	atomic_set(&sram->users, 0);
++	atomic_set(&sram->retention_users, 0);
++	atomic_set(&sram->sleeping_users, 0);
 +	sram->bytes = values[0];
 +	sram->cpu = values[1];
 +	sram->vad = values[2];
@@ -1483,7 +1641,7 @@ streaming qualification.
 +{
 +	struct mt8901_afe_private *priv = afe->platform_priv;
 +
-+	return priv->sram && atomic_read(&priv->sram->users);
++	return priv->sram && atomic_read(&priv->sram->users) && !priv->sram->sleep_saved;
 +}
 +
 +struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve(struct device *dev, size_t bytes)
@@ -1508,6 +1666,10 @@ streaming qualification.
 +	priv = afe->platform_priv;
 +	if (!priv->sram) {
 +		ret = -EOPNOTSUPP;
++		goto unlock;
++	}
++	if (priv->sram->sleep_prepared || priv->sram->sleep_saved) {
++		ret = -EBUSY;
 +		goto unlock;
 +	}
 +	if (bytes > priv->sram->bytes) {
@@ -1610,16 +1772,26 @@ streaming qualification.
 +	if (dai->id < 0 || dai->id >= MT8901_AFE_MEMIF_NUM)
 +		return -EINVAL;
 +	device_lock(afe->dev);
-+	if (priv->sram && priv->sram->memif[dai->id])
-+		ret = -EBUSY;
-+	else
++	ret = 0;
++	if (priv->sram) {
++		struct mt8901_afe_sram_buffer *buffer = priv->sram->memif[dai->id];
++
++		if (priv->sram->sleep_prepared || priv->sram->sleep_saved)
++			ret = -EBUSY;
++		else if (buffer &&
++			 (!mt8901_afe_dsp_enabled() || dai->id != MT8901_AFE_MEMIF_DL0 ||
++			  substream->stream != SNDRV_PCM_STREAM_PLAYBACK ||
++			  !buffer->retention || buffer->substream || !buffer->published))
++			ret = -EBUSY;
++	}
++	if (!ret)
 +		ret = mtk_afe_fe_startup(substream, dai);
 +	device_unlock(afe->dev);
 +	return ret;
 +}
 +
-+int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
-+			struct snd_pcm_substream *substream)
++static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
++				       struct snd_pcm_substream *substream, bool rebind)
 +{
 +	struct mt8901_afe_sram_endpoint endpoint = {.abi_version = 2};
 +	struct snd_pcm_runtime *runtime;
@@ -1644,13 +1816,18 @@ streaming qualification.
 +	frames = (u64)runtime->period_size * runtime->periods;
 +	if (frames > 0xffffffffU / frame_bytes)
 +		return -ERANGE;
-+	if (frames * frame_bytes != buffer->bytes)
++	if (frames * frame_bytes > buffer->bytes ||
++	    !IS_ALIGNED(frames * frame_bytes, MT8901_SRAM_ALIGN))
 +		return -EINVAL;
 +	dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
 +	id = dai->id;
 +	device_lock(buffer->dev);
 +	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver || dai->dev != buffer->dev) {
 +		ret = -ENODEV;
++		goto unlock;
++	}
++	if (buffer->sram->sleep_prepared || buffer->sram->sleep_saved) {
++		ret = -EBUSY;
 +		goto unlock;
 +	}
 +	afe = dev_get_drvdata(buffer->dev);
@@ -1661,11 +1838,32 @@ streaming qualification.
 +	}
 +	irq = afe->memif[id].irq_usage;
 +	if (irq != id || irq >= afe->irqs_size || !afe->irqs[irq].irq_occupyed ||
-+	    buffer->substream || buffer->published || buffer->sram->memif[id]) {
++	    buffer->substream || buffer->published != rebind ||
++	    buffer->sram->memif[id] != (rebind ? buffer : NULL)) {
 +		ret = -EBUSY;
 +		goto unlock;
 +	}
++	if (rebind) {
++		u32 control;
++
++		if (id != buffer->endpoint.memif || irq != buffer->endpoint.irq ||
++		    buffer->prepare_error || buffer->irq_error || buffer->irq_stop_error) {
++			ret = -ENOTRECOVERABLE;
++			goto unlock;
++		}
++		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
++		if (ret)
++			goto unlock;
++		if (control & 1) {
++			ret = -EBUSY;
++			goto unlock;
++		}
++		buffer->prepared = false;
++		buffer->irq_prepared = false;
++		buffer->irq_stopped = false;
++	}
 +	mt8901_afe_sram_view(buffer, &endpoint.memory);
++	endpoint.memory.bytes = frames * frame_bytes;
 +	endpoint.rate = runtime->rate;
 +	endpoint.channels = runtime->channels;
 +	endpoint.sample_bits = runtime->sample_bits;
@@ -1680,7 +1878,20 @@ streaming qualification.
 +	device_unlock(buffer->dev);
 +	return ret;
 +}
++
++int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
++			 struct snd_pcm_substream *substream)
++{
++	return mt8901_afe_sram_bind_common(buffer, substream, false);
++}
 +EXPORT_SYMBOL_GPL(mt8901_afe_sram_bind);
++
++int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
++			   struct snd_pcm_substream *substream)
++{
++	return mt8901_afe_sram_bind_common(buffer, substream, true);
++}
++EXPORT_SYMBOL_GPL(mt8901_afe_sram_rebind);
 +
 +static bool mt8901_afe_sram_endpoint_valid(struct mt8901_afe_sram_buffer *buffer,
 +					 struct mtk_base_afe *afe, bool allow_running)
@@ -1772,7 +1983,7 @@ streaming qualification.
 +	/* This MT8901 layout uses separate base/end MSBs and no prepare callback. */
 +	if (!data || data->msb_reg > 0 || data->msb_end_reg > 0 ||
 +	    afe->get_memif_pbuf_size || buffer->endpoint.memory.afe_address > U32_MAX ||
-+	    buffer->endpoint.memory.afe_address + buffer->bytes - 1 > U32_MAX) {
++	    buffer->endpoint.memory.afe_address + buffer->endpoint.memory.bytes - 1 > U32_MAX) {
 +		ret = -EOPNOTSUPP;
 +		goto unlock;
 +	}
@@ -1787,7 +1998,7 @@ streaming qualification.
 +		}
 +	}
 +	values[0] = buffer->endpoint.memory.afe_address;
-+	values[1] = values[0] + buffer->bytes - 1;
++	values[1] = values[0] + buffer->endpoint.memory.bytes - 1;
 +	values[2] = 0;
 +	values[3] = 0;
 +	/* The shared address helper discards write errors. Stop at the first one. */
@@ -1800,7 +2011,7 @@ streaming qualification.
 +	}
 +	memif->dma_area = (void __force *)buffer->endpoint.memory.area;
 +	memif->dma_addr = buffer->endpoint.memory.afe_address;
-+	memif->dma_bytes = buffer->bytes;
++	memif->dma_bytes = buffer->endpoint.memory.bytes;
 +	buffer->prepared = true;
 +unlock:
 +	device_unlock(buffer->dev);
@@ -1821,10 +2032,6 @@ streaming qualification.
 +	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, false);
 +	if (ret)
 +		goto unlock;
-+	if (buffer->irq_stopped) {
-+		ret = -EALREADY;
-+		goto unlock;
-+	}
 +	ret = buffer->prepare_error ?: buffer->irq_error ?: buffer->irq_stop_error;
 +	if (ret || buffer->irq_prepared)
 +		goto unlock;
@@ -1871,6 +2078,7 @@ streaming qualification.
 +		goto unlock;
 +	}
 +	buffer->irq_prepared = true;
++	buffer->irq_stopped = false;
 +unlock:
 +	device_unlock(buffer->dev);
 +	return ret;
@@ -1994,3 +2202,168 @@ streaming qualification.
 +	return ret < 0 ? ret : 0;
 +}
 +EXPORT_SYMBOL_GPL(mt8901_afe_sram_release);
++
++int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer)
++{
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(buffer))
++		return -EINVAL;
++	device_lock(buffer->dev);
++	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
++		ret = -ENODEV;
++	} else if (!buffer->published || (buffer->sram->sleep_prepared && !buffer->retention)) {
++		ret = -EBUSY;
++	} else if (!buffer->retention) {
++		buffer->retention = true;
++		atomic_inc(&buffer->sram->retention_users);
++	}
++	device_unlock(buffer->dev);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(mt8901_afe_sram_allow_retention);
++
++int mt8901_afe_sram_suspend(struct mt8901_afe_sram_buffer *buffer)
++{
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(buffer))
++		return -EINVAL;
++	device_lock(buffer->dev);
++	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
++		ret = -ENODEV;
++	} else if (!buffer->retention || !buffer->sram->sleep_prepared ||
++		   (buffer->substream && snd_pcm_running(buffer->substream))) {
++		ret = -EBUSY;
++	} else if (buffer->asleep) {
++		ret = -EALREADY;
++	} else {
++		buffer->asleep = true;
++		atomic_inc(&buffer->sram->sleeping_users);
++	}
++	device_unlock(buffer->dev);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(mt8901_afe_sram_suspend);
++
++int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *buffer)
++{
++	int ret = 0;
++
++	if (IS_ERR_OR_NULL(buffer))
++		return -EINVAL;
++	device_lock(buffer->dev);
++	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
++		ret = -ENODEV;
++	} else if (!buffer->asleep || buffer->sram->sleep_saved) {
++		ret = -EHOSTDOWN;
++	} else {
++		buffer->asleep = false;
++		atomic_dec(&buffer->sram->sleeping_users);
++	}
++	device_unlock(buffer->dev);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(mt8901_afe_sram_resume);
++
++/* PM callbacks run under the AFE device lock. Consumers' DSP -> AFE links
++ * order their D3 votes before snapshot, and restoration before their D0.
++ */
++int mt8901_afe_sram_pm_prepare(struct mtk_base_afe *afe)
++{
++	struct mt8901_afe_private *priv = afe->platform_priv;
++	struct mt8901_afe_sram *sram = priv->sram;
++
++	if (!sram)
++		return 0;
++	if (sram->sleep_saved ||
++	    atomic_read(&sram->users) != atomic_read(&sram->retention_users))
++		return -EBUSY;
++	sram->sleep_prepared = true;
++	return 0;
++}
++
++void mt8901_afe_sram_pm_complete(struct mtk_base_afe *afe)
++{
++	struct mt8901_afe_private *priv = afe->platform_priv;
++
++	if (priv->sram)
++		priv->sram->sleep_prepared = false;
++}
++
++int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe)
++{
++	struct mt8901_afe_private *priv = afe->platform_priv;
++	struct mt8901_afe_sram *sram = priv->sram;
++
++	if (!sram || !atomic_read(&sram->users))
++		return 0;
++	if (!sram->sleep_prepared ||
++	    atomic_read(&sram->users) != atomic_read(&sram->sleeping_users))
++		return -EBUSY;
++	memcpy_fromio(sram->snapshot, sram->base, sram->bytes);
++	sram->sleep_saved = true;
++	return 0;
++}
++
++void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe)
++{
++	struct mt8901_afe_private *priv = afe->platform_priv;
++	struct mt8901_afe_sram *sram = priv->sram;
++
++	if (!sram || !sram->sleep_saved)
++		return;
++	memcpy_toio(sram->base, sram->snapshot, sram->bytes);
++	/* Publish the complete restored SRAM before consumers can clear votes. */
++	wmb();
++	sram->sleep_saved = false;
++}
+--- /dev/null
++++ b/sound/soc/mediatek/mt8901/mt8901-dsp-card.h
+@@ -0,0 +1,46 @@
++/* SPDX-License-Identifier: GPL-2.0-only */
++#ifndef MT8901_DSP_CARD_H
++#define MT8901_DSP_CARD_H
++
++#include <sound/n1x_adsp_client.h>
++
++/* Register the firmware-backed DSP components as card suppliers. The ASoC
++ * core then stops ALSA streams before any DSP device enters system sleep.
++ * No codec/AFE is made a consumer of the DSP: the DSP owns SRAM references
++ * in the other direction, so such a link would create a dependency cycle.
++ */
++static int mt8901_card_add_dsps(struct snd_soc_card *card, bool enabled)
++{
++	static const char * const hids[] = {"NVDA8301", "NVDA8302", "NVDA8303"};
++	struct snd_soc_aux_dev *aux;
++	unsigned int i, count = card->num_aux_devs;
++
++	if (!enabled)
++		return 0;
++	aux = devm_kcalloc(card->dev, count + ARRAY_SIZE(hids), sizeof(*aux), GFP_KERNEL);
++	if (!aux)
++		return -ENOMEM;
++	if (count)
++		memcpy(aux, card->aux_dev, count * sizeof(*aux));
++	for (i = 0; i < ARRAY_SIZE(hids); i++) {
++		struct snd_soc_component *component;
++		struct device *dsp;
++
++		dsp = n1x_adsp_find_device(card->dev->parent, hids[i]);
++		if (!dsp)
++			return -EPROBE_DEFER;
++		component = snd_soc_lookup_component(dsp, "n1x-adsp");
++		if (component)
++			aux[count + i].dlc.name = devm_kstrdup(card->dev, component->name,
++							       GFP_KERNEL);
++		put_device(dsp);
++		if (!component)
++			return -EPROBE_DEFER;
++		if (!aux[count + i].dlc.name)
++			return -ENOMEM;
++	}
++	card->aux_dev = aux;
++	card->num_aux_devs = count + ARRAY_SIZE(hids);
++	return 0;
++}
++#endif

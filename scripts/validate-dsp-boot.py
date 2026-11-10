@@ -77,9 +77,9 @@ def any_published(snapshot):
 
 
 def check_loader_api(symbols):
-    if not re.search(r"^[0-9a-fA-F]+\s+[Tt]\s+n1x_sroot_client_ops_v3\s+"
+    if not re.search(r"^[0-9a-fA-F]+\s+[Tt]\s+n1x_sroot_client_ops_v4\s+"
                      r"\[n1x_npu_bootstrap\]$", symbols, re.M):
-        raise RuntimeError("Loaded NPU module does not export the required loader ABI v3")
+        raise RuntimeError("Loaded NPU module does not export the required loader ABI v4")
 
 
 def check_boot_result(item, image_id):
@@ -105,8 +105,8 @@ def check_trial_manifest(manifest, release, boot_id, provider_version, dsp_versi
         expected = manifest.get("drivers", {}).get(name, {}).get("srcversion")
         if not expected or expected != current:
             raise RuntimeError("Qualification manifest source-version mismatch: " + name)
-    if manifest.get("loader_abi") != 3:
-        raise RuntimeError("Qualification manifest must require loader ABI v3")
+    if manifest.get("loader_abi") != 4:
+        raise RuntimeError("Qualification manifest must require loader ABI v4")
 
 
 def prepare_domains(modes):
@@ -184,7 +184,7 @@ def main():
     report = {"provider_srcversion": expected_provider, "before": state(),
               "candidate": str(candidate), "candidate_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest(),
               "automatic_boot_enabled": False, "boot_trials": {}, "firmware_sha256": pins,
-              "loader_abi": 3, "qualification_manifest": manifest}
+              "loader_abi": 4, "qualification_manifest": manifest}
     created, modes = [], {}
     removed = inserted = published = False
     failure = None

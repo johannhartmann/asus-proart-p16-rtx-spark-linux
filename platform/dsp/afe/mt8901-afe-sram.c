@@ -12,6 +12,7 @@
 #include <sound/mt8901-afe-sram.h>
 
 #include "mt8901-afe-common.h"
+#include "mt8901-afe-dsp.h"
 #include "mt8901-reg.h"
 #include "../common/mtk-afe-fe-dai.h"
 
@@ -22,6 +23,9 @@ struct mt8901_afe_sram {
 	void __iomem *base;
 	u32 cpu, vad, dsp, bytes;
 	atomic_t users;
+	atomic_t retention_users, sleeping_users;
+	void *snapshot;
+	bool sleep_prepared, sleep_saved;
 	struct mt8901_afe_sram_buffer *memif[MT8901_AFE_MEMIF_NUM];
 };
 
@@ -31,6 +35,7 @@ struct mt8901_afe_sram_buffer {
 	unsigned long address;
 	size_t bytes;
 	bool published, ipc;
+	bool retention, asleep;
 	bool prepared, irq_prepared, irq_stopped;
 	int prepare_error, irq_error, irq_stop_error;
 	struct snd_pcm_substream *substream;
@@ -100,6 +105,11 @@ int mt8901_afe_sram_init(struct mtk_base_afe *afe)
 		ret = -ENOMEM;
 		goto release;
 	}
+	sram->snapshot = devm_kzalloc(dev, values[0], GFP_KERNEL);
+	if (!sram->snapshot) {
+		ret = -ENOMEM;
+		goto release;
+	}
 	resource = (struct resource)DEFINE_RES_MEM(values[1], values[0]);
 	resource.name = "mt8901-afe-sram";
 	sram->base = devm_ioremap_resource(dev, &resource);
@@ -119,6 +129,8 @@ int mt8901_afe_sram_init(struct mtk_base_afe *afe)
 		goto release;
 	}
 	atomic_set(&sram->users, 0);
+	atomic_set(&sram->retention_users, 0);
+	atomic_set(&sram->sleeping_users, 0);
 	sram->bytes = values[0];
 	sram->cpu = values[1];
 	sram->vad = values[2];
@@ -145,7 +157,7 @@ bool mt8901_afe_sram_busy(struct mtk_base_afe *afe)
 {
 	struct mt8901_afe_private *priv = afe->platform_priv;
 
-	return priv->sram && atomic_read(&priv->sram->users);
+	return priv->sram && atomic_read(&priv->sram->users) && !priv->sram->sleep_saved;
 }
 
 struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve(struct device *dev, size_t bytes)
@@ -170,6 +182,10 @@ struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve(struct device *dev, size_
 	priv = afe->platform_priv;
 	if (!priv->sram) {
 		ret = -EOPNOTSUPP;
+		goto unlock;
+	}
+	if (priv->sram->sleep_prepared || priv->sram->sleep_saved) {
+		ret = -EBUSY;
 		goto unlock;
 	}
 	if (bytes > priv->sram->bytes) {
@@ -272,16 +288,26 @@ int mt8901_afe_sram_startup(struct snd_pcm_substream *substream, struct snd_soc_
 	if (dai->id < 0 || dai->id >= MT8901_AFE_MEMIF_NUM)
 		return -EINVAL;
 	device_lock(afe->dev);
-	if (priv->sram && priv->sram->memif[dai->id])
-		ret = -EBUSY;
-	else
+	ret = 0;
+	if (priv->sram) {
+		struct mt8901_afe_sram_buffer *buffer = priv->sram->memif[dai->id];
+
+		if (priv->sram->sleep_prepared || priv->sram->sleep_saved)
+			ret = -EBUSY;
+		else if (buffer &&
+			 (!mt8901_afe_dsp_enabled() || dai->id != MT8901_AFE_MEMIF_DL0 ||
+			  substream->stream != SNDRV_PCM_STREAM_PLAYBACK ||
+			  !buffer->retention || buffer->substream || !buffer->published))
+			ret = -EBUSY;
+	}
+	if (!ret)
 		ret = mtk_afe_fe_startup(substream, dai);
 	device_unlock(afe->dev);
 	return ret;
 }
 
-int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
-			struct snd_pcm_substream *substream)
+static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
+				       struct snd_pcm_substream *substream, bool rebind)
 {
 	struct mt8901_afe_sram_endpoint endpoint = {.abi_version = 2};
 	struct snd_pcm_runtime *runtime;
@@ -306,13 +332,18 @@ int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
 	frames = (u64)runtime->period_size * runtime->periods;
 	if (frames > 0xffffffffU / frame_bytes)
 		return -ERANGE;
-	if (frames * frame_bytes != buffer->bytes)
+	if (frames * frame_bytes > buffer->bytes ||
+	    !IS_ALIGNED(frames * frame_bytes, MT8901_SRAM_ALIGN))
 		return -EINVAL;
 	dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
 	id = dai->id;
 	device_lock(buffer->dev);
 	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver || dai->dev != buffer->dev) {
 		ret = -ENODEV;
+		goto unlock;
+	}
+	if (buffer->sram->sleep_prepared || buffer->sram->sleep_saved) {
+		ret = -EBUSY;
 		goto unlock;
 	}
 	afe = dev_get_drvdata(buffer->dev);
@@ -323,11 +354,32 @@ int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
 	}
 	irq = afe->memif[id].irq_usage;
 	if (irq != id || irq >= afe->irqs_size || !afe->irqs[irq].irq_occupyed ||
-	    buffer->substream || buffer->published || buffer->sram->memif[id]) {
+	    buffer->substream || buffer->published != rebind ||
+	    buffer->sram->memif[id] != (rebind ? buffer : NULL)) {
 		ret = -EBUSY;
 		goto unlock;
 	}
+	if (rebind) {
+		u32 control;
+
+		if (id != buffer->endpoint.memif || irq != buffer->endpoint.irq ||
+		    buffer->prepare_error || buffer->irq_error || buffer->irq_stop_error) {
+			ret = -ENOTRECOVERABLE;
+			goto unlock;
+		}
+		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
+		if (ret)
+			goto unlock;
+		if (control & 1) {
+			ret = -EBUSY;
+			goto unlock;
+		}
+		buffer->prepared = false;
+		buffer->irq_prepared = false;
+		buffer->irq_stopped = false;
+	}
 	mt8901_afe_sram_view(buffer, &endpoint.memory);
+	endpoint.memory.bytes = frames * frame_bytes;
 	endpoint.rate = runtime->rate;
 	endpoint.channels = runtime->channels;
 	endpoint.sample_bits = runtime->sample_bits;
@@ -342,7 +394,20 @@ unlock:
 	device_unlock(buffer->dev);
 	return ret;
 }
+
+int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
+			 struct snd_pcm_substream *substream)
+{
+	return mt8901_afe_sram_bind_common(buffer, substream, false);
+}
 EXPORT_SYMBOL_GPL(mt8901_afe_sram_bind);
+
+int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
+			   struct snd_pcm_substream *substream)
+{
+	return mt8901_afe_sram_bind_common(buffer, substream, true);
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_sram_rebind);
 
 static bool mt8901_afe_sram_endpoint_valid(struct mt8901_afe_sram_buffer *buffer,
 					 struct mtk_base_afe *afe, bool allow_running)
@@ -434,7 +499,7 @@ int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer)
 	/* This MT8901 layout uses separate base/end MSBs and no prepare callback. */
 	if (!data || data->msb_reg > 0 || data->msb_end_reg > 0 ||
 	    afe->get_memif_pbuf_size || buffer->endpoint.memory.afe_address > U32_MAX ||
-	    buffer->endpoint.memory.afe_address + buffer->bytes - 1 > U32_MAX) {
+	    buffer->endpoint.memory.afe_address + buffer->endpoint.memory.bytes - 1 > U32_MAX) {
 		ret = -EOPNOTSUPP;
 		goto unlock;
 	}
@@ -449,7 +514,7 @@ int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer)
 		}
 	}
 	values[0] = buffer->endpoint.memory.afe_address;
-	values[1] = values[0] + buffer->bytes - 1;
+	values[1] = values[0] + buffer->endpoint.memory.bytes - 1;
 	values[2] = 0;
 	values[3] = 0;
 	/* The shared address helper discards write errors. Stop at the first one. */
@@ -462,7 +527,7 @@ int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer)
 	}
 	memif->dma_area = (void __force *)buffer->endpoint.memory.area;
 	memif->dma_addr = buffer->endpoint.memory.afe_address;
-	memif->dma_bytes = buffer->bytes;
+	memif->dma_bytes = buffer->endpoint.memory.bytes;
 	buffer->prepared = true;
 unlock:
 	device_unlock(buffer->dev);
@@ -483,10 +548,6 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
 	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, false);
 	if (ret)
 		goto unlock;
-	if (buffer->irq_stopped) {
-		ret = -EALREADY;
-		goto unlock;
-	}
 	ret = buffer->prepare_error ?: buffer->irq_error ?: buffer->irq_stop_error;
 	if (ret || buffer->irq_prepared)
 		goto unlock;
@@ -533,6 +594,7 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
 		goto unlock;
 	}
 	buffer->irq_prepared = true;
+	buffer->irq_stopped = false;
 unlock:
 	device_unlock(buffer->dev);
 	return ret;
@@ -656,3 +718,119 @@ int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer)
 	return ret < 0 ? ret : 0;
 }
 EXPORT_SYMBOL_GPL(mt8901_afe_sram_release);
+
+int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer)
+{
+	int ret = 0;
+
+	if (IS_ERR_OR_NULL(buffer))
+		return -EINVAL;
+	device_lock(buffer->dev);
+	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
+		ret = -ENODEV;
+	} else if (!buffer->published || (buffer->sram->sleep_prepared && !buffer->retention)) {
+		ret = -EBUSY;
+	} else if (!buffer->retention) {
+		buffer->retention = true;
+		atomic_inc(&buffer->sram->retention_users);
+	}
+	device_unlock(buffer->dev);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_sram_allow_retention);
+
+int mt8901_afe_sram_suspend(struct mt8901_afe_sram_buffer *buffer)
+{
+	int ret = 0;
+
+	if (IS_ERR_OR_NULL(buffer))
+		return -EINVAL;
+	device_lock(buffer->dev);
+	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
+		ret = -ENODEV;
+	} else if (!buffer->retention || !buffer->sram->sleep_prepared ||
+		   (buffer->substream && snd_pcm_running(buffer->substream))) {
+		ret = -EBUSY;
+	} else if (buffer->asleep) {
+		ret = -EALREADY;
+	} else {
+		buffer->asleep = true;
+		atomic_inc(&buffer->sram->sleeping_users);
+	}
+	device_unlock(buffer->dev);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_sram_suspend);
+
+int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *buffer)
+{
+	int ret = 0;
+
+	if (IS_ERR_OR_NULL(buffer))
+		return -EINVAL;
+	device_lock(buffer->dev);
+	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver) {
+		ret = -ENODEV;
+	} else if (!buffer->asleep || buffer->sram->sleep_saved) {
+		ret = -EHOSTDOWN;
+	} else {
+		buffer->asleep = false;
+		atomic_dec(&buffer->sram->sleeping_users);
+	}
+	device_unlock(buffer->dev);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_sram_resume);
+
+/* PM callbacks run under the AFE device lock. Consumers' DSP -> AFE links
+ * order their D3 votes before snapshot, and restoration before their D0.
+ */
+int mt8901_afe_sram_pm_prepare(struct mtk_base_afe *afe)
+{
+	struct mt8901_afe_private *priv = afe->platform_priv;
+	struct mt8901_afe_sram *sram = priv->sram;
+
+	if (!sram)
+		return 0;
+	if (sram->sleep_saved ||
+	    atomic_read(&sram->users) != atomic_read(&sram->retention_users))
+		return -EBUSY;
+	sram->sleep_prepared = true;
+	return 0;
+}
+
+void mt8901_afe_sram_pm_complete(struct mtk_base_afe *afe)
+{
+	struct mt8901_afe_private *priv = afe->platform_priv;
+
+	if (priv->sram)
+		priv->sram->sleep_prepared = false;
+}
+
+int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe)
+{
+	struct mt8901_afe_private *priv = afe->platform_priv;
+	struct mt8901_afe_sram *sram = priv->sram;
+
+	if (!sram || !atomic_read(&sram->users))
+		return 0;
+	if (!sram->sleep_prepared ||
+	    atomic_read(&sram->users) != atomic_read(&sram->sleeping_users))
+		return -EBUSY;
+	memcpy_fromio(sram->snapshot, sram->base, sram->bytes);
+	sram->sleep_saved = true;
+	return 0;
+}
+
+void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe)
+{
+	struct mt8901_afe_private *priv = afe->platform_priv;
+	struct mt8901_afe_sram *sram = priv->sram;
+
+	if (!sram || !sram->sleep_saved)
+		return;
+	memcpy_toio(sram->base, sram->snapshot, sram->bytes);
+	/* Publish the complete restored SRAM before consumers can clear votes. */
+	wmb();
+	sram->sleep_saved = false;
+}

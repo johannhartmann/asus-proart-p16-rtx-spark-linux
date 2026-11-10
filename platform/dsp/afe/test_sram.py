@@ -243,6 +243,8 @@ static void *lease_alloc(size_t n)
 {if(allocation_fails)return NULL;void *p=calloc(1,n);assert(p);allocations++;return p;}
 #define kzalloc_obj(obj) lease_alloc(sizeof(obj))
 static void kfree(void *p) {assert(p && allocations);allocations--;free(p);}
+static void memcpy_fromio(void *to,const void *from,size_t n) {assert(n==properties[0]);memcpy(to,from,n);}
+static void memcpy_toio(void *to,const void *from,size_t n) {assert(n==properties[0]);memcpy(to,from,n);}
 static void memset_io(void *p,int value,size_t n)
 {assert(locked && pm_refs && pm_active && (unsigned char *)p>=mapping && (unsigned char *)p+n<=mapping+81920);
  io_bytes+=n;memset(p,value,n);}
@@ -256,6 +258,9 @@ static int mt8901_afe_disable_mtcmos(struct mtk_base_afe *a,int pd) {assert(a==&
 static void regcache_cache_only(void *map,bool only) {assert(map==(void *)3);(void)only;hardware_calls++;}
 static void regcache_mark_dirty(void *map) {assert(map==(void *)3);hardware_calls++;}
 #define dev_warn(dev,...) ((void)(dev))
+static bool dsp_enabled;
+static bool mt8901_afe_dsp_enabled(void){return dsp_enabled;}
+#define MT8901_AFE_MEMIF_DL0 0
 ''' + domain + owner + suspend + r'''
 static void reset(void)
 {
@@ -269,7 +274,7 @@ static void reset(void)
  stream=(struct snd_pcm_substream){.runtime=&runtime,.rtd=&rtd};
  for(unsigned i=0;i<16;i++){afe.memif[i].substream=&stream;afe.memif[i].irq_usage=i;}
  for(unsigned i=0;i<22;i++)afe.irqs[i].irq_occupyed=true;
- init_fault=property_fault=property_changed=resume_error=datapath_error=0;
+ init_fault=property_fault=property_changed=resume_error=datapath_error=0;dsp_enabled=false;
  property_present=node_present=module_alive=pm_enabled=true;pm_active=allocation_fails=false;
  version=count=1;memcpy(properties,(u32[]){81920,0x1a6c0000,0x1a6c0000,0x4e5c0000},sizeof(properties));
  io_bytes=barriers=hardware_calls=0;mapping=NULL;
@@ -423,6 +428,48 @@ int main(void)
   assert(mt8901_afe_sram_publish(b)==-ENODEV && !barriers);
   assert(!mt8901_afe_sram_release(b));empty();
  }
+
+ reset();init();child=fork();assert(child>=0);
+ if(!child){
+  struct mt8901_afe_sram_buffer *ring=mt8901_afe_sram_reserve(&device,3840);
+  assert(!IS_ERR(ring) && !mt8901_afe_sram_bind(ring,&stream));
+  struct mt8901_afe_sram_buffer *ipc=mt8901_afe_sram_reserve_ipc(ring,2048);assert(!IS_ERR(ipc));
+  assert(!mt8901_afe_sram_publish(ring) && !mt8901_afe_sram_publish_ipc(ipc));
+  device_lock(&device);assert(mt8901_afe_sram_pm_prepare(&afe)==-EBUSY);device_unlock(&device);
+  assert(!mt8901_afe_sram_allow_retention(ring) && !mt8901_afe_sram_allow_retention(ipc));
+  assert(!mt8901_afe_sram_allow_retention(ring) && atomic_read(&private.sram->retention_users)==2);
+  for(unsigned cycle=0;cycle<16;cycle++){
+   device_lock(&device);assert(!mt8901_afe_sram_pm_prepare(&afe));device_unlock(&device);
+   assert(PTR_ERR(mt8901_afe_sram_reserve(&device,16))==-EBUSY);
+   runtime.running=true;assert(mt8901_afe_sram_suspend(ring)==-EBUSY);runtime.running=false;
+   assert(!mt8901_afe_sram_suspend(ring) && mt8901_afe_sram_suspend(ring)==-EALREADY);
+   device_lock(&device);assert(mt8901_afe_sram_pm_save(&afe)==-EBUSY);device_unlock(&device);
+   assert(!mt8901_afe_sram_suspend(ipc));
+   device_lock(&device);assert(!mt8901_afe_sram_pm_save(&afe) && !mt8901_afe_sram_busy(&afe));device_unlock(&device);
+   assert(mt8901_afe_sram_resume(ring)==-EHOSTDOWN);
+   memset(mapping,0xcc,private.sram->bytes); /* Simulate loss of powered SRAM. */
+   device_lock(&device);mt8901_afe_sram_pm_restore(&afe);device_unlock(&device);
+   assert(!memcmp(mapping,private.sram->snapshot,private.sram->bytes));
+   assert(!mt8901_afe_sram_resume(ring) && !mt8901_afe_sram_resume(ipc));
+   device_lock(&device);mt8901_afe_sram_pm_complete(&afe);device_unlock(&device);
+   assert(atomic_read(&private.sram->users)==2 && !atomic_read(&private.sram->sleeping_users));
+   assert(module_refs==2 && pm_refs==2 && ring->published && ipc->published);
+  }
+  assert(mt8901_afe_sram_rebind(ring,&stream)==-EBUSY);
+  mt8901_afe_sram_retire(ring);
+  struct snd_pcm_runtime next_runtime=runtime;next_runtime.period_size=240;
+  struct snd_pcm_substream next_stream=stream;next_stream.runtime=&next_runtime;
+  afe.memif[0].substream=&next_stream;
+  assert(mt8901_afe_sram_startup(&next_stream,&dai)==-EBUSY);
+  dsp_enabled=true;assert(!mt8901_afe_sram_startup(&next_stream,&dai));
+  assert(!mt8901_afe_sram_rebind(ring,&next_stream));
+  struct mt8901_afe_sram_endpoint endpoint;
+  assert(!mt8901_afe_sram_endpoint(ring,&endpoint,sizeof(endpoint)));
+  assert(endpoint.memory.bytes==1920 && ring->bytes==3840 && ring->published);
+  assert(mt8901_afe_sram_release(ring)==-EBUSY && mt8901_afe_sram_release(ipc)==-EBUSY);
+  _exit(0);
+ }
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
  assert(mt8901_afe_sram_prepare(NULL)==-EINVAL && mt8901_afe_sram_prepare(ERR_PTR(-EIO))==-EINVAL);
  for(unsigned fault=0;fault<28;fault++){
   reset();init();child=fork();assert(child>=0);
@@ -555,9 +602,10 @@ int main(void)
     assert(cfg_word==(before_cfg&~1U) && counter_word==(before_counter^BIT(31)));
     assert(mcu_word==(before_mcu&~BIT(expected_irq)) && dsp_word==(before_dsp&~BIT(expected_irq)));
     assert(!mt8901_afe_sram_stop_irq(b,core) && stop_calls==5 && runtime.running);
-    runtime.running=false;assert(mt8901_afe_sram_prepare_irq(b)==-EALREADY);
+    runtime.running=false;irq_stopping=false;irq_updates=0;
+    assert(!mt8901_afe_sram_prepare_irq(b) && !b->irq_stopped && b->irq_prepared);
     struct mt8901_afe_sram_endpoint stopped;
-    assert(!mt8901_afe_sram_endpoint(b,&stopped,sizeof(stopped)) && !stopped.irq_prepared);
+    assert(!mt8901_afe_sram_endpoint(b,&stopped,sizeof(stopped)) && stopped.irq_prepared);
    }else if(fault>=15){
     unsigned failed=stop_fail_step;
     assert(mt8901_afe_sram_stop_irq(b,core)==-EIO && stop_calls==failed && !b->irq_prepared && !b->irq_stopped);

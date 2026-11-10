@@ -63,7 +63,7 @@ static int endpoint_error,publish_error,lock_error,afe_prepare_error;
 static u64 ipc_afe_base;
 static unsigned retirements;static unsigned afe_prepares,irq_prepares;static int irq_prepare_error;
 static bool ring_filled;static unsigned late_power_at;
-static u16 history[32];static u8 tasks[32];
+static u16 history[1024];static u8 tasks[1024];
 static int atomic_read(atomic_t *p) {return *p;}
 static void device_lock(struct device *dev)
 {assert(dev==&device && !dev_locked);assert(!pthread_mutex_lock(&dev_mutex));dev_locked=1;}
@@ -109,23 +109,29 @@ int mt8901_afe_sram_publish_ipc(struct mt8901_afe_sram_buffer *buffer)
 int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer)
 {assert(buffer==&messages && !buffer->published);ipc_releases++;return 0;}
 int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer)
-{assert(buffer==&lease && dev_locked && request_locked && calls==7 && lease.published);
+{assert(buffer==&lease && dev_locked && request_locked && lease.published);
  assert(dsp.primary_pcm_configured && !dsp.primary_pcm_prepared);afe_prepares++;return afe_prepare_error;}
 int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
-{assert(buffer==&lease && dev_locked && request_locked && calls==11 && lease.published);
- assert(afe_prepares==1 && !dsp.primary_pcm_prepared);irq_prepares++;return irq_prepare_error;}
+{assert(buffer==&lease && dev_locked && request_locked && lease.published);
+ assert(afe_prepares==irq_prepares+1 && !dsp.primary_pcm_prepared);irq_prepares++;if(!irq_prepare_error)endpoint_data.irq_prepared=true;return irq_prepare_error;}
 int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer,unsigned core)
-{(void)buffer;(void)core;assert(0);return -EIO;}
+{assert(buffer==&lease && core==3 && dev_locked && request_locked);
+ assert(history[calls-2]==0x10 && tasks[calls-2]==7 && history[calls-1]==0x10 && tasks[calls-1]==16);
+ endpoint_data.irq_prepared=false;return 0;}
 void mt8901_afe_sram_retire(struct mt8901_afe_sram_buffer *buffer)
 {assert(buffer==&lease && lease.published && dsp.primary_sram==buffer && dsp.primary_owner);
  assert(dev_locked && request_locked && !dsp.primary_period && !dsp.primary_period_data);retirements++;}
+int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer)
+{assert(buffer==&lease || buffer==&messages);assert(buffer->published);return 0;}
+int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,struct snd_pcm_substream *substream)
+{assert(buffer==&lease && substream==(void *)1 && buffer->published && retirements && dev_locked && request_locked);return 0;}
 static void *get_symbol(const char *name)
 {
  const char *names[]={"mt8901_afe_sram_endpoint","mt8901_afe_sram_publish","mt8901_afe_sram_reserve_ipc",
- "mt8901_afe_sram_view","mt8901_afe_sram_publish_ipc","mt8901_afe_sram_release","mt8901_afe_sram_prepare","mt8901_afe_sram_prepare_irq","mt8901_afe_sram_stop_irq","mt8901_afe_sram_retire"};
+ "mt8901_afe_sram_view","mt8901_afe_sram_publish_ipc","mt8901_afe_sram_release","mt8901_afe_sram_prepare","mt8901_afe_sram_prepare_irq","mt8901_afe_sram_stop_irq","mt8901_afe_sram_retire","mt8901_afe_sram_rebind","mt8901_afe_sram_allow_retention"};
  void *functions[]={(void *)mt8901_afe_sram_endpoint,(void *)mt8901_afe_sram_publish,(void *)mt8901_afe_sram_reserve_ipc,
- (void *)mt8901_afe_sram_view,(void *)mt8901_afe_sram_publish_ipc,(void *)mt8901_afe_sram_release,(void *)mt8901_afe_sram_prepare,(void *)mt8901_afe_sram_prepare_irq,(void *)mt8901_afe_sram_stop_irq,(void *)mt8901_afe_sram_retire};
- for(unsigned i=0;i<10;i++)if(!strcmp(name,names[i])){if(missing_symbol==i+1)return NULL;symbol_refs++;return functions[i];}
+ (void *)mt8901_afe_sram_view,(void *)mt8901_afe_sram_publish_ipc,(void *)mt8901_afe_sram_release,(void *)mt8901_afe_sram_prepare,(void *)mt8901_afe_sram_prepare_irq,(void *)mt8901_afe_sram_stop_irq,(void *)mt8901_afe_sram_retire,(void *)mt8901_afe_sram_rebind,(void *)mt8901_afe_sram_allow_retention};
+ for(unsigned i=0;i<12;i++)if(!strcmp(name,names[i])){if(missing_symbol==i+1)return NULL;symbol_refs++;return functions[i];}
  assert(0);return NULL;
 }
 static void put_symbol(const char *name) {(void)name;assert(symbol_refs);symbol_refs--;}
@@ -136,8 +142,8 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  const struct n1x_adsp_ipc_request *request,struct n1x_adsp_ipc_reply *reply)
 {
  assert(context==&dsp && dev_locked && request_locked && dsp.primary_task_active);
- assert((request->channel==7 || request->channel==16) && request->ack_mode==1 && !request->token && !request->parameter2);
- assert(calls<32);tasks[calls]=request->channel;history[calls++]=request->command;
+ assert((request->channel==7 || request->channel==16) && request->ack_mode==1 && !request->token && (request->parameter2==0 || (request->command==0x0f && request->channel==7 && request->parameter2==16)));
+ assert(calls<1024);tasks[calls]=request->channel;history[calls++]=request->command;
  if(request->command==5 || request->command==6){
   unsigned offset=(request->command-5)*1024;
   assert(request->channel==16 && request->data_mode==1 && request->parameter1==32 && request->payload);
@@ -146,7 +152,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
   assert(get64(request->payload+16)==1024 && !get64(request->payload+24));
  }else if(request->data_mode==1){
   bool preparing=request->command==0x203 || request->command==3;
-  if(preparing)assert(afe_prepares==1);
+  if(preparing)assert(afe_prepares>0);
   bool hardware=request->command==0x201 || (request->channel==16 && request->command==0x203);
   bool bridge=request->channel==16 && !hardware;
   assert(request->command==4 || request->command==0x201 || preparing);
@@ -170,7 +176,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
   assert(messages.published && dsp.processing_messages==&messages);
   if(hardware || bridge || preparing)assert(lease.published && dsp.primary_sram==&lease);
  }else{
-  assert(request->command==1 || request->command==9 || request->command==2 || request->command==0x202);
+  assert(request->command==1 || request->command==9 || request->command==2 || request->command==0x202 || request->command==0x0f || request->command==0x10);
   assert(request->parameter1==(request->command==0x202?1U:0U) && !request->payload);
   if(request->command==0x202)assert(request->channel==16);
  }
@@ -179,6 +185,8 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  reply->packet[21]=2;n1x_adsp_ipc_put16(reply->packet+22,request->command+(bad_at==calls && bad_field==2));
  if(late_power_at==calls){dsp.power_error=-EIO;return -EIO;}return 0;
 }
+static bool auto_boot;
+static int n1x_adsp_boot(struct n1x_adsp *dsp,bool kernel_client) {(void)dsp;(void)kernel_client;assert(0);return -EIO;}
 ''' + lifecycle + configure + r'''
 static const struct n1x_adsp_primary_pcm_params defaults={48000,2,16,480,4};
 static void reset(void)
@@ -223,7 +231,37 @@ int main(void)
  const u8 expected_tasks[]={7,16,16,16,7,16,16,16,16,7,7,7,7,16,16,16};
  assert(!memcmp(history,expected,sizeof(expected)) && !memcmp(tasks,expected_tasks,sizeof(expected_tasks)));
  assert(messages.published && lease.published && dsp.processing_messages==&messages && !ipc_releases);
- assert(PTR_ERR(n1x_adsp_primary_open(&device))==-EBUSY && calls==16);closed();
+ assert(!dsp.primary_pcm_attempted && !dsp.primary_owner);closed();
+
+ reset();p=open_primary();configure(p);
+ for(unsigned cycle=0;cycle<32;cycle++) {
+  assert(!n1x_adsp_primary_prepare_pcm(p) && calls==11+cycle*8 && dsp.primary_pcm_prepared);
+  assert(!dsp.primary_stopped && !dsp.primary_start_attempted && !dsp.primary_write_publications);
+  assert(!n1x_adsp_primary_commit(p,3840));
+  dsp.primary_period=(void *)1; /* This harness injects no receive IRQ. */
+  assert(!n1x_adsp_primary_start(p) && calls==13+cycle*8 && dsp.primary_running);
+  assert(!n1x_adsp_primary_stop(p) && calls==15+cycle*8 && dsp.primary_stopped);
+  assert(!dsp.primary_pcm_prepared && !dsp.primary_period_enabled && !dsp.primary_period);
+  assert(!n1x_adsp_primary_stop(p) && calls==15+cycle*8);
+ }
+ assert(afe_prepares==32 && irq_prepares==32);
+ assert(!n1x_adsp_primary_close(p));closed();
+
+ reset();p=open_primary();configure(p);assert(!n1x_adsp_primary_close(p));
+ for(unsigned cycle=0;cycle<32;cycle++) {
+  unsigned before=calls;retirements=0;
+  p=n1x_adsp_primary_open(&device);assert(!IS_ERR(p) && calls==before+1);
+  retirements=1; /* Confirms the prior borrowed substream was retired. */
+  assert(!n1x_adsp_primary_rebind(p,(void *)1));
+  struct mt8901_afe_sram_buffer *retained=NULL;
+  assert(!n1x_adsp_primary_configure(p,&defaults,&retained) && !retained && calls==before+5);
+  assert(ipc_publishes==1 && publishes==1 && !ipc_releases);
+  assert(!n1x_adsp_primary_prepare_pcm(p));
+  assert(!n1x_adsp_primary_commit(p,3840));dsp.primary_period=(void *)1;
+  assert(!n1x_adsp_primary_start(p) && !n1x_adsp_primary_stop(p));
+  retirements=0;assert(!n1x_adsp_primary_close(p));closed();
+  assert(dsp.primary_sram==&lease && dsp.processing_messages==&messages && lease.published && messages.published);
+ }
  for(unsigned fault=0;fault<29;fault++){
   reset();p=open_primary();struct n1x_adsp_primary_pcm_params params=defaults;struct mt8901_afe_sram_buffer *buffer=&lease;
   switch(fault){
@@ -294,14 +332,14 @@ int main(void)
   assert(n1x_adsp_primary_prepare_pcm(p)==afe_prepare_error && calls==7 && afe_prepares==1 && !symbol_refs);
   int error=afe_prepare_error;afe_prepare_error=0;
   assert(n1x_adsp_primary_prepare_pcm(p)==error && calls==7 && afe_prepares==1 && !symbol_refs);
-  assert(n1x_adsp_primary_close(p)==error && calls==7 && lease.published && messages.published);closed();
+  assert(n1x_adsp_primary_close(p)==error && calls>=7 && (calls-7)%8==0 && lease.published && messages.published);closed();
  }
  for(unsigned fault=0;fault<2;fault++){
   reset();p=open_primary();configure(p);irq_prepare_error=fault?-ETIMEDOUT:-EIO;
   assert(n1x_adsp_primary_prepare_pcm(p)==irq_prepare_error && calls==11 && irq_prepares==1 && !symbol_refs);
   int error=irq_prepare_error;irq_prepare_error=0;
   assert(n1x_adsp_primary_prepare_pcm(p)==error && calls==11 && irq_prepares==1 && !symbol_refs);
-  assert(n1x_adsp_primary_close(p)==error && calls==11 && lease.published && messages.published);closed();
+  assert(n1x_adsp_primary_close(p)==error && calls>=11 && (calls-11)%8==0 && lease.published && messages.published);closed();
  }
  for(unsigned stage=12;stage<=16;stage++)for(unsigned echo=0;echo<=2;echo++){
   reset();p=open_primary();configure(p);assert(!n1x_adsp_primary_prepare_pcm(p));

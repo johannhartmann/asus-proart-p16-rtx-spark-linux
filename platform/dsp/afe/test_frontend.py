@@ -141,6 +141,8 @@ static void *listener_data;
 u32 n1x_adsp_primary_abi(void) {return abi_value;}
 struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *d)
 {assert(d==&dsp_dev);return open_error?ERR_PTR(-(int)open_error):&primary;}
+int n1x_adsp_primary_rebind(struct n1x_adsp_primary *p,struct snd_pcm_substream *s)
+{assert(p==&primary && s==&stream);return -ENOENT;}
 int n1x_adsp_primary_configure(struct n1x_adsp_primary *p,const struct n1x_adsp_primary_pcm_params *params,
  struct mt8901_afe_sram_buffer **buffer)
 {assert(p==&primary && *buffer==&lease && binds==1 && !lease.published);configures++;
@@ -166,18 +168,18 @@ int n1x_adsp_primary_position(struct n1x_adsp_primary *p,struct n1x_adsp_pcm_pos
 int n1x_adsp_primary_close(struct n1x_adsp_primary *p)
 {assert(p==&primary && !listener && !listener_data);atomic_store(&primary_dead,true);atomic_fetch_add(&closes,1);return fail==9?-EIO:0;}
 struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve(struct device *d,size_t bytes)
-{assert(d==&afe_dev && bytes==sizeof(host));reserves++;return fail==2?ERR_PTR(-ENOMEM):&lease;}
+{assert(d==&afe_dev && bytes==runtime.hw.buffer_bytes_max);reserves++;return fail==2?ERR_PTR(-ENOMEM):&lease;}
 int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *b,struct snd_pcm_substream *s)
 {assert(b==&lease && s==&stream && !lease.published);binds++;return fail==3?-EBUSY:0;}
 int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *b)
 {assert(b==&lease && !lease.published);releases++;return 0;}
 static void *get_symbol(const char *name)
-{const char *names[]={"abi","open","configure","prepare_pcm","pcm_view","commit","start","stop","set_period","position","close"};
+{const char *names[]={"abi","open","configure","prepare_pcm","pcm_view","commit","start","stop","set_period","position","close","rebind"};
  void *ops[]={(void *)n1x_adsp_primary_abi,(void *)n1x_adsp_primary_open,(void *)n1x_adsp_primary_configure,(void *)n1x_adsp_primary_prepare_pcm,
  (void *)n1x_adsp_primary_pcm_view,(void *)n1x_adsp_primary_commit,(void *)n1x_adsp_primary_start,(void *)n1x_adsp_primary_stop,
- (void *)n1x_adsp_primary_set_period,(void *)n1x_adsp_primary_position,(void *)n1x_adsp_primary_close};
+ (void *)n1x_adsp_primary_set_period,(void *)n1x_adsp_primary_position,(void *)n1x_adsp_primary_close,(void *)n1x_adsp_primary_rebind};
  assert(!strncmp(name,"n1x_adsp_primary_",17));name+=17;
- for(unsigned i=0;i<11;i++)if(!strcmp(name,names[i])){if(missing==i+1)return NULL;symbol_refs++;return ops[i];}assert(0);return NULL;}
+ for(unsigned i=0;i<12;i++)if(!strcmp(name,names[i])){if(missing==i+1)return NULL;symbol_refs++;return ops[i];}assert(0);return NULL;}
 static void put_symbol(const char *name) {(void)name;assert(symbol_refs);symbol_refs--;}
 #define symbol_get(n) ((typeof(&n))get_symbol(#n))
 #define symbol_put(n) put_symbol(#n)
@@ -197,7 +199,7 @@ static void reset(void)
  position_block=transfer_on_error=false;position_value=(struct n1x_adsp_pcm_position){.valid=true,.byte_offset=1920};
  listener=NULL;listener_data=NULL;dsp_playback=true;abi_value=N1X_ADSP_PRIMARY_ABI;
 }
-static void setup(void) {reset();assert(!mt8901_afe_dsp_startup(&stream,&dai));assert(priv.dsp && symbol_refs==11);}
+static void setup(void) {reset();assert(!mt8901_afe_dsp_startup(&stream,&dai));assert(priv.dsp && symbol_refs==12);}
 static void prepare(void) {assert(!mt8901_afe_dsp_prepare(&stream,&dai));assert(listener && priv.dsp->prepared && configures==1);}
 static void shutdown(void)
 {mt8901_afe_dsp_shutdown(&stream,&dai);assert(!allocations && !symbol_refs && !device_refs && !priv.dsp && !listener);}

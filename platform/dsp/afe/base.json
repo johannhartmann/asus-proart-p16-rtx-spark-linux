@@ -4,6 +4,7 @@
     "sound/soc/mediatek/Kconfig": "c18273b0ff1260f1ee448dfff845c11540ebf048b39d828de4d3cdfbd658ae6e",
     "sound/soc/mediatek/mt8901/Makefile": "76c16b3c55800a72962529e6f9870d9d09d7bb8ebafc43f34588cdc8f0264ba1",
     "sound/soc/mediatek/mt8901/mt8901-afe-common.h": "75bb715000d17e67bff4d3ad7d147de69180245348b1fcc560cad2b9892419f8",
-    "sound/soc/mediatek/mt8901/mt8901-afe-pcm.c": "23962b239a1c1d469a23fdffb44d6d32f8d8f135901c1fdd70a7142bd005ed69"
+    "sound/soc/mediatek/mt8901/mt8901-afe-pcm.c": "23962b239a1c1d469a23fdffb44d6d32f8d8f135901c1fdd70a7142bd005ed69",
+    "sound/soc/mediatek/mt8901/mt8901-acp-sdw-legacy-mach.c": "1136655fcf885059e1f6c9e2184d9e6335c84f9fd9203e9adb10431fd3d0d2fc"
   }
 }

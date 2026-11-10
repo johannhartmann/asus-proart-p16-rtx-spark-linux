@@ -25,6 +25,7 @@ INPUTS = {
         'functions': {
             'query_wrapper': (0x16ca8, 0x16f18),
             'device_probe': (0x1ee60, 0x1f390),
+            'device_power_state': (0x1fb40, 0x1ff38),
             'tinysys_get': (0x43748, 0x439b8),
         },
     },
@@ -91,6 +92,15 @@ def main():
         'native_error_cleanup_not_adopted': True,
         'linux_release_gate': 'v2 only: completed exchange with canonical header 0x18 and no payload/status/detail',
         'linux_hardware_release_qualified': False,
+    }
+    report['retention_candidate'] = {
+        'device_power_state': '0x14001fb40',
+        'tinysys_set_wrapper': '0x1400169d0',
+        'composite': 'ACPI action | (DevicePowerState << 16) | (Complete << 8) | SystemStateTransition',
+        'linux_d3': 'mtk_pwrap_dev_suspend(pwrap, 1)',
+        'linux_d0': 'mtk_pwrap_dev_resume(pwrap, 1)',
+        'hardware_qualified': False,
+        'limitations': 'SET acknowledgement is not proof of DSP DMA quiescence or full firmware state retention; no DSP memory/lease may be released',
     }
     report['power_query'] = {
         'message_id': 4, 'protocol': '0x80', 'flags': 1, 'length': 16,

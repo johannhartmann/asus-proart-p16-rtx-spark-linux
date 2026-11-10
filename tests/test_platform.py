@@ -243,13 +243,13 @@ class ACPICapabilityTests(unittest.TestCase):
 
 class DSPBootTrialTests(unittest.TestCase):
     def test_trial_requires_v2_from_the_shared_provider(self):
-        dsp_boot.check_loader_api('0000000000000000 T n1x_sroot_client_ops_v3 [n1x_npu_bootstrap]\n')
+        dsp_boot.check_loader_api('0000000000000000 T n1x_sroot_client_ops_v4 [n1x_npu_bootstrap]\n')
         for symbols in (
                 '0000000000000000 T n1x_sroot_upload_dsp_v1 [n1x_npu_bootstrap]\n',
-                '0000000000000000 T n1x_sroot_client_ops_v3 [other_driver]\n',
-                '0000000000000000 T n1x_sroot_client_ops_v3\n',
-                '0000000000000000 T n1x_sroot_client_ops_v30 [n1x_npu_bootstrap]\n'):
-            with self.assertRaisesRegex(RuntimeError, 'loader ABI v3'):
+                '0000000000000000 T n1x_sroot_client_ops_v4 [other_driver]\n',
+                '0000000000000000 T n1x_sroot_client_ops_v4\n',
+                '0000000000000000 T n1x_sroot_client_ops_v40 [n1x_npu_bootstrap]\n'):
+            with self.assertRaisesRegex(RuntimeError, 'loader ABI v4'):
                 dsp_boot.check_loader_api(symbols)
 
     def test_ready_without_staging_release_cannot_qualify_boot(self):
@@ -272,7 +272,7 @@ class DSPBootTrialTests(unittest.TestCase):
         previous = 'db4397f4-646b-4b7d-9831-567db6218147'
         fresh = '70000000-0000-4000-8000-000000000001'
         release = '7.2.8-25-omarchy-p16-asus-npu'
-        manifest = dict(kernel_release=release, source_boot_id=previous, loader_abi=3,
+        manifest = dict(kernel_release=release, source_boot_id=previous, loader_abi=4,
                         drivers={name: {'srcversion': value} for name, value in
                                  (('provider', 'P'), ('dsp', 'D'), ('afe', 'A'))})
         dsp_boot.check_trial_manifest(manifest, release, fresh, 'P', 'D', 'A')

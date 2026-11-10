@@ -17,6 +17,8 @@ product-name or BIOS checks.
 | `scripts/` | Source preparation, build tools and manual diagnostics |
 | `upstream/spi-hid/` | Dependency-pinned SPI HID review series |
 
+For the standard ALSA/PipeWire DSP audio candidate, see [audio setup](docs/audio.md).
+
 See [driver status](docs/platform-driver-status.md),
 [matching policy](platform/README.md) and
 [upstream requirements](docs/upstream-readiness.md) for scope and limitations.

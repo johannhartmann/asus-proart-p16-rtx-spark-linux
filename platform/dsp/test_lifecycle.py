@@ -95,6 +95,8 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
 ''' + r'''
 static int n1x_adsp_primary_stop_locked(struct n1x_adsp *dsp)
 {assert(!dsp->primary_start_attempted);return 0;}
+static bool auto_boot;
+static int n1x_adsp_boot(struct n1x_adsp *dsp,bool kernel_client) {(void)dsp;(void)kernel_client;assert(0);return -EIO;}
 ''' + lifecycle + r'''
 static void reset(void)
 {

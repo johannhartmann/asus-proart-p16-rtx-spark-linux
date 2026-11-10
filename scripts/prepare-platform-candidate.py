@@ -19,7 +19,8 @@ FILES = {
     'dsp/validation': ('n1x_adsp_route_check.c', 'n1x_adsp_primary_check.c',
                        'n1x_adsp_task_check.c', 'Kbuild'),
     'dsp': ('n1x_adsp.c', 'n1x_adsp_client.h', 'n1x_adsp_pcm.h', 'n1x_adsp_ipc.h',
-            'n1x_sroot_client.h', 'n1x_sroot_firmware.h', 'Kbuild'),
+            'n1x_sroot_client.h', 'n1x_sroot_firmware.h', 'Kbuild',
+            'n1x-adsp-audio.service', 'n1x-adsp-audio'),
     'pluton': ('n1x_pluton.c', 'n1x_pluton_protocol.h', 'n1x_pluton_uapi.h',
                'n1x_pcbi_protocol.h', 'Kbuild'),
     'scp': ('n1x_scp.c', 'Kbuild'),
@@ -117,7 +118,7 @@ def stage(args):
         'kernel_candidate': str(parent), 'kernel_tree': str(kernel),
         'kernel_release': release,
         'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
-        'loader_abi': 3, 'jobs': args.jobs, 'inputs': inputs,
+        'loader_abi': 4, 'playback_abi': 2, 'jobs': args.jobs, 'inputs': inputs,
         'hwmon_source_commit': hwmon_head, 'hwmon_patch_sha256': digest(hwmon_patch),
         'nvidia_version': loaded_version,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -218,13 +219,21 @@ def build(output, manifest):
     if modinfo('vermagic', afe).split()[0] != release:
         raise RuntimeError('AFE vermagic differs from candidate kernel')
     symbols = (kernel / 'Module.symvers').read_text()
-    for name in ('mt8901_afe_sram_retire', 'mt8901_afe_sram_stop_irq', 'mt8901_afe_sram_prepare_irq'):
+    for name in ('mt8901_afe_sram_retire', 'mt8901_afe_sram_stop_irq',
+                 'mt8901_afe_sram_prepare_irq', 'mt8901_afe_sram_rebind',
+                 'mt8901_afe_sram_allow_retention', 'mt8901_afe_sram_suspend',
+                 'mt8901_afe_sram_resume'):
         if '\t' + name + '\t' not in symbols:
             raise RuntimeError('Candidate kernel lacks AFE helper: ' + name)
+    machine = kernel / 'sound/soc/mediatek/mt8901/mt8901-acp-sdw-legacy-mach.ko'
+    if modinfo('vermagic', machine).split()[0] != release:
+        raise RuntimeError('ASoC machine vermagic differs from candidate kernel')
     manifest['drivers'] = {
         'dsp': manifest['builds']['dsp']['modules']['n1x_adsp.ko'],
         'provider': manifest['builds']['provider']['modules']['n1x_npu_bootstrap.ko'],
         'afe': {'path': str(afe), 'sha256': digest(afe), 'srcversion': modinfo('srcversion', afe)},
+        'machine': {'path': str(machine), 'sha256': digest(machine),
+                    'srcversion': modinfo('srcversion', machine)},
     }
     manifest['source_hashes_still_match'] = True
     save(output / 'manifest.json', manifest)

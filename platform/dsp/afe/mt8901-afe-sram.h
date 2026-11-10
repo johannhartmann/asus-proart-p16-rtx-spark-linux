@@ -53,12 +53,20 @@ int mt8901_afe_sram_view(struct mt8901_afe_sram_buffer *buffer,
 
 /* Bind an unpublished lease during non-running playback stream setup, after
  * the AFE DAI's hw_params. Derives memif, IRQ and format from that substream;
- * its complete ring must match the reservation. A bound memif cannot start
+ * its complete ring must fit the reservation. A bound memif cannot start
  * another substream until the lease is released. The caller serializes ALSA
  * setup/teardown around this call. It does not program or start the memif.
  */
 int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
-			struct snd_pcm_substream *substream);
+			 struct snd_pcm_substream *substream);
+
+/* Reattach a retired, published lease after acknowledged DSP HWFREE/CLOSE.
+ * The DSP owner alone may call this; it must serialize task and stream state.
+ * Requires the same memif/IRQ, an idle IRQ, healthy owner state and a complete
+ * ring fitting the original allocation. No memory or PM references are freed.
+ */
+int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
+			   struct snd_pcm_substream *substream);
 
 /* Return a bound endpoint only while its original AFE substream still owns
  * the memif and its format is unchanged. bytes must equal sizeof(*endpoint).
@@ -113,5 +121,15 @@ int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer);
  * The caller serializes operations on each handle. This call sleeps.
  */
 int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer);
+
+/* Retained system-sleep protocol for published DSP-owned SRAM. The owner must
+ * have a DSP -> AFE PM link and participate in the sound card's ASoC ordering.
+ * allow_retention() is a capability declaration during successful setup.
+ * suspend() follows acknowledged DSP D3 and a stopped ALSA stream; resume()
+ * follows restored AFE SRAM and acknowledged DSP D0. Neither releases memory.
+ */
+int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer);
+int mt8901_afe_sram_suspend(struct mt8901_afe_sram_buffer *buffer);
+int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *buffer);
 
 #endif

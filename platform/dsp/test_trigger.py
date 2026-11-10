@@ -116,6 +116,8 @@ static void *get_symbol(const char *name)
 static void put_symbol(const char *name) {(void)name;assert(atomic_fetch_sub(&symbols,1));}
 #define symbol_get(name) ((typeof(&name))get_symbol(#name))
 #define symbol_put(name) put_symbol(#name)
+static bool auto_boot;
+static int n1x_adsp_boot(struct n1x_adsp *dsp,bool kernel_client) {(void)dsp;(void)kernel_client;assert(0);return -EIO;}
 ''' + lifecycle + trigger + r'''
 static void notice(void *data,const struct n1x_adsp_pcm_position *position,int error)
 {(void)data;(void)position;(void)error;assert(0);}
@@ -151,13 +153,13 @@ int main(void)
  for(unsigned i=0;i<8;i++){assert(!pthread_join(threads[i],&result));assert(!result);}
  assert(calls==5 && irq_stops==1 && dsp.primary_stopped && !dsp.primary_running && syncs);
  assert(!dsp.primary_period_enabled && !dsp.primary_period && !dsp.primary_period_data);
- assert(n1x_adsp_primary_start(p)==-EALREADY && calls==5);
+ assert(n1x_adsp_primary_start(p)==-EINVAL && calls==5);
  assert(!n1x_adsp_primary_close(p) && calls==10);closed();
  const u16 expected[]={1,0x0f,0x0f,0x10,0x10,9,2,9,0x202,2};
  const u8 expected_tasks[]={7,16,7,7,16,7,7,16,16,16};
  assert(!memcmp(commands,expected,sizeof(expected)) && !memcmp(tasks,expected_tasks,sizeof(expected_tasks)));
  p=setup();assert(!n1x_adsp_primary_start(p));
- assert(!n1x_adsp_primary_close(p) && calls==10 && irq_stops==1 && dsp.primary_stopped);closed();
+ assert(!n1x_adsp_primary_close(p) && calls==10 && irq_stops==1 && !dsp.primary_stopped);closed();
  for(unsigned fault=0;fault<26;fault++){
   p=setup();
   switch(fault){

@@ -35,7 +35,7 @@
   },
   "shared_loader": {
     "owner": "n1x_npu_bootstrap / NVDA8600",
-    "kernel_api": "n1x_sroot_client_ops_v3",
+    "kernel_api": "n1x_sroot_client_ops_v4",
     "header": "n1x_sroot_client.h",
     "implementation": "../../../n1x-lab/npu/driver/n1x_npu_boot_linux.c",
     "serialized_with_npu_boot": true,
@@ -393,7 +393,7 @@
     "failure_contract": "Transaction or IRQ I/O failure is terminal; all published memory and references retained",
     "listener_stop": "Detach and synchronize IRQ; client drains queued work separately",
     "close": "STOP a started stream before existing HWFREE/CLOSE chain",
-    "restart_after_stop_implemented": false,
+    "restart_after_stop_implemented": true,
     "whole_core_shutdown_verified": false,
     "dma_release_verified": false,
     "tests": [
@@ -402,7 +402,7 @@
     ]
   },
   "primary_alsa_frontend": {
-    "primary_client_abi": 1,
+    "primary_client_abi": 2,
     "api": "n1x_adsp_primary_abi",
     "source": "afe/mt8901-afe-dsp.c",
     "integration": "Existing nonatomic AFE/DPCM DL0 playback and SoundWire/DAPM codec route",
@@ -423,12 +423,12 @@
     ],
     "remaining": [
       "Complete-stream hardware qualification and firmware memif/IRQ ownership confirmation",
-      "Restart after STOP and additional frontends",
+      "DSP capture and additional frontends; playback restart is implemented but hardware-unqualified",
       "Verified whole-core quiesce, DMA/SROOT lease release and suspend/resume"
     ]
   },
   "loader_staging_release": {
-    "client_api": "n1x_sroot_client_ops_v3 (v2 staging semantics)",
+    "client_api": "n1x_sroot_client_ops_v4 (v2 staging semantics)",
     "provider_package": "n1x-sroot-provider-dkms",
     "analysis_script": "scripts/analyze-dsp-shutdown.py",
     "native_loader_sha256": "f814e861b5e076aa4e00619a8a588df3c4ae9ec2b5026c30748ba493ce0e6d8a",
@@ -440,5 +440,42 @@
     "provider_shutdown_guard": "Published DSP lease remains set even with cpu=NULL and dma=0; NPU shutdown returns EBUSY before changing hardware",
     "dsp_preflight": "Acquire scoped provider at probe; reserve before power/DRAM and publish lease before DSP DMA writes; validate all upload success fields before waiting for ready",
     "whole_core_release_verified": false
+  },
+  "system_sleep_retention": {
+    "status": "candidate_not_hardware_qualified",
+    "default_enabled": false,
+    "module_parameter": "enable_retention_sleep",
+    "modes": [
+      "s2idle with ASoC stream-stop ordering and retained AFE SRAM"
+    ],
+    "provider_api": "n1x_sroot_client_ops_v4",
+    "native_power_callback": "nvpep.sys 0x14001fb40",
+    "memory_policy": "Retain operating DMA, IOMMU mappings and every DSP/provider lease",
+    "unsupported": [
+      "Hibernate",
+      "deep sleep",
+      "legacy active clients without ASoC ordering",
+      "runtime autosuspend",
+      "DMA reclamation"
+    ]
+  },
+  "asoc_audio": {
+    "status": "candidate_not_hardware_qualified",
+    "playback_abi": 2,
+    "automatic_firmware": "auto_boot plus n1x-adsp-audio.service",
+    "card_components": [
+      "NVDA8301",
+      "NVDA8302",
+      "NVDA8303"
+    ],
+    "playback": "HiFi1 tasks 7 and 16 via the existing ALSA DL0 frontend",
+    "capture": "Existing direct ALSA path; HiFi5 DSP capture not implemented",
+    "lifecycle": [
+      "STOP/PREPARE/START",
+      "successful CLOSE/OPEN",
+      "retained ring rebind",
+      "negotiated geometry within persistent capacity"
+    ],
+    "power": "ASoC card -> DSP -> AFE and DSP -> DLA -> SROOT; retained SRAM across opt-in s2idle"
   }
 }

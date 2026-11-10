@@ -3,7 +3,7 @@ menu "NVIDIA N1X platform drivers"
 
 config N1X_ADSP
 	tristate "NVIDIA N1X / MediaTek MT8901 audio DSP"
-	depends on ARM64 && ACPI && PM && MTK_POWER_WRAP && IOMMU_DMA
+	depends on ARM64 && ACPI && PM && MTK_POWER_WRAP && IOMMU_DMA && SND_SOC
 	select FW_LOADER
 	help
 	  Secure firmware loading and task IPC for the MT8901 audio DSPs.

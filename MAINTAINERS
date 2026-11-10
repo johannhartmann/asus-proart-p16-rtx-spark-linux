@@ -1,0 +1,8 @@
+NVIDIA N1X / MT8901 DSP AUDIO INTEGRATION
+M:	Johann-Peter Hartmann <johannhartmann@gmail.com>
+S:	Maintained
+W:	https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux
+F:	docs/audio.md
+F:	kernel/p16-afe-sram.patch
+F:	platform/dsp/
+F:	scripts/prepare-afe-sram-patch.py

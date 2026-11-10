@@ -23,8 +23,8 @@ and module/runtime-PM references rather than assuming a task ACK stops DMA.
 Verified whole-core shutdown, failure handling and suspend/remove behavior are
 required before enabling DSP startup by default.
 
-The route-2 DL0 frontend has offline fault and concurrency coverage. Full-stream
-hardware qualification, restart and additional endpoints remain open. The
+The route-2 DL0 frontend has offline fault and concurrency coverage. Repeated stream lifecycle and ASoC/SRAM retention have offline coverage. Full-stream
+hardware qualification, runtime autosuspend, DSP capture and additional endpoints remain open. The
 provider's release of successfully consumed upload staging is a separate
 contract and does not establish DSP shutdown.
 

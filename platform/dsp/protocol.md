@@ -292,7 +292,8 @@ lease while DSP boot state retains already-published IPC SRAM. No firmware-stage
 failure retries or releases published memory. A successful close sends task 7
 commands 9 and 2, followed by task 16 commands 9, `0x202` with scalar parameter
 1 (playback direction), and 2. This follows `0x140028f40`. Close does not
-establish whole-core DMA quiescence or allow reopening after a PCM attempt.
+establish whole-core DMA quiescence. The ABI 2 candidate permits a new OPEN
+after successful close by rebinding and reusing the retained rings.
 
 ## Initial primary PCM prepare
 
@@ -501,7 +502,8 @@ does not establish that DSP operating memory can be released or that another
 core may be powered down. The v2 API separates consumed image staging from the retained DSP lifetime
 lease.
 
-The DSP driver uses the device-bound `n1x_sroot_client_ops_v3()` handle.
+The DSP driver uses the device-bound client operations from `n1x_sroot_client_ops_v4()`,
+which extends the ABI v3 handle contract.
 Its upload operation preserves ABI v2 staging semantics. The provider uses
 the selected SROOT context mutex, container checks and one-attempt policy, and retains its module/runtime-PM
 reference before publication. It releases the temporary image buffer only when
@@ -512,7 +514,7 @@ NPU shutdown still checks it before changing hardware or lifetime state.
 
 Every rejected, malformed or uncertain exchange retains staging and poisons
 the shared loader. A later v1/v2 call cannot retry or retire an old allocation.
-ABI v1 retains its original behavior. The DSP client acquires ABI v3 at probe and reserves the provider before taking
+ABI v1 retains its original behavior. The DSP client acquires ABI v4 at probe and reserves the provider before taking
 power. It commits the lease before publishing operating memory, and rejects inconsistent success fields
 even if a ready notification has arrived. No operating DSP DRAM or AFE SRAM,
 provider lease, module reference or runtime-PM vote is released by this API.
@@ -651,8 +653,8 @@ the caller drains work queued by that listener separately.
 
 START/STOP transaction errors and failed IRQ cleanup are terminal and preserve
 all published memory and references. Close stops a started stream before
-HWFREE/CLOSE. Restart after STOP is rejected until reinitialization, which is
-not yet implemented. Neither STOP acknowledgements nor IRQ disable establish
+HWFREE/CLOSE. Restart after STOP requires a fresh PREPARE, listener and sample publication
+in the ABI 2 candidate; its IRQ is revalidated and reprogrammed while disabled. Neither STOP acknowledgements nor IRQ disable establish
 whole-core DMA quiescence or authorize buffer release. The transitions remain hardware-unqualified.
 
 `test_trigger.py` compiles the actual control and lifecycle functions with
@@ -668,7 +670,7 @@ playback IRQs and preservation of unrelated target bits.
 The driver integrates a DL0 playback client into the existing nonatomic
 AFE/SoundWire frontend. The AFE `dsp_playback` parameter defaults to false and
 is read-only after module load. The client requires `n1x_adsp_primary_abi()`
-to return primary-client ABI 1 before OPEN. This contract includes retained
+to return primary-client ABI 2 before OPEN. This contract includes retained
 lease retirement and an `at_end` flag alongside the normalized consumed byte
 offset. The flag distinguishes a firmware read address at the end boundary
 from the base address; the firmware wire record is unchanged.
@@ -701,8 +703,66 @@ The owner retains the SRAM allocation and memif/device/module/power references;
 future endpoint/prepare requests fail without accessing the old substream.
 No retirement operation writes registers or establishes DMA quiescence.
 
-Reconfiguration after publication, restart after STOP, pause/resume and other
-frontends remain unsupported. Actual-function sanitizer tests cover helper/ABI
+Successful CLOSE/OPEN reuses retained memory and permits format/period changes
+within its capacity. STOP/PREPARE/START is implemented; direct firmware pause/resume
+and other DSP frontends remain unsupported. Actual-function sanitizer tests cover helper/ABI
 faults, producer/boundary vectors, partial/coalesced notifications and close
-against a blocked period worker. The complete path remains and
-has no hardware streaming qualification.
+against a blocked period worker. The complete path still has no hardware streaming qualification.
+
+
+## System-sleep retention candidate
+
+The pinned `nvpep.sys` device-power callback at `0x14001fb40` constructs its
+SCMI SET composite as the ACPI action word OR device state shifted by 16,
+driver-complete shifted by 8 and the system-state-transition byte. It calls
+`0x1400169d0`, then the common SET implementation at `0x1400430c0`. The matching
+Linux wrapper encodes D3/complete on suspend and D0/incomplete on resume. The
+candidate uses `sys_trans=1` specifically for system sleep; ordinary runtime
+PM retains `sys_trans=0`. The existing `scripts/analyze-dsp-shutdown.py`
+extractor now includes the pinned PEP device-power callback for reproducibility.
+
+In pinned `nvadsp.sys`, D0 entry `0x1400074e0` and post-interrupt entry
+`0x1400077e0` update driver state; D0 exit `0x140007630` updates state and
+pre-interrupt-disable `0x140007900` flushes host queues. These callbacks contain
+no DSP firmware stop/reload operation. This supports investigating platform
+retention rather than inventing a STOP mailbox command. It does not prove
+retention on Linux, that a SET acknowledgement means physical D3 completion,
+or that operating DMA can be reclaimed.
+
+Consequently the candidate keeps every published DSP allocation and provider
+lease. ABI v4 votes order the idle-DSP D3/D0 transitions around the provider's
+existing checked DLA stop/restart. The optional s2idle path rejects uncertain
+uploads, poisoned IPC, legacy active audio clients lacking ASoC ordering. The automatic ASoC candidate
+coordinates card STOP and retained AFE SRAM, as described below. Retained
+DRAM descriptors are checked after D0, but firmware liveness, audio continuity,
+physical sleep and power savings still require fresh-boot hardware tests.
+Whole-core shutdown, full DMA release, Hibernate and deep-sleep recovery are
+not implemented by this retention path.
+
+
+## Automatic ASoC audio candidate
+
+The current candidate registers firmware-ready DSPs as auxiliary ASoC
+components. The card core creates card-to-component device links, ensuring
+ALSA stream SUSPEND/STOP precedes DSP D3. DSP-to-AFE links order SRAM saving
+and restoration without a reverse dependency. Host IPC is frozen in prepare,
+except the typed task-7/task-16 STOPs required by the card. DSP suspend then
+freezes every request and drains the IRQ/power work before requesting D3.
+
+Successful task HWFREE/CLOSE permits reuse of the same retained message slices
+and sample ring; this does not authorize freeing them. A new ALSA substream
+may bind only after retirement, with the same memif/IRQ, an idle IRQ and a
+complete ring fitting the original allocation. The processing task's registered
+slices persist across OPENs. STOP/PREPARE/START uses the normal four PREPARE
+messages and the original START pair, rather than substituting the separate
+0x206/0x209 pause/resume protocol. Actual streaming and reconfiguration still
+require hardware qualification.
+
+Each DSP-owned SRAM lease declares retention capability during setup and votes
+after acknowledged DSP D3. The AFE saves SRAM only when every owner voted;
+its snapshot memory is allocated during probe. On wake it powers up and restores
+SRAM before DSP D0 is permitted. A failed restoration retains the saved flag
+and blocks consumers. This follows the platform's D3/D0 retention model, not a
+new claim of whole-core shutdown. Runtime autosuspend and DMA reclamation stay
+blocked. HiFi5 microphone processing is not implemented; ordinary capture uses
+the existing ALSA path. No physical qualification is claimed by these changes.

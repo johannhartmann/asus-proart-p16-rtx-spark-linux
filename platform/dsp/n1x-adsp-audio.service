@@ -1,0 +1,32 @@
+[Unit]
+Description=Initialize N1X DSP firmware for the ALSA/ASoC sound card
+After=n1x-platform-npu.service
+Requires=n1x-platform-npu.service
+Before=multi-user.target
+ConditionKernelCommandLine=n1x_adsp.auto_boot=1
+ConditionPathExistsGlob=/sys/bus/acpi/devices/NVDA8301:*
+ConditionPathExistsGlob=/sys/bus/acpi/devices/NVDA8302:*
+ConditionPathExistsGlob=/sys/bus/acpi/devices/NVDA8303:*
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/libexec/n1x-adsp-audio --prepare
+ExecStart=/usr/bin/modprobe n1x_adsp enable_boot=1 auto_boot=1
+ExecStartPost=/usr/libexec/n1x-adsp-audio --verify
+RemainAfterExit=yes
+TimeoutStartSec=180s
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectHome=yes
+ProtectSystem=strict
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+ReadWritePaths=/sys/kernel/iommu_groups
+CapabilityBoundingSet=CAP_SYS_MODULE CAP_SYS_ADMIN
+RestrictAddressFamilies=AF_UNIX
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

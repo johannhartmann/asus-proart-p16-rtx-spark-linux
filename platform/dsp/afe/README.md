@@ -19,8 +19,8 @@ share the allocation offset; clients must use the view required by their
 protocol. Releasing an unpublished lease returns its allocation and references.
 
 Clients mark memory published before sending its address to firmware. Release
-then returns `EBUSY`. Suspend and module removal remain blocked while leases
-exist. Publication is retained after uncertain requests. This is an interim
+then returns `EBUSY`. Runtime autosuspend and module removal remain blocked while leases
+exist. System s2idle has an opt-in, unqualified retention path described below. Publication is retained after uncertain requests. This is an interim
 retention contract; verified DSP quiesce/release is still required.
 
 PCM binding validates an active, non-running playback substream, format, memif,
@@ -69,6 +69,26 @@ and compares the resulting files to the canonical owner/frontend sources.
 ASan/UBSan harnesses exercise actual allocation, programming, suspend and
 frontend functions with injected OS/register faults and concurrent callers.
 They verify retention and borrowed-pointer retirement as well as successful
-paths. Fresh-boot hardware qualification, restart, additional endpoints and
+paths. Fresh-boot streaming and sleep qualification, DSP capture endpoints and
 verified shutdown/release remain required. Generated integration patches still
 need author-reviewed DCO sign-off before submission.
+
+
+## Reopen and retained system sleep
+
+ABI 2 playback reuses one maximum-size SRAM allocation after successful task
+HWFREE/CLOSE. The old substream is retired before freeing ALSA state. Only the
+DSP playback path may reopen its reserved memif; ordinary raw DMA cannot take
+over the published memory. Rebind validates an idle IRQ and complete new ring
+geometry within the retained capacity. STOP/PREPARE/START reprograms the IRQ
+and resets cursors without allocating another ring or message pool.
+
+The ASoC card's auxiliary DSP components provide card → DSP system-PM links;
+DSP → AFE links order SRAM lifetime without a circular dependency. Each owner
+declares retention capability during setup and votes only after acknowledged
+DSP D3. Prepare rejects unmatched leases and freezes allocations. SRAM is saved
+to a buffer allocated at AFE probe after all votes, and restored after AFE
+power-up before DSP D0. A failed suspend performs its own force-resume rollback;
+a failed restoration keeps the snapshot marked saved so consumers cannot wake.
+All DMA/PM/module leases stay owned throughout; no STOP ACK is treated as a
+whole-core release contract. This candidate still needs physical qualification.

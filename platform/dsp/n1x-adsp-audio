@@ -1,0 +1,72 @@
+#!/usr/bin/python3
+"""Prepare isolated DSP DMA domains or verify kernel-owned ASoC readiness."""
+import argparse
+import os
+from pathlib import Path
+
+SYS = Path('/sys')
+HIDS = ('NVDA8301', 'NVDA8302', 'NVDA8303')
+
+
+def endpoints(root=SYS):
+    result = []
+    for hid in HIDS:
+        matches = list((root/'bus/platform/devices').glob(hid+':*'))
+        if len(matches) != 1 or (matches[0]/'firmware_node/hid').read_text().strip() != hid:
+            raise RuntimeError('Expected one ACPI DSP endpoint for '+hid)
+        result.append(matches[0])
+    return result
+
+
+def prepare(root=SYS):
+    controls = []
+    for device in endpoints(root):
+        group = (device/'iommu_group').resolve(strict=True)
+        if group.parent != root/'kernel/iommu_groups':
+            raise RuntimeError('Unexpected IOMMU group path')
+        if {p.name for p in (group/'devices').iterdir()} != {device.name}:
+            raise RuntimeError('Shared DSP IOMMU group: '+device.name)
+        control = group/'type'
+        mode = control.read_text().strip()
+        if mode not in ('identity', 'DMA', 'DMA-FQ'):
+            raise RuntimeError('Unsupported DSP IOMMU domain')
+        if (device/'driver').exists():
+            if (device/'driver').resolve().name != 'n1x-adsp' or mode == 'identity':
+                raise RuntimeError('Bound DSP prevents domain preparation: '+device.name)
+        controls.append(control)
+    # Validate every endpoint before changing any domain. The IOMMU core
+    # rejects a type change if a driver acquired the domain in the meantime.
+    for control in controls:
+        if control.read_text().strip() == 'identity':
+            control.write_text('DMA\n')
+        if control.read_text().strip() not in ('DMA', 'DMA-FQ'):
+            raise RuntimeError('DSP DMA domain selection failed')
+
+
+def verify(root=SYS):
+    for device in endpoints(root):
+        if (device/'driver').resolve(strict=True).name != 'n1x-adsp':
+            raise RuntimeError('Unexpected DSP driver: '+device.name)
+        if (device/'asoc_ready').read_text().strip() != '1':
+            raise RuntimeError('Firmware-backed ASoC component unavailable: '+device.name)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--prepare', action='store_true')
+    mode.add_argument('--verify', action='store_true')
+    args = parser.parse_args()
+    try:
+        if args.prepare:
+            if os.geteuid() != 0:
+                parser.error('DMA domain preparation requires root')
+            prepare()
+        else:
+            verify()
+    except (OSError, RuntimeError) as error:
+        parser.exit(1, str(error)+'; no reset, retry, unbind or module removal\n')
+
+
+if __name__ == '__main__':
+    main()

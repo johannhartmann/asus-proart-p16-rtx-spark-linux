@@ -8,6 +8,7 @@
 struct device;
 struct n1x_adsp_primary;
 struct mt8901_afe_sram_buffer;
+struct snd_pcm_substream;
 
 #ifdef __KERNEL__
 #include <linux/acpi.h>
@@ -48,10 +49,11 @@ static inline struct device *n1x_adsp_find_device(struct device *consumer, const
 }
 #endif
 
-#define N1X_ADSP_PRIMARY_ABI 1U
+#define N1X_ADSP_PRIMARY_ABI 2U
 
 /* Query the typed playback client contract before opening a task. No firmware
- * access. ABI 1 includes end-boundary positions and close-time AFE retirement.
+ * access. ABI 2 adds retained-ring rebind, successful close/open reuse and
+ * STOP/PREPARE/START recovery to the original position/retirement contract.
  */
 __u32 n1x_adsp_primary_abi(void);
 
@@ -93,10 +95,17 @@ int n1x_adsp_prepare_primary(struct device *dev);
 /* Open the primary task exclusively after registering its message buffers.
  * Returns an owned handle or ERR_PTR(). No PCM configuration or START is sent.
  * A failed firmware request prevents reopening until device reinitialization.
- * A previous PCM configuration prevents reopening until device reinitialization.
+ * Successful HWFREE/CLOSE permits reopening with the same retained buffers.
  * This call sleeps and requires process context.
  */
 struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
+
+/* Reattach the persistent AFE ring after successful HWFREE/CLOSE and a fresh
+ * OPEN. ENOENT means no ring exists yet; reserve/bind an initial lease instead.
+ * No firmware request, allocation or release. Requires serialized ALSA setup.
+ */
+int n1x_adsp_primary_rebind(struct n1x_adsp_primary *primary,
+			    struct snd_pcm_substream *substream);
 
 /* Register and open processing task 16 with AFE-owned SRAM message memory,
  * then configure the task-7 host ring, task-16 AFE ring and bridge with
@@ -105,7 +114,8 @@ struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
  * must match; period sizes/counts may differ. Missing AFE support is rejected
  * before any firmware request. A firmware-stage failure is terminal.
  *
- * On publication, ownership of *sram transfers to the DSP boot state and
+ * After successful rebind, pass *sram=NULL to reuse the retained ring.
+ * Otherwise, on publication, ownership of *sram transfers to the DSP boot state and
  * *sram becomes NULL, including if the following request fails. Otherwise
  * the caller still owns its lease. Published memory remains retained until
  * verified whole-core shutdown, which is not implemented yet. A failure before
@@ -159,7 +169,7 @@ int n1x_adsp_primary_start(struct n1x_adsp_primary *primary);
  * repetition sends no IPC or register writes. Synchronizes and detaches the
  * period listener; the client must drain its own queued work before freeing
  * listener data. Does not release memory or prove core quiescence. Restart
- * after this STOP requires reinitialization and is not implemented yet.
+ * requires a fresh PREPARE, listener and sample publication; no buffers are freed.
  * A failed request is terminal. Requires process context; sleeps.
  */
 int n1x_adsp_primary_stop(struct n1x_adsp_primary *primary);
