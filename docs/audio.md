@@ -43,8 +43,14 @@ A live silent-stream snapshot with DSP 0.1.19 showed ALSA RUNNING and task
 START acknowledgements, but DL0 enable, IRQ enable and the HiFi1 IRQ target
 were all clear; the hardware cursor and DSP period counter did not advance.
 The AFE frontend now explicitly starts the owned DL0 channel after those
-acknowledgements and disables it after acknowledged task STOPs. This correction
-has fault-injection coverage; hardware streaming and suspend remain unqualified.
+acknowledgements and disables it after acknowledged task STOPs. A follow-up
+silent-stream test with the corrected AFE confirmed the enable bits and an
+advancing hardware cursor (`0x1a6c9580` to `0x1a6cb580` in about 22 ms). ALSA's
+hardware pointer and the DSP consumed-position notification count nevertheless
+remained zero. Additional normal ALSA writes after START also failed to produce
+notifications. Normal STOP/CLOSE and a later OPEN/PREPARE/START completed without
+transport or task errors. These observations verify the host DMA trigger, not
+end-to-end playback: streaming and suspend remain unqualified.
 
 ## Build and install
 
