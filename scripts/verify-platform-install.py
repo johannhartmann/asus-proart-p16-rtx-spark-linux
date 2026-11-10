@@ -131,6 +131,33 @@ def main():
                                    "runtime": (device / "power/runtime_status").read_text().strip()}
             if (device / "status").exists():
                 report["dsp"][name]["status"] = (device / "status").read_text().strip()
+        report["dsp_auto_boot_requested"] = "n1x_adsp.auto_boot=1" in Path("/proc/cmdline").read_text().split()
+        if report["dsp_auto_boot_requested"]:
+            report["dsp_audio_service"] = run([
+                "systemctl", "show", "n1x-adsp-audio.service",
+                "-p", "ActiveState", "-p", "Result", "-p", "ConditionResult"])
+            if not all(value in report["dsp_audio_service"] for value in (
+                    "ActiveState=active", "Result=success", "ConditionResult=yes")):
+                raise RuntimeError("Automatic DSP audio service did not complete")
+            # This helper only reads domains/readiness with --verify. Never
+            # prepare, upload, reset or reload during an installation audit.
+            run(["/usr/libexec/n1x-adsp-audio", "--verify"])
+            for name, state in report["dsp"].items():
+                device = Path("/sys/bus/platform/devices") / name
+                state["asoc_ready"] = (device / "asoc_ready").read_text().strip()
+                state["sleep_status"] = (device / "sleep_status").read_text().strip()
+                if state["asoc_ready"] != "1":
+                    raise RuntimeError("DSP ASoC component unavailable: " + name)
+            for name in ("n1x_adsp", "snd_soc_mt8901_afe", "mt8901_acp_sdw_legacy_mach"):
+                built = run(["modinfo", "-F", "srcversion", name]).strip()
+                loaded = (Path("/sys/module") / name / "srcversion").read_text().strip()
+                if loaded != built:
+                    raise RuntimeError("Loaded/installed audio module differs: " + name)
+                report["module_versions"][name] = {
+                    "path": run(["modinfo", "-n", name]).strip(), "srcversion": loaded}
+            report["dsp_service_integration"] = True
+            # Firmware/ASoC readiness is distinct from physical audio tests.
+            report["physical_audio_qualified"] = False
         report["default_entry"] = next(line for line in Path("/boot/limine.conf").read_text().splitlines()
                                         if line.startswith("default_entry:"))
         verify.verify_menu()
