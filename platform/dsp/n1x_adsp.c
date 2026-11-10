@@ -17,6 +17,7 @@
 #include <linux/iommu.h>
 #include <linux/iommu-dma.h>
 #include <linux/kfifo.h>
+#include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
@@ -415,6 +416,7 @@ static irqreturn_t n1x_adsp_irq(int irq, void *data)
 static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 {
 	const struct firmware *firmware;
+	size_t allocation_bytes = dsp->target->dram_bytes + PAGE_SIZE;
 	u64 end;
 	u32 pending, previous_dma, previous_bytes;
 	int err;
@@ -466,14 +468,19 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 	err = pm_runtime_resume_and_get(dsp->dev);
 	if (err < 0)
 		goto release;
-	dsp->dram = dma_alloc_coherent(dsp->dev, dsp->target->dram_bytes,
-					&dsp->dma, GFP_KERNEL);
+	/* Firmware validates base + size as a 32-bit exclusive end. An
+	 * allocation ending exactly at 4 GiB makes every audio address invalid.
+	 * Keep one unadvertised page inside the normal 32-bit DMA allocation,
+	 * so its advertised extent cannot wrap. No private IOVA manipulation.
+	 */
+	dsp->dram = dma_alloc_coherent(dsp->dev, allocation_bytes,
+				       &dsp->dma, GFP_KERNEL);
 	if (!dsp->dram) {
 		err = -ENOMEM;
 		goto put_pm;
 	}
-	end = (u64)dsp->dma + dsp->target->dram_bytes - 1;
-	if (dsp->dma < 0xe0000000 || end > 0xffffffff || (dsp->dma & 255)) {
+	end = (u64)dsp->dma + dsp->target->dram_bytes;
+	if (dsp->dma < 0xe0000000 || end > DMA_BIT_MASK(32) || (dsp->dma & 255)) {
 		err = -ERANGE;
 		goto free;
 	}
@@ -522,7 +529,7 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 		err, dsp->loader.accepted, dsp->boot_ready, dsp->last_command);
 	goto release;
 free:
-	dma_free_coherent(dsp->dev, dsp->target->dram_bytes, dsp->dram, dsp->dma);
+	dma_free_coherent(dsp->dev, allocation_bytes, dsp->dram, dsp->dma);
 	dsp->dram = NULL;
 	dsp->dma = 0;
 put_pm:
@@ -629,7 +636,7 @@ static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *dsp)
 		return err;
 	if (!dsp->dram || dsp->target->dram_bytes < ADSP_PRIMARY_BUFFERS * ADSP_MESSAGE_BYTES ||
 	    (dsp->dma & 255) || dsp->dma < 0xe0000000 ||
-	    dsp->dma > DMA_BIT_MASK(32) - (dsp->target->dram_bytes - 1))
+	    dsp->dma > DMA_BIT_MASK(32) - dsp->target->dram_bytes)
 		return -ERANGE;
 
 	/* The primary task uses DRAM, unlike the SRAM-backed tasks 10, 16 and 29. */
@@ -2345,7 +2352,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.21");
+MODULE_VERSION("0.1.22");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

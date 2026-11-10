@@ -82,6 +82,9 @@ typedef int irqreturn_t;
 #define CAP_SYS_RAWIO 17
 #define THIS_MODULE ((void *)1)
 #define DMA_BIT_MASK(n) ((1ULL<<(n))-1)
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 65536
+#endif
 #define GFP_KERNEL 0
 #define IRQ_NONE 0
 #define IRQ_HANDLED 1
@@ -124,6 +127,8 @@ static int fault,reads,writes,pm_refs,module_refs,provider_leases,uploads,frees,
 static u8 firmware_bytes[631436];
 static struct firmware firmware={firmware_bytes,sizeof(firmware_bytes)};
 static void *allocation;
+static size_t expected_allocation_bytes;
+static const char *expected_firmware;
 static u32 shared_memory[256],mailbox_memory[1024];
 static int n1x_adsp_dma_gate(struct device *d) {assert(d==&device);return fault==2?-EOPNOTSUPP:0;}
 static bool capable(int cap) {assert(cap==CAP_SYS_RAWIO);return privileged;}
@@ -135,7 +140,7 @@ static void device_unlock(struct device *d) {(void)d;assert(0);}
 static void *dev_get_drvdata(struct device *d) {(void)d;assert(0);return NULL;}
 static void put_device(struct device *d) {assert(!d);}
 static int request_firmware_direct(const struct firmware **fw,const char *name,struct device *d) {
- assert(d==&device && !strcmp(name,"nvidia/n1x/hifi5-0-mt8901-signed.bin"));
+ assert(d==&device && !strcmp(name,expected_firmware));
  assert(provider_leases==1 && !reads && !writes);if(fault==1)return -ENOENT;*fw=&firmware;return 0;
 }
 static void release_firmware(const struct firmware *fw) {assert(fw==&firmware);}
@@ -147,12 +152,14 @@ static int pm_runtime_resume_and_get(struct device *d) {
 }
 static void pm_runtime_put(struct device *d) {assert(d==&device && pm_refs==1);pm_refs--;}
 static void *dma_alloc_coherent(struct device *d,size_t bytes,dma_addr_t *dma,int flag) {
- assert(d==&device && bytes==24U<<20 && flag==GFP_KERNEL && pm_refs==1 && !module_refs);
+ assert(d==&device && bytes==expected_allocation_bytes && flag==GFP_KERNEL && pm_refs==1 && !module_refs);
  if(fault==5)return NULL;allocation=malloc(bytes);assert(allocation);*dma=fault==6?0xd0000000:0xe0000000;
+ if(fault==19)*dma=0x100000000ULL-(expected_allocation_bytes-PAGE_SIZE);
+ if(fault==20)*dma=0x100000000ULL-bytes;
  return allocation;
 }
 static void dma_free_coherent(struct device *d,size_t bytes,void *cpu,dma_addr_t dma) {
- assert(d==&device && bytes==24U<<20 && cpu==allocation && dma && !writes && !module_refs);
+ assert(d==&device && bytes==expected_allocation_bytes && cpu==allocation && dma && !writes && !module_refs);
  free(cpu);allocation=NULL;frees++;
 }
 static bool try_module_get(void *m) {assert(m==THIS_MODULE && pm_refs==1);if(fault==9)return false;module_refs++;return true;}
@@ -200,9 +207,9 @@ static int cancel_stub(struct n1x_sroot_client *client)
 {assert(client==(void *)&dsp && provider_leases==1 && !provider_published);provider_leases--;return 0;}
 static int upload_stub(struct n1x_sroot_client *client,u32 id,const u8 *image,size_t bytes,struct n1x_sroot_client_result_v2 *result) {
  assert(client==(void *)&dsp && provider_published);
- assert(id==0xc0304 && image==firmware.data && bytes==firmware.size);
+ assert(id==dsp.target->image_id && image==firmware.data && bytes==firmware.size);
  assert(module_refs==1 && pm_refs==1 && provider_leases==1 && dsp.published && dsp.attempted && writes==2);
- assert(shared_memory[ADSP_CONFIG_OFFSET/4]==0xe0000000 && shared_memory[ADSP_CONFIG_OFFSET/4+2]==24U<<20);
+ assert(shared_memory[ADSP_CONFIG_OFFSET/4]==dsp.dma && shared_memory[ADSP_CONFIG_OFFSET/4+2]==dsp.target->dram_bytes);
  uploads++;result->published=1;if(fault==10)return -ETIMEDOUT;result->accepted=1;result->reply_valid=1;result->reply_header=0x18;result->staging_released=1;
  if(fault==13)result->published=0;if(fault==14)result->reply_valid=0;if(fault==15)result->accepted=0;
  if(fault==16)result->staging_released=0;if(fault==17)result->reply_header=0x118;
@@ -230,7 +237,8 @@ static void reset(void) {
  enable_boot=privileged=provider=true;fault=reads=writes=pm_refs=module_refs=provider_leases=uploads=frees=waits=0;
  power_calls=power_reply=in_irq=0;power_value=0;
  provider_published=false;dsp.sroot_ops=&test_sroot_ops;dsp.sroot_client=(void *)&dsp;
- dsp.dev=&device;dsp.target=&targets[0];dsp.firmware=dsp.target->firmware;dsp.shared=shared_memory;dsp.mailbox=mailbox_memory;
+ dsp.dev=&device;dsp.target=&targets[0];dsp.firmware=dsp.target->firmware;
+ expected_firmware=dsp.firmware;expected_allocation_bytes=dsp.target->dram_bytes+PAGE_SIZE;dsp.shared=shared_memory;dsp.mailbox=mailbox_memory;
  firmware.size=sizeof(firmware_bytes);make_image(firmware_bytes,firmware.size,0xc0304);
 }
 static void power_notification(unsigned type,u32 value)
@@ -243,6 +251,17 @@ static void power_notification(unsigned type,u32 value)
 }
 static unsigned period_calls;
 static int period_error;
+/* Independently reconstructed from signed HiFi1 is_adsp_addr_valid,
+ * 4ff89968..4ff899c1; see protocol.md. Includes its overflow-first check.
+ */
+static bool hifi1_firmware_address_valid(u32 address,u32 base,u32 size)
+{
+ u32 end=base+size;
+ if(end<base)return false;
+ return (u32)(address-0x4e217000U)<0x69000U ||
+        (address>=base && address<end) ||
+        (u32)(address-0x1a6c0000U)<0x14000U;
+}
 static void period_callback(void *data,const struct n1x_adsp_pcm_position *position,int error)
 {
  assert(in_irq && data==&dsp && shared_memory[4]==0);
@@ -250,6 +269,8 @@ static void period_callback(void *data,const struct n1x_adsp_pcm_position *posit
  period_calls++;period_error=error;
 }
 int main(void) {
+ assert(!hifi1_firmware_address_valid(0xff001000U,0xff000000U,0x1000000U));
+ assert(!hifi1_firmware_address_valid(0x1a6c0000U,0xff000000U,0x1000000U));
  reset();dsp.sleep_prepared=true;
  assert(n1x_adsp_boot(&dsp, false)==-EBUSY);
  assert(!reads && !writes && !pm_refs && !module_refs && !provider_leases && !dsp.attempted);
@@ -327,17 +348,39 @@ int main(void) {
  assert(dsp.power_queued==16 && dsp.power_requests.count==16 && dsp.power_error==-ENOSPC);
  assert(!dsp.ipc_pending && dsp.ipc_done.done && dsp.ipc_error==-ENOSPC && dsp.ipc_poisoned);
  n1x_adsp_power_work(&dsp.power_work);assert(!power_calls);
- reset();puts("DSP boot/IRQ, power requests, bounded queues and DMA lifetime tests passed");
+ /* Highest legal DMA allocation: the advertised firmware window must not wrap.
+  * Check both the 16 MiB HiFi1 and 24 MiB primary HiFi5 paths.
+  */
+ for(unsigned target=0;target<3;target+=2) {
+  reset();fault=19;dsp.target=&targets[target];dsp.firmware=dsp.target->firmware;
+  expected_firmware=dsp.firmware;expected_allocation_bytes=dsp.target->dram_bytes+PAGE_SIZE;
+  make_image(firmware_bytes,firmware.size,dsp.target->image_id);
+  assert(n1x_adsp_boot(&dsp,false)==-ERANGE);
+  assert(!reads && !writes && !uploads && frees==1 && !allocation && !pm_refs && !module_refs && !provider_leases);
+  reset();fault=20;dsp.target=&targets[target];dsp.firmware=dsp.target->firmware;
+  expected_firmware=dsp.firmware;expected_allocation_bytes=dsp.target->dram_bytes+PAGE_SIZE;
+  make_image(firmware_bytes,firmware.size,dsp.target->image_id);
+  assert(!n1x_adsp_boot(&dsp,false));
+  assert(dsp.dma+dsp.target->dram_bytes==0x100000000ULL-PAGE_SIZE && !frees);
+  assert(shared_memory[ADSP_CONFIG_OFFSET/4+2]==dsp.target->dram_bytes);
+  if(target==2) {
+   assert(hifi1_firmware_address_valid(dsp.dma+4096,dsp.dma,dsp.target->dram_bytes));
+   assert(hifi1_firmware_address_valid(0x1a6c0000U,dsp.dma,dsp.target->dram_bytes));
+   assert(!hifi1_firmware_address_valid(dsp.dma+dsp.target->dram_bytes,dsp.dma,dsp.target->dram_bytes));
+  }
+ }
+ reset();puts("DSP boot/IRQ, power requests, bounded queues, 4-GiB boundary and DMA lifetime tests passed");
 }
 '''
     with tempfile.TemporaryDirectory() as temporary:
         code, binary = Path(temporary) / 'test.c', Path(temporary) / 'test'
         code.write_text(harness)
-        subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
-                        '-Wno-unused-parameter', '-Wno-misleading-indentation',
-                        '-fsanitize=address,undefined', '-g', '-I' + str(ROOT),
-                        str(code), '-o', str(binary)], check=True)
-        subprocess.run([str(binary)], check=True)
+        for page_size in (4096, 16384, 65536):
+            subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
+                            '-Wno-unused-parameter', '-Wno-misleading-indentation',
+                            '-fsanitize=address,undefined', '-g', '-I' + str(ROOT),
+                            f'-DPAGE_SIZE={page_size}', str(code), '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
     test_remove(source)
 
 

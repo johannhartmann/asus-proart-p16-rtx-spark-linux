@@ -104,9 +104,16 @@ and DTCM payloads and literal references to the shared-DRAM overflow diagnostic
 and consume-notification function name. The standard Ghidra Xtensa decoder
 cannot decode all HiFi FLIX instructions (see the
 [upstream decoder report](https://github.com/NationalSecurityAgency/ghidra/issues/6342)).
-No complete firmware check has yet been reconstructed. In particular, an
-exclusive DRAM end of 4 GiB is a hypothesis to investigate, not evidence for
-changing the DMA window. The Windows INF permits the same upper bound.
+The public Zephyr HiFi1 objdump resolves the required scalar FLIX bundles.
+The reconstructed `is_adsp_addr_valid` proves a separate implementation defect:
+the live `0xff000000 + 16 MiB` operating window overflows the firmware's 32-bit
+exclusive-end addition. The validator rejects both host and SRAM addresses
+before descriptor access, despite successful transport ACKs. Source 0.1.22
+keeps an unadvertised guard page inside the ordinary coherent DMA allocation,
+checks its advertised end, and balances the complete allocation on failure.
+See [the exact image, PCs and reproduction commands](../platform/dsp/protocol.md#hifi1-shared-dram-exclusive-end-constraint).
+The rejection is established offline; the new data path still needs a fresh
+hardware boot to show whether further processing or notification defects exist.
 
 The local Cadence reference corpus contains NatureDSP HiFi3/3z and HiFi5
 sources and HiFi5 NNLib sources. `NDSP_HiFi5s_V310.zip` additionally contains
@@ -126,7 +133,7 @@ temporary read-only diagnostic was unloaded and issued no firmware commands.
 
 ## Source correction validation
 
-DSP 0.1.21 and the matching AFE module build with `W=1` against kernel
+DSP 0.1.22 and the matching AFE module build with `W=1` against kernel
 `7.2.8-31-rtx-spark-npu` without warnings. The 14 existing DSP export CRCs
 remain unchanged; the typed PCM API is additive. Driver protocol/sanitizer
 checks pass, as do 126 repository unit tests (two skipped). Patch replay is

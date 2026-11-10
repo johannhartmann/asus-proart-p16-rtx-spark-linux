@@ -1,5 +1,5 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.21
+pkgver=0.1.22
 pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
@@ -15,20 +15,20 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
         'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('987d5a166d1b7bbaae8221d093d08db181dabfb16ae66489636ba9167ed67a3a'
+sha256sums=('5dce079dc354572b816ef065c739e68296d733ccb494d8eb9b207e807ddc773b'
             'd68ffe347aa22c2b9318e4f199e4001b85ed471ad40efe5dc789049965cfec5c'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '3ef88fa2e3fc39ffd55cc01fab267755e2e0a648c4cfe8b281709b406318dec8'
+            '3e4f55d9e7ee8aa95d863c619b1ac7213ac40d3b8edaa8340892d4b28510c7b1'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
             '09092fa06397294e4540d8df94cfb509a762a271f571d4323e806dbd92b24372'
-            '372c80c3caaecf8b5f46466a9218029fe53132c807b551ccf014c7c81640e087'
-            'c021112fb9e6754a60191461dfaccfb18aacf0b688eb8118ae02ea262c4185af'
+            'eb494ccae66ec16b183f1d09dd648e8e6c88d775e19a5a6313517340bc5d39a4'
+            '0cd40a4e0647d73fb9f714be1cc21435af5dbdeb89ddce0a19b684a33989fec2'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '7bad602f3e3694f2a1baa682af33a75294a987e9cab54983d3e5487a19fac9f1'
             'e9aa0dcc0da19dd325a05c645cc3e7cbf4889bfdbd585ab3e84f5ec60afb7eed'
             '4179280ce67720d36b3eb23b86159a3bac59a26e855c717f5cf7ec6081478b7a'
-            '2a7653ed87ae78941bcb402abf92c26f420ec0a6e56431e966828fe8b0a1beb8'
+            'fef90635723b184681485d7955f68afb8fe09d8960eebc2627c6c69300f83c01'
             '5ea01466df828631abebe5399071b15a6bde11ec7a70a9d11c384684ce55ccce'
             '625f3a3db17b928464ea0d31b98f538f88591297e3534e38ed0bde75b31e1180'
             '01b7fdc92982dc3061f46ce1500574b7340bd74815f4dbd2fe5bd520424b97ac'

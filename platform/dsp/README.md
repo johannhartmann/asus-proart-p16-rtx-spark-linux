@@ -74,6 +74,15 @@ Physical state retention, streaming and power savings remain **unqualified**.
 Do not replace a published live module. Preserve the working boot and qualify
 the exact new kernel, AFE, machine, DSP and provider artifacts together.
 
+## Firmware address bounds
+
+The HiFi1 firmware rejects every audio address if its 32-bit shared-DRAM
+exclusive end overflows. DSP 0.1.22 reserves one additional, unadvertised page
+inside the normal coherent DMA allocation and checks the advertised exclusive
+end before publishing it. This fixes the former 16 MiB allocation at
+`0xff000000`. Published operating memory is still retained until reboot.
+See [the firmware validator evidence](protocol.md#hifi1-shared-dram-exclusive-end-constraint).
+
 ## Secure loading and IPC
 
 The driver acquires SROOT client ABI v4 during probe. Its referenced handle

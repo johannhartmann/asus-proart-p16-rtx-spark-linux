@@ -151,6 +151,60 @@ initializes private pools, and translates pool addresses before registration.
 The primary-task DRAM ownership and translation are established below. The
 AFE stream-buffer mapping remains a separate requirement for audio streaming.
 
+## HiFi1 shared-DRAM exclusive-end constraint
+
+The signed HiFi1 image SHA256
+`434660b36f4e21cb794bc50e10a47b91882710cbe90cb60620111a2a753c5b94`
+contains `is_adsp_addr_valid` at DSP PC `0x4ff89968`. The routine reads the
+shared base and size through `0x4ff96adc` and `0x4ff96ad0` (words 0 and 1
+of `0x4ff4d7b0`), adds them in a 32-bit register, then branches at
+`0x4ff89980` only if the exclusive end is at least the base. Otherwise it
+logs `shared_dram_end ... overflowed` and returns false. This check precedes
+both host-DRAM and SRAM address admission. The later SRAM ranges include
+`0x4e217000..0x4e27ffff` and `0x1a6c0000..0x1a6d3fff`.
+
+The audio descriptor handler calls this validator at `0x4ff89df1`, before
+reading the descriptor. A valid mailbox/task ACK is therefore insufficient
+proof that a descriptor was consumed. The original Linux allocation
+`0xff000000` plus `0x01000000` bytes wraps its firmware exclusive end to zero;
+even the otherwise valid AFE SRAM address then fails this validator.
+
+DSP 0.1.22 allocates one extra page through the ordinary coherent DMA API,
+with the same 32-bit coherent mask. Only the original operating extent is
+advertised to firmware. Because the whole allocation must fit the DMA mask,
+its unadvertised trailing page keeps the firmware exclusive end representable.
+The driver also checks that end explicitly and frees the complete allocation
+on every pre-publication failure. It does not reserve private IOVAs, change
+coherency, resize the advertised firmware window or relocate published memory.
+Tests exercise both 16/24 MiB operating extents and 4/16/64 KiB page sizes,
+reject the original boundary case, and replay the reconstructed HiFi1 address
+predicate against the guarded host and AFE addresses. Working live audio still
+requires testing the new allocation after reboot.
+
+The decoder used for this bounded instruction proof is the public
+[Zephyr SDK 1.0.1 HiFi1 toolchain](https://github.com/zephyrproject-rtos/sdk-ng/releases/tag/v1.0.1),
+ARM64 Linux asset `toolchain_gnu_linux-aarch64_xtensa-nxp_rt700_hifi1_zephyr-elf.tar.xz`,
+SHA256 `e811df2431737f7429629db8432c7de5005bf34f14b305a865d17126855c65c0`.
+It decodes the required six-byte scalar FLIX bundles, unlike the standard
+Ghidra Xtensa placeholder. This does not establish every optional MT8901 DSP
+instruction. Start decoding at a verified function entry: linear binary
+sweeps can lose alignment in padding or literal pools.
+
+To reproduce the validator listing from the exact local firmware:
+
+```sh
+python3 - <<'PYCODE'
+from pathlib import Path
+import hashlib
+image = Path('/usr/lib/firmware/nvidia/n1x/hifi1-0-mt8901-signed.bin').read_bytes()
+assert hashlib.sha256(image).hexdigest() == '434660b36f4e21cb794bc50e10a47b91882710cbe90cb60620111a2a753c5b94'
+Path('hifi1-itcm.bin').write_bytes(image[0xa24:0xa24 + 0x23290])
+PYCODE
+xtensa-nxp_rt700_hifi1_zephyr-elf-objdump -D -b binary -m xtensa \
+  --adjust-vma=0x4ff80000 --start-address=0x4ff89968 \
+  --stop-address=0x4ff899c4 hifi1-itcm.bin
+```
+
 ## Primary message buffers
 
 The current firmware SSDT containing `ASD0` has SHA256
