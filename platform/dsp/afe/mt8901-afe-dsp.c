@@ -382,6 +382,18 @@ int mt8901_afe_dsp_trigger(struct snd_pcm_substream *substream, int command)
 			return dsp->error;
 		WRITE_ONCE(dsp->running, true);
 		ret = dsp->start(dsp->primary);
+		if (!ret) {
+			struct snd_soc_dai *dai;
+
+			dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
+			ret = mt8901_afe_sram_start_pcm(substream, dai);
+			if (ret) {
+				int stop_ret = dsp->stop(dsp->primary);
+
+				if (stop_ret)
+					ret = stop_ret;
+			}
+		}
 		if (ret)
 			WRITE_ONCE(dsp->running, false);
 		break;

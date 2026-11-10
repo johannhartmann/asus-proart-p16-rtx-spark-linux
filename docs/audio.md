@@ -39,6 +39,13 @@ records the before/after words and whether the comparison ran. These are
 candidate corrections; matching mailbox words alone do not establish firmware
 liveness. Both streaming and sleep recovery still require physical tests.
 
+A live silent-stream snapshot with DSP 0.1.19 showed ALSA RUNNING and task
+START acknowledgements, but DL0 enable, IRQ enable and the HiFi1 IRQ target
+were all clear; the hardware cursor and DSP period counter did not advance.
+The AFE frontend now explicitly starts the owned DL0 channel after those
+acknowledgements and disables it after acknowledged task STOPs. This correction
+has fault-injection coverage; hardware streaming and suspend remain unqualified.
+
 ## Build and install
 
 The kernel recipe includes the generated

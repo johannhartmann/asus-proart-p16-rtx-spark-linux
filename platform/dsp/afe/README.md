@@ -41,9 +41,17 @@ IRQ and programs its period count, rate and active clock domain. Readiness is
 reported only after every checked update succeeds. Routing and enable bits are
 not changed by this preparation.
 
-After both task STOP acknowledgements, `mt8901_afe_sram_stop_irq()` disables and
-clears the owned IRQ and removes MCU/HiFi1 targets, preserving unrelated bits.
-An I/O error is cached. IRQ disable does not establish DMA quiescence.
+After both task START acknowledgements, the frontend asks the AFE owner to
+start its published DL0 lease. The owner checks the active substream, prepared
+ring, IRQ metadata and sleep state, removes the MCU target, selects HiFi1,
+enables DL0 and enables the IRQ. Each update is checked and preserves unrelated
+bits. A partial failure is terminal; the frontend requests normal task STOP
+without retrying START or releasing published memory.
+
+After both task STOP acknowledgements, `mt8901_afe_sram_stop_irq()` disables
+DL0, disables and clears the owned IRQ, and removes MCU/HiFi1 targets. An I/O
+error is cached. Disabling this channel does not prove whole-core DMA
+quiescence or permit releasing published memory.
 
 The disabled-by-default `dsp_playback` path reuses the DL0 frontend. PREPARE
 configures the graph after ALSA sets runtime fields. Producer ACK copies new

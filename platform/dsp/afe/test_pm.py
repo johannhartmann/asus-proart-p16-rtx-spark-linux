@@ -19,8 +19,11 @@ def main():
 #include <string.h>
 #include <stdio.h>
 struct device {int unused;};
+struct mt8901_afe_sram_buffer {int prepare_error,irq_error,start_error,irq_stop_error;};
 struct mt8901_afe_sram {unsigned users,retention_users,sleeping_users,bytes;
- unsigned char *snapshot,*base;bool sleep_prepared,sleep_saved;};
+ unsigned char *snapshot,*base;bool sleep_prepared,sleep_saved;
+ struct mt8901_afe_sram_buffer *memif[7];};
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 struct mt8901_afe_private {struct mt8901_afe_sram *sram;};
 struct mtk_base_afe {struct mt8901_afe_private *platform_priv;};
 static struct device dev;
@@ -57,6 +60,12 @@ int main(void)
  assert(powered && !sram.sleep_prepared && !restores);
  reset();priv.sram=NULL;assert(!mt8901_afe_pm_prepare(&dev));mt8901_afe_pm_complete(&dev);
  reset();sram.users=2;assert(mt8901_afe_pm_prepare(&dev)==-EBUSY && !sram.sleep_prepared);
+ for(unsigned i=0;i<4;i++) {
+  reset();struct mt8901_afe_sram_buffer b={0};sram.memif[0]=&b;
+  switch(i){case 0:b.prepare_error=-EIO;break;case 1:b.irq_error=-EIO;break;
+   case 2:b.start_error=-EIO;break;case 3:b.irq_stop_error=-EIO;break;}
+  assert(mt8901_afe_pm_prepare(&dev)==-ENOTRECOVERABLE && !sram.sleep_prepared);
+ }
  reset();sram.users=sram.retention_users=2;assert(!mt8901_afe_pm_prepare(&dev));
  sram.sleeping_users=1;assert(mt8901_afe_pm_suspend(&dev)==-EBUSY && !suspends && !saves);
  sram.sleeping_users=2;

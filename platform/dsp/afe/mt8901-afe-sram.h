@@ -92,12 +92,13 @@ int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer);
  */
 int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer);
 
-/* After acknowledged task STOPs, disable/clear this lease's IRQ and remove
- * its MCU and HiFi1 target bits. core must be native enum 3 (HiFi1). Allows
- * the still-running ALSA STOP callback, but requires unchanged ownership and
+/* After acknowledged task STOPs, disable the owned DL0 memif, disable/clear
+ * its IRQ and remove its MCU and HiFi1 target bits. core must be native
+ * enum 3 (HiFi1). Allows the still-running ALSA STOP callback, but requires
+ * unchanged ownership and
  * format. Repeated success writes nothing; failed I/O is terminal. Does not
- * disable a memif or prove whole-core quiescence; no published memory may be
- * released. The caller serializes handle lifetime. This call sleeps.
+ * prove whole-core quiescence; no published memory may be released. The caller
+ * serializes handle lifetime. This call sleeps.
  */
 int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int core);
 

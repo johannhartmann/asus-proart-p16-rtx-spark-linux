@@ -82,7 +82,8 @@ static unsigned reserves,binds,releases,configures,prepares,views,listens,detach
 static atomic_uint closes,elapsed,xruns;
 static unsigned cancel_calls,sync_irqs,last_commit,probes;
 static unsigned fail;static bool transfer_on_error;
-static int commit_error,start_error,stop_error,position_error;
+static int commit_error,start_error,stop_error,position_error,engine_error;
+static unsigned engine_starts;
 static struct n1x_adsp_pcm_position position_value;
 static struct device afe_dev={1},dsp_dev={2};
 static unsigned char staging[3840],host[3840];
@@ -160,6 +161,8 @@ int n1x_adsp_primary_commit(struct n1x_adsp_primary *p,u32 offset)
 {assert(p==&primary && !atomic_load(&primary_dead));commits++;last_commit=offset;return commit_error;}
 int n1x_adsp_primary_start(struct n1x_adsp_primary *p) {assert(p==&primary);starts++;return start_error;}
 int n1x_adsp_primary_stop(struct n1x_adsp_primary *p) {assert(p==&primary);stops++;return stop_error;}
+int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *s,struct snd_soc_dai *d)
+{assert(s==&stream && d==&dai && starts==engine_starts+1 && !start_error);engine_starts++;return engine_error;}
 int n1x_adsp_primary_position(struct n1x_adsp_primary *p,struct n1x_adsp_pcm_position *v)
 {assert(p==&primary && !atomic_load(&primary_dead));if(position_block){
  int r=pthread_barrier_wait(&entered);assert(r==0 || r==PTHREAD_BARRIER_SERIAL_THREAD);
@@ -195,6 +198,7 @@ static void reset(void)
  memset(staging,0,sizeof(staging));memset(host,0,sizeof(host));lease.published=false;
  reserves=binds=releases=configures=prepares=views=listens=detaches=commits=starts=stops=0;
  cancel_calls=sync_irqs=last_commit=probes=missing=open_error=fail=0;commit_error=start_error=stop_error=position_error=0;
+ engine_error=0;engine_starts=0;
  atomic_store(&closes,0);atomic_store(&elapsed,0);atomic_store(&xruns,0);atomic_store(&primary_dead,false);atomic_store(&cancel_waiting,false);
  position_block=transfer_on_error=false;position_value=(struct n1x_adsp_pcm_position){.valid=true,.byte_offset=1920};
  listener=NULL;listener_data=NULL;dsp_playback=true;abi_value=N1X_ADSP_PRIMARY_ABI;
@@ -267,8 +271,13 @@ int main(void)
  setup();prepare();commit_error=-EIO;control.appl_ptr=480;
  assert(mt8901_afe_dsp_ack(NULL,&stream)==-EIO && priv.dsp->appl_ptr==0 && commits==1);
  assert(mt8901_afe_dsp_ack(NULL,&stream)==-EIO && commits==1);shutdown();
- setup();prepare();start_error=-ETIMEDOUT;assert(mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_START)==-ETIMEDOUT && !priv.dsp->running);
+ setup();prepare();start_error=-ETIMEDOUT;assert(mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_START)==-ETIMEDOUT && !priv.dsp->running && !engine_starts);
  assert(mt8901_afe_dsp_pointer(NULL,&stream)==SNDRV_PCM_POS_XRUN);shutdown();
+ setup();prepare();engine_error=-EIO;
+ assert(mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_START)==-EIO && starts==1 && engine_starts==1 && stops==1 && !priv.dsp->running);
+ assert(mt8901_afe_dsp_pointer(NULL,&stream)==SNDRV_PCM_POS_XRUN);shutdown();
+ setup();prepare();engine_error=-EIO;stop_error=-ETIMEDOUT;
+ assert(mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_START)==-ETIMEDOUT && stops==1 && !priv.dsp->running);shutdown();
  setup();prepare();stop_error=-EIO;assert(mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_SUSPEND)==-EIO);shutdown();
  setup();prepare();fail=9;assert(mt8901_afe_dsp_hw_free(&stream,&dai)==-EIO && atomic_load(&closes)==1);shutdown();
  setup();prepare();assert(!mt8901_afe_dsp_trigger(&stream,SNDRV_PCM_TRIGGER_START));
