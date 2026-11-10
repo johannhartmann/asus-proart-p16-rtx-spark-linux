@@ -1,6 +1,6 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.19
-pkgrel=2
+pkgver=0.1.20
+pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -15,14 +15,14 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py'
         'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('7e7d2cfff00569ac0f97cdc5777ff520facdca29d3c889b2e76e9b8fe246b1e1'
+sha256sums=('4cbb5285168eee8735045aefd68c971eff1b51c534d79c4e3af426bd39d6247e'
             'd68ffe347aa22c2b9318e4f199e4001b85ed471ad40efe5dc789049965cfec5c'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '0f59fd0e0ce0e53f43b8aa1090d56345ec62ff4cf64cf3cdde01220d90f18b9e'
+            '736b74c3237e4b99a416dd15d36f91cb85057bf52c15c9bb2da86788bf2c912d'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
             '09092fa06397294e4540d8df94cfb509a762a271f571d4323e806dbd92b24372'
-            'a3e0aff964e80740b7880f048bbb3f785def0cb4d6d1c7ad06dec83c0977a12f'
+            'fa400251131788ffc291b97155482ced68d30d502cf03997184d303b0d9258dc'
             'c021112fb9e6754a60191461dfaccfb18aacf0b688eb8118ae02ea262c4185af'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '9323e9df871b5b0db92aa85a3ee6d06d9ad4acdcb224217e4b9a8b4c5cac821b'
@@ -38,7 +38,7 @@ sha256sums=('7e7d2cfff00569ac0f97cdc5777ff520facdca29d3c889b2e76e9b8fe246b1e1'
             'b1660652305eb73686e0c0f3bc931f1a64f0c9f5ed61caf444c9c91d1c9c9b3d'
             '1e9c5fc77c67ab8ff60e66fc9531e0badc441d7b5bbe914a2ffaa1a0e61f8d93'
             '36efa2df567968236d25fb0a756be4e2409805decac80b9eca021512c5cdfca6'
-            'cda4bd14d5f412bf9f0f823f93182863d303f0ad4cb57fbe2469da8089a59345'
+            '0b1f7717557f14d43303034e9d013bb9ac3802da94e61c75d272c3549bc629f1'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
             '6ae7b254086c4ece4efce01e235e5bc4886158924b1a751ab73d00a1d359ac53'
             '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'

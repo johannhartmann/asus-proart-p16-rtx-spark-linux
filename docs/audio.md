@@ -22,8 +22,9 @@ Published operating allocations and module/runtime-PM references stay owned;
 whole-core release and runtime autosuspend are still unavailable.
 
 The opt-in s2idle path orders ALSA stream stop, DSP D3, SRAM retention and
-checked NPU stop; wake restores SRAM and the provider before DSP D0. Legacy
-active clients without ASoC ordering, Hibernate and deep sleep remain blocked.
+checked NPU stop; wake restores SRAM and the provider before DSP D0.
+Hibernate and deep sleep remain blocked. Active-client PM ownership still
+needs the correction described in [the release blockers](audio-review.md).
 A timeout or failed restoration is terminal and retains memory. There is no
 reset, forced unload or firmware retry after uncertain publication.
 

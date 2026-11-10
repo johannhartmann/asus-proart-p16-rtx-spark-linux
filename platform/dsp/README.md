@@ -91,6 +91,12 @@ paths. Slot/ACK waits are bounded. Unexpected replies, timeout, power failure
 or uncertain ownership make the channel terminal. No raw userspace command
 interface is provided.
 
+Readiness and sleep admission reject retained boot, transport, power and
+primary-service errors, including faults observed after PM preparation. A ready
+component still does not establish card binding or PCM progress. The remaining
+[PM ownership, IRQ-cache and data-path blockers](../../docs/audio-review.md)
+prevent production qualification.
+
 ## Playback
 
 The client supports route 2 with primary task 7 and processing task 16. Task 7

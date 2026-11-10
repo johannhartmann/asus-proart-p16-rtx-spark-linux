@@ -763,13 +763,24 @@ static ssize_t sleep_status_show(struct device *dev, struct device_attribute *at
 }
 static DEVICE_ATTR_RO(sleep_status);
 
+/* Caller holds dsp->lock; IRQ-owned faults are sampled without clearing them. */
+static bool n1x_adsp_failed(struct n1x_adsp *dsp)
+{
+	return dsp->error || dsp->sleep_error || dsp->primary_error ||
+	       dsp->primary_task_error || dsp->primary_pcm_error ||
+	       READ_ONCE(dsp->primary_period_error) || READ_ONCE(dsp->ipc_poisoned) ||
+	       atomic_read(&dsp->power_error);
+}
+
 static ssize_t asoc_ready_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 	ssize_t size;
 
 	mutex_lock(&dsp->lock);
-	size = sysfs_emit(buf, "%u\n", dsp->component_registered && dsp->boot_ready && !dsp->error);
+	size = sysfs_emit(buf, "%u\n", dsp->component_registered && dsp->boot_ready &&
+			  dsp->loader.accepted && dsp->loader.staging_released &&
+			  !n1x_adsp_failed(dsp));
 	mutex_unlock(&dsp->lock);
 	return size;
 }
@@ -1004,8 +1015,7 @@ static int n1x_adsp_prepare(struct device *dev)
 		if (!enable_retention_sleep || pm_suspend_target_state != PM_SUSPEND_TO_IDLE)
 			err = -EOPNOTSUPP;
 		else if (!dsp->boot_ready || !dsp->loader.accepted ||
-			 !dsp->loader.staging_released || dsp->error || dsp->sleep_error ||
-			 READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error))
+			 !dsp->loader.staging_released || n1x_adsp_failed(dsp))
 			err = -ENOTRECOVERABLE;
 		else if (!dsp->component_registered &&
 			 (dsp->primary_owner || dsp->primary_task_active ||
@@ -1112,7 +1122,8 @@ static int n1x_adsp_suspend(struct device *dev)
 	disable_irq(dsp->irq);
 	dsp->sleep_irq_disabled = true;
 	flush_work(&dsp->power_work);
-	if (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)) {
+	/* Card STOP and IRQ work can fail after prepare admitted the device. */
+	if (n1x_adsp_failed(dsp)) {
 		err = -ENOTRECOVERABLE;
 		goto enable;
 	}
@@ -2269,7 +2280,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.19");
+MODULE_VERSION("0.1.20");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

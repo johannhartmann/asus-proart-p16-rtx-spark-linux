@@ -13,12 +13,17 @@ def main():
                        source.index('static const struct dev_pm_ops n1x_adsp_pm')]
     inspect = source[source.index('static ssize_t inspect_show('):
                      source.index('static struct device_attribute dev_attr_inspect')]
+    failed = source[source.index('static bool n1x_adsp_failed('):
+                    source.index('static ssize_t asoc_ready_show(')]
+    ready = source[source.index('static ssize_t asoc_ready_show('):
+                   source.index('static DEVICE_ATTR_RO(asoc_ready);')]
     assert 'SYSTEM_SLEEP_PM_OPS(n1x_adsp_suspend, n1x_adsp_resume)' in source
     code = r'''
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,6 +43,7 @@ struct n1x_adsp {
  void *pwrap, *primary_owner, *primary_sram, *processing_messages;
  uint8_t *mailbox, *shared;
  int power_error, error, sleep_error, irq;
+ int primary_error, primary_task_error, primary_pcm_error, primary_period_error;
  unsigned sleep_cycles;
  unsigned sleep_config_before[2], sleep_config_after[2];
  bool sleep_config_valid, sleep_config_checked;
@@ -65,6 +71,7 @@ static _Thread_local bool locked, signal_lock;
 static sem_t entering;
 static unsigned warnings, suspends, resumes, gets, pm_puts, reads, disables, enables, flushes;
 static unsigned votes, wakes, runtime_suspends, runtime_resumes;
+static unsigned ready_value;
 static int suspend_result, resume_result, get_result, vote_result, wake_result;
 static bool privileged = true, tx_idle=true, pending, corrupted, corrupted_bytes, worker_fault, consumed_boot_config;
 static void mutex_lock(pthread_mutex_t *lock)
@@ -117,7 +124,9 @@ static uint32_t readl(const void *p)
  if(p==dsp.shared+ADSP_CONFIG_OFFSET+8)return consumed_boot_config?0:target.dram_bytes-(unsigned)(corrupted_bytes && resumes);
  assert(0);return 0;}
 static int sysfs_emit(char *buffer, const char *format, ...)
-{assert(buffer && format && locked);return 1;}
+{assert(buffer && format && locked);
+ if(!strcmp(format,"%u\n")) {va_list args;va_start(args,format);ready_value=va_arg(args,unsigned);va_end(args);}
+ return 1;}
 static int pm_runtime_force_suspend(struct device *d)
 {assert(d==&dev && !locked && !dsp.published);runtime_suspends++;return suspend_result;}
 static int pm_runtime_force_resume(struct device *d)
@@ -132,7 +141,7 @@ static int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *b)
 {assert(b && locked && dsp.sleep_suspended && dsp.sleep_irq_disabled);sram_wakes++;return afe_restored?0:-EHOSTDOWN;}
 #define symbol_get(n) n
 #define symbol_put(n) ((void)0)
-''' + callbacks + inspect + r'''
+''' + failed + callbacks + inspect + ready + r'''
 static void reset(void)
 {
  assert(!locked);
@@ -174,11 +183,27 @@ int main(void)
  assert(n1x_adsp_runtime_suspend(&dev)==-EBUSY && !suspends);
  healthy();pm_suspend_target_state=3;assert(sleep_cycle()==-EOPNOTSUPP && !disables);
  healthy();pm_suspend_target_state=0;assert(sleep_cycle()==-EOPNOTSUPP && !disables);
- for(unsigned f=0;f<7;f++) {
-  healthy();switch(f){case 0:dsp.boot_ready=false;break;case 1:dsp.loader.accepted=false;break;
+ char ready_buffer[16];
+ healthy();dsp.component_registered=true;
+ assert(asoc_ready_show(&dev,NULL,ready_buffer)==1 && ready_value==1);
+ for(unsigned asoc=0;asoc<2;asoc++)for(unsigned f=0;f<11;f++) {
+  healthy();dsp.component_registered=asoc;
+  switch(f){case 0:dsp.boot_ready=false;break;case 1:dsp.loader.accepted=false;break;
    case 2:dsp.loader.staging_released=false;break;case 3:dsp.error=-EIO;break;
-   case 4:dsp.sleep_error=-EIO;break;case 5:dsp.ipc_poisoned=true;break;case 6:dsp.power_error=-EIO;break;}
+   case 4:dsp.sleep_error=-EIO;break;case 5:dsp.ipc_poisoned=true;break;case 6:dsp.power_error=-EIO;break;
+   case 7:dsp.primary_error=-EPROTO;break;case 8:dsp.primary_task_error=-EIO;break;
+   case 9:dsp.primary_pcm_error=-EIO;break;case 10:dsp.primary_period_error=-EPROTO;break;}
   assert(sleep_cycle()==-ENOTRECOVERABLE && !disables && !dsp.sleep_prepared);
+  assert(asoc_ready_show(&dev,NULL,ready_buffer)==1 && !ready_value);
+ }
+ for(unsigned f=0;f<4;f++) {
+  healthy();assert(!n1x_adsp_prepare(&dev));
+  switch(f) {case 0:dsp.primary_error=-EPROTO;break;
+   case 1:dsp.primary_task_error=-EIO;break;case 2:dsp.primary_pcm_error=-EIO;break;
+   case 3:dsp.primary_period_error=-EPROTO;break;}
+  assert(n1x_adsp_suspend(&dev)==-ENOTRECOVERABLE && !suspends);
+  assert(disables==1 && enables==1 && !dsp.sleep_irq_disabled);
+  n1x_adsp_complete(&dev);assert(!dsp.sleep_prepared);
  }
  for(unsigned f=0;f<5;f++) {
   healthy();switch(f){case 0:dsp.primary_owner=&dsp;break;case 1:dsp.primary_task_active=true;break;
