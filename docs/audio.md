@@ -106,6 +106,15 @@ Record failures instead of resetting or force-unloading a published device.
 Physical state retention and power savings cannot be established by compilation,
 sanitisers, SRAM simulation or a `pm_test` pass.
 
+Before device sleep tests, inspect `/proc/driver/nvidia/params`. The installed
+615.78.08 open driver uses `UseKernelSuspendNotifiers: 1` and
+`PreserveVideoMemoryAllocations: 1`; it performs memory preservation through
+its kernel PM notifier. Disabled legacy `nvidia-suspend`/`nvidia-resume` units
+alone do not indicate a missing sleep path in that configuration. Older or
+proprietary drivers require checking their own power-management documentation.
+The NPU provider retains validated firmware and immutable VBIOS policy in CPU
+memory so its resume does not depend on filesystem or display-locator access.
+
 Without the candidate parameters, the existing direct audio path remains the
 baseline. Successful hardware qualification is required before making the new
 DSP path the default boot.

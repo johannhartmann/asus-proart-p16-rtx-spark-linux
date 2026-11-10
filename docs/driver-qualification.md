@@ -18,7 +18,7 @@ not the new context/client code.
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
-[`aafca31`](https://github.com/johannhartmann/n1x-npu-linux/commit/aafca31b2dbf047111451b61f009bd15bc9d0aab)
+[`1db0cf2`](https://github.com/johannhartmann/n1x-npu-linux/commit/1db0cf2)
 or an ABI-compatible merged revision. Use that checkout for the sibling NPU tree.
 First run the offline suites and pin the matching provider snapshot:
 
