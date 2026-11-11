@@ -31,6 +31,12 @@ Changed AML needs a separately verified transformation; it is not a reason to
 disable an otherwise compatible platform driver. The Linux 7.3 patch path has
 its own ACPI integration and does not use that override package.
 
+The [SSDT-removal preparation](docs/native-acpi-migration.md) provides an
+offline staging tool and explicit native/legacy image checks. It creates a
+separate test UKI with the same kernel/modules/command line and no ACPI override;
+the legacy default and package dependency remain until the EC/battery/profile
+comparison has passed. Preparing an image does not install it or qualify a boot.
+
 ## Choose an installation path
 
 These are hardware-enablement sources for the **ARM64 H7607BA**, used on top

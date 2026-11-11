@@ -2,12 +2,15 @@
 """Read-only PE/UKI and Limine BLAKE2b verification."""
 import argparse
 import hashlib
+import importlib.util
 from pathlib import Path
 import re
 import struct
 import subprocess
 import tempfile
-PINS = {'SSDT.aml': '9b28ffc14c19f8b7ea2278de88ff9ec070f5f70401107d81fef067a916aa9695'}
+_policy_spec = importlib.util.spec_from_file_location('p16_acpi_policy', Path(__file__).with_name('acpi_policy.py'))
+ACPI_POLICY = importlib.util.module_from_spec(_policy_spec)
+_policy_spec.loader.exec_module(ACPI_POLICY)
 
 def sections(path):
     data = Path(path).read_bytes()
@@ -27,10 +30,14 @@ def sections(path):
         length, offset = struct.unpack_from('<II', data, h + 16)
         if not offset + length <= len(data):
             raise ValueError('PE-Sektion liegt außerhalb der Datei')
-        result[name] = data[offset:offset + length]
+        if name in result:
+            raise ValueError('Duplicate PE section: ' + name)
+        virtual_size = struct.unpack_from('<I', data, h + 8)[0]
+        payload_size = min(length, virtual_size) if virtual_size else length
+        result[name] = data[offset:offset + payload_size]
     return result
 
-def verify_image(path):
+def verify_image(path, *, acpi_mode="legacy"):
     sec = sections(path)
     release = sec['.uname'].rstrip(b'\x00\n').decode()
     if not re.fullmatch(r'[a-zA-Z0-9._+-]+', release):
@@ -40,11 +47,8 @@ def verify_image(path):
     if not package or len(package.splitlines()) != 1:
         raise ValueError('Kernel must have exactly one package owner')
     modules = Path('/usr/lib/modules') / release
-    symbols = (modules / 'build/System.map').read_text()
-    if not re.search(' T arch_alloc_acpi_tables$', symbols, re.M):
-        raise ValueError('ARM64-ACPI-Allocator fehlt')
     config = (modules / 'build/.config').read_text()
-    for option in ['CONFIG_ACPI_TABLE_UPGRADE=y', 'CONFIG_ACPI_WMI=m', 'CONFIG_ASUS_WMI=m', 'CONFIG_ASUS_NB_WMI=m', 'CONFIG_SPI_HID_ACPI=m']:
+    for option in ['CONFIG_ACPI_WMI=m', 'CONFIG_ASUS_WMI=m', 'CONFIG_ASUS_NB_WMI=m', 'CONFIG_SPI_HID_ACPI=m']:
         if not option in config.splitlines():
             raise ValueError(option)
     image = (modules / 'vmlinuz').read_bytes()
@@ -55,29 +59,24 @@ def verify_image(path):
         raise ValueError('ACPI-OSI-Option fehlt im UKI')
     if not ('console=tty0' in cmd and 'acpi=nospcr' in cmd):
         raise ValueError('N1X-Konsolenoptionen fehlen im UKI')
-    if re.search('(?:^|\\s)acpi=(?:off|noirq)(?:\\s|$)', cmd):
+    if re.search(r'(?:^|\s)acpi=(?:off|noirq)(?:\s|$)', cmd):
         raise ValueError('Unzulässige ACPI-Deaktivierung im UKI')
     data = sec['.initrd']
-    offset = 0
-    files = {}
-    while data[offset:offset + 6] in (b'070701', b'070702'):
-        fields = [int(data[offset + 6 + i * 8:offset + 14 + i * 8], 16) for i in range(13)]
-        size, namesize = (fields[6], fields[11])
-        start = offset + 110
-        name = data[start:start + namesize - 1].decode().removeprefix('./')
-        start = start + namesize + 3 & ~3
-        if not start + size <= len(data):
-            raise ValueError('Abgeschnittenes frühes CPIO-Archiv')
-        files[name] = data[start:start + size]
-        offset = start + size + 3 & ~3
-        if name == 'TRAILER!!!':
-            break
-    ssdt = files.get('kernel/firmware/acpi/SSDT.aml')
-    if ssdt is None or hashlib.sha256(ssdt).hexdigest() != PINS['SSDT.aml']:
-        raise ValueError('Falsche ASUS-SSDT im UKI')
-    dsdt = files.get('kernel/firmware/acpi/DSDT.aml')
-    if dsdt is not None:
-        raise ValueError('Captured DSDT contains boot-dependent GNVS addresses')
+    with tempfile.TemporaryDirectory(prefix='p16-acpi-verify-') as directory:
+        directory = Path(directory)
+        initrd = directory / 'initrd'
+        initrd.write_bytes(data)
+        tree = directory / 'tree'
+        tree.mkdir()
+        subprocess.run(['lsinitcpio', '-x', str(initrd)], cwd=tree,
+                       check=True, stdout=subprocess.DEVNULL)
+        resolved_mode = ACPI_POLICY.check_tree(tree, acpi_mode)
+    if resolved_mode == 'legacy':
+        symbols = (modules / 'build/System.map').read_text()
+        if not re.search(' T arch_alloc_acpi_tables$', symbols, re.M):
+            raise ValueError('ARM64-ACPI-Allocator fehlt')
+        if 'CONFIG_ACPI_TABLE_UPGRADE=y' not in config.splitlines():
+            raise ValueError('CONFIG_ACPI_TABLE_UPGRADE=y')
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(data)
         tmp.flush()
@@ -97,9 +96,9 @@ def verify_image(path):
         ['pacman', '-Qoq', '/usr/lib/modules/' + release + '/vmlinuz'], text=True).strip()
     if owner != package:
         raise ValueError(f'Kernelimage gehört {owner}, erwartet wurde {package}')
-    print('UKI, ACPI-Overrides und Modulabhängigkeiten gültig:', path)
+    print('UKI, ACPI profile (' + resolved_mode + ') and module dependencies valid:', path)
 
-def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot')):
+def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot'), *, acpi_mode='legacy'):
     config = config_path.read_text()
     defaults = re.findall(r'^default_entry:\s*(.*?)\s*$', config, re.M)
     if len(defaults) != 1:
@@ -136,12 +135,12 @@ def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot')):
     selected = entries.get(defaults[0], [])
     if len(selected) != 1:
         raise ValueError('Default must select exactly one Linux image')
-    verify_image(selected[0])
+    verify_image(selected[0], acpi_mode=acpi_mode)
     recovery = entries.get('Omarchy-P16-Recovery', [])
     if len(recovery) != 1:
         raise ValueError('P16 recovery entry missing or ambiguous')
     if recovery != selected:
-        verify_image(recovery[0])
+        verify_image(recovery[0], acpi_mode='auto')
     for key, expected in [('quiet', 'no'), ('timeout', '5')]:
         values = re.findall(r'^' + key + r':\s*(.*?)\s*$', config, re.M)
         if values != [expected]:
@@ -153,10 +152,11 @@ if __name__ == '__main__':
     primary = Path('/boot/EFI/Linux/omarchy_p16.efi')
     parser.add_argument('--image', type=Path, default=primary)
     parser.add_argument('--image-only', action='store_true')
+    parser.add_argument('--acpi-mode', choices=ACPI_POLICY.MODES, default='legacy')
     args = parser.parse_args()
     try:
-        verify_image(args.image)
+        verify_image(args.image, acpi_mode=args.acpi_mode)
         if not args.image_only:
-            verify_menu()
+            verify_menu(acpi_mode=args.acpi_mode)
     except (ValueError, OSError, KeyError, struct.error, subprocess.CalledProcessError) as error:
         parser.exit(1, 'Boot-Prüfung fehlgeschlagen: ' + str(error) + '\n')
