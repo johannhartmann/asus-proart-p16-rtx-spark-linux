@@ -6,6 +6,20 @@ blocks; resource sizes, firmware ABI versions and protocol bounds are checked
 before access. Register offsets, image IDs and supported task graphs describe
 the hardware or firmware ABI and remain part of the implementation.
 
+BIOS versions in validation reports describe tested configurations, not an
+eligibility allowlist. A new BIOS can work unchanged when those interfaces stay
+compatible. Unknown resource layouts or firmware protocols must be rejected
+before the affected operation; removing a version restriction does not authorize
+guessing a mailbox format, power transition or DMA lifetime.
+
+Source builds, source preparation and the CUDA smoke test require AArch64, not
+a BIOS label. Board-specific capture, file-audit and trial tools retain their
+P16 model/architecture scope; actual resource, firmware, module, DMA-domain and
+readiness checks remain in the drivers and operation-specific preflights.
+The historical ACPI byte-splice builder is a separate limitation: it accepts
+only its verified table inputs, independently of the BIOS version string.
+It cannot transform a different AML layout merely because that BIOS is newer.
+
 - DSP uses the ACPI memory/IRQ resources. Firmware uses the normal firmware
   loader, with a `firmware-name` property override and per-core default names.
   Related devices are located through ACPI companions rather than generated

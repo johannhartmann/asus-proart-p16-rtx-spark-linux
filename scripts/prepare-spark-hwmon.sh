@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fetch the reviewed driver source without running downloaded code as root.
 source "$(dirname "$0")/common.sh"
-check_machine
+check_arch
 [[ $EUID != 0 ]] || { echo 'Run as your regular user.' >&2; exit 1; }
 mapfile -t source_info < <(python3 - "$REPO/sources.json" <<'PY'
 import json,sys

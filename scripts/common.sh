@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 REPO=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-check_model() {
+check_arch() {
   [[ $(uname -m) == aarch64 ]] || { echo 'AArch64 required.' >&2; exit 1; }
+}
+check_model() {
+  check_arch
   [[ $(cat /sys/class/dmi/id/sys_vendor) == ASUS &&
      $(cat /sys/class/dmi/id/product_name) == 'ProArt P16 H7607BA' ]] || {
     echo 'This repository requires the ASUS ProArt P16 H7607BA.' >&2; exit 1;
-  }
-}
-check_machine() {
-  check_model
-  [[ $(cat /sys/class/dmi/id/bios_version) == H7607BA.300 ]] || {
-    echo 'Installation requires BIOS H7607BA.300.' >&2; exit 1;
   }
 }
 require_root() { [[ $EUID == 0 ]] || { echo "Mit sudo ausführen: $0" >&2; exit 1; }; }

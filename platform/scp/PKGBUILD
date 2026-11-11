@@ -1,6 +1,6 @@
 pkgname=n1x-scp-dkms
 pkgver=0.2.1
-pkgrel=1
+pkgrel=2
 pkgdesc='NVIDIA N1X SCP firmware queries and log reader'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -11,7 +11,7 @@ source=('n1x_scp.c' 'Kbuild' 'dkms.conf' 'n1x-scp.conf' 'n1x-scp.modules' 'READM
 sha256sums=('693f814464d319139485d7e2fcb9ee31c67d03c097de2809ddb246e26d74b05c'
             '75711680eb0bdbacb3ac5127df4fed12e7e45e2bd4e5a5b6829295642a161cf3'
             'af3029d2867e7deea8f0998f9ad2b6b41998c6b8e5604fdf18dd91be1a226aee'
-            '839e04fa00c81253a6d4093dcb2af4ad17ef85b21b884081fb6d236d8e878671'
+            '02e789db2c52b797daa49fc338af93175688548101cc705f18cd79241ac4f79f'
             '22a3ae59d7a55fed69b6a04ee7c8eca5aa9ffbcae225bf49f476b980ec388d43'
             '90a092a5fef4f87d98e727ea7ce9e8607d84f67ca87cedc488d642aa4f4f8795'
             '5a28ae8a9c3a844f57858bf4fea8381071a0daf901a4ad6c91dc53a6e9ccff84')

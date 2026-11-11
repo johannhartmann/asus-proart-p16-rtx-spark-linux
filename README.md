@@ -4,11 +4,32 @@ Linux hardware enablement for the ARM64 ASUS ProArt P16 H7607BA with NVIDIA
 N1X/RTX Spark: kernel patches, ACPI preparation, platform drivers, firmware
 packaging and instructions for using the devices through normal Linux APIs.
 
-The pinned package procedure targets BIOS H7607BA.300 and Linux 7.2.8. The
-separate [Linux 7.3 patch guide](improvements/README.md) includes physical
-results for BIOS 303 and 305. Follow the procedure for your kernel and firmware;
-these are separate installation paths. Platform modules match ACPI resources
-and firmware interfaces; board policy and firmware preparation can be P16-specific.
+The pinned package recipe uses Linux 7.2.8 and a reference ACPI transformation
+recorded on BIOS H7607BA.300. The separate
+[Linux 7.3 patch guide](improvements/README.md) includes physical results for
+BIOS 303 and 305. These are separate installation paths. Drivers check ACPI
+resources and firmware interfaces; BIOS version numbers describe test evidence,
+not a list of permitted releases.
+
+## Firmware compatibility
+
+Compatible firmware can work across BIOS versions without a driver change.
+The platform drivers select ACPI devices and check resource sizes, hardware
+revisions, firmware protocols and reply bounds. Unsupported interfaces are
+rejected by the affected driver instead of guessed from a BIOS version.
+See [driver matching and checks](platform/README.md).
+
+Build/source preparation and the CUDA test have no BIOS-version gate.
+Board-specific diagnostic tools retain their hardware scope and operation-specific
+module, DMA and firmware checks. These checks establish eligibility for the
+operation; physical functionality still needs hardware qualification.
+
+The historical ACPI override builder is deliberately narrower: its AML
+byte-splices require exact verified input tables. Those inputs were recorded
+on BIOS 300, but the builder checks their contents, not the BIOS label.
+Changed AML needs a separately verified transformation; it is not a reason to
+disable an otherwise compatible platform driver. The Linux 7.3 patch path has
+its own ACPI integration and does not use that override package.
 
 ## Choose an installation path
 
@@ -17,10 +38,10 @@ of a working Linux installation. They are not an installer for the AMD/x86 P16.
 
 | Your starting point | Use | Validation and prerequisites |
 | --- | --- | --- |
-| BIOS 300, working ARM64 Arch/Omarchy with Limine/mkinitcpio | [Pinned 7.2.8 packages](#build) and [installation](#installation-and-updates) below | Board preparation scripts enforce BIOS 300. Preserve a working boot entry; newer driver candidates need their own fresh-boot qualification. |
-| BIOS 303 or 305, integrating Linux 7.3 into a distribution | [Ordered kernel series](improvements/kernel/README.md), then [speaker routing](improvements/audio/README.md) and [telemetry](improvements/telemetry/README.md) | Physical evidence covers integrated 20-CPU kernels; the compact export has separate source-test limits. Use the distro's packaging/boot process and the separate guide's ACPI policy; do not import the BIOS-300 SSDT package. |
+| Working ARM64 Arch/Omarchy with Limine/mkinitcpio and the reference ACPI inputs | [Pinned 7.2.8 packages](#build) and [installation](#installation-and-updates) below | The override builder requires the verified AML input layout recorded on BIOS 300. Preserve a working boot entry; driver candidates need their own fresh-boot qualification. |
+| Integrating Linux 7.3 into a distribution | [Ordered kernel series](improvements/kernel/README.md), then [speaker routing](improvements/audio/README.md) and [telemetry](improvements/telemetry/README.md) | Physical evidence covers integrated 20-CPU BIOS 303/305 kernels; these versions are not an eligibility whitelist. Use the distro's packaging/boot process and the separate guide's ACPI policy. |
 | Experimental DSP/AFE/provider changes | [Driver qualification](docs/driver-qualification.md) and the [DSP guide](platform/dsp/README.md) | Keep the matching kernel, AFE, DSP and SROOT ABI together. Published devices cannot be replaced live. |
-| Another BIOS, kernel version or distribution | Port and qualify the relevant source changes | Neither recipe establishes support for an untested combination. Do not run BIOS-300 ACPI preparation on another BIOS or apply the 7.3 series over an already patched tree. |
+| Another BIOS, kernel version or distribution | Check interface compatibility and qualify the relevant path | A BIOS label alone neither permits nor rejects a driver. Compatible interfaces need no BIOS-specific port; changed protocols or AML layouts need corresponding support. Do not apply the 7.3 series over an already patched tree. |
 
 ## Hardware enablement in this project
 
@@ -91,7 +112,8 @@ commands. Key operations and firmware updates are not implemented.
 userspace. This repository carries N1X IOMMU prerequisites, the
 firmware-framebuffer boot policy, early NVIDIA initramfs loading and module/UKI
 version checks. `cuda/vector-add.cu` and `scripts/check-cuda.sh` provide the
-project's arithmetic smoke test (`sm_121`); the script enforces BIOS 300.
+project's arithmetic smoke test (`sm_121`); compiler/device compatibility is
+checked by CUDA rather than a BIOS-version restriction.
 Hardware video encode/decode has no recorded qualification here. CUDA or
 desktop rendering results do not establish that capability.
 
@@ -128,7 +150,7 @@ requires runtime and physical listening validation.
 
 ## Build
 
-The steps below are for the BIOS-300 Arch/Omarchy package path. Start from a
+The steps below are for the reference-ACPI Arch/Omarchy package path. Start from a
 working AArch64 installation with mounted `/boot`, Limine, mkinitcpio, matching
 running-kernel headers and a working NVIDIA installation. Before any package
 changes, prepare the [recovery entry](#recovery) below. This repository does
@@ -316,7 +338,7 @@ files. The sequence for the pinned package path is:
    not the old value from `uname -r`. A post-transaction failure can leave
    packages installed; stop and fix it before rebooting.
 5. Keep the working entry as default and select the candidate manually for the
-   first boot. The pinned BIOS-300 image needs the packaged
+   first boot. The pinned ACPI-override image needs the packaged
    `acpi_osi="!Windows 2022"` policy, early SSDT, input/GPU modules and the existing
    root/encryption arguments. Preserve `console=tty0 acpi=nospcr`. Do not copy
    another machine's complete command line. Check the generated image before
@@ -327,9 +349,10 @@ files. The sequence for the pinned package path is:
      --image /boot/EFI/Linux/omarchy_linux-p16-platform.efi
    ```
 
-   This verifier is specific to the BIOS-300 package path; it checks image/menu
-   hashes, payload and module dependencies. It does not establish Secure Boot
-   trust or apply to the separate BIOS 303/305 patch path.
+   This verifier is specific to the pinned ACPI-override package path; it checks
+   image/menu hashes, the reference SSDT, payload and module dependencies. It
+   does not check a BIOS label, establish Secure Boot trust or apply to the
+   separate Linux 7.3 patch path.
 6. Enable `p16-charge-limit.service` and, if using this provider package,
    `n1x-platform-npu.service` for subsequent boots. Restart UPower so its
    critical-battery power-off policy is active:
@@ -368,7 +391,7 @@ exposed; `[s2idle]` is selected; `spbm_n1x`/ASUS monitoring and the SoundWire
 card appear. The NPU service must report successful startup. These checks
 establish interfaces, not physical audio, inference accuracy or sleep recovery.
 
-For the fully installed BIOS-300 platform bundle, the bounded diagnostic audit
+For the fully installed pinned platform bundle, the bounded diagnostic audit
 writes a new report without installing/replacing modules or starting services:
 
 ```sh

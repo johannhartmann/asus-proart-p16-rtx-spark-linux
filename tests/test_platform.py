@@ -418,15 +418,31 @@ class DSPProbeTrialTests(unittest.TestCase):
 
 
 class LiveTrialTests(unittest.TestCase):
-    def test_unvalidated_bios_is_rejected(self):
+    def test_board_trials_do_not_require_a_bios_version_allowlist(self):
         with tempfile.TemporaryDirectory() as temporary:
             dmi = Path(temporary)
+            (dmi / "sys_vendor").write_text("ASUS\n")
             (dmi / "product_name").write_text("ProArt P16 H7607BA\n")
-            (dmi / "bios_version").write_text("H7607BA.300\n")
-            live.check_target(dmi)
-            (dmi / "bios_version").write_text("H7607BA.301\n")
-            with self.assertRaisesRegex(RuntimeError, "Unvalidated bios_version"):
-                live.check_target(dmi)
+            for version in ("H7607BA.300", "H7607BA.303", "H7607BA.305", "future"):
+                with self.subTest(version=version):
+                    (dmi / "bios_version").write_text(version + "\n")
+                    live.check_target(dmi, architecture="aarch64")
+            (dmi / "bios_version").unlink()
+            live.check_target(dmi, architecture="aarch64")
+
+    def test_board_and_architecture_scope_is_preserved(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            dmi = Path(temporary)
+            (dmi / "sys_vendor").write_text("ASUS\n")
+            (dmi / "product_name").write_text("ProArt P16 H7607BA\n")
+            with self.assertRaisesRegex(RuntimeError, "AArch64 required"):
+                live.check_target(dmi, architecture="x86_64")
+            for name, value in (("sys_vendor", "Other"), ("product_name", "Other P16")):
+                original = (dmi / name).read_text()
+                (dmi / name).write_text(value)
+                with self.subTest(field=name), self.assertRaisesRegex(RuntimeError, name):
+                    live.check_target(dmi, architecture="aarch64")
+                (dmi / name).write_text(original)
 
     def test_shared_spi_driver_is_rejected_before_unload(self):
         with tempfile.TemporaryDirectory() as temporary:

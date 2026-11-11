@@ -84,11 +84,11 @@ def prepare(directory):
     print(f'Verified {len(outputs)} firmware files in {directory}')
 
 
-def check_machine():
+def check_machine(dmi=Path('/sys/class/dmi/id')):
+    """Board-specific file audit; firmware hashes, not a BIOS label, identify inputs."""
     require(platform.machine() == 'aarch64', 'AArch64 required')
-    for key, expected in {'sys_vendor': 'ASUS', 'product_name': 'ProArt P16 H7607BA',
-                          'bios_version': 'H7607BA.300'}.items():
-        require((Path('/sys/class/dmi/id') / key).read_text().strip() == expected,
+    for key, expected in {'sys_vendor': 'ASUS', 'product_name': 'ProArt P16 H7607BA'}.items():
+        require((dmi / key).read_text().strip() == expected,
                 'Unsupported machine: ' + key)
 
 

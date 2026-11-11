@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the H7607BA.300 ACPI overrides from this P16's own firmware tables.
+"""Build the reference ACPI overrides from exactly matching firmware table inputs.
 
 No firmware table, nor anything derived from one, is distributed. Dump the
 DSDT and SSDTs of your own P16 into a directory and pass it as --dump:
@@ -15,8 +15,10 @@ DSDT and SSDTs of your own P16 into a directory and pass it as --dump:
         sudo cat "$table" | tee "DIR/${table##*/}" > /dev/null
     done
 
-The DSDT and the ASUS SSDT (OEM ID _ASUS_, table ID ASUSSSDT) must be those of
-firmware H7607BA.300. power-source.dsl is that SSDT disassembled by ACPICA iasl
+The DSDT and the ASUS SSDT (OEM ID _ASUS_, table ID ASUSSSDT) must match the
+verified reference bytes captured on H7607BA.300. No BIOS version string is
+checked; another version with identical inputs is accepted, while another AML
+layout requires a separately verified transformation. power-source.dsl is that SSDT disassembled by ACPICA iasl
 20260408 and edited by power-source.sed. SSPM changes only its _STA predicate,
 and six compiled ASUS methods are spliced into the original SSDT, since
 compiling the whole table would rewrite unrelated AML. The two tables, the ASL
@@ -221,8 +223,9 @@ def firmware(name, data, expected, override, description):
             f"{name} is the {description} from h7607a-acpi.cpio, not the firmware's; dump it with "
             "the UEFI Shell kit or from a Linux booted without that archive")
     require(digest == expected,
-            f"{name} is not the {description} of firmware {FIRMWARE} (SHA-256 {digest}); "
-            f"these overrides are only for BIOS {FIRMWARE}")
+            f"{name} has an unsupported {description} input layout (SHA-256 {digest}); "
+            f"expected {expected}, recorded on {FIRMWARE}. "
+            "No byte-splice transformation was attempted; a different layout needs its own verified transform")
 
 
 def commands(script):

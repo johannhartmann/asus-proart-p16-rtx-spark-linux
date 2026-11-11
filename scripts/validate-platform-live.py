@@ -34,11 +34,14 @@ def command(args, timeout=15):
     return result.stdout
 
 
-def check_target(dmi=Path("/sys/class/dmi/id")):
-    for name, expected in (("product_name", "ProArt P16 H7607BA"),
-                           ("bios_version", "H7607BA.300")):
+def check_target(dmi=Path("/sys/class/dmi/id"), *, architecture=None):
+    """Scope board-specific trials; bound drivers validate resources and firmware ABIs."""
+    if (architecture if architecture is not None else os.uname().machine) != "aarch64":
+        raise RuntimeError("AArch64 required; no driver trial was started")
+    for name, expected in (("sys_vendor", "ASUS"),
+                           ("product_name", "ProArt P16 H7607BA")):
         if (dmi / name).read_text().strip() != expected:
-            raise RuntimeError(f"Unvalidated {name}; no driver trial was started")
+            raise RuntimeError(f"Unsupported {name}; no driver trial was started")
 
 
 def check_module(path):
