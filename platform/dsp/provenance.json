@@ -52,9 +52,10 @@
   },
   "scope": {
     "auto_boot": false,
-    "audio_services": false,
+    "audio_services": true,
     "compute_services": false,
-    "playback_client": "Experimental route-2 DL0; complete-stream hardware qualification pending"
+    "playback_client": "Opt-in route-2 DL0/DL1, HiFi1 tasks 7/16; new IRQ and DL1 changes hardware-unqualified",
+    "capture_client": "Opt-in route-3 UL1, primary HiFi5 tasks 23/21; hardware-unqualified"
   },
   "firmware_power_requests": {
     "linux_api": "mtk_send_power_control_req",
@@ -133,7 +134,7 @@
     },
     "tests": "test_primary.py; actual C functions with ASan/UBSan",
     "firmware_requests_hardware_validated": true,
-    "streaming_endpoint_implemented": false
+    "streaming_endpoint_implemented": true
   },
   "primary_task_lifecycle": {
     "api": [
@@ -157,8 +158,9 @@
       "test_task_client.py",
       "test_transport.py"
     ],
-    "pcm_stream_started": false,
-    "whole_core_shutdown_verified": false
+    "pcm_stream_started": true,
+    "whole_core_shutdown_verified": false,
+    "hardware_evidence": "DSP 0.1.22 playback-to-SRAM tests recorded in docs/audio.md; 0.1.24 IRQ/duplex changes still unqualified"
   },
   "pcm_descriptor": {
     "encoder": "n1x_adsp_pcm.h",
@@ -170,7 +172,8 @@
       32
     ],
     "publishes_buffers": false,
-    "analysis_script": "scripts/analyze-dsp-pcm.py"
+    "analysis_script": "scripts/analyze-dsp-pcm.py",
+    "direction": "Offset 0x3c: playback 1, capture 2; capture start threshold at 0x40 is zero; native 0x14002aed8 and 0x14002a0b0"
   },
   "primary_processing_pipeline": {
     "route": 2,
@@ -251,21 +254,20 @@
     ],
     "raw_tasks_7_and_16_denied": true,
     "published_ipc_retained_independently_of_pcm": true,
-    "route3_primary_group_unsupported": true,
+    "route3_primary_group_unsupported": false,
     "native_driver_sha256": "a3eaa49ea54b1a7511542091efbd527000aeff4148753e68f179077c539224de",
     "tests": [
       "test_pcm_service.py",
       "test_transport.py",
       "afe/test_sram.py"
     ],
-    "stream_started": false,
+    "stream_started": true,
     "shutdown_release_verified": false,
     "remaining": [
-      "ALSA frontend and hardware memif programming",
-      "START/STOP and period notifications",
-      "Hardware qualification of the complete task graph",
-      "Verified whole-core shutdown, DMA release and reinitialization"
-    ]
+      "Qualification of corrected IRQ target and DL1 endpoint switching",
+      "Verified whole-core shutdown and DMA release"
+    ],
+    "hardware_evidence": "DSP 0.1.22 playback-to-SRAM tests recorded in docs/audio.md; 0.1.24 IRQ/duplex changes still unqualified"
   },
   "primary_consumed_notification": {
     "api": [
@@ -292,9 +294,10 @@
     "bounds_and_counter_tests": "pcm_test.c",
     "actual_irq_test": "test_driver.py",
     "callback_and_teardown_concurrency_test": "test_period.py",
-    "alsa_frontend_implemented": false,
-    "stream_started": false,
-    "whole_core_shutdown_release_verified": false
+    "alsa_frontend_implemented": true,
+    "stream_started": true,
+    "whole_core_shutdown_release_verified": false,
+    "hardware_evidence": "DSP 0.1.22 playback-to-SRAM tests recorded in docs/audio.md; 0.1.24 IRQ/duplex changes still unqualified"
   },
   "primary_producer_publication": {
     "api": "n1x_adsp_primary_commit",
@@ -315,8 +318,9 @@
       "test_pcm_service.py"
     ],
     "firmware_atomic_descriptor_sampling_verified": false,
-    "stream_started": false,
-    "shutdown_release_verified": false
+    "stream_started": true,
+    "shutdown_release_verified": false,
+    "hardware_evidence": "DSP 0.1.22 playback-to-SRAM tests recorded in docs/audio.md; 0.1.24 IRQ/duplex changes still unqualified"
   },
   "afe_hardware_prepare": {
     "api": "mt8901_afe_sram_prepare",
@@ -386,12 +390,12 @@
       {
         "owner": "AFE",
         "operation": "mt8901_afe_sram_stop_irq",
-        "core": 3
+        "route": 2
       }
     ],
     "preconditions": "Prepared active task graph, host producer publication, matching published ABI-2 endpoint and IRQ readiness",
     "host_routing_owner": "Linux audio client; no gain, channel-merge or CPU memif enable writes in typed trigger",
-    "irq_stop": "Disable CFG0 bit 0; read/toggle CFG1 bit 31; remove owned MCU 0x9d00 and HiFi1 0x9d04 target bits",
+    "irq_stop": "Disable CFG0 bit 0; read/toggle CFG1 bit 31; remove owned MCU 0x9d00 and HiFi1 0xa000 target bits. Endpoint route enum 2 is not task-core enum 3.",
     "failure_contract": "Transaction or IRQ I/O failure is terminal; all published memory and references retained",
     "listener_stop": "Detach and synchronize IRQ; client drains queued work separately",
     "close": "STOP a started stream before existing HWFREE/CLOSE chain",
@@ -404,11 +408,11 @@
     ]
   },
   "primary_alsa_frontend": {
-    "primary_client_abi": 2,
+    "primary_client_abi": 3,
     "api": "n1x_adsp_primary_abi",
     "source": "afe/mt8901-afe-dsp.c",
-    "integration": "Existing nonatomic AFE/DPCM DL0 playback and SoundWire/DAPM codec route",
-    "selection": "AFE dsp_playback read-only module parameter; false by default",
+    "integration": "Existing nonatomic AFE/DPCM DL0/DL1 playback and UL1 capture; SoundWire/DAPM codec routes",
+    "selection": "Read-only dsp_playback and dsp_capture module parameters, both false by default",
     "configuration_phase": "PREPARE after ALSA runtime format/period assignment",
     "application_memory": "Existing ALSA managed staging buffer; only newly acknowledged frames copied to DSP-owned coherent host ring",
     "producer_contract": "ALSA-boundary and ring wrap, full-ring end boundary, no rewind or advance beyond ring",
@@ -424,9 +428,8 @@
       "pcm_test.c"
     ],
     "remaining": [
-      "Complete-stream hardware qualification and firmware memif/IRQ ownership confirmation",
-      "DSP capture and additional frontends; playback restart is implemented but hardware-unqualified",
-      "Verified whole-core quiesce, DMA/SROOT lease release and suspend/resume"
+      "Complete duplex, input/output endpoint and system-sleep hardware qualification",
+      "Verified whole-core quiesce and DMA/SROOT lease release"
     ]
   },
   "loader_staging_release": {
@@ -444,7 +447,7 @@
     "whole_core_release_verified": false
   },
   "system_sleep_retention": {
-    "status": "0.1.22_device_pm_failed; 0.1.23_reinit_candidate_offline_tested_only",
+    "status": "0.1.22_device_pm_failed; 0.1.23_clean_boot; 0.1.24_duplex_and_reinit_hardware_unqualified",
     "default_enabled": false,
     "module_parameter": "enable_retention_sleep",
     "modes": [
@@ -471,22 +474,82 @@
     "reinit_hardware_qualified": false
   },
   "asoc_audio": {
-    "status": "0.1.22_playback_to_AFE_SRAM_verified; analog_endpoints_and_0.1.23_resume_unqualified",
-    "playback_abi": 2,
+    "status": "0.1.22_playback_to_AFE_SRAM_verified; 0.1.24_duplex_IRQ_and_resume_unqualified",
+    "playback_abi": 3,
     "automatic_firmware": "auto_boot plus n1x-adsp-audio.service",
     "card_components": [
       "NVDA8301",
       "NVDA8302",
       "NVDA8303"
     ],
-    "playback": "HiFi1 tasks 7 and 16 via the existing ALSA DL0 frontend",
-    "capture": "Existing direct ALSA path; HiFi5 DSP capture not implemented",
+    "playback": "HiFi1 tasks 7/16 via DL0/DL1, one playback owner",
+    "capture": "Primary HiFi5 tasks 23/21 via UL1, independent of playback; internal/headset codec selections need qualification",
     "lifecycle": [
       "STOP/PREPARE/START",
       "successful CLOSE/OPEN",
       "retained ring rebind",
-      "negotiated geometry within persistent capacity"
+      "negotiated geometry within persistent capacity",
+      "same-open HW_FREE/HW_PARAMS",
+      "idle DL0/DL1 playback rebind",
+      "concurrent playback and capture"
     ],
     "power": "ASoC card -> DSP -> AFE and DSP -> DLA -> SROOT; retained SRAM across opt-in s2idle"
+  },
+  "capture_pipeline": {
+    "native_driver_sha256": "a3eaa49ea54b1a7511542091efbd527000aeff4148753e68f179077c539224de",
+    "analysis_script": "scripts/analyze-dsp-pcm.py",
+    "endpoint": "SSDT3 MICP path 3, mask bit 1",
+    "task_core": 1,
+    "irq_route": 3,
+    "irq_target": "0x9d04",
+    "host_task": 23,
+    "processing_task": 21,
+    "raw_host_task_not_selected": 22,
+    "messages": "Four host and two processing 1 KiB DRAM slices; PCM offset 8192",
+    "start": [
+      [
+        21,
+        15,
+        0,
+        1
+      ],
+      [
+        23,
+        31,
+        21,
+        0
+      ],
+      [
+        23,
+        17,
+        48,
+        0
+      ],
+      [
+        23,
+        15,
+        1,
+        21
+      ]
+    ],
+    "selector_0x30": "Opaque native selector; optional table pointer/count remain zero; no invented table upload",
+    "notification": {
+      "class": 0,
+      "ack_mode": 0,
+      "task": 23,
+      "command": 19,
+      "write_pointer_offset": "0x38",
+      "counter_filter": false,
+      "consumer_ipc": false
+    },
+    "address_view": "Native 0x140025fe0 selector 3, firmware SRAM tuple ADSP view; task-core 1 -> selector 3 in 0x1400249e8",
+    "frontend": "Deferred DMA read/copy before ALSA pointer; pending plus in-flight bytes detect overrun; local XRUN recoverable",
+    "capacity": "Two independently retained 32 KiB PCM leases plus 2 KiB playback IPC in 80 KiB SRAM",
+    "headset_boundary": "Linux UCM shares UL1; native HSMP uses direct route 0. Both Linux input selections need qualification.",
+    "unproven_effects": [
+      "beamforming",
+      "noise suppression"
+    ],
+    "hardware_qualified": false
   }
 }

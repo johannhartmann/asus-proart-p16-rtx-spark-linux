@@ -17,6 +17,7 @@ NATIVE_SHA256 = 'a3eaa49ea54b1a7511542091efbd527000aeff4148753e68f179077c539224d
 MAILBOX_SHA256 = '8b21e4652bb0ac178a2c470c8d6f982155e715c46112ac3b93de3ebfe00b13d6'
 FUNCTIONS = {
     'sram_mapping': (0x140024560, 0x140024998),
+    'sram_address_translation': (0x140025fe0, 0x1400262c0),
     'host_message_tasks': (0x140023de0, 0x140023e30),
     'processing_message_tasks': (0x140024998, 0x1400249e8),
     'message_allocate': (0x1400249e8, 0x140025020),
@@ -76,6 +77,10 @@ FUNCTIONS = {
     'common_constructor': (0x14005cc68, 0x14005cef0),
     'speaker_setup': (0x140085358, 0x140085e88),
     'engine_prepare': (0x1400d5750, 0x1400d5e10),
+    'task_core_mapping': (0x140006ed0, 0x140006f20),
+    'microphone_stream_setup': (0x1400810e8, 0x1400819f0),
+    'microphone_irq_create': (0x1400819f0, 0x140082188),
+    'microphone_input_routes': (0x140082188, 0x140082ac8),
 }
 
 
@@ -197,7 +202,8 @@ def main():
                   'qualification': 'Static default path; not a live Windows endpoint observation'},
               'sram_mapping': {'native_api': 'MmMapIoSpace(physical, bytes, 0)',
                                'cache_type': 'MmNonCached (0)',
-                               'linux_api': 'devm_ioremap_resource; no write combining'},
+                               'linux_api': 'devm_ioremap_resource; no write combining',
+                               'translation': '0x140025fe0: selector 2 -> context+0x50 (AFE/VAD), selectors 3/4 -> context+0x58 (HiFi5); 0x1400249e8 maps task-core 3 -> selector 2, task-core 1 -> selector 3' },
               'prepare': {'configure_call_order': ['0x14002a7c0: primary AFE prepare helper',
                                                   '0x14002a7cc: primary host prepare helper'],
                           'afe_command': '0x203', 'host_command': '3',
@@ -260,7 +266,7 @@ def main():
                           'speaker_context': '+0x2a8', 'vtable': {'base': '0x1400b5548', 'methods': irq_vtable},
                           'prepare': '0x140016150 -> 0x1400091d8 -> 0x140008e80; period counter, rate, domain; does not enable IRQ',
                           'start': '0x140026830 increments the native IRQ reference count without writing the enable or target register',
-                          'stop': '0x1400268b0 disables last-user IRQ and clears the core target; HiFi1 enum 3 uses 0x9d04',
+                          'stop': '0x1400268b0 uses the endpoint route: 2 -> 0xa000 (HiFi1), 3 -> 0x9d04 (primary HiFi5), 4 -> 0x9d08. This enum is distinct from the task-core selector.',
                           'speaker_start_order': '0x140083a10: IRQ prepare (+0x18), DSP stream START (+0x18), IRQ reference (+8)',
                           'speaker_stop_order': '0x1400841a0: DSP stream STOP (+0x20), IRQ stop (+0x10)'},
                   'hardware_validated': False},
@@ -273,7 +279,19 @@ def main():
                   'read_pointer': 'last consumed pointer retained in the host record',
                   'generation': 'context +0xc0 copied to descriptor +0x54, then advanced; INT_MAX wraps to zero',
                   'hardware_validated': False},
-              'remaining': ['ALSA frontend, stream transitions and notifications',
+              'capture': {
+                  'endpoint': 'microphone path 3; primary HiFi5 task-core selector 1',
+                  'descriptor_direction': '0x14002aed8 returns 2 for tasks 23/21; 0x14002a0b0 clears capture start threshold to zero',
+                  'host_task': 23, 'raw_host_task': 22, 'processing_task': 21,
+                  'mode_selection': '0x140027ba8 compares nonzero processing-mode GUID to RAW 9e90ea20-b493-4fd1-a1a8-7e1361a956cf; RAW -> 22, other nonzero modes -> 23',
+                  'messages': 'host 23: 5/6/0x20a/0x20b; processing 21: 5/6; all six messages use operating DRAM, not SRAM',
+                  'start': [[21, 15, 0, 1], [23, 31, 21, 0], [23, 17, 48, 0], [23, 15, 1, 21]],
+                  'notification': 'class 0, ACK 0, task 23, command 0x13; inline 96-byte descriptor; producer at packet +0x38',
+                  'counter': 'native IRQUL does not apply the DL_CONSUME_DATA generation filter',
+                  'irq_enum_trace': 'create_stream local_c0=endpoint path -> parameter+0x180 -> common_constructor context+0x198 -> microphone_irq_create +0x2f4 -> DSP IRQ constructor+0x34 -> stop target selection',
+                  'hardware_validated': False,
+              },
+              'remaining': ['Fresh-boot duplex/endpoint and system-sleep hardware qualification',
                             'Actual stream workload and verified core shutdown/DMA release']}
     args.output.mkdir(parents=True)
     if mailbox:

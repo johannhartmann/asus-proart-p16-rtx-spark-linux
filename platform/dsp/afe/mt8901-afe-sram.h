@@ -25,8 +25,8 @@ struct mt8901_afe_sram_endpoint {
 	bool published, irq_prepared;
 };
 
-/* Return a referenced, instantiated sound-card device for a real owned DL0
- * playback stream, or ERR_PTR(). No firmware or power operation. The caller
+/* Return a referenced, instantiated sound-card device for a real owned DL0/DL1
+ * playback or UL1 capture stream, or ERR_PTR(). No firmware or power operation. The caller
  * serializes stream lifetime and must put_device() the returned reference.
  */
 struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream);
@@ -57,7 +57,7 @@ int mt8901_afe_sram_publish_ipc(struct mt8901_afe_sram_buffer *buffer);
 int mt8901_afe_sram_view(struct mt8901_afe_sram_buffer *buffer,
 			struct mt8901_afe_sram_view *view);
 
-/* Bind an unpublished lease during non-running playback stream setup, after
+/* Bind an unpublished lease during non-running PCM stream setup, after
  * the AFE DAI's hw_params. Derives memif, IRQ and format from that substream;
  * its complete ring must fit the reservation. A bound memif cannot start
  * another substream until the lease is released. The caller serializes ALSA
@@ -68,8 +68,9 @@ int mt8901_afe_sram_bind(struct mt8901_afe_sram_buffer *buffer,
 
 /* Reattach a retired, published lease after acknowledged DSP HWFREE/CLOSE.
  * The DSP owner alone may call this; it must serialize task and stream state.
- * Requires the same memif/IRQ, an idle IRQ, healthy owner state and a complete
- * ring fitting the original allocation. No memory or PM references are freed.
+ * Allows DL0/DL1 playback rebinding or unchanged UL1 capture. Requires idle
+ * old/new IRQs and memifs, healthy owner state and a ring fitting the allocation.
+ * No memory or PM references are freed.
  */
 int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
 			   struct snd_pcm_substream *substream);
@@ -98,9 +99,10 @@ int mt8901_afe_sram_prepare(struct mt8901_afe_sram_buffer *buffer);
  */
 int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer);
 
-/* After acknowledged task STOPs, disable the owned DL0 memif, disable/clear
- * its IRQ and remove its MCU and HiFi1 target bits. core must be native
- * enum 3 (HiFi1). Allows the still-running ALSA STOP callback, but requires
+/* After acknowledged task STOPs, disable the owned memif, disable/clear
+ * its IRQ and remove its MCU and DSP target bits. The route argument is
+ * endpoint enum 2 for HiFi1 or 3 for primary HiFi5, not a task-core enum.
+ * Allows the still-running ALSA STOP callback, but requires
  * unchanged ownership and
  * format. Repeated success writes nothing; failed I/O is terminal. Does not
  * prove whole-core quiescence; no published memory may be released. The caller
@@ -117,7 +119,8 @@ void mt8901_afe_sram_retire(struct mt8901_afe_sram_buffer *buffer);
 
 /* Call after binding and before publishing a buffer address to firmware or
  * hardware. A published lease cannot be released by the current API and blocks
- * AFE suspend until reboot.
+ * AFE runtime suspend. System sleep requires every owner
+ * to participate in the retained-SRAM protocol.
  * Service acknowledgements do not establish whole-core DMA quiescence.
  */
 int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer);

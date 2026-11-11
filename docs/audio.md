@@ -10,14 +10,20 @@ No application-specific DSP client is needed for normal audio.
 
 The new candidate automatically loads the signed DSP images and registers the
 three firmware-ready DSPs as auxiliary components of the ASoC sound card. Its
-DL0 playback frontend uses HiFi1 tasks 7 and 16. Repeated STOP/PREPARE/START,
+DL0/DL1 playback frontend uses HiFi1 tasks 7 and 16. UL1 capture uses
+primary HiFi5 tasks 23 and 21; playback and capture have independent owners. Repeated STOP/PREPARE/START,
 HWFREE/CLOSE/OPEN and changes of negotiated format within the retained ring
 capacity are implemented. Existing ALSA controls, DPCM/DAPM codec routes and
 UCM profiles remain responsible for routing and volume.
 
-Microphone capture uses the existing direct ALSA path. **HiFi5 microphone DSP
-processing, beamforming and noise suppression are not implemented.** Registering
-the HiFi5 components does not expose arbitrary DSP compute or a SOF runtime.
+DSP 0.1.24 implements the native non-RAW HiFi5 microphone graph behind the
+read-only, disabled-by-default `snd_soc_mt8901_afe.dsp_capture` option. The
+internal and headset microphone UCM routes share UL1; Linux retains those codec
+controls. Native Windows headset capture uses direct route 0, so routing both
+Linux inputs through UL1 is a Linux integration choice requiring separate
+endpoint tests. There is no evidence that tasks 23/21 provide beamforming or
+noise suppression; these effects and arbitrary DSP compute are not claimed.
+The secondary HiFi5 is booted and participates in PM, but has no PCM stream.
 Published operating allocations and module/runtime-PM references stay owned;
 whole-core release and runtime autosuspend are still unavailable.
 
@@ -31,7 +37,8 @@ A timeout or failed restoration is terminal and retains memory. There is no
 reset, forced unload or firmware retry after uncertain publication.
 
 **Playback to the AFE SRAM is hardware-verified. The 0.1.22 device-only PM test
-failed; corrected 0.1.23 resume and complete analog endpoints remain unqualified.** Preserve the known-working boot entry
+failed. DSP 0.1.23 subsequently booted all three cores successfully; REINIT
+resume, 0.1.24 duplex/IRQ changes and complete analog endpoints remain unqualified.** Preserve the known-working boot entry
 and install the exact matching kernel, AFE/machine modules, DSP and SROOT
 provider as a separate test boot. Never replace an already-published live
 instance.
@@ -42,7 +49,7 @@ exclusive end and caused audio descriptors to be rejected. The driver keeps
 one unadvertised page in its normal coherent allocation. The tested HiFi1
 window starts at `0xfe000000` and ends at `0xff000000`; see the
 [firmware validator evidence](../platform/dsp/protocol.md#hifi1-shared-dram-exclusive-end-constraint).
-The matching AFE owns DL0/IRQ triggering, reads shared IRQ state without a
+The matching AFE owns memif/IRQ triggering, reads shared IRQ state without a
 stale cache, and restores period/rate/domain on each actual START.
 
 The tested kernel is `7.2.8-31-rtx-spark-npu`, DSP source version
@@ -90,7 +97,7 @@ The kernel recipe includes the generated
 `scripts/prepare-afe-sram-patch.py` after editing the canonical files in
 `platform/dsp/afe`; package source hashes must match. Build the matching DSP and
 provider packages as described in [driver qualification](driver-qualification.md).
-Provider ABI v4, its additive REINIT export and playback ABI v2 are required; older modules cannot be mixed.
+Provider ABI v4, its additive REINIT export and PCM client ABI v3 are required; older modules cannot be mixed.
 
 Install PipeWire, WirePlumber, `alsa-ucm-conf`, ALSA tools, the board's Cirrus
 firmware and the locally prepared signed N1X firmware packages. After hardware qualification, the DSP DKMS
@@ -104,13 +111,16 @@ sudo systemctl enable n1x-platform-npu.service n1x-adsp-audio.service
 For an existing installation, stage modules only in the candidate kernel
 namespace and retain the old kernel’s module files. Do not globally upgrade
 DKMS packages before qualification if that would rebuild the preserved kernel.
-The conditionally activated service/helper can be staged separately.
+The conditionally activated service/helper can be staged separately. Run
+`depmod` with a normal installation umask (022); generated module indexes must
+remain readable so ordinary `modinfo` and dependency checks work. Keep capture
+files and test reports private independently of those system metadata files.
 
 Do not start it against the old running DSP/provider. On the separate candidate
 boot, add these kernel parameters while preserving the existing command line:
 
 ```text
-n1x_adsp.auto_boot=1 n1x_adsp.enable_retention_sleep=1 snd_soc_mt8901_afe.dsp_playback=1 mt8901_acp_sdw_legacy_mach.dsp_playback=1
+n1x_adsp.auto_boot=1 n1x_adsp.enable_retention_sleep=1 snd_soc_mt8901_afe.dsp_playback=1 snd_soc_mt8901_afe.dsp_capture=1 mt8901_acp_sdw_legacy_mach.dsp_playback=1
 ```
 
 Also blacklist `snd_sof_mt8901` for that boot so the placeholder SOF driver does
@@ -154,7 +164,29 @@ headset microphone capture and ordinary PipeWire client close/open/recovery.
 A successful playback command is insufficient: DSP consumed-data/period
 counters must advance, and real audio must be confirmed.
 
-Next run `pm_test=devices`, restore `pm_test=none`, then qualify real s2idle with
+Use the bounded validator for the matching 0.1.24 bundle, with a known microphone
+stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
+duplex, then optionally device-only PM and the complete PCM sequence again:
+
+```sh
+python3 scripts/validate-dsp-audio.py --output /path/to/new-private-audio-results --device-sleep
+```
+
+Playback uses silence and preserves all mixer/desktop settings; this tests the
+transport, not audibility. Capture files and reports are private (0700/0600),
+remain local and may contain microphone audio. The script never stops another
+client. An occupied PCM or a retained fault stops qualification. The PM step
+opens the desktop polkit dialog, uses `pm_test=devices` rather than physical
+sleep, and restores `pm_test=none` even on failure. All-zero capture fails rather
+than passing a nonfunctional input. Test headphones separately with
+`--playback hw:CARD=mt8901soundwire,DEV=1`, using a new output directory, and
+qualify both microphone selections through the normal UCM controls. One playback
+stream and one capture stream are supported concurrently; simultaneous DL0 and
+DL1 DSP playback is not implemented. Each direction retains a maximum 32 KiB
+ring, with a separate 2 KiB playback IPC lease; later geometry must fit.
+
+After device-only PM passes, separately verify numerical NPU execution. Only
+then qualify real s2idle with
 idle and running playback/capture. Check uninterrupted endpoint recovery,
 repeated reopen, retained allocation counts and numerical NPU execution after
 each wake. Do not initiate these tests during an active working session.

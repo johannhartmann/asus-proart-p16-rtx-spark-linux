@@ -57,6 +57,7 @@ static void *dev_get_drvdata(struct device *dev) {assert(dev==&device);return de
 static int mutex_lock_interruptible(struct mutex *lock)
 {(void)lock;if(lock_error)return lock_error;assert(!request_locks++);return 0;}
 static void mutex_unlock(struct mutex *lock) {(void)lock;assert(request_locks--==1);}
+static bool capture_fixture;
 static struct device *n1x_adsp_find_device(struct device *consumer,const char *name)
 {
  assert(consumer==&device && !strcmp(name,"NVDA9022"));
@@ -73,7 +74,8 @@ static int device_property_read_u32(struct device *dev,const char *name,u32 *val
 static struct fwnode_handle *device_get_named_child_node(struct device *dev,const char *name)
 {
  unsigned i;assert(dev==&asd && asd_refs==1);child_reads++;
- if(!strcmp(name,"acpi-asd-speaker-subproperties"))i=0;
+ if(capture_fixture){assert(!strcmp(name,"acpi-asd-microphone-subproperties"));i=0;}
+ else if(!strcmp(name,"acpi-asd-speaker-subproperties"))i=0;
  else {assert(!strcmp(name,"acpi-asd-headphone-subproperties"));i=1;}
  if(missing_node==(int)i+1)return NULL;node_refs++;return &nodes[i];
 }
@@ -98,7 +100,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  assert(context==&dsp && device_locks==1 && request_locks==1);
  assert(dsp.primary_attempted && !dsp.primary_ready && dsp.primary_error==-EINPROGRESS);
  assert(transfers<4 && barriers==transfers+1 && request->command==commands[transfers]);
- assert(request->channel==7 && request->data_mode==1 && request->ack_mode==1 && !request->token);
+ assert(request->channel==(capture_fixture?23:7) && request->data_mode==1 && request->ack_mode==1 && !request->token);
  assert(request->parameter1==32 && !request->parameter2 && request->payload);
  assert(get64(request->payload)==0xe0000000+offset);
  assert(get64(request->payload+8)==(uintptr_t)(memory+offset));
@@ -107,7 +109,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  for(unsigned i=4096;i<sizeof(memory);i++)assert(memory[i]==0xa5);
  transfers++;
  if(failed_transfer==(int)transfers)return transfer_error;
- memset(reply,0,sizeof(*reply));reply->packet[18]=bad_echo==1?8:7;
+ memset(reply,0,sizeof(*reply));reply->packet[18]=bad_echo==1?8:(capture_fixture?23:7);
  reply->packet[21]=2;n1x_adsp_ipc_put16(reply->packet+22,request->command+(bad_echo==2));
  if(power_after_last && transfers==4)dsp.power_error=-EIO;
  return 0;
@@ -124,6 +126,7 @@ static void reset(void)
  property_reads=child_reads=transfers=barriers=0;
  missing_asd=missing_node=property_error=failed_transfer=bad_echo=0;
  transfer_error=-ETIMEDOUT;power_after_last=false;
+ capture_fixture=false;
 }
 static void no_refs(void) {assert(!device_locks && !request_locks && !asd_refs && !node_refs);}
 int main(void)
@@ -171,7 +174,15 @@ int main(void)
  reset();lock_error=-EINTR;assert(n1x_adsp_prepare_primary(&device)==-EINTR);no_refs();
  assert(!transfers && !property_reads && !dsp.primary_attempted);
  assert(n1x_adsp_prepare_primary(NULL)==-EINVAL);no_refs();
- puts("DSP primary routing, bounded message slices, registration order and terminal failures: PASS");
+ for(unsigned route=0;route<5;route++) {
+  reset();capture_fixture=dsp.capture=true;dsp.target=&targets[0];routes[0]=route;
+  int ret=n1x_adsp_prepare_primary(&device);no_refs();
+  if(route==3)assert(!ret && transfers==4 && dsp.primary_ready && child_reads==1);
+  else assert(ret==-EOPNOTSUPP && !transfers && !dsp.primary_attempted);
+ }
+ reset();capture_fixture=dsp.capture=true;dsp.target=&targets[0];routes[0]=3;endpoint_mask=1;
+ assert(n1x_adsp_prepare_primary(&device)==-EOPNOTSUPP && !transfers);no_refs();
+ puts("DSP host registration: playback/capture firmware routes, bounded slices and terminal failures: PASS");
 }
 '''
     with tempfile.TemporaryDirectory(prefix='p16-dsp-primary-') as temporary:

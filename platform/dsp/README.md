@@ -1,7 +1,8 @@
 # MT8901 audio DSP
 
 The driver implements secure loading, boot notifications, bounded task IPC and
-an experimental route-2 playback client for two HiFi5 cores and one HiFi1 core.
+opt-in HiFi1 playback and primary HiFi5 capture clients. The platform has
+two HiFi5 cores and one HiFi1 core.
 ACPI provides memory/IRQ resources and routing properties. Firmware uses the
 normal firmware loader, with per-core defaults and a `firmware-name` override.
 See [protocol.md](protocol.md) for wire formats and reference provenance.
@@ -13,18 +14,19 @@ Shutdown and reclamation must be verified before default startup is enabled.
 
 ## Normal audio integration
 
-The candidate exposes DSP-backed DL0 playback through the existing ALSA/ASoC
+The candidate exposes DSP-backed DL0/DL1 playback and UL1 capture through the existing ALSA/ASoC
 sound card. Applications use PipeWire/WirePlumber or ordinary ALSA; no private
 userspace DSP API is needed. The machine driver binds all three firmware-ready
 DSPs as ASoC auxiliary components. Kernel PM links order the sound card before
 DSPs, DSPs before their AFE SRAM supplier and DLA before SROOT. There is no
 reverse AFE-to-DSP dependency.
 
-Playback ABI 2 supports repeated STOP/PREPARE/START and successful CLOSE/OPEN.
-One maximum-size AFE ring and the processing-task message slices remain owned
+PCM client ABI 3 supports duplex, HW_FREE/HW_PARAMS on the same open file, repeated STOP/PREPARE/START and successful CLOSE/OPEN.
+One maximum 32 KiB AFE ring per direction and playback IPC slices remain owned
 by the DSP and are reused across streams. New formats/periods must fit that
 allocation; only the negotiated extent is programmed. Rebinding requires the
-same memif/IRQ, a retired ALSA pointer and a disabled IRQ. Failed or uncertain
+same UL1 capture or an idle DL0/DL1 playback endpoint, a retired ALSA pointer
+and disabled IRQs/memifs. Failed or uncertain
 firmware operations remain terminal; they never free published memory.
 
 The optional `n1x-adsp-audio.service` prepares isolated DMA domains before
@@ -33,10 +35,10 @@ ASoC readiness afterwards and performs no userspace firmware upload, unbind,
 reset or unload. Its kernel-command-line condition keeps it inactive on the
 ordinary boot unless that boot explicitly enables automatic DSP audio.
 
-Microphone capture and the headphone/codec controls retain the existing ALSA
-and UCM interfaces. **HiFi5 microphone processing/offload is not implemented**;
-registering the HiFi5 components does not claim that their capture algorithms
-are used. This is not a SOF firmware port. See [the audio setup and validation
+Microphone capture and headphone/codec controls retain the existing ALSA
+and UCM interfaces. `dsp_capture=1` selects primary HiFi5 tasks 23/21 on UL1.
+This implements the native non-RAW capture transport; beamforming and noise
+suppression are not proven firmware capabilities. This is not a SOF firmware port. See [the audio setup and validation
 guide](../../docs/audio.md) for the complete installation and exact limits.
 
 ## System sleep
@@ -48,7 +50,7 @@ With the option absent, published instances reject sleep in `prepare` before
 any audio device suspends.
 
 An active primary client is admitted only through `n1x_adsp_primary_open_pcm()`:
-the AFE validates its instantiated card and actual DL0 substream, and the
+the AFE validates its instantiated card and actual DL0/DL1 playback or UL1 capture substream, and the
 client owns an explicit card-to-DSP PM link. Prepare rechecks the live binding;
 component registration alone and legacy/raw clients cannot grant PM admission.
 The link is released at CLOSE, including terminal failures; retained fault
@@ -77,7 +79,7 @@ mailbox state, a failed D0 or an uncertain reply leave the IRQ disabled and all
 memory/leases retained, with no retry.
 
 A fresh firmware instance invalidates task registrations. The next normal PCM
-prepare recreates tasks 7/16 and replays cached HW_PARAMS using the same retained
+prepare recreates playback tasks 7/16 or capture tasks 23/21 and replays cached HW_PARAMS using the same retained
 buffers. The ALSA owner and card PM link survive; closing before preparation
 retires the owner without sending CLOSE to nonexistent remote tasks. No new
 buffer lease is allocated or released by this reconstruction.
@@ -137,7 +139,7 @@ PREPARE orders AFE ring programming, four task descriptors and IRQ preparation.
 START runs processing before primary; STOP reverses that task order before
 stopping the owned IRQ. Failures retain published memory and stop the sequence.
 
-The AFE DL0 frontend uses the existing DPCM/DAPM/SoundWire routing. Its read-only
+The AFE DL0/DL1 frontend uses the existing DPCM/DAPM/SoundWire routing. Its read-only
 `dsp_playback` parameter defaults to false. ALSA's managed buffer is copied into
 the coherent host ring on producer ACK. Consumed-position notifications drive
 the pointer and complete-period accounting; workqueue delivery handles periods
@@ -145,8 +147,15 @@ and errors outside hard IRQ. Close synchronizes listeners and drains work
 before retiring borrowed substream pointers.
 
 The frontend requires the matching [AFE owner](afe/README.md) and provider ABI.
-Route 3, additional DSP endpoints and complete-stream hardware qualification
-remain open. Offline tests do not qualify audible playback or shutdown.
+Route 3 capture uses four host message slices plus two processing slices in
+boot-owned DRAM, with samples starting at offset 8192. Native IRQUL command
+0x13 reports the producer pointer at packet offset 0x38. Work copies completed
+bytes to ALSA staging before publishing the capture pointer. DMA-copy overruns
+produce recoverable XRUNs; transport faults remain terminal. Native direction
+2 and zero start threshold are used throughout the capture graph.
+
+Capture, DL1 switching, corrected IRQ targets and complete-stream hardware
+qualification remain pending. Offline tests do not qualify audible playback or shutdown.
 
 ## Build and tests
 

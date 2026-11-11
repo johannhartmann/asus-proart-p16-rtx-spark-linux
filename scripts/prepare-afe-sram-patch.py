@@ -36,7 +36,7 @@ def sources(base):
     after[path] = replace_once(after[path], 'struct mt8901_afe_private {\n',
                               'struct mt8901_afe_sram;\nstruct mt8901_afe_dsp;\n\n'
                               'struct mt8901_afe_private {\n\tstruct mt8901_afe_sram *sram;\n'
-                              '\tstruct mt8901_afe_dsp *dsp;\n')
+                              '\tstruct mt8901_afe_dsp *dsp[2];\n')
     after[path] = replace_once(after[path], 'int mt8901_afe_fs_timing(',
                               'struct platform_driver;\nextern struct platform_driver mt8901_afe_pcm_driver;\n'
                               'int mt8901_afe_sram_init(struct mtk_base_afe *afe);\n'
@@ -46,7 +46,9 @@ def sources(base):
                               'void mt8901_afe_sram_pm_complete(struct mtk_base_afe *afe);\n'
                               'int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe);\n'
                               'void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);\n\n'
-                              'int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);\n\n'
+                              'int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);\n'
+                              'void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,\n'
+                              '\t\t\t      struct snd_pcm_substream *substream);\n\n'
                               'int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,\n'
                               '\t\t\t    struct snd_soc_dai *dai);\n\n'
                               'int mt8901_afe_fs_timing(')
@@ -61,7 +63,8 @@ def sources(base):
                               '\t */\n'
                               '\tif ((reg >= AFE_IRQ0_MCU_CFG0 && reg <= AFE_IRQ21_MCU_CFG1) ||\n'
                               '\t    reg == AFE_IRQ_MCU_EN || reg == AFE_IRQ_MCU_DSP_EN ||\n'
-                              '\t    reg == AFE_IRQ_MCU_DSP2_EN || reg == AFE_IRQ_MCU_SCP_EN)\n'
+                              '\t    reg == AFE_IRQ_MCU_DSP2_EN || reg == AFE_IRQ_MCU_SCP_EN ||\n'
+                              '\t    reg == AFE_IRQ_MCU_DSP3_EN)\n'
                               '\t\treturn true;\n\n'
                               '\t/* registers with read-only bits cannot be cached */\n')
     after[path] = replace_once(after[path], 'static int mt8901_afe_fe_trigger(',
@@ -69,7 +72,7 @@ def sources(base):
                               '{\n'
                               '\tstruct mt8901_afe_private *priv = afe->platform_priv;\n'
                               '\tstruct mtk_dai_memif_priv *memif;\n\n'
-                              '\tif (id < 0 || id >= MT8901_AFE_MEMIF_UL_START)\n'
+                              '\tif (id < 0 || id >= MT8901_AFE_MEMIF_NUM)\n'
                               '\t\treturn -EINVAL;\n'
                               '\tmemif = priv->dai_priv[id];\n'
                               '\tif (!memif)\n'
@@ -77,6 +80,16 @@ def sources(base):
                               '\tif (memif->domain > 7)\n'
                               '\t\treturn -ERANGE;\n'
                               '\treturn memif->domain;\n'
+                              '}\n\n'
+                              'void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,\n'
+                              '\t\t\t      struct snd_pcm_substream *substream)\n'
+                              '{\n'
+                              '\tstruct mt8901_afe_private *priv = afe->platform_priv;\n'
+                              '\tstruct mtk_dai_memif_priv *memif = priv->dai_priv[id];\n'
+                              '\tstruct snd_pcm_runtime *runtime = substream->runtime;\n\n'
+                              '\tif (substream->stream == SNDRV_PCM_STREAM_CAPTURE)\n'
+                              '\t\tudelay(mt8901_get_prefetch_delay(afe, id, memif->minlen,\n'
+                              '\t\t\t\t\t runtime->rate, runtime->channels, runtime->sample_bits));\n'
                               '}\n\nstatic int mt8901_afe_fe_trigger(')
     after[path] = replace_once(after[path], 'ret = mtk_afe_fe_startup(substream, dai);',
                               'ret = mt8901_afe_sram_startup(substream, dai);\n'
@@ -168,17 +181,17 @@ def main():
     if args.output.exists():
         parser.error('Output already exists')
     before, after = sources(args.source_tree)
-    patch = ('Subject: [PATCH] ASoC: mediatek: mt8901: add DSP playback and SRAM ownership\n\n'
+    patch = ('Subject: [PATCH] ASoC: mediatek: mt8901: add DSP duplex audio and SRAM ownership\n\n'
              'Provide exclusive, aligned SRAM leases through the AFE owner on the\n'
              'firmware-described SRAM layout. Each lease retains device, module and\n'
-             'runtime-PM references. Refuse forced suspend while leases exist and\n'
+             'runtime-PM references. Require retention votes for system sleep and\n'
              'disable manual driver detachment. Published buffers remain retained\n'
              'until reboot; whole-core quiesce and release are separate work.\n\n'
-             'Add an optional DL0 DSP client to the existing AFE/SoundWire route.\n'
-             'Copy committed application frames into the owned DSP host ring and\n'
+             'Add opt-in DL0/DL1 playback and UL1 capture to the AFE/SoundWire route.\n'
+             'Copy playback commits and capture notifications through owned rings and\n'
              'defer complete-period notifications to workqueue context. Synchronize\n'
              'listeners and drain work before retiring borrowed ALSA pointers.\n'
-             'The experimental path is disabled by default and lacks hardware\n'
+             'The duplex path is disabled by default and still needs complete hardware\n'
              'streaming qualification.\n\n---\n')
     for path in sorted(after):
         patch += ''.join(difflib.unified_diff(before.get(path, '').splitlines(True),

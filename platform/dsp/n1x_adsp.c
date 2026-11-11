@@ -136,6 +136,7 @@ struct n1x_adsp {
 	u16 last_command;
 	int error, irq;
 	bool attempted, published, boot_ready;
+	bool capture; /* Primary HiFi5 owns the route-3 microphone graph. */
 	bool sleep_prepared; /* Protected by lock, like firmware publication. */
 	bool sleep_suspended, sleep_irq_disabled;
 	bool sleep_pcm, sleep_messages, sleep_draining;
@@ -234,7 +235,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *dsp,
 		return -EINVAL;
 	if (dsp->sleep_prepared &&
 	    (dsp->sleep_draining || request->command != 0x10 ||
-	     (request->channel != ADSP_PRIMARY_TASK && request->channel != ADSP_PROCESSING_TASK)))
+	     (request->channel != n1x_adsp_pcm_host_task(dsp->capture) && request->channel != n1x_adsp_pcm_processing_task(dsp->capture))))
 		return -EBUSY;
 	if (!dsp->published || !dsp->boot_ready || !dsp->loader.accepted || dsp->error)
 		return -EHOSTDOWN;
@@ -348,6 +349,9 @@ static void n1x_adsp_period_receive(struct n1x_adsp *dsp, const u8 *packet)
 		err = dsp->ipc_error ?: -EPROTO;
 	else if (atomic_read(&dsp->power_error))
 		err = -EHOSTDOWN;
+	else if (dsp->capture)
+		err = n1x_adsp_pcm_capture_decode(&position, &dsp->primary_position,
+						 &dsp->primary_host_pcm, packet, ADSP_RX_BYTES);
 	else
 		err = n1x_adsp_pcm_consume_decode(&position, &dsp->primary_position,
 						 &dsp->primary_host_pcm, packet, ADSP_RX_BYTES);
@@ -360,7 +364,8 @@ static void n1x_adsp_period_receive(struct n1x_adsp *dsp, const u8 *packet)
 		position = dsp->primary_position;
 	} else {
 		dsp->primary_position = position;
-		dsp->primary_read_address = n1x_adsp_pcm_get64(packet + 0x30);
+		if (!dsp->capture)
+			dsp->primary_read_address = n1x_adsp_pcm_get64(packet + 0x30);
 	}
 	period = dsp->primary_period;
 	data = dsp->primary_period_data;
@@ -562,6 +567,9 @@ static DEVICE_ATTR_WO(boot);
 
 static int n1x_adsp_primary_route(struct n1x_adsp *dsp)
 {
+	static const char * const capture_endpoints[] = {
+		"acpi-asd-microphone-subproperties",
+	};
 	static const char * const endpoints[] = {
 		"acpi-asd-speaker-subproperties",
 		"acpi-asd-headphone-subproperties",
@@ -580,12 +588,12 @@ static int n1x_adsp_primary_route(struct n1x_adsp *dsp)
 	err = device_property_read_u32(asd, "acpi-asd-endpoint-list", &mask);
 	if (err)
 		goto put;
-	if (version != 1 || (mask & 5) != 5) {
+	if (version != 1 || (mask & (dsp->capture ? 2 : 5)) != (dsp->capture ? 2 : 5)) {
 		err = -EOPNOTSUPP;
 		goto put;
 	}
-	for (i = 0; i < ARRAY_SIZE(endpoints); i++) {
-		struct fwnode_handle *node = device_get_named_child_node(asd, endpoints[i]);
+	for (i = 0; i < (dsp->capture ? ARRAY_SIZE(capture_endpoints) : ARRAY_SIZE(endpoints)); i++) {
+		struct fwnode_handle *node = device_get_named_child_node(asd, dsp->capture ? capture_endpoints[i] : endpoints[i]);
 
 		if (!node) {
 			err = -ENODEV;
@@ -595,13 +603,13 @@ static int n1x_adsp_primary_route(struct n1x_adsp *dsp)
 		fwnode_handle_put(node);
 		if (err)
 			goto put;
-		if (route != 2 || (selected && selected != route)) {
+		if (route != n1x_adsp_pcm_route(dsp->capture) || (selected && selected != route)) {
 			err = -EOPNOTSUPP;
 			goto put;
 		}
 		selected = route;
 	}
-	err = dsp->target->image_id == 0xc0303 ? 0 : -ENODEV;
+	err = dsp->target->image_id == (dsp->capture ? 0xc0304 : 0xc0303) ? 0 : -ENODEV;
 put:
 	put_device(asd);
 	return err;
@@ -614,7 +622,7 @@ static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *dsp)
 	struct n1x_adsp_ipc_reply reply;
 	struct n1x_adsp_ipc_header header;
 	struct n1x_adsp_ipc_request request = {
-		.channel = ADSP_PRIMARY_TASK,
+		.channel = n1x_adsp_pcm_host_task(dsp->capture),
 		.data_mode = 1,
 		.ack_mode = 1,
 		.parameter1 = 32,
@@ -661,7 +669,7 @@ static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *dsp)
 		if (err)
 			goto failed;
 		n1x_adsp_ipc_decode(&header, reply.packet, sizeof(reply.packet));
-		if (header.channel != ADSP_PRIMARY_TASK || header.command != commands[i]) {
+		if (header.channel != n1x_adsp_pcm_host_task(dsp->capture) || header.command != commands[i]) {
 			err = -EPROTO;
 			n1x_adsp_ipc_fail(dsp, err);
 			goto failed;
@@ -910,6 +918,7 @@ static int n1x_adsp_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	dsp->dev = dev;
 	dsp->target = &targets[i];
+	dsp->capture = dsp->target->image_id == 0xc0304;
 	dsp->firmware = dsp->target->firmware;
 	err = n1x_adsp_get_provider(dsp);
 	if (err)
@@ -1317,7 +1326,8 @@ int n1x_adsp_transfer(struct device *dev,
 
 	if (!dev || !request || !reply)
 		return -EINVAL;
-	if (request->channel == ADSP_PRIMARY_TASK || request->channel == ADSP_PROCESSING_TASK)
+	if (request->channel == 7 || request->channel == 16 ||
+	    request->channel == 21 || request->channel == 23)
 		return -EOPNOTSUPP;
 	device_lock(dev);
 	if (dev->driver != &n1x_adsp_driver.driver) {
@@ -1430,7 +1440,7 @@ struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev)
 		goto free;
 	/* An unsuccessful OPEN can leave the remote task active. */
 	dsp->primary_task_active = true;
-	err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 1, 0);
+	err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_host_task(dsp->capture), 1, 0);
 	if (err) {
 		dsp->primary_task_error = err;
 		goto free;
@@ -1489,15 +1499,15 @@ int n1x_adsp_primary_close(struct n1x_adsp_primary *primary)
 	if (!err && dsp->primary_start_attempted && !dsp->primary_stopped)
 		err = n1x_adsp_primary_stop_locked(dsp);
 	if (!err && !dsp->primary_restore_pending)
-		err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 9, 0);
+		err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_host_task(dsp->capture), 9, 0);
 	if (!err && !dsp->primary_restore_pending)
-		err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 2, 0);
+		err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_host_task(dsp->capture), 2, 0);
 	if (!err && dsp->processing_active) {
-		err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 9, 0);
+		err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 9, 0);
 		if (!err)
-			err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 0x202, 1);
+			err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x202, 1);
 		if (!err)
-			err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 2, 0);
+			err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 2, 0);
 	}
 	if (err)
 		dsp->primary_task_error = err;
@@ -1543,9 +1553,14 @@ static int n1x_adsp_primary_descriptor(struct n1x_adsp *dsp, u8 channel, u16 com
 	struct n1x_adsp_ipc_reply reply;
 	int err;
 
-	if (channel == ADSP_PRIMARY_TASK) {
+	if (channel == n1x_adsp_pcm_host_task(dsp->capture)) {
 		address = cpu_to_le64(dsp->dma);
 		memcpy(dsp->dram, descriptor, N1X_ADSP_PCM_BYTES);
+		dma_wmb();
+	} else if (dsp->capture) {
+		address = cpu_to_le64(dsp->dma + ADSP_PRIMARY_BUFFERS * ADSP_MESSAGE_BYTES);
+		memcpy(dsp->dram + ADSP_PRIMARY_BUFFERS * ADSP_MESSAGE_BYTES,
+		       descriptor, N1X_ADSP_PCM_BYTES);
 		dma_wmb();
 	} else {
 		address = cpu_to_le64(dsp->processing_address);
@@ -1564,9 +1579,55 @@ static int n1x_adsp_primary_descriptor(struct n1x_adsp *dsp, u8 channel, u16 com
 	return 0;
 }
 
+/* Capture processing task 21 uses two DRAM slices, as proven by the native
+ * message-allocation mask. Its storage belongs to this core's boot allocation.
+ */
+static int n1x_adsp_capture_processing_open(struct n1x_adsp *dsp)
+{
+	struct n1x_adsp_ipc_request request = {
+		.channel = 21, .data_mode = 1, .ack_mode = 1, .parameter1 = 32,
+	};
+	struct n1x_adsp_ipc_reply reply;
+	struct n1x_adsp_ipc_header header;
+	unsigned int i;
+	int err;
+
+	if (dsp->processing_active)
+		return -EBUSY;
+	dsp->primary_pcm_attempted = true;
+	if (!dsp->processing_registered) {
+		memset(dsp->dram + ADSP_PRIMARY_BUFFERS * ADSP_MESSAGE_BYTES,
+		       0, 2 * ADSP_MESSAGE_BYTES);
+		for (i = 0; i < 2; i++) {
+			unsigned int offset = (ADSP_PRIMARY_BUFFERS + i) * ADSP_MESSAGE_BYTES;
+			__le64 payload[4] = {
+				cpu_to_le64(dsp->dma + offset),
+				cpu_to_le64((unsigned long)(dsp->dram + offset)),
+				cpu_to_le64(ADSP_MESSAGE_BYTES), 0,
+			};
+
+			request.command = 5 + i;
+			request.payload = (const u8 *)payload;
+			/* Register only after clearing both task-owned messages. */
+			dma_wmb();
+			err = n1x_adsp_transfer_locked(dsp, &request, &reply);
+			if (err)
+				return err;
+			n1x_adsp_ipc_decode(&header, reply.packet, sizeof(reply.packet));
+			if (header.channel != 21 || header.command != request.command) {
+				n1x_adsp_ipc_fail(dsp, -EPROTO);
+				return -EPROTO;
+			}
+		}
+		dsp->processing_registered = true;
+	}
+	dsp->processing_active = true;
+	return n1x_adsp_primary_command(dsp, 21, 1, 0);
+}
+
 /* The route-2 playback chain has one SRAM-backed processing task. */
-static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
-				   struct mt8901_afe_sram_buffer *peer)
+static int n1x_adsp_playback_processing_open(struct n1x_adsp *dsp,
+					    struct mt8901_afe_sram_buffer *peer)
 {
 	typeof(mt8901_afe_sram_reserve_ipc) *reserve = symbol_get(mt8901_afe_sram_reserve_ipc);
 	typeof(mt8901_afe_sram_view) *view = symbol_get(mt8901_afe_sram_view);
@@ -1576,7 +1637,7 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 	struct mt8901_afe_sram_buffer *messages = NULL;
 	struct mt8901_afe_sram_view memory;
 	struct n1x_adsp_ipc_request request = {
-		.channel = ADSP_PROCESSING_TASK, .data_mode = 1, .ack_mode = 1,
+		.channel = n1x_adsp_pcm_processing_task(dsp->capture), .data_mode = 1, .ack_mode = 1,
 		.parameter1 = 32,
 	};
 	struct n1x_adsp_ipc_reply reply;
@@ -1650,7 +1711,7 @@ register_messages:
 		if (err)
 			goto put;
 		n1x_adsp_ipc_decode(&header, reply.packet, sizeof(reply.packet));
-		if (header.channel != ADSP_PROCESSING_TASK || header.command != request.command) {
+		if (header.channel != n1x_adsp_pcm_processing_task(dsp->capture) || header.command != request.command) {
 			err = -EPROTO;
 			n1x_adsp_ipc_fail(dsp, err);
 			goto put;
@@ -1659,7 +1720,7 @@ register_messages:
 	dsp->processing_registered = true;
 open:
 	dsp->processing_active = true;
-	err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 1, 0);
+	err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 1, 0);
 put:
 	if (messages)
 		release(messages);
@@ -1674,6 +1735,14 @@ put:
 	if (reserve)
 		symbol_put(mt8901_afe_sram_reserve_ipc);
 	return err;
+}
+
+static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
+				   struct mt8901_afe_sram_buffer *peer)
+{
+	if (dsp->capture)
+		return n1x_adsp_capture_processing_open(dsp);
+	return n1x_adsp_playback_processing_open(dsp, peer);
 }
 
 /* Reconstruct firmware tasks after a checked REINIT. Called under dsp->lock
@@ -1697,7 +1766,7 @@ static int n1x_adsp_primary_restore_locked(struct n1x_adsp *dsp)
 	if (err)
 		goto failed;
 	dsp->primary_task_active = true;
-	err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 1, 0);
+	err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_host_task(dsp->capture), 1, 0);
 	if (err)
 		goto failed;
 	if (dsp->primary_pcm_configured) {
@@ -1706,15 +1775,15 @@ static int n1x_adsp_primary_restore_locked(struct n1x_adsp *dsp)
 			goto failed;
 		err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_host_pcm);
 		if (!err)
-			err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 4, packet);
+			err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_host_task(dsp->capture), 4, packet);
 		if (!err)
 			err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_afe_pcm);
 		if (!err)
-			err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 0x201, packet);
+			err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x201, packet);
 		if (!err)
 			err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_bridge_pcm);
 		if (!err)
-			err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 4, packet);
+			err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 4, packet);
 		if (err)
 			goto failed;
 	}
@@ -1822,31 +1891,33 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 		goto unlock;
 	}
 	bytes = frames * params->channels * (params->sample_bits / 8);
-	if (dsp->target->image_id != 0xc0303) {
+	if (dsp->target->image_id != (dsp->capture ? 0xc0304 : 0xc0303)) {
 		err = -EOPNOTSUPP;
 		goto unlock;
 	}
-	if (!dsp->dram || dsp->target->dram_bytes < ADSP_PCM_OFFSET ||
-	    bytes > dsp->target->dram_bytes - ADSP_PCM_OFFSET) {
+	if (!dsp->dram || dsp->target->dram_bytes < n1x_adsp_pcm_offset(dsp->capture) ||
+	    bytes > dsp->target->dram_bytes - n1x_adsp_pcm_offset(dsp->capture)) {
 		err = -ERANGE;
 		goto unlock;
 	}
 	host = (struct n1x_adsp_pcm_config){
-		.address = dsp->dma + ADSP_PCM_OFFSET, .bytes = bytes,
+		.address = dsp->dma + n1x_adsp_pcm_offset(dsp->capture), .bytes = bytes,
 		.rate = params->rate, .channels = params->channels,
 		.sample_bits = params->sample_bits,
 		.period_frames = params->period_frames, .periods = params->periods,
 		/* ALSA has already selected when START is legal. Requiring a full
 		 * ring here can deadlock clients that prefill only part of the ring.
 		 */
-		.start_threshold = 1,
+		.start_threshold = dsp->capture ? 0 : 1,
+		.direction = dsp->capture ? 2 : 1,
 	};
 	hardware = (struct n1x_adsp_pcm_config){
 		.address = dsp->target->image_id == 0xc0303 ? afe.memory.afe_address : afe.memory.dsp_address,
 		.bytes = afe.memory.bytes, .rate = afe.rate, .channels = afe.channels,
 		.sample_bits = afe.sample_bits, .period_frames = afe.period_frames,
 		.periods = afe.periods, .hardware = 1, .memif = afe.memif, .irq = afe.irq,
-		.start_threshold = 1,
+		.start_threshold = dsp->capture ? 0 : 1,
+		.direction = dsp->capture ? 2 : 1,
 	};
 	err = n1x_adsp_pcm_encode(host_packet, sizeof(host_packet), &host);
 	if (!err)
@@ -1863,12 +1934,12 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 			goto failed;
 		goto unlock;
 	}
-	memset(dsp->dram + ADSP_PCM_OFFSET, 0, host.bytes);
+	memset(dsp->dram + n1x_adsp_pcm_offset(dsp->capture), 0, host.bytes);
 	dsp->primary_host_pcm = host;
 	dsp->primary_afe_pcm = hardware;
 	dsp->primary_bridge_pcm = bridge;
 	dsp->primary_pcm_attempted = true;
-	err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 4, host_packet);
+	err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_host_task(dsp->capture), 4, host_packet);
 	if (err)
 		goto failed;
 	err = retained ? 0 : publish(buffer);
@@ -1881,9 +1952,9 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	err = retention(buffer);
 	if (err)
 		goto failed;
-	err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 0x201, afe_packet);
+	err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x201, afe_packet);
 	if (!err)
-		err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 4, bridge_packet);
+		err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 4, bridge_packet);
 	if (err)
 		goto failed;
 	if (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)) {
@@ -2009,7 +2080,8 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
 	    !dsp->primary_pcm_configured || !dsp->primary_sram ||
-	    !dsp->processing_active || !dsp->processing_messages || !dsp->processing_area) {
+	    !dsp->processing_active ||
+	    (!dsp->capture && (!dsp->processing_messages || !dsp->processing_area))) {
 		err = -EINVAL;
 		goto unlock;
 	}
@@ -2042,13 +2114,13 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 		goto unlock;
 	err = prepare(dsp->primary_sram);
 	if (!err)
-		err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 0x203, afe_packet);
+		err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x203, afe_packet);
 	if (!err)
-		err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 3, bridge_packet);
+		err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 3, bridge_packet);
 	if (!err)
-		err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 0x203, host_packet);
+		err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_host_task(dsp->capture), 0x203, host_packet);
 	if (!err)
-		err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 3, host_packet);
+		err = n1x_adsp_primary_descriptor(dsp, n1x_adsp_pcm_host_task(dsp->capture), 3, host_packet);
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (!err)
@@ -2115,7 +2187,7 @@ int n1x_adsp_primary_pcm_view(struct n1x_adsp_primary *primary,
 	else if (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error))
 		err = -ENOTRECOVERABLE;
 	else {
-		view->area = dsp->dram + ADSP_PCM_OFFSET;
+		view->area = dsp->dram + n1x_adsp_pcm_offset(dsp->capture);
 		view->bytes = dsp->primary_host_pcm.bytes;
 		err = 0;
 	}
@@ -2141,15 +2213,15 @@ static int n1x_adsp_primary_stop_locked(struct n1x_adsp *dsp)
 	stop_irq = symbol_get(mt8901_afe_sram_stop_irq);
 	if (!stop_irq)
 		return -EOPNOTSUPP;
-	err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 0x10, 0);
+	err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_host_task(dsp->capture), 0x10, 0);
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (!err)
-		err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 0x10, 0);
+		err = n1x_adsp_primary_command(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x10, 0);
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (!err)
-		err = stop_irq(dsp->primary_sram, 3);
+		err = stop_irq(dsp->primary_sram, n1x_adsp_pcm_route(dsp->capture));
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (err) {
@@ -2225,7 +2297,8 @@ static int n1x_adsp_primary_trigger(struct n1x_adsp_primary *primary, bool start
 		err = -EALREADY;
 		goto unlock;
 	}
-	if (!dsp->primary_write_publications || !READ_ONCE(dsp->primary_period_enabled)) {
+	if ((!dsp->capture && !dsp->primary_write_publications) ||
+	    !READ_ONCE(dsp->primary_period_enabled)) {
 		err = -ENODATA;
 		goto unlock;
 	}
@@ -2233,7 +2306,8 @@ static int n1x_adsp_primary_trigger(struct n1x_adsp_primary *primary, bool start
 	if (err)
 		goto unlock;
 	if (afe.abi_version != 2 || !afe.published || !afe.irq_prepared ||
-	    afe.memory.afe_address != dsp->primary_afe_pcm.address ||
+	    (dsp->capture ? afe.memory.dsp_address : afe.memory.afe_address) !=
+							 dsp->primary_afe_pcm.address ||
 	    afe.memory.bytes != dsp->primary_afe_pcm.bytes ||
 	    afe.memif != dsp->primary_afe_pcm.memif || afe.irq != dsp->primary_afe_pcm.irq ||
 	    afe.rate != dsp->primary_afe_pcm.rate || afe.channels != dsp->primary_afe_pcm.channels ||
@@ -2245,13 +2319,25 @@ static int n1x_adsp_primary_trigger(struct n1x_adsp_primary *primary, bool start
 	}
 	/* Route-2 normal playback mode 0; routing is owned by the Linux audio client. */
 	dsp->primary_start_attempted = true;
-	err = n1x_adsp_primary_control(dsp, ADSP_PROCESSING_TASK, 0x0f, 0, 0);
+	err = n1x_adsp_primary_control(dsp, n1x_adsp_pcm_processing_task(dsp->capture), 0x0f, 0,
+					       dsp->capture ? 1 : 0);
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (!err)
 		err = READ_ONCE(dsp->primary_period_error);
+	if (!err && dsp->capture)
+		err = n1x_adsp_primary_control(dsp, n1x_adsp_pcm_host_task(true),
+					       0x1f, n1x_adsp_pcm_processing_task(true), 0);
+	/* The native capture START always sends selector 0x30 after linking its
+	 * processing task. With no optional client table its zero-length copy
+	 * leaves the last prepared host message intact; do not invent a table.
+	 */
+	if (!err && dsp->capture)
+		err = n1x_adsp_primary_control(dsp, n1x_adsp_pcm_host_task(true), 0x11, 0x30, 0);
 	if (!err)
-		err = n1x_adsp_primary_control(dsp, ADSP_PRIMARY_TASK, 0x0f, 0, ADSP_PROCESSING_TASK);
+		err = n1x_adsp_primary_control(dsp, n1x_adsp_pcm_host_task(dsp->capture),
+					       0x0f, dsp->capture ? 1 : 0,
+					       n1x_adsp_pcm_processing_task(dsp->capture));
 	if (!err && (READ_ONCE(dsp->ipc_poisoned) || atomic_read(&dsp->power_error)))
 		err = -EIO;
 	if (!err)
@@ -2303,6 +2389,10 @@ int n1x_adsp_primary_commit(struct n1x_adsp_primary *primary, u32 byte_offset)
 	err = mutex_lock_interruptible(&dsp->lock);
 	if (err)
 		goto unlock_device;
+	if (dsp->capture) {
+		err = -EOPNOTSUPP;
+		goto unlock;
+	}
 	if (dsp->sleep_prepared) {
 		err = -EBUSY;
 		goto unlock;
@@ -2433,6 +2523,7 @@ struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *dev,
 	struct n1x_adsp_primary *primary;
 	struct device_link *link;
 	struct device *card;
+	struct n1x_adsp *dsp;
 
 	if (!dev || !substream)
 		return ERR_PTR(-EINVAL);
@@ -2443,6 +2534,15 @@ struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *dev,
 	symbol_put(mt8901_afe_pcm_card_device);
 	if (IS_ERR_OR_NULL(card))
 		return card ? ERR_CAST(card) : ERR_PTR(-ENODEV);
+	device_lock(dev);
+	dsp = dev_get_drvdata(dev);
+	if (dev->driver != &n1x_adsp_driver.driver ||
+	    !dsp || dsp->capture != (substream->stream == SNDRV_PCM_STREAM_CAPTURE)) {
+		device_unlock(dev);
+		put_device(card);
+		return ERR_PTR(-ENODEV);
+	}
+	device_unlock(dev);
 	link = device_link_add(card, dev, DL_FLAG_STATELESS);
 	put_device(card);
 	if (!link)
@@ -2472,7 +2572,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.23");
+MODULE_VERSION("0.1.24");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

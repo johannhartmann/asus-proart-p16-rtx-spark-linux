@@ -1,22 +1,22 @@
-Subject: [PATCH] ASoC: mediatek: mt8901: add DSP playback and SRAM ownership
+Subject: [PATCH] ASoC: mediatek: mt8901: add DSP duplex audio and SRAM ownership
 
 Provide exclusive, aligned SRAM leases through the AFE owner on the
 firmware-described SRAM layout. Each lease retains device, module and
-runtime-PM references. Refuse forced suspend while leases exist and
+runtime-PM references. Require retention votes for system sleep and
 disable manual driver detachment. Published buffers remain retained
 until reboot; whole-core quiesce and release are separate work.
 
-Add an optional DL0 DSP client to the existing AFE/SoundWire route.
-Copy committed application frames into the owned DSP host ring and
+Add opt-in DL0/DL1 playback and UL1 capture to the AFE/SoundWire route.
+Copy playback commits and capture notifications through owned rings and
 defer complete-period notifications to workqueue context. Synchronize
 listeners and drain work before retiring borrowed ALSA pointers.
-The experimental path is disabled by default and lacks hardware
+The duplex path is disabled by default and still needs complete hardware
 streaming qualification.
 
 ---
 --- /dev/null
 +++ b/include/sound/mt8901-afe-sram.h
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,145 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef MT8901_AFE_SRAM_H
 +#define MT8901_AFE_SRAM_H
@@ -44,8 +44,8 @@ streaming qualification.
 +	bool published, irq_prepared;
 +};
 +
-+/* Return a referenced, instantiated sound-card device for a real owned DL0
-+ * playback stream, or ERR_PTR(). No firmware or power operation. The caller
++/* Return a referenced, instantiated sound-card device for a real owned DL0/DL1
++ * playback or UL1 capture stream, or ERR_PTR(). No firmware or power operation. The caller
 + * serializes stream lifetime and must put_device() the returned reference.
 + */
 +struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream);
@@ -76,7 +76,7 @@ streaming qualification.
 +int mt8901_afe_sram_view(struct mt8901_afe_sram_buffer *buffer,
 +			struct mt8901_afe_sram_view *view);
 +
-+/* Bind an unpublished lease during non-running playback stream setup, after
++/* Bind an unpublished lease during non-running PCM stream setup, after
 + * the AFE DAI's hw_params. Derives memif, IRQ and format from that substream;
 + * its complete ring must fit the reservation. A bound memif cannot start
 + * another substream until the lease is released. The caller serializes ALSA
@@ -87,8 +87,9 @@ streaming qualification.
 +
 +/* Reattach a retired, published lease after acknowledged DSP HWFREE/CLOSE.
 + * The DSP owner alone may call this; it must serialize task and stream state.
-+ * Requires the same memif/IRQ, an idle IRQ, healthy owner state and a complete
-+ * ring fitting the original allocation. No memory or PM references are freed.
++ * Allows DL0/DL1 playback rebinding or unchanged UL1 capture. Requires idle
++ * old/new IRQs and memifs, healthy owner state and a ring fitting the allocation.
++ * No memory or PM references are freed.
 + */
 +int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
 +			   struct snd_pcm_substream *substream);
@@ -117,9 +118,10 @@ streaming qualification.
 + */
 +int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer);
 +
-+/* After acknowledged task STOPs, disable the owned DL0 memif, disable/clear
-+ * its IRQ and remove its MCU and HiFi1 target bits. core must be native
-+ * enum 3 (HiFi1). Allows the still-running ALSA STOP callback, but requires
++/* After acknowledged task STOPs, disable the owned memif, disable/clear
++ * its IRQ and remove its MCU and DSP target bits. The route argument is
++ * endpoint enum 2 for HiFi1 or 3 for primary HiFi5, not a task-core enum.
++ * Allows the still-running ALSA STOP callback, but requires
 + * unchanged ownership and
 + * format. Repeated success writes nothing; failed I/O is terminal. Does not
 + * prove whole-core quiescence; no published memory may be released. The caller
@@ -136,7 +138,8 @@ streaming qualification.
 +
 +/* Call after binding and before publishing a buffer address to firmware or
 + * hardware. A published lease cannot be released by the current API and blocks
-+ * AFE suspend until reboot.
++ * AFE runtime suspend. System sleep requires every owner
++ * to participate in the retained-SRAM protocol.
 + * Service acknowledgements do not establish whole-core DMA quiescence.
 + */
 +int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer);
@@ -161,7 +164,7 @@ streaming qualification.
 +#endif
 --- /dev/null
 +++ b/include/sound/n1x_adsp_client.h
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,218 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef N1X_ADSP_CLIENT_H
 +#define N1X_ADSP_CLIENT_H
@@ -213,11 +216,11 @@ streaming qualification.
 +}
 +#endif
 +
-+#define N1X_ADSP_PRIMARY_ABI 2U
++#define N1X_ADSP_PRIMARY_ABI 3U
 +
-+/* Query the typed playback client contract before opening a task. No firmware
-+ * access. ABI 2 adds retained-ring rebind, successful close/open reuse and
-+ * STOP/PREPARE/START recovery to the original position/retirement contract.
++/* Query the typed PCM client contract before opening a task. No firmware
++ * access. ABI 3 adds route-3 HiFi5 capture, DL1 playback and independent duplex
++ * owners to ABI 2's retained-ring and STOP/PREPARE/START contract.
 + */
 +__u32 n1x_adsp_primary_abi(void);
 +
@@ -240,16 +243,15 @@ streaming qualification.
 + * The client validates the service reply and retains any published buffers
 + * until that service's release contract is satisfied. Errors are not retryable.
 + * The reply is unchanged on error. This call sleeps and requires process context.
-+ * Tasks 7 and 16 must use the dedicated playback lifecycle API below.
++ * Tasks 7/16 and 23/21 must use the dedicated PCM lifecycle API below.
 + */
 +int n1x_adsp_transfer(struct device *dev,
 +		      const struct n1x_adsp_ipc_request *request,
 +		      struct n1x_adsp_ipc_reply *reply);
 +
-+/* Register the primary playback task's four message buffers on the core
-+ * selected by the speaker/headphone firmware properties (route 2, HiFi1).
-+ * Route 3 selects a different native task graph and is not implemented here.
-+ * Registered buffers
++/* Register the primary task's four message buffers: task 7 on route 2
++ * (HiFi1 playback), or task 23 on route 3 (primary HiFi5 capture). The core
++ * and firmware endpoint properties must agree. Registered buffers
 + * remain owned by the DSP boot allocation; this call does not open a stream.
 + * Repeated calls after success reuse the registration. A failed sequence
 + * cannot be replayed or release its buffers. This call sleeps.
@@ -264,8 +266,8 @@ streaming qualification.
 + */
 +struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
 +
-+/* ALSA frontend variant. Validates an actual AFE-owned playback substream and
-+ * retains a card-to-DSP system-PM link until close. Even an unconfigured open
++/* ALSA frontend variant. Validates an AFE-owned DL0/DL1 playback or UL1
++ * capture substream and retains a card-to-DSP system-PM link until close. Even an unconfigured open
 + * stream is ordered before DSP D3. Legacy open() clients have no such grant.
 + * Does not bypass the exclusive OPEN, firmware or lifetime checks; sleeps.
 + */
@@ -279,8 +281,9 @@ streaming qualification.
 +int n1x_adsp_primary_rebind(struct n1x_adsp_primary *primary,
 +			    struct snd_pcm_substream *substream);
 +
-+/* Register and open processing task 16 with AFE-owned SRAM message memory,
-+ * then configure the task-7 host ring, task-16 AFE ring and bridge with
++/* Register and open processing task 16 (playback, SRAM messages) or task 21
++ * (capture, boot-owned DRAM messages), then configure the primary host ring,
++ * processing AFE ring and bridge with
 + * commands 4, 0x201 and 4. Sends no PREPARE or START. The AFE must remain in
 + * non-running stream setup, serialized by the caller. Host and AFE formats
 + * must match; period sizes/counts may differ. Missing AFE support is rejected
@@ -297,9 +300,9 @@ streaming qualification.
 +			       const struct n1x_adsp_primary_pcm_params *params,
 +			       struct mt8901_afe_sram_buffer **sram);
 +
-+/* Prepare task 16 with commands 0x203 (hardware) and 3 (bridge), then task 7
-+ * with commands 0x203 and 3 (both host). Revalidates the published AFE endpoint
-+ * during non-running ALSA setup;
++/* Prepare the processing task with commands 0x203 (hardware) and 3 (bridge),
++ * then the primary task with commands 0x203 and 3 (both host). Revalidates the
++ * published AFE endpoint during non-running ALSA setup;
 + * the caller serializes setup/teardown. Repeated success sends no further IPC.
 + * A firmware-stage failure is terminal and retains both rings. This does not
 + * enable the AFE memif, start a stream or release DMA. Before DSP PREPARE,
@@ -317,19 +320,20 @@ streaming qualification.
 +int n1x_adsp_primary_pcm_view(struct n1x_adsp_primary *primary,
 +			      struct n1x_adsp_primary_pcm_view *view);
 +
-+/* Publish a prepared host ring's write cursor after filling samples through
-+ * pcm_view. The caller owns availability and serializes sample writes/handle
++/* Publish a prepared playback host ring's write cursor after filling samples
++ * through pcm_view. The caller owns availability and serializes sample writes/handle
 + * lifetime. byte_offset is frame-aligned and may equal the ring size.
 + * Orders completed sample writes before the registered descriptor, preserving
 + * the last validated read address and advancing the write-generation counter.
 + * Sends no mailbox command. A late power error can follow publication; that
 + * error is terminal and the client must not retry or release published memory.
-+ * Requires process context. This call sleeps.
++ * Capture rejects this call with EOPNOTSUPP. Requires process context; sleeps.
 + */
 +int n1x_adsp_primary_commit(struct n1x_adsp_primary *primary, __u32 byte_offset);
 +
-+/* Start the prepared route-2 task-16/task-7 chain in normal playback mode 0.
-+ * Requires published samples and AFE endpoint ABI 2 IRQ readiness. The Linux
++/* Start the prepared route-2 task-16/task-7 playback or route-3 task-21/23
++ * capture chain. Playback requires published samples; both require AFE
++ * endpoint ABI 2 IRQ readiness. The Linux
 + * audio client owns its DAPM/codec routing; this call does not program a gain
 + * or channel merge or enable a CPU memif. Repeated success sends no IPC.
 + * Firmware-stage failures are terminal and may leave hardware active.
@@ -337,16 +341,16 @@ streaming qualification.
 + */
 +int n1x_adsp_primary_start(struct n1x_adsp_primary *primary);
 +
-+/* STOP task 7 then task 16, then disable/clear the owned HiFi1 IRQ. Successful
++/* STOP the primary then processing task, then disable/clear the owned IRQ. Successful
 + * repetition sends no IPC or register writes. Synchronizes and detaches the
 + * period listener; the client must drain its own queued work before freeing
 + * listener data. Does not release memory or prove core quiescence. Restart
-+ * requires a fresh PREPARE, listener and sample publication; no buffers are freed.
++ * requires a fresh PREPARE, listener and, for playback, sample publication; no buffers are freed.
 + * A failed request is terminal. Requires process context; sleeps.
 + */
 +int n1x_adsp_primary_stop(struct n1x_adsp_primary *primary);
 +
-+/* Register one consumed-data listener, or pass NULL to detach it. The listener runs
++/* Register one playback-consumed or capture-produced data listener, or pass NULL to detach it. The listener runs
 + * in IRQ context and must not sleep or call sleeping DSP APIs. Its position
 + * snapshot is valid only during the call. A negative error reports a rejected
 + * notification; no buffer address from that packet is used.
@@ -507,7 +511,7 @@ streaming qualification.
 +#endif
 --- /dev/null
 +++ b/include/sound/n1x_adsp_pcm.h
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,277 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef N1X_ADSP_PCM_H
 +#define N1X_ADSP_PCM_H
@@ -515,6 +519,31 @@ streaming qualification.
 +#include "n1x_adsp_ipc.h"
 +
 +#define N1X_ADSP_PCM_BYTES 96U
++
++/* nvasd uses distinct task/core and endpoint/IRQ-route enums. Route 2 is
++ * HiFi1 playback (tasks 7/16); route 3 is primary HiFi5 capture (23/21).
++ * Task 23 is the non-RAW microphone client selected by its stream constructor.
++ */
++static inline unsigned int n1x_adsp_pcm_host_task(bool capture)
++{
++	return capture ? 23 : 7;
++}
++
++static inline unsigned int n1x_adsp_pcm_processing_task(bool capture)
++{
++	return capture ? 21 : 16;
++}
++
++static inline unsigned int n1x_adsp_pcm_offset(bool capture)
++{
++	/* Four host messages, plus two DRAM processing messages for capture. */
++	return capture ? 8192 : 4096;
++}
++
++static inline unsigned int n1x_adsp_pcm_route(bool capture)
++{
++	return capture ? 3 : 2;
++}
 +
 +struct n1x_adsp_pcm_config {
 +	__u64 address;
@@ -524,8 +553,10 @@ streaming qualification.
 +	__u32 sample_bits;
 +	__u32 period_frames;
 +	__u32 periods;
-+	/* Zero preserves the native full-ring default; ALSA starts explicitly. */
++	/* Zero preserves full-ring playback prefill; capture uses zero threshold. */
 +	__u32 start_threshold;
++	/* Native direction: 1 playback (also the zero-initialized default), 2 capture. */
++	__u8 direction;
 +	__u8 hardware;
 +	__u8 memif;
 +	__u8 irq;
@@ -548,7 +579,7 @@ streaming qualification.
 +	n1x_adsp_ipc_put32(p + 4, value >> 32);
 +}
 +
-+/* Encode a primary-playback descriptor, without publishing it. The caller
++/* Encode a primary PCM descriptor, without publishing it. The caller
 + * owns the complete address extent and must establish its device-visible
 + * mapping, endpoint format support and hardware memif/IRQ assignment.
 + * Sample width is the container size in bits, not an ALSA format enum.
@@ -571,6 +602,7 @@ streaming qualification.
 +	    (config->sample_bits != 16 && config->sample_bits != 32) ||
 +	    !config->period_frames || config->period_frames > 0x7fffffff ||
 +	    config->periods < 2 || config->periods > 0x7fffffff ||
++	    config->direction > 2 || (config->direction == 2 && config->start_threshold) ||
 +	    config->hardware > 1 || config->memif > 15 || config->irq > 15 ||
 +	    (!config->hardware && (config->memif || config->irq)))
 +		return -EINVAL;
@@ -592,8 +624,9 @@ streaming qualification.
 +	n1x_adsp_ipc_put32(prepared + 48, config->sample_bits);
 +	n1x_adsp_ipc_put32(prepared + 52, config->rate);
 +	n1x_adsp_ipc_put32(prepared + 56, config->channels);
-+	n1x_adsp_ipc_put32(prepared + 60, 1);
-+	n1x_adsp_ipc_put32(prepared + 64, config->start_threshold ?: frames);
++	n1x_adsp_ipc_put32(prepared + 60, config->direction ?: 1);
++	n1x_adsp_ipc_put32(prepared + 64, config->direction == 2 ? 0 :
++			 config->start_threshold ?: frames);
 +	n1x_adsp_ipc_put32(prepared + 68, 0xffffffff);
 +	n1x_adsp_ipc_put32(prepared + 72, config->period_frames);
 +	n1x_adsp_ipc_put32(prepared + 76, config->periods);
@@ -703,6 +736,58 @@ streaming qualification.
 +	return 0;
 +}
 +
++/* Native IRQUL (0x13) reports a cyclic capture producer at descriptor +24.
++ * Unlike DL_CONSUME_DATA, its counter is not used for stale-message filtering.
++ * No host consumer IPC is emitted by the pinned Windows capture engine.
++ */
++static inline int
++n1x_adsp_pcm_capture_decode(struct n1x_adsp_pcm_position *position,
++			   const struct n1x_adsp_pcm_position *previous,
++			   const struct n1x_adsp_pcm_config *config,
++			   const __u8 *packet, size_t bytes)
++{
++	struct n1x_adsp_ipc_header header;
++	struct n1x_adsp_pcm_position next;
++	__u64 address, offset;
++	__u32 frame_bytes;
++	int err;
++
++	if (!position || !previous || !config)
++		return -EINVAL;
++	err = n1x_adsp_ipc_decode(&header, packet, bytes);
++	if (err)
++		return err;
++	if (header.message_class || header.ack_mode || header.channel != 23 ||
++	    header.command != 0x13)
++		return -ENOMSG;
++	if (header.data_mode != 1 || header.parameter1 < N1X_ADSP_PCM_BYTES ||
++	    header.parameter1 > N1X_ADSP_IPC_PAYLOAD_BYTES)
++		return -EMSGSIZE;
++	if (!config->address || !config->bytes || !config->channels ||
++	    config->channels > 2 || (config->sample_bits != 16 && config->sample_bits != 32) ||
++	    config->address > ~(__u64)0 - config->bytes)
++		return -EINVAL;
++	frame_bytes = config->channels * (config->sample_bits / 8);
++	if (config->bytes % frame_bytes)
++		return -EINVAL;
++	address = n1x_adsp_pcm_get64(packet + 0x38);
++	if (address < config->address || address > config->address + config->bytes)
++		return -ERANGE;
++	offset = address - config->address;
++	if (offset % frame_bytes)
++		return -ERANGE;
++	if (previous->notifications == ~(__u64)0)
++		return -EOVERFLOW;
++	next = (struct n1x_adsp_pcm_position) {
++		.notifications = previous->notifications + 1,
++		.byte_offset = offset == config->bytes ? 0 : offset,
++		.valid = true,
++		.at_end = offset == config->bytes,
++	};
++	*position = next;
++	return 0;
++}
++
 +#endif
 --- a/sound/soc/mediatek/Kconfig
 +++ b/sound/soc/mediatek/Kconfig
@@ -770,11 +855,11 @@ streaming qualification.
 +
  struct mt8901_afe_private {
 +	struct mt8901_afe_sram *sram;
-+	struct mt8901_afe_dsp *dsp;
++	struct mt8901_afe_dsp *dsp[2];
  	u32 hw_ver;               /* acpi-asd-hw-ver from _DSD */
  	struct mtk_dai_memif_irq_priv irq_priv[MT8901_AFE_IRQ_NUM];
  	int pm_runtime_bypass_reg_ctl;
-@@ -86,6 +91,22 @@
+@@ -86,6 +91,24 @@
  	/* dai */
  	void *dai_priv[MT8901_DAI_NUM];
  };
@@ -791,6 +876,8 @@ streaming qualification.
 +void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);
 +
 +int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);
++void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,
++			      struct snd_pcm_substream *substream);
 +
 +int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,
 +			    struct snd_soc_dai *dai);
@@ -799,8 +886,9 @@ streaming qualification.
  /* dai register */
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-dsp.c
-@@ -0,0 +1,477 @@
+@@ -0,0 +1,598 @@
 +// SPDX-License-Identifier: GPL-2.0-only
++#include <linux/dma-mapping.h>
 +#include <linux/err.h>
 +#include <linux/interrupt.h>
 +#include <linux/module.h>
@@ -819,13 +907,17 @@ streaming qualification.
 +/* The processing task also needs two independently retained 1 KiB IPC slices. */
 +#define MT8901_DSP_IPC_BYTES 2048U
 +
++static bool dsp_capture;
++module_param(dsp_capture, bool, 0400);
++MODULE_PARM_DESC(dsp_capture, "Use firmware-backed HiFi5 capture on UL1; disabled by default");
++
 +static bool dsp_playback;
 +module_param(dsp_playback, bool, 0400);
-+MODULE_PARM_DESC(dsp_playback, "Use experimental route-2 DSP playback on DL0; disabled by default");
++MODULE_PARM_DESC(dsp_playback, "Use firmware-backed HiFi1 playback on DL0/DL1; disabled by default");
 +
 +bool mt8901_afe_dsp_enabled(void)
 +{
-+	return dsp_playback;
++	return dsp_playback || dsp_capture;
 +}
 +
 +struct mt8901_afe_dsp {
@@ -838,7 +930,8 @@ streaming qualification.
 +	bool period_pending;
 +	int notification_error;
 +	snd_pcm_uframes_t appl_ptr;
-+	bool configured, prepared, listening, closing, running, samples;
++	bool configured, prepared, listening, closing, running, samples, capture;
++	u32 capture_pending_bytes, capture_offset;
 +	int error;
 +	typeof(n1x_adsp_primary_abi) *abi;
 +	typeof(n1x_adsp_primary_open_pcm) *open;
@@ -860,7 +953,7 @@ streaming qualification.
 +	struct snd_soc_dai *dai = snd_soc_rtd_to_cpu(rtd, 0);
 +	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 +	struct mt8901_afe_private *priv = afe->platform_priv;
-+	struct mt8901_afe_dsp *dsp = priv->dsp;
++	struct mt8901_afe_dsp *dsp = priv->dsp[substream->stream];
 +
 +	return dsp && dsp->substream == substream ? dsp : NULL;
 +}
@@ -898,6 +991,60 @@ streaming qualification.
 +		symbol_put(n1x_adsp_primary_close);
 +}
 +
++/* Copy only firmware-produced capture bytes. Keep in-flight bytes counted
++ * until copying completes, so IRQ overrun detection also covers this window.
++ * The ALSA pointer is published after the DMA read and CPU copy, never before.
++ */
++static void mt8901_afe_dsp_capture_work(struct mt8901_afe_dsp *dsp)
++{
++	struct snd_pcm_runtime *runtime = dsp->substream->runtime;
++	unsigned long flags;
++	u32 bytes, offset, first;
++	bool elapsed;
++	int error;
++
++	for (;;) {
++		spin_lock_irqsave(&dsp->period_lock, flags);
++		bytes = dsp->capture_pending_bytes;
++		offset = dsp->capture_offset;
++		error = dsp->notification_error;
++		spin_unlock_irqrestore(&dsp->period_lock, flags);
++		if (READ_ONCE(dsp->closing) || !READ_ONCE(dsp->running))
++			return;
++		if (error) {
++			snd_pcm_stop_xrun(dsp->substream);
++			return;
++		}
++		if (!bytes)
++			return;
++		first = min_t(u32, bytes, dsp->view.bytes - offset);
++		/* Firmware samples precede its producer notification. */
++		dma_rmb();
++		memcpy(runtime->dma_area + offset, dsp->view.area + offset, first);
++		if (bytes > first)
++			memcpy(runtime->dma_area, dsp->view.area, bytes - first);
++		spin_lock_irqsave(&dsp->period_lock, flags);
++		error = dsp->notification_error;
++		if (!error) {
++			dsp->capture_pending_bytes -= bytes;
++			dsp->period_remainder += bytes;
++			elapsed = dsp->period_remainder >= dsp->period_bytes;
++			dsp->period_remainder %= dsp->period_bytes;
++			/* The stream lock cannot be acquired from the IRQ path. */
++			smp_store_release(&dsp->capture_offset, (offset + bytes) % dsp->view.bytes);
++		} else {
++			elapsed = false;
++		}
++		spin_unlock_irqrestore(&dsp->period_lock, flags);
++		if (error) {
++			snd_pcm_stop_xrun(dsp->substream);
++			return;
++		}
++		if (elapsed)
++			snd_pcm_period_elapsed(dsp->substream);
++	}
++}
++
 +static void mt8901_afe_dsp_period_work(struct work_struct *work)
 +{
 +	struct mt8901_afe_dsp *dsp = container_of(work, struct mt8901_afe_dsp, period_work);
@@ -907,6 +1054,10 @@ streaming qualification.
 +	int error;
 +	int ret;
 +
++	if (dsp->capture) {
++		mt8901_afe_dsp_capture_work(dsp);
++		return;
++	}
 +	spin_lock_irqsave(&dsp->period_lock, flags);
 +	pending = dsp->period_pending;
 +	dsp->period_pending = false;
@@ -948,6 +1099,14 @@ streaming qualification.
 +		delta = offset >= dsp->irq_offset ? offset - dsp->irq_offset :
 +			bytes - dsp->irq_offset + offset;
 +		dsp->irq_offset = offset;
++		if (dsp->capture) {
++			if (delta >= bytes - dsp->capture_pending_bytes)
++				dsp->notification_error = -EPIPE;
++			else
++				dsp->capture_pending_bytes += delta;
++			pending = delta || dsp->notification_error;
++			goto unlock;
++		}
 +		dsp->period_remainder += delta;
 +		if (dsp->period_remainder >= dsp->period_bytes) {
 +			dsp->period_remainder %= dsp->period_bytes;
@@ -955,6 +1114,7 @@ streaming qualification.
 +			pending = true;
 +		}
 +	}
++unlock:
 +	spin_unlock_irqrestore(&dsp->period_lock, flags);
 +	if (pending)
 +		schedule_work(&dsp->period_work);
@@ -970,19 +1130,30 @@ streaming qualification.
 +	size_t ring_max;
 +	int ret;
 +
-+	if (!dsp_playback || dai->id != MT8901_AFE_MEMIF_DL0 ||
-+	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
-+		return 0;
-+	if (!substream->pcm->nonatomic || !priv->sram || priv->dsp)
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		if (!dsp_playback ||
++		    (dai->id != MT8901_AFE_MEMIF_DL0 && dai->id != MT8901_AFE_MEMIF_DL1))
++			return 0;
++	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
++		if (!dsp_capture || dai->id != MT8901_AFE_MEMIF_UL1)
++			return 0;
++	} else {
++		return -EINVAL;
++	}
++	if (!substream->pcm->nonatomic || !priv->sram || priv->dsp[substream->stream])
 +		return -EOPNOTSUPP;
 +	ring_max = mt8901_afe_sram_size(afe);
 +	if (ring_max <= MT8901_DSP_IPC_BYTES)
 +		return -ENOSPC;
-+	ring_max -= MT8901_DSP_IPC_BYTES;
++	/* Two persistent 32 KiB rings plus playback's 2 KiB IPC fit in the
++	 * shared 80 KiB SRAM. One direction cannot starve the other.
++	 */
++	ring_max = min_t(size_t, (ring_max - MT8901_DSP_IPC_BYTES) / 2, 32768);
 +
 +	dsp = kzalloc_obj(*dsp);
 +	if (!dsp)
 +		return -ENOMEM;
++	dsp->capture = substream->stream == SNDRV_PCM_STREAM_CAPTURE;
 +	dsp->abi = symbol_get(n1x_adsp_primary_abi);
 +	dsp->open = symbol_get(n1x_adsp_primary_open_pcm);
 +	dsp->rebind = symbol_get(n1x_adsp_primary_rebind);
@@ -1011,7 +1182,7 @@ streaming qualification.
 +	runtime->hw.period_bytes_max = min_t(unsigned int, runtime->hw.period_bytes_max, ring_max / 2);
 +	runtime->hw.info &= ~(SNDRV_PCM_INFO_PAUSE | SNDRV_PCM_INFO_RESUME |
 +			      SNDRV_PCM_INFO_NO_PERIOD_WAKEUP);
-+	dev = n1x_adsp_find_device(afe->dev, "NVDA8303");
++	dev = n1x_adsp_find_device(afe->dev, dsp->capture ? "NVDA8301" : "NVDA8303");
 +	if (!dev) {
 +		ret = -ENODEV;
 +		goto free;
@@ -1025,7 +1196,7 @@ streaming qualification.
 +	dsp->substream = substream;
 +	INIT_WORK(&dsp->period_work, mt8901_afe_dsp_period_work);
 +	spin_lock_init(&dsp->period_lock);
-+	priv->dsp = dsp;
++	priv->dsp[substream->stream] = dsp;
 +	return 0;
 +free:
 +	mt8901_afe_dsp_put_ops(dsp);
@@ -1041,8 +1212,27 @@ streaming qualification.
 +		return 0;
 +	if (dsp->error)
 +		return dsp->error;
-+	/* Reprogramming the CPU DMA ring could overwrite a published AFE address. */
-+	return dsp->configured || dsp->closing ? -EALREADY : 0;
++	if (dsp->closing) {
++		struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
++		struct device *dev, *afe = snd_soc_rtd_to_cpu(rtd, 0)->dev;
++
++		/* ALSA allows HW_FREE/HW_PARAMS without closing the file. The
++		 * old owner has been retired; reopen and rebind its persistent ring.
++		 */
++		dev = n1x_adsp_find_device(afe, dsp->capture ? "NVDA8301" : "NVDA8303");
++		if (!dev)
++			return -ENODEV;
++		dsp->primary = dsp->open(dev, substream);
++		put_device(dev);
++		if (IS_ERR(dsp->primary)) {
++			dsp->error = PTR_ERR(dsp->primary);
++			dsp->primary = NULL;
++			return dsp->error;
++		}
++		dsp->closing = false;
++	}
++	/* Reprogramming a configured ring requires HW_FREE first. */
++	return dsp->configured ? -EALREADY : 0;
 +}
 +
 +int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
@@ -1099,6 +1289,9 @@ streaming qualification.
 +		goto failed;
 +	dsp->listening = true;
 +	dsp->appl_ptr = 0;
++	dsp->capture_pending_bytes = 0;
++	dsp->capture_offset = 0;
++	dsp->notification_error = 0;
 +	dsp->irq_offset = 0;
 +	dsp->period_remainder = 0;
 +	dsp->period_pending = false;
@@ -1119,6 +1312,8 @@ streaming qualification.
 +	int ret;
 +
 +	if (!dsp)
++		return 0;
++	if (dsp->capture)
 +		return 0;
 +	if (dsp->error)
 +		return dsp->error;
@@ -1165,6 +1360,15 @@ streaming qualification.
 +		return SNDRV_PCM_POS_XRUN;
 +	if (!dsp->prepared)
 +		return 0;
++	if (dsp->capture) {
++		u32 offset;
++
++		if (READ_ONCE(dsp->notification_error))
++			return SNDRV_PCM_POS_XRUN;
++		/* Pair with capture_work's release: samples precede the visible cursor. */
++		offset = smp_load_acquire(&dsp->capture_offset);
++		return bytes_to_frames(substream->runtime, offset);
++	}
 +	ret = dsp->position(dsp->primary, &position);
 +	if (ret)
 +		return SNDRV_PCM_POS_XRUN;
@@ -1247,6 +1451,10 @@ streaming qualification.
 +		ret = dsp->close(dsp->primary);
 +		dsp->primary = NULL;
 +	}
++	if (ret)
++		dsp->error = ret;
++	else
++		dsp->configured = dsp->prepared = dsp->listening = dsp->samples = false;
 +	return ret;
 +}
 +
@@ -1259,7 +1467,7 @@ streaming qualification.
 +	if (!dsp)
 +		return;
 +	mt8901_afe_dsp_hw_free(substream, dai);
-+	priv->dsp = NULL;
++	priv->dsp[substream->stream] = NULL;
 +	mt8901_afe_dsp_put_ops(dsp);
 +	kfree(dsp);
 +}
@@ -1341,7 +1549,7 @@ streaming qualification.
  
  	mt8901_afe_config_cm(afe, cm, channels, rate, domain);
  
-@@ -563,6 +576,21 @@
+@@ -563,6 +576,33 @@
  	mt8901_memif_set_maxlen(afe, id, memif_priv->maxlen);
  
  	return mtk_afe_fe_hw_params(substream, params, dai);
@@ -1352,7 +1560,7 @@ streaming qualification.
 +	struct mt8901_afe_private *priv = afe->platform_priv;
 +	struct mtk_dai_memif_priv *memif;
 +
-+	if (id < 0 || id >= MT8901_AFE_MEMIF_UL_START)
++	if (id < 0 || id >= MT8901_AFE_MEMIF_NUM)
 +		return -EINVAL;
 +	memif = priv->dai_priv[id];
 +	if (!memif)
@@ -1360,10 +1568,22 @@ streaming qualification.
 +	if (memif->domain > 7)
 +		return -ERANGE;
 +	return memif->domain;
++}
++
++void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,
++			      struct snd_pcm_substream *substream)
++{
++	struct mt8901_afe_private *priv = afe->platform_priv;
++	struct mtk_dai_memif_priv *memif = priv->dai_priv[id];
++	struct snd_pcm_runtime *runtime = substream->runtime;
++
++	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
++		udelay(mt8901_get_prefetch_delay(afe, id, memif->minlen,
++					 runtime->rate, runtime->channels, runtime->sample_bits));
  }
  
  static int mt8901_afe_fe_trigger(struct snd_pcm_substream *substream, int cmd,
-@@ -582,6 +610,9 @@
+@@ -582,6 +622,9 @@
  	int fs;
  	int ret;
  
@@ -1373,7 +1593,7 @@ streaming qualification.
  	switch (cmd) {
  	case SNDRV_PCM_TRIGGER_START:
  	case SNDRV_PCM_TRIGGER_RESUME:
-@@ -635,12 +666,36 @@
+@@ -635,12 +678,36 @@
  	}
  }
  
@@ -1413,7 +1633,7 @@ streaming qualification.
  	.trigger	= mt8901_afe_fe_trigger,
  };
  
-@@ -1506,6 +1561,15 @@
+@@ -1506,6 +1573,16 @@
  
  static bool mt8901_is_volatile_reg(struct device *dev, unsigned int reg)
  {
@@ -1423,13 +1643,14 @@ streaming qualification.
 +	 */
 +	if ((reg >= AFE_IRQ0_MCU_CFG0 && reg <= AFE_IRQ21_MCU_CFG1) ||
 +	    reg == AFE_IRQ_MCU_EN || reg == AFE_IRQ_MCU_DSP_EN ||
-+	    reg == AFE_IRQ_MCU_DSP2_EN || reg == AFE_IRQ_MCU_SCP_EN)
++	    reg == AFE_IRQ_MCU_DSP2_EN || reg == AFE_IRQ_MCU_SCP_EN ||
++	    reg == AFE_IRQ_MCU_DSP3_EN)
 +		return true;
 +
  	/* registers with read-only bits cannot be cached */
  	switch (reg) {
  	/* AUDIO_TOP: contains RO status bits */
-@@ -1923,6 +1987,10 @@
+@@ -1923,6 +2000,10 @@
  	int ret;
  	bool skip = false;
  
@@ -1440,7 +1661,7 @@ streaming qualification.
  	if (!afe->regmap || afe_priv->pm_runtime_bypass_reg_ctl) {
  		skip = true;
  		goto skip_regmap;
-@@ -2138,6 +2206,10 @@
+@@ -2138,6 +2219,10 @@
  	afe->memif_32bit_supported = 1;
  
  	platform_set_drvdata(pdev, afe);
@@ -1451,7 +1672,7 @@ streaming qualification.
  
  	device_property_read_u32(dev, "acpi-asd-hw-ver", &afe_priv->hw_ver);
  
-@@ -2260,7 +2332,7 @@
+@@ -2260,7 +2345,7 @@
  		afe_priv->default_mtcmos_vote_dropped = true;
  
  	/* Publish the component only once the PM baseline is established. */
@@ -1460,7 +1681,7 @@ streaming qualification.
  					      afe->dai_drivers,
  					      afe->num_dai_drivers);
  	if (ret) {
-@@ -2324,15 +2396,21 @@
+@@ -2324,15 +2409,21 @@
  };
  MODULE_DEVICE_TABLE(acpi, mt8901_afe_acpi_match);
  
@@ -1529,7 +1750,7 @@ streaming qualification.
 +#endif
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-sram.c
-@@ -0,0 +1,964 @@
+@@ -0,0 +1,1018 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/atomic.h>
 +#include <linux/err.h>
@@ -1694,6 +1915,29 @@ streaming qualification.
 +	return priv->sram && atomic_read(&priv->sram->users) && !priv->sram->sleep_saved;
 +}
 +
++static bool mt8901_afe_sram_stream(int id, int stream)
++{
++	return (stream == SNDRV_PCM_STREAM_PLAYBACK &&
++		(id == MT8901_AFE_MEMIF_DL0 || id == MT8901_AFE_MEMIF_DL1)) ||
++	       (stream == SNDRV_PCM_STREAM_CAPTURE && id == MT8901_AFE_MEMIF_UL1);
++}
++
++static unsigned int mt8901_afe_sram_target(int memif)
++{
++	/* Endpoint route enum 2 (HiFi1) is distinct from task-core enum 3. */
++	return memif == MT8901_AFE_MEMIF_UL1 ? AFE_IRQ_MCU_DSP_EN : AFE_IRQ_MCU_DSP3_EN;
++}
++
++static bool mt8901_afe_sram_enable_valid(const struct mtk_base_memif_data *data, int id)
++{
++	int reg = id == MT8901_AFE_MEMIF_UL1 ? AFE_VUL1_CON0 :
++		  id == MT8901_AFE_MEMIF_DL1 ? AFE_DL1_CON0 : AFE_DL0_CON0;
++
++	return (id == MT8901_AFE_MEMIF_DL0 || id == MT8901_AFE_MEMIF_DL1 ||
++		id == MT8901_AFE_MEMIF_UL1) &&
++	       data && data->enable_reg == reg && data->enable_shift == DL_ON_SFT;
++}
++
 +/* Caller owns the ALSA stream lifetime; the returned card device is referenced. */
 +struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream)
 +{
@@ -1702,15 +1946,14 @@ streaming qualification.
 +	struct mtk_base_afe *afe;
 +	struct device *card = ERR_PTR(-EINVAL);
 +
-+	if (!substream || !substream->pcm || !substream->runtime ||
-+	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
++	if (!substream || !substream->pcm || !substream->runtime)
 +		return card;
 +	rtd = snd_soc_substream_to_rtd(substream);
 +	if (!rtd || !rtd->card || !snd_soc_card_is_instantiated(rtd->card) ||
 +	    !rtd->card->dev || substream->pcm->card != rtd->card->snd_card)
 +		return card;
 +	dai = snd_soc_rtd_to_cpu(rtd, 0);
-+	if (!dai || !dai->dev || dai->id != MT8901_AFE_MEMIF_DL0)
++	if (!dai || !dai->dev || !mt8901_afe_sram_stream(dai->id, substream->stream))
 +		return card;
 +	device_lock(dai->dev);
 +	if (dai->dev->driver != &mt8901_afe_pcm_driver.driver)
@@ -1861,8 +2104,7 @@ streaming qualification.
 +		if (priv->sram->sleep_prepared || priv->sram->sleep_saved)
 +			ret = -EBUSY;
 +		else if (buffer &&
-+			 (!mt8901_afe_dsp_enabled() || dai->id != MT8901_AFE_MEMIF_DL0 ||
-+			  substream->stream != SNDRV_PCM_STREAM_PLAYBACK ||
++			 (!mt8901_afe_dsp_enabled() || !mt8901_afe_sram_stream(dai->id, substream->stream) ||
 +			  !buffer->retention || buffer->substream || !buffer->published))
 +			ret = -EBUSY;
 +	}
@@ -1883,8 +2125,7 @@ streaming qualification.
 +	u32 frame_bytes;
 +	int ret = 0, id, irq;
 +
-+	if (IS_ERR_OR_NULL(buffer) || buffer->ipc || !substream || !substream->runtime ||
-+	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
++	if (IS_ERR_OR_NULL(buffer) || buffer->ipc || !substream || !substream->runtime)
 +		return -EINVAL;
 +	runtime = substream->runtime;
 +	if (snd_pcm_running(substream))
@@ -1903,6 +2144,10 @@ streaming qualification.
 +		return -EINVAL;
 +	dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
 +	id = dai->id;
++	if (!mt8901_afe_sram_stream(id, substream->stream) &&
++	    !(substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
++	      id >= 0 && id < MT8901_AFE_MEMIF_UL_START))
++		return -EOPNOTSUPP;
 +	device_lock(buffer->dev);
 +	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver || dai->dev != buffer->dev) {
 +		ret = -ENODEV;
@@ -1913,7 +2158,7 @@ streaming qualification.
 +		goto unlock;
 +	}
 +	afe = dev_get_drvdata(buffer->dev);
-+	if (id < 0 || id >= MT8901_AFE_MEMIF_UL_START || id >= afe->memif_size ||
++	if (id < 0 || id >= MT8901_AFE_MEMIF_NUM || id >= afe->memif_size ||
 +	    snd_soc_dai_get_drvdata(dai) != afe || afe->memif[id].substream != substream) {
 +		ret = -EBUSY;
 +		goto unlock;
@@ -1921,26 +2166,55 @@ streaming qualification.
 +	irq = afe->memif[id].irq_usage;
 +	if (irq != id || irq >= afe->irqs_size || !afe->irqs[irq].irq_occupyed ||
 +	    buffer->substream || buffer->published != rebind ||
-+	    buffer->sram->memif[id] != (rebind ? buffer : NULL)) {
++	    (buffer->sram->memif[id] && (!rebind || buffer->sram->memif[id] != buffer))) {
 +		ret = -EBUSY;
 +		goto unlock;
 +	}
 +	if (rebind) {
 +		u32 control;
 +
-+		if (id != buffer->endpoint.memif || irq != buffer->endpoint.irq ||
++		if (buffer->sram->memif[buffer->endpoint.memif] != buffer ||
++		    (id == MT8901_AFE_MEMIF_UL1) != (buffer->endpoint.memif == MT8901_AFE_MEMIF_UL1) ||
 +		    buffer->prepare_error || buffer->irq_error || buffer->irq_stop_error ||
 +		    buffer->start_error || buffer->started) {
 +			ret = -ENOTRECOVERABLE;
 +			goto unlock;
 +		}
-+		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
++		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8, &control);
 +		if (ret)
 +			goto unlock;
 +		if (control & 1) {
 +			ret = -EBUSY;
 +			goto unlock;
 +		}
++		/* The old stream was stopped and closed by the DSP owner. Check
++		 * both endpoints before moving this still-published reservation.
++		 */
++		if (id != buffer->endpoint.memif) {
++			const struct mtk_base_memif_data *old = afe->memif[buffer->endpoint.memif].data;
++			const struct mtk_base_memif_data *next = afe->memif[id].data;
++
++			if (!mt8901_afe_sram_enable_valid(old, buffer->endpoint.memif) ||
++			    !mt8901_afe_sram_enable_valid(next, id)) {
++				ret = -EOPNOTSUPP;
++				goto unlock;
++			}
++			ret = regmap_read(afe->regmap, old->enable_reg, &control);
++			if (!ret && !(control & BIT(old->enable_shift)))
++				ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
++			else if (!ret)
++				ret = -EBUSY;
++			if (ret || (control & 1)) {
++				ret = ret ?: -EBUSY;
++				goto unlock;
++			}
++			ret = regmap_read(afe->regmap, next->enable_reg, &control);
++			if (ret || (control & BIT(next->enable_shift))) {
++				ret = ret ?: -EBUSY;
++				goto unlock;
++			}
++		}
++		buffer->sram->memif[buffer->endpoint.memif] = NULL;
 +		buffer->prepared = false;
 +		buffer->irq_prepared = false;
 +		buffer->irq_stopped = false;
@@ -2185,8 +2459,8 @@ streaming qualification.
 +	u32 bit;
 +	int ret, cfg;
 +
-+	if (!substream || !dai || !dai->dev || dai->id != MT8901_AFE_MEMIF_DL0 ||
-+	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
++	if (!substream || !dai || !dai->dev ||
++	    !mt8901_afe_sram_stream(dai->id, substream->stream))
 +		return -EINVAL;
 +	device_lock(dai->dev);
 +	if (dai->dev->driver != &mt8901_afe_pcm_driver.driver) {
@@ -2218,7 +2492,7 @@ streaming qualification.
 +	data = afe->memif[dai->id].data;
 +	irq = afe->irqs[buffer->endpoint.irq].irq_data;
 +	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
-+	if (!data || data->enable_reg != AFE_DL0_CON0 || data->enable_shift != DL_ON_SFT ||
++	if (!mt8901_afe_sram_enable_valid(data, dai->id) ||
 +	    !irq || irq->id != buffer->endpoint.irq || irq->irq_en_reg != cfg ||
 +	    irq->irq_en_shift || irq->irq_mask_reg != AFE_IRQ_MCU_EN ||
 +	    irq->irq_mask_shift != buffer->endpoint.irq) {
@@ -2231,10 +2505,12 @@ streaming qualification.
 +	bit = BIT(buffer->endpoint.irq);
 +	ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
 +	if (!ret)
-+		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_DSP_EN, bit, bit);
++		ret = regmap_update_bits(afe->regmap, mt8901_afe_sram_target(dai->id), bit, bit);
 +	if (!ret)
 +		ret = regmap_update_bits(afe->regmap, data->enable_reg,
 +					 BIT(data->enable_shift), BIT(data->enable_shift));
++	if (!ret)
++		mt8901_afe_sram_prefetch(afe, dai->id, substream);
 +	if (!ret)
 +		ret = regmap_update_bits(afe->regmap, cfg, 1, 1);
 +	if (ret)
@@ -2256,8 +2532,8 @@ streaming qualification.
 +
 +	if (IS_ERR_OR_NULL(buffer) || buffer->ipc)
 +		return -EINVAL;
-+	/* The route-2 playback client runs on native core enum 3 (HiFi1). */
-+	if (core != 3)
++	/* This argument is the endpoint route, not the task-core enum. */
++	if (core != (buffer->endpoint.memif == MT8901_AFE_MEMIF_UL1 ? 3 : 2))
 +		return -EOPNOTSUPP;
 +	device_lock(buffer->dev);
 +	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, true);
@@ -2273,8 +2549,7 @@ streaming qualification.
 +	irq = afe->irqs[buffer->endpoint.irq].irq_data;
 +	data = afe->memif[buffer->endpoint.memif].data;
 +	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
-+	if (!data || buffer->endpoint.memif != MT8901_AFE_MEMIF_DL0 ||
-+	    data->enable_reg != AFE_DL0_CON0 || data->enable_shift != DL_ON_SFT ||
++	if (!mt8901_afe_sram_enable_valid(data, buffer->endpoint.memif) ||
 +	    !irq || irq->id != buffer->endpoint.irq ||
 +	    irq->irq_en_reg != cfg || irq->irq_en_shift ||
 +	    irq->irq_clr_reg != cfg + 4 || irq->irq_clr_shift != 31 ||
@@ -2295,7 +2570,7 @@ streaming qualification.
 +	if (!ret)
 +		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
 +	if (!ret)
-+		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_DSP_EN, bit, 0);
++		ret = regmap_update_bits(afe->regmap, mt8901_afe_sram_target(buffer->endpoint.memif), bit, 0);
 +	if (ret)
 +		buffer->irq_stop_error = ret;
 +	else {

@@ -63,6 +63,7 @@ int main(void) {
  assert(mt8901_is_volatile_reg(NULL,AFE_IRQ_MCU_DSP_EN));
  assert(mt8901_is_volatile_reg(NULL,AFE_IRQ_MCU_DSP2_EN));
  assert(mt8901_is_volatile_reg(NULL,AFE_IRQ_MCU_SCP_EN));
+ assert(mt8901_is_volatile_reg(NULL,AFE_IRQ_MCU_DSP3_EN));
  assert(!mt8901_is_volatile_reg(NULL,AFE_DL0_CON0)); /* Format still restored by regcache. */
  for(unsigned id=0;id<2;id++) {
   unsigned irq=id?7:0,cfg=AFE_IRQ0_MCU_CFG0+irq*8;

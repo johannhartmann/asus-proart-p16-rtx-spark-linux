@@ -1,7 +1,7 @@
 # MT8901 AFE SRAM owner
 
 These canonical sources generate `kernel/p16-afe-sram.patch`. The patch adds a
-private gen_pool, opaque kernel leases and a DSP DL0 frontend to the existing
+private gen_pool, opaque kernel leases and DSP DL0/DL1 playback and UL1 capture frontends to the existing
 AFE module. Existing DPCM/DAPM routes continue to own the SoundWire codecs.
 The ordinary audio path remains available if SRAM setup fails.
 
@@ -23,7 +23,7 @@ then returns `EBUSY`. Runtime autosuspend and module removal remain blocked whil
 exist. System s2idle has an opt-in, unqualified retention path described below. Publication is retained after uncertain requests. This is an interim
 retention contract; verified DSP quiesce/release is still required.
 
-PCM binding validates an active, non-running playback substream, format, memif,
+PCM binding validates an active, non-running PCM substream, format, memif,
 fixed IRQ and complete ring extent. Independent IPC leases derive from a bound
 PCM peer but cannot bind substreams. Published IPC retains its own references
 even if the original peer is released.
@@ -41,10 +41,10 @@ IRQ and programs its period count, rate and active clock domain. Readiness is
 reported only after every checked update succeeds. Routing and enable bits are
 not changed by this preparation.
 
-After both task START acknowledgements, the frontend asks the AFE owner to
-start its published DL0 lease. The owner checks the active substream, prepared
-ring, IRQ metadata and sleep state, removes the MCU target, selects HiFi1,
-restores the period/rate/domain, enables DL0 and enables the IRQ. Shared IRQ
+After the complete native task START sequence, the frontend asks the AFE owner to
+start its published PCM lease. The owner checks the active substream, prepared
+ring, IRQ metadata and sleep state, removes the MCU target, selects HiFi1 (`0xa000`) or primary HiFi5 (`0x9d04`),
+restores the period/rate/domain, enables the memif and enables the IRQ. Shared IRQ
 configuration and routing registers are volatile because firmware/hardware
 can modify them. Restoring configuration on every START also covers a prepared
 stream whose AFE lost power before it started. Each update is checked and preserves unrelated
@@ -52,14 +52,20 @@ bits. A partial failure is terminal; the frontend requests normal task STOP
 without retrying START or releasing published memory.
 
 After both task STOP acknowledgements, `mt8901_afe_sram_stop_irq()` disables
-DL0, disables and clears the owned IRQ, and removes MCU/HiFi1 targets. An I/O
+the memif, disables and clears the owned IRQ, and removes MCU/DSP targets. An I/O
 error is cached. Disabling this channel does not prove whole-core DMA
 quiescence or permit releasing published memory.
 
-The disabled-by-default `dsp_playback` path reuses the DL0 frontend. PREPARE
+The disabled-by-default `dsp_playback` path reuses DL0/DL1. PREPARE
 configures the graph after ALSA sets runtime fields. Producer ACK copies new
 frames into the coherent host ring with ring/boundary handling. Notifications
 accumulate byte progress; complete periods and errors use queued work.
+
+The separate read-only `dsp_capture` option routes UL1 through primary HiFi5.
+Its IRQ worker copies only firmware-produced bytes to ALSA staging, publishes
+the pointer after copying, and reports XRUN on a pending/in-flight ring overrun.
+Capture performs no playback producer publication. Two 32 KiB PCM rings and
+playback's 2 KiB IPC lease fit concurrently in the shared 80 KiB pool.
 
 Close synchronizes the listener and drains work before consuming the primary
 handle. `mt8901_afe_sram_retire()` clears the borrowed substream pointer while
@@ -81,23 +87,23 @@ and compares the resulting files to the canonical owner/frontend sources.
 ASan/UBSan harnesses exercise actual allocation, programming, suspend and
 frontend functions with injected OS/register faults and concurrent callers.
 They verify retention and borrowed-pointer retirement as well as successful
-paths. Fresh-boot streaming and sleep qualification, DSP capture endpoints and
+paths. Fresh-boot duplex/endpoint and sleep qualification and
 verified shutdown/release remain required. Generated integration patches still
 need author-reviewed DCO sign-off before submission.
 
 
 ## Reopen and retained system sleep
 
-ABI 2 playback reuses one maximum-size SRAM allocation after successful task
+PCM client ABI 3 reuses a maximum 32 KiB SRAM allocation per direction after successful task
 HWFREE/CLOSE. The old substream is retired before freeing ALSA state. Only the
-DSP playback path may reopen its reserved memif; ordinary raw DMA cannot take
+DSP PCM path may reopen its reserved memif; ordinary raw DMA cannot take
 over the published memory. Rebind validates an idle IRQ and complete new ring
 geometry within the retained capacity. STOP/PREPARE/START reprograms the IRQ
 and resets cursors without allocating another ring or message pool.
 
 The ASoC card's auxiliary DSP components provide card → DSP system-PM links.
 The typed PCM client also retains its own explicit card → DSP link after
-validating the instantiated card and DL0 substream; PM revalidates the binding.
+validating the instantiated card and DL0/DL1 playback or UL1 capture substream; PM revalidates the binding.
 Registration of an unbound component and raw clients do not grant PM admission;
 DSP → AFE links order SRAM lifetime without a circular dependency. Each owner
 declares retention capability during setup and votes only after acknowledged

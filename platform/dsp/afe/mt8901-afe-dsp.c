@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
+#include <linux/dma-mapping.h>
 #include <linux/err.h>
 #include <linux/interrupt.h>
 #include <linux/module.h>
@@ -17,13 +18,17 @@
 /* The processing task also needs two independently retained 1 KiB IPC slices. */
 #define MT8901_DSP_IPC_BYTES 2048U
 
+static bool dsp_capture;
+module_param(dsp_capture, bool, 0400);
+MODULE_PARM_DESC(dsp_capture, "Use firmware-backed HiFi5 capture on UL1; disabled by default");
+
 static bool dsp_playback;
 module_param(dsp_playback, bool, 0400);
-MODULE_PARM_DESC(dsp_playback, "Use experimental route-2 DSP playback on DL0; disabled by default");
+MODULE_PARM_DESC(dsp_playback, "Use firmware-backed HiFi1 playback on DL0/DL1; disabled by default");
 
 bool mt8901_afe_dsp_enabled(void)
 {
-	return dsp_playback;
+	return dsp_playback || dsp_capture;
 }
 
 struct mt8901_afe_dsp {
@@ -36,7 +41,8 @@ struct mt8901_afe_dsp {
 	bool period_pending;
 	int notification_error;
 	snd_pcm_uframes_t appl_ptr;
-	bool configured, prepared, listening, closing, running, samples;
+	bool configured, prepared, listening, closing, running, samples, capture;
+	u32 capture_pending_bytes, capture_offset;
 	int error;
 	typeof(n1x_adsp_primary_abi) *abi;
 	typeof(n1x_adsp_primary_open_pcm) *open;
@@ -58,7 +64,7 @@ static struct mt8901_afe_dsp *mt8901_afe_dsp_get(struct snd_pcm_substream *subst
 	struct snd_soc_dai *dai = snd_soc_rtd_to_cpu(rtd, 0);
 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
 	struct mt8901_afe_private *priv = afe->platform_priv;
-	struct mt8901_afe_dsp *dsp = priv->dsp;
+	struct mt8901_afe_dsp *dsp = priv->dsp[substream->stream];
 
 	return dsp && dsp->substream == substream ? dsp : NULL;
 }
@@ -96,6 +102,60 @@ static void mt8901_afe_dsp_put_ops(struct mt8901_afe_dsp *dsp)
 		symbol_put(n1x_adsp_primary_close);
 }
 
+/* Copy only firmware-produced capture bytes. Keep in-flight bytes counted
+ * until copying completes, so IRQ overrun detection also covers this window.
+ * The ALSA pointer is published after the DMA read and CPU copy, never before.
+ */
+static void mt8901_afe_dsp_capture_work(struct mt8901_afe_dsp *dsp)
+{
+	struct snd_pcm_runtime *runtime = dsp->substream->runtime;
+	unsigned long flags;
+	u32 bytes, offset, first;
+	bool elapsed;
+	int error;
+
+	for (;;) {
+		spin_lock_irqsave(&dsp->period_lock, flags);
+		bytes = dsp->capture_pending_bytes;
+		offset = dsp->capture_offset;
+		error = dsp->notification_error;
+		spin_unlock_irqrestore(&dsp->period_lock, flags);
+		if (READ_ONCE(dsp->closing) || !READ_ONCE(dsp->running))
+			return;
+		if (error) {
+			snd_pcm_stop_xrun(dsp->substream);
+			return;
+		}
+		if (!bytes)
+			return;
+		first = min_t(u32, bytes, dsp->view.bytes - offset);
+		/* Firmware samples precede its producer notification. */
+		dma_rmb();
+		memcpy(runtime->dma_area + offset, dsp->view.area + offset, first);
+		if (bytes > first)
+			memcpy(runtime->dma_area, dsp->view.area, bytes - first);
+		spin_lock_irqsave(&dsp->period_lock, flags);
+		error = dsp->notification_error;
+		if (!error) {
+			dsp->capture_pending_bytes -= bytes;
+			dsp->period_remainder += bytes;
+			elapsed = dsp->period_remainder >= dsp->period_bytes;
+			dsp->period_remainder %= dsp->period_bytes;
+			/* The stream lock cannot be acquired from the IRQ path. */
+			smp_store_release(&dsp->capture_offset, (offset + bytes) % dsp->view.bytes);
+		} else {
+			elapsed = false;
+		}
+		spin_unlock_irqrestore(&dsp->period_lock, flags);
+		if (error) {
+			snd_pcm_stop_xrun(dsp->substream);
+			return;
+		}
+		if (elapsed)
+			snd_pcm_period_elapsed(dsp->substream);
+	}
+}
+
 static void mt8901_afe_dsp_period_work(struct work_struct *work)
 {
 	struct mt8901_afe_dsp *dsp = container_of(work, struct mt8901_afe_dsp, period_work);
@@ -105,6 +165,10 @@ static void mt8901_afe_dsp_period_work(struct work_struct *work)
 	int error;
 	int ret;
 
+	if (dsp->capture) {
+		mt8901_afe_dsp_capture_work(dsp);
+		return;
+	}
 	spin_lock_irqsave(&dsp->period_lock, flags);
 	pending = dsp->period_pending;
 	dsp->period_pending = false;
@@ -146,6 +210,14 @@ static void mt8901_afe_dsp_period(void *data,
 		delta = offset >= dsp->irq_offset ? offset - dsp->irq_offset :
 			bytes - dsp->irq_offset + offset;
 		dsp->irq_offset = offset;
+		if (dsp->capture) {
+			if (delta >= bytes - dsp->capture_pending_bytes)
+				dsp->notification_error = -EPIPE;
+			else
+				dsp->capture_pending_bytes += delta;
+			pending = delta || dsp->notification_error;
+			goto unlock;
+		}
 		dsp->period_remainder += delta;
 		if (dsp->period_remainder >= dsp->period_bytes) {
 			dsp->period_remainder %= dsp->period_bytes;
@@ -153,6 +225,7 @@ static void mt8901_afe_dsp_period(void *data,
 			pending = true;
 		}
 	}
+unlock:
 	spin_unlock_irqrestore(&dsp->period_lock, flags);
 	if (pending)
 		schedule_work(&dsp->period_work);
@@ -168,19 +241,30 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	size_t ring_max;
 	int ret;
 
-	if (!dsp_playback || dai->id != MT8901_AFE_MEMIF_DL0 ||
-	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
-		return 0;
-	if (!substream->pcm->nonatomic || !priv->sram || priv->dsp)
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
+		if (!dsp_playback ||
+		    (dai->id != MT8901_AFE_MEMIF_DL0 && dai->id != MT8901_AFE_MEMIF_DL1))
+			return 0;
+	} else if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+		if (!dsp_capture || dai->id != MT8901_AFE_MEMIF_UL1)
+			return 0;
+	} else {
+		return -EINVAL;
+	}
+	if (!substream->pcm->nonatomic || !priv->sram || priv->dsp[substream->stream])
 		return -EOPNOTSUPP;
 	ring_max = mt8901_afe_sram_size(afe);
 	if (ring_max <= MT8901_DSP_IPC_BYTES)
 		return -ENOSPC;
-	ring_max -= MT8901_DSP_IPC_BYTES;
+	/* Two persistent 32 KiB rings plus playback's 2 KiB IPC fit in the
+	 * shared 80 KiB SRAM. One direction cannot starve the other.
+	 */
+	ring_max = min_t(size_t, (ring_max - MT8901_DSP_IPC_BYTES) / 2, 32768);
 
 	dsp = kzalloc_obj(*dsp);
 	if (!dsp)
 		return -ENOMEM;
+	dsp->capture = substream->stream == SNDRV_PCM_STREAM_CAPTURE;
 	dsp->abi = symbol_get(n1x_adsp_primary_abi);
 	dsp->open = symbol_get(n1x_adsp_primary_open_pcm);
 	dsp->rebind = symbol_get(n1x_adsp_primary_rebind);
@@ -209,7 +293,7 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	runtime->hw.period_bytes_max = min_t(unsigned int, runtime->hw.period_bytes_max, ring_max / 2);
 	runtime->hw.info &= ~(SNDRV_PCM_INFO_PAUSE | SNDRV_PCM_INFO_RESUME |
 			      SNDRV_PCM_INFO_NO_PERIOD_WAKEUP);
-	dev = n1x_adsp_find_device(afe->dev, "NVDA8303");
+	dev = n1x_adsp_find_device(afe->dev, dsp->capture ? "NVDA8301" : "NVDA8303");
 	if (!dev) {
 		ret = -ENODEV;
 		goto free;
@@ -223,7 +307,7 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	dsp->substream = substream;
 	INIT_WORK(&dsp->period_work, mt8901_afe_dsp_period_work);
 	spin_lock_init(&dsp->period_lock);
-	priv->dsp = dsp;
+	priv->dsp[substream->stream] = dsp;
 	return 0;
 free:
 	mt8901_afe_dsp_put_ops(dsp);
@@ -239,8 +323,27 @@ int mt8901_afe_dsp_hw_params(struct snd_pcm_substream *substream)
 		return 0;
 	if (dsp->error)
 		return dsp->error;
-	/* Reprogramming the CPU DMA ring could overwrite a published AFE address. */
-	return dsp->configured || dsp->closing ? -EALREADY : 0;
+	if (dsp->closing) {
+		struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+		struct device *dev, *afe = snd_soc_rtd_to_cpu(rtd, 0)->dev;
+
+		/* ALSA allows HW_FREE/HW_PARAMS without closing the file. The
+		 * old owner has been retired; reopen and rebind its persistent ring.
+		 */
+		dev = n1x_adsp_find_device(afe, dsp->capture ? "NVDA8301" : "NVDA8303");
+		if (!dev)
+			return -ENODEV;
+		dsp->primary = dsp->open(dev, substream);
+		put_device(dev);
+		if (IS_ERR(dsp->primary)) {
+			dsp->error = PTR_ERR(dsp->primary);
+			dsp->primary = NULL;
+			return dsp->error;
+		}
+		dsp->closing = false;
+	}
+	/* Reprogramming a configured ring requires HW_FREE first. */
+	return dsp->configured ? -EALREADY : 0;
 }
 
 int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
@@ -297,6 +400,9 @@ int mt8901_afe_dsp_prepare(struct snd_pcm_substream *substream, struct snd_soc_d
 		goto failed;
 	dsp->listening = true;
 	dsp->appl_ptr = 0;
+	dsp->capture_pending_bytes = 0;
+	dsp->capture_offset = 0;
+	dsp->notification_error = 0;
 	dsp->irq_offset = 0;
 	dsp->period_remainder = 0;
 	dsp->period_pending = false;
@@ -317,6 +423,8 @@ static int mt8901_afe_dsp_ack(struct snd_soc_component *component,
 	int ret;
 
 	if (!dsp)
+		return 0;
+	if (dsp->capture)
 		return 0;
 	if (dsp->error)
 		return dsp->error;
@@ -363,6 +471,15 @@ static snd_pcm_uframes_t mt8901_afe_dsp_pointer(struct snd_soc_component *compon
 		return SNDRV_PCM_POS_XRUN;
 	if (!dsp->prepared)
 		return 0;
+	if (dsp->capture) {
+		u32 offset;
+
+		if (READ_ONCE(dsp->notification_error))
+			return SNDRV_PCM_POS_XRUN;
+		/* Pair with capture_work's release: samples precede the visible cursor. */
+		offset = smp_load_acquire(&dsp->capture_offset);
+		return bytes_to_frames(substream->runtime, offset);
+	}
 	ret = dsp->position(dsp->primary, &position);
 	if (ret)
 		return SNDRV_PCM_POS_XRUN;
@@ -445,6 +562,10 @@ int mt8901_afe_dsp_hw_free(struct snd_pcm_substream *substream, struct snd_soc_d
 		ret = dsp->close(dsp->primary);
 		dsp->primary = NULL;
 	}
+	if (ret)
+		dsp->error = ret;
+	else
+		dsp->configured = dsp->prepared = dsp->listening = dsp->samples = false;
 	return ret;
 }
 
@@ -457,7 +578,7 @@ void mt8901_afe_dsp_shutdown(struct snd_pcm_substream *substream, struct snd_soc
 	if (!dsp)
 		return;
 	mt8901_afe_dsp_hw_free(substream, dai);
-	priv->dsp = NULL;
+	priv->dsp[substream->stream] = NULL;
 	mt8901_afe_dsp_put_ops(dsp);
 	kfree(dsp);
 }

@@ -44,6 +44,17 @@ static void test_vectors(void)
 	hardware.irq = 12;
 	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &hardware));
 	assert(!memcmp(packet, expected_hardware, N1X_ADSP_PCM_BYTES));
+	/* Native direction(23/21) is capture=2, with no playback prefill. */
+	hardware.direction = 2;
+	assert(!n1x_adsp_pcm_encode(packet, sizeof(packet), &hardware));
+	assert(n1x_adsp_ipc_get32(packet + 60) == 2);
+	assert(!n1x_adsp_ipc_get32(packet + 64));
+	hardware.start_threshold = 1;
+	assert(n1x_adsp_pcm_encode(packet, sizeof(packet), &hardware) == -EINVAL);
+	hardware.start_threshold = 0;
+	hardware.direction = 3;
+	assert(n1x_adsp_pcm_encode(packet, sizeof(packet), &hardware) == -EINVAL);
+	hardware.direction = 0;
 
 	/* Container width must remain 32 when only 24 bits are valid. */
 	hardware.sample_bits = 32;
@@ -305,6 +316,53 @@ static void test_producer_publication(void)
 	assert(n1x_adsp_pcm_producer_encode(packet, sizeof(packet), NULL, host.address, 0, 0) == -EINVAL);
 }
 
+static void test_capture_position(void)
+{
+	__u8 packet[N1X_ADSP_IPC_BYTES];
+	struct n1x_adsp_pcm_position previous = {}, position, before;
+
+	assert(n1x_adsp_pcm_host_task(true) == 23 && n1x_adsp_pcm_processing_task(true) == 21);
+	assert(n1x_adsp_pcm_route(false) == 2 && n1x_adsp_pcm_route(true) == 3);
+	for (unsigned int fault = 0; fault < 12; fault++) {
+		int expected = 0;
+
+		consume_packet(packet, host.address, 0x7fffffff);
+		packet[18] = 23;
+		n1x_adsp_ipc_put16(packet + 22, 0x13);
+		n1x_adsp_pcm_put64(packet + 0x38, host.address + 1920);
+		previous = (struct n1x_adsp_pcm_position){};
+		memset(&before, 0xa5, sizeof(before));
+		position = before;
+		switch (fault) {
+		case 1: packet[18] = 7; expected = -ENOMSG; break;
+		case 2: packet[22] = 0x1b; expected = -ENOMSG; break;
+		case 3: packet[19] = 0x20; expected = -ENOMSG; break;
+		case 4: packet[21] = 2; expected = -ENOMSG; break;
+		case 5: packet[20] = 0; expected = -EMSGSIZE; break;
+		case 6: n1x_adsp_ipc_put32(packet + 24, 95); expected = -EMSGSIZE; break;
+		case 7: n1x_adsp_ipc_put32(packet + 24, 257); expected = -EMSGSIZE; break;
+		case 8: n1x_adsp_pcm_put64(packet + 0x38, host.address - 4); expected = -ERANGE; break;
+		case 9: n1x_adsp_pcm_put64(packet + 0x38, host.address + host.bytes + 4); expected = -ERANGE; break;
+		case 10: n1x_adsp_pcm_put64(packet + 0x38, host.address + 1); expected = -ERANGE; break;
+		case 11: previous.notifications = ~(__u64)0; expected = -EOVERFLOW; break;
+		}
+		assert(n1x_adsp_pcm_capture_decode(&position, &previous, &host, packet, sizeof(packet)) == expected);
+		if (expected)
+			assert(!memcmp(&position, &before, sizeof(before)));
+		else
+			assert(position.valid && position.byte_offset == 1920 && !position.counter && position.notifications == 1);
+	}
+	consume_packet(packet, host.address, 0);
+	packet[18] = 23;
+	packet[22] = 0x13;
+	n1x_adsp_pcm_put64(packet + 0x38, host.address + host.bytes);
+	previous = (struct n1x_adsp_pcm_position){};
+	assert(!n1x_adsp_pcm_capture_decode(&position, &previous, &host, packet, sizeof(packet)));
+	assert(position.valid && position.at_end && !position.byte_offset);
+	for (size_t bytes = 0; bytes < 32; bytes++)
+		assert(n1x_adsp_pcm_capture_decode(&position, &previous, &host, packet, bytes) < 0);
+}
+
 int main(void)
 {
 	test_vectors();
@@ -312,6 +370,7 @@ int main(void)
 	test_rejections();
 	test_consumed_position();
 	test_producer_publication();
+	test_capture_position();
 	puts("DSP PCM: descriptor/producer vectors, consumed positions, bounds and generations: PASS");
 	return 0;
 }

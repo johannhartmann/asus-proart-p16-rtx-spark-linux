@@ -106,7 +106,7 @@ int mt8901_afe_sram_endpoint(struct mt8901_afe_sram_buffer *buffer,struct mt8901
 {assert(buffer==&sram && bytes==sizeof(*value) && dev_locked && request_locked);
  if(endpoint_error)return endpoint_error;*value=endpoint_data;return 0;}
 int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer,unsigned core)
-{assert(buffer==&sram && core==3 && dev_locked && request_locked && calls==5);
+{assert(buffer==&sram && core==2 && dev_locked && request_locked && calls==5);
  assert(tasks[3]==7 && commands[3]==0x10 && tasks[4]==16 && commands[4]==0x10);irq_stops++;
  if(power_in_irq_stop)dsp.power_error=-EIO;if(irq_stop_error)return irq_stop_error;
  endpoint_data.irq_prepared=false;return 0;}

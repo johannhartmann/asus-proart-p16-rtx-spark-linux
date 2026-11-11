@@ -162,6 +162,29 @@ bool mt8901_afe_sram_busy(struct mtk_base_afe *afe)
 	return priv->sram && atomic_read(&priv->sram->users) && !priv->sram->sleep_saved;
 }
 
+static bool mt8901_afe_sram_stream(int id, int stream)
+{
+	return (stream == SNDRV_PCM_STREAM_PLAYBACK &&
+		(id == MT8901_AFE_MEMIF_DL0 || id == MT8901_AFE_MEMIF_DL1)) ||
+	       (stream == SNDRV_PCM_STREAM_CAPTURE && id == MT8901_AFE_MEMIF_UL1);
+}
+
+static unsigned int mt8901_afe_sram_target(int memif)
+{
+	/* Endpoint route enum 2 (HiFi1) is distinct from task-core enum 3. */
+	return memif == MT8901_AFE_MEMIF_UL1 ? AFE_IRQ_MCU_DSP_EN : AFE_IRQ_MCU_DSP3_EN;
+}
+
+static bool mt8901_afe_sram_enable_valid(const struct mtk_base_memif_data *data, int id)
+{
+	int reg = id == MT8901_AFE_MEMIF_UL1 ? AFE_VUL1_CON0 :
+		  id == MT8901_AFE_MEMIF_DL1 ? AFE_DL1_CON0 : AFE_DL0_CON0;
+
+	return (id == MT8901_AFE_MEMIF_DL0 || id == MT8901_AFE_MEMIF_DL1 ||
+		id == MT8901_AFE_MEMIF_UL1) &&
+	       data && data->enable_reg == reg && data->enable_shift == DL_ON_SFT;
+}
+
 /* Caller owns the ALSA stream lifetime; the returned card device is referenced. */
 struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream)
 {
@@ -170,15 +193,14 @@ struct device *mt8901_afe_pcm_card_device(struct snd_pcm_substream *substream)
 	struct mtk_base_afe *afe;
 	struct device *card = ERR_PTR(-EINVAL);
 
-	if (!substream || !substream->pcm || !substream->runtime ||
-	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+	if (!substream || !substream->pcm || !substream->runtime)
 		return card;
 	rtd = snd_soc_substream_to_rtd(substream);
 	if (!rtd || !rtd->card || !snd_soc_card_is_instantiated(rtd->card) ||
 	    !rtd->card->dev || substream->pcm->card != rtd->card->snd_card)
 		return card;
 	dai = snd_soc_rtd_to_cpu(rtd, 0);
-	if (!dai || !dai->dev || dai->id != MT8901_AFE_MEMIF_DL0)
+	if (!dai || !dai->dev || !mt8901_afe_sram_stream(dai->id, substream->stream))
 		return card;
 	device_lock(dai->dev);
 	if (dai->dev->driver != &mt8901_afe_pcm_driver.driver)
@@ -329,8 +351,7 @@ int mt8901_afe_sram_startup(struct snd_pcm_substream *substream, struct snd_soc_
 		if (priv->sram->sleep_prepared || priv->sram->sleep_saved)
 			ret = -EBUSY;
 		else if (buffer &&
-			 (!mt8901_afe_dsp_enabled() || dai->id != MT8901_AFE_MEMIF_DL0 ||
-			  substream->stream != SNDRV_PCM_STREAM_PLAYBACK ||
+			 (!mt8901_afe_dsp_enabled() || !mt8901_afe_sram_stream(dai->id, substream->stream) ||
 			  !buffer->retention || buffer->substream || !buffer->published))
 			ret = -EBUSY;
 	}
@@ -351,8 +372,7 @@ static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
 	u32 frame_bytes;
 	int ret = 0, id, irq;
 
-	if (IS_ERR_OR_NULL(buffer) || buffer->ipc || !substream || !substream->runtime ||
-	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+	if (IS_ERR_OR_NULL(buffer) || buffer->ipc || !substream || !substream->runtime)
 		return -EINVAL;
 	runtime = substream->runtime;
 	if (snd_pcm_running(substream))
@@ -371,6 +391,10 @@ static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
 		return -EINVAL;
 	dai = snd_soc_rtd_to_cpu(snd_soc_substream_to_rtd(substream), 0);
 	id = dai->id;
+	if (!mt8901_afe_sram_stream(id, substream->stream) &&
+	    !(substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+	      id >= 0 && id < MT8901_AFE_MEMIF_UL_START))
+		return -EOPNOTSUPP;
 	device_lock(buffer->dev);
 	if (buffer->dev->driver != &mt8901_afe_pcm_driver.driver || dai->dev != buffer->dev) {
 		ret = -ENODEV;
@@ -381,7 +405,7 @@ static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
 		goto unlock;
 	}
 	afe = dev_get_drvdata(buffer->dev);
-	if (id < 0 || id >= MT8901_AFE_MEMIF_UL_START || id >= afe->memif_size ||
+	if (id < 0 || id >= MT8901_AFE_MEMIF_NUM || id >= afe->memif_size ||
 	    snd_soc_dai_get_drvdata(dai) != afe || afe->memif[id].substream != substream) {
 		ret = -EBUSY;
 		goto unlock;
@@ -389,26 +413,55 @@ static int mt8901_afe_sram_bind_common(struct mt8901_afe_sram_buffer *buffer,
 	irq = afe->memif[id].irq_usage;
 	if (irq != id || irq >= afe->irqs_size || !afe->irqs[irq].irq_occupyed ||
 	    buffer->substream || buffer->published != rebind ||
-	    buffer->sram->memif[id] != (rebind ? buffer : NULL)) {
+	    (buffer->sram->memif[id] && (!rebind || buffer->sram->memif[id] != buffer))) {
 		ret = -EBUSY;
 		goto unlock;
 	}
 	if (rebind) {
 		u32 control;
 
-		if (id != buffer->endpoint.memif || irq != buffer->endpoint.irq ||
+		if (buffer->sram->memif[buffer->endpoint.memif] != buffer ||
+		    (id == MT8901_AFE_MEMIF_UL1) != (buffer->endpoint.memif == MT8901_AFE_MEMIF_UL1) ||
 		    buffer->prepare_error || buffer->irq_error || buffer->irq_stop_error ||
 		    buffer->start_error || buffer->started) {
 			ret = -ENOTRECOVERABLE;
 			goto unlock;
 		}
-		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
+		ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8, &control);
 		if (ret)
 			goto unlock;
 		if (control & 1) {
 			ret = -EBUSY;
 			goto unlock;
 		}
+		/* The old stream was stopped and closed by the DSP owner. Check
+		 * both endpoints before moving this still-published reservation.
+		 */
+		if (id != buffer->endpoint.memif) {
+			const struct mtk_base_memif_data *old = afe->memif[buffer->endpoint.memif].data;
+			const struct mtk_base_memif_data *next = afe->memif[id].data;
+
+			if (!mt8901_afe_sram_enable_valid(old, buffer->endpoint.memif) ||
+			    !mt8901_afe_sram_enable_valid(next, id)) {
+				ret = -EOPNOTSUPP;
+				goto unlock;
+			}
+			ret = regmap_read(afe->regmap, old->enable_reg, &control);
+			if (!ret && !(control & BIT(old->enable_shift)))
+				ret = regmap_read(afe->regmap, AFE_IRQ0_MCU_CFG0 + irq * 8, &control);
+			else if (!ret)
+				ret = -EBUSY;
+			if (ret || (control & 1)) {
+				ret = ret ?: -EBUSY;
+				goto unlock;
+			}
+			ret = regmap_read(afe->regmap, next->enable_reg, &control);
+			if (ret || (control & BIT(next->enable_shift))) {
+				ret = ret ?: -EBUSY;
+				goto unlock;
+			}
+		}
+		buffer->sram->memif[buffer->endpoint.memif] = NULL;
 		buffer->prepared = false;
 		buffer->irq_prepared = false;
 		buffer->irq_stopped = false;
@@ -653,8 +706,8 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 	u32 bit;
 	int ret, cfg;
 
-	if (!substream || !dai || !dai->dev || dai->id != MT8901_AFE_MEMIF_DL0 ||
-	    substream->stream != SNDRV_PCM_STREAM_PLAYBACK)
+	if (!substream || !dai || !dai->dev ||
+	    !mt8901_afe_sram_stream(dai->id, substream->stream))
 		return -EINVAL;
 	device_lock(dai->dev);
 	if (dai->dev->driver != &mt8901_afe_pcm_driver.driver) {
@@ -686,7 +739,7 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 	data = afe->memif[dai->id].data;
 	irq = afe->irqs[buffer->endpoint.irq].irq_data;
 	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
-	if (!data || data->enable_reg != AFE_DL0_CON0 || data->enable_shift != DL_ON_SFT ||
+	if (!mt8901_afe_sram_enable_valid(data, dai->id) ||
 	    !irq || irq->id != buffer->endpoint.irq || irq->irq_en_reg != cfg ||
 	    irq->irq_en_shift || irq->irq_mask_reg != AFE_IRQ_MCU_EN ||
 	    irq->irq_mask_shift != buffer->endpoint.irq) {
@@ -699,10 +752,12 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 	bit = BIT(buffer->endpoint.irq);
 	ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
 	if (!ret)
-		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_DSP_EN, bit, bit);
+		ret = regmap_update_bits(afe->regmap, mt8901_afe_sram_target(dai->id), bit, bit);
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, data->enable_reg,
 					 BIT(data->enable_shift), BIT(data->enable_shift));
+	if (!ret)
+		mt8901_afe_sram_prefetch(afe, dai->id, substream);
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, cfg, 1, 1);
 	if (ret)
@@ -724,8 +779,8 @@ int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int
 
 	if (IS_ERR_OR_NULL(buffer) || buffer->ipc)
 		return -EINVAL;
-	/* The route-2 playback client runs on native core enum 3 (HiFi1). */
-	if (core != 3)
+	/* This argument is the endpoint route, not the task-core enum. */
+	if (core != (buffer->endpoint.memif == MT8901_AFE_MEMIF_UL1 ? 3 : 2))
 		return -EOPNOTSUPP;
 	device_lock(buffer->dev);
 	ret = mt8901_afe_sram_prepare_owner(buffer, &afe, true);
@@ -741,8 +796,7 @@ int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int
 	irq = afe->irqs[buffer->endpoint.irq].irq_data;
 	data = afe->memif[buffer->endpoint.memif].data;
 	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
-	if (!data || buffer->endpoint.memif != MT8901_AFE_MEMIF_DL0 ||
-	    data->enable_reg != AFE_DL0_CON0 || data->enable_shift != DL_ON_SFT ||
+	if (!mt8901_afe_sram_enable_valid(data, buffer->endpoint.memif) ||
 	    !irq || irq->id != buffer->endpoint.irq ||
 	    irq->irq_en_reg != cfg || irq->irq_en_shift ||
 	    irq->irq_clr_reg != cfg + 4 || irq->irq_clr_shift != 31 ||
@@ -763,7 +817,7 @@ int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
 	if (!ret)
-		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_DSP_EN, bit, 0);
+		ret = regmap_update_bits(afe->regmap, mt8901_afe_sram_target(buffer->endpoint.memif), bit, 0);
 	if (ret)
 		buffer->irq_stop_error = ret;
 	else {

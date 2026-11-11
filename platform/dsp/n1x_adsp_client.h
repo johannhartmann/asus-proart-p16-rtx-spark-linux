@@ -49,11 +49,11 @@ static inline struct device *n1x_adsp_find_device(struct device *consumer, const
 }
 #endif
 
-#define N1X_ADSP_PRIMARY_ABI 2U
+#define N1X_ADSP_PRIMARY_ABI 3U
 
-/* Query the typed playback client contract before opening a task. No firmware
- * access. ABI 2 adds retained-ring rebind, successful close/open reuse and
- * STOP/PREPARE/START recovery to the original position/retirement contract.
+/* Query the typed PCM client contract before opening a task. No firmware
+ * access. ABI 3 adds route-3 HiFi5 capture, DL1 playback and independent duplex
+ * owners to ABI 2's retained-ring and STOP/PREPARE/START contract.
  */
 __u32 n1x_adsp_primary_abi(void);
 
@@ -76,16 +76,15 @@ struct n1x_adsp_ipc_reply {
  * The client validates the service reply and retains any published buffers
  * until that service's release contract is satisfied. Errors are not retryable.
  * The reply is unchanged on error. This call sleeps and requires process context.
- * Tasks 7 and 16 must use the dedicated playback lifecycle API below.
+ * Tasks 7/16 and 23/21 must use the dedicated PCM lifecycle API below.
  */
 int n1x_adsp_transfer(struct device *dev,
 		      const struct n1x_adsp_ipc_request *request,
 		      struct n1x_adsp_ipc_reply *reply);
 
-/* Register the primary playback task's four message buffers on the core
- * selected by the speaker/headphone firmware properties (route 2, HiFi1).
- * Route 3 selects a different native task graph and is not implemented here.
- * Registered buffers
+/* Register the primary task's four message buffers: task 7 on route 2
+ * (HiFi1 playback), or task 23 on route 3 (primary HiFi5 capture). The core
+ * and firmware endpoint properties must agree. Registered buffers
  * remain owned by the DSP boot allocation; this call does not open a stream.
  * Repeated calls after success reuse the registration. A failed sequence
  * cannot be replayed or release its buffers. This call sleeps.
@@ -100,8 +99,8 @@ int n1x_adsp_prepare_primary(struct device *dev);
  */
 struct n1x_adsp_primary *n1x_adsp_primary_open(struct device *dev);
 
-/* ALSA frontend variant. Validates an actual AFE-owned playback substream and
- * retains a card-to-DSP system-PM link until close. Even an unconfigured open
+/* ALSA frontend variant. Validates an AFE-owned DL0/DL1 playback or UL1
+ * capture substream and retains a card-to-DSP system-PM link until close. Even an unconfigured open
  * stream is ordered before DSP D3. Legacy open() clients have no such grant.
  * Does not bypass the exclusive OPEN, firmware or lifetime checks; sleeps.
  */
@@ -115,8 +114,9 @@ struct n1x_adsp_primary *n1x_adsp_primary_open_pcm(struct device *dev,
 int n1x_adsp_primary_rebind(struct n1x_adsp_primary *primary,
 			    struct snd_pcm_substream *substream);
 
-/* Register and open processing task 16 with AFE-owned SRAM message memory,
- * then configure the task-7 host ring, task-16 AFE ring and bridge with
+/* Register and open processing task 16 (playback, SRAM messages) or task 21
+ * (capture, boot-owned DRAM messages), then configure the primary host ring,
+ * processing AFE ring and bridge with
  * commands 4, 0x201 and 4. Sends no PREPARE or START. The AFE must remain in
  * non-running stream setup, serialized by the caller. Host and AFE formats
  * must match; period sizes/counts may differ. Missing AFE support is rejected
@@ -133,9 +133,9 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 			       const struct n1x_adsp_primary_pcm_params *params,
 			       struct mt8901_afe_sram_buffer **sram);
 
-/* Prepare task 16 with commands 0x203 (hardware) and 3 (bridge), then task 7
- * with commands 0x203 and 3 (both host). Revalidates the published AFE endpoint
- * during non-running ALSA setup;
+/* Prepare the processing task with commands 0x203 (hardware) and 3 (bridge),
+ * then the primary task with commands 0x203 and 3 (both host). Revalidates the
+ * published AFE endpoint during non-running ALSA setup;
  * the caller serializes setup/teardown. Repeated success sends no further IPC.
  * A firmware-stage failure is terminal and retains both rings. This does not
  * enable the AFE memif, start a stream or release DMA. Before DSP PREPARE,
@@ -153,19 +153,20 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary);
 int n1x_adsp_primary_pcm_view(struct n1x_adsp_primary *primary,
 			      struct n1x_adsp_primary_pcm_view *view);
 
-/* Publish a prepared host ring's write cursor after filling samples through
- * pcm_view. The caller owns availability and serializes sample writes/handle
+/* Publish a prepared playback host ring's write cursor after filling samples
+ * through pcm_view. The caller owns availability and serializes sample writes/handle
  * lifetime. byte_offset is frame-aligned and may equal the ring size.
  * Orders completed sample writes before the registered descriptor, preserving
  * the last validated read address and advancing the write-generation counter.
  * Sends no mailbox command. A late power error can follow publication; that
  * error is terminal and the client must not retry or release published memory.
- * Requires process context. This call sleeps.
+ * Capture rejects this call with EOPNOTSUPP. Requires process context; sleeps.
  */
 int n1x_adsp_primary_commit(struct n1x_adsp_primary *primary, __u32 byte_offset);
 
-/* Start the prepared route-2 task-16/task-7 chain in normal playback mode 0.
- * Requires published samples and AFE endpoint ABI 2 IRQ readiness. The Linux
+/* Start the prepared route-2 task-16/task-7 playback or route-3 task-21/23
+ * capture chain. Playback requires published samples; both require AFE
+ * endpoint ABI 2 IRQ readiness. The Linux
  * audio client owns its DAPM/codec routing; this call does not program a gain
  * or channel merge or enable a CPU memif. Repeated success sends no IPC.
  * Firmware-stage failures are terminal and may leave hardware active.
@@ -173,16 +174,16 @@ int n1x_adsp_primary_commit(struct n1x_adsp_primary *primary, __u32 byte_offset)
  */
 int n1x_adsp_primary_start(struct n1x_adsp_primary *primary);
 
-/* STOP task 7 then task 16, then disable/clear the owned HiFi1 IRQ. Successful
+/* STOP the primary then processing task, then disable/clear the owned IRQ. Successful
  * repetition sends no IPC or register writes. Synchronizes and detaches the
  * period listener; the client must drain its own queued work before freeing
  * listener data. Does not release memory or prove core quiescence. Restart
- * requires a fresh PREPARE, listener and sample publication; no buffers are freed.
+ * requires a fresh PREPARE, listener and, for playback, sample publication; no buffers are freed.
  * A failed request is terminal. Requires process context; sleeps.
  */
 int n1x_adsp_primary_stop(struct n1x_adsp_primary *primary);
 
-/* Register one consumed-data listener, or pass NULL to detach it. The listener runs
+/* Register one playback-consumed or capture-produced data listener, or pass NULL to detach it. The listener runs
  * in IRQ context and must not sleep or call sleeping DSP APIs. Its position
  * snapshot is valid only during the call. A negative error reports a rejected
  * notification; no buffer address from that packet is used.

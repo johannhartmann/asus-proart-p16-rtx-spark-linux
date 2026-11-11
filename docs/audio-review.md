@@ -34,7 +34,7 @@ that are not managed by that card. The actual callback admits a bare primary
 owner with registration true; no card or retained PCM lease is needed.
 
 The source correction adds a typed PCM open API. The AFE validates the real
-instantiated card, DL0 CPU DAI, bound AFE driver and current memif substream.
+instantiated card, selected DL0/DL1 playback or UL1 capture CPU DAI, bound AFE driver and current memif substream.
 The client owns an explicit card-to-DSP PM link until CLOSE, and records it
 under the DSP device/mutex locks. PM prepare revalidates that card/stream
 relationship and bound driver; legacy clients and incomplete grants are refused.
@@ -102,7 +102,7 @@ pre-D3 SRAM contents are no longer mistaken for a firmware-liveness test.
 
 After success, firmware task registrations are invalidated, while ALSA handles,
 card links, operating DRAM and AFE allocations remain owned. Normal PCM prepare
-re-registers the retained slices, opens tasks 7/16 and replays cached HW_PARAMS.
+re-registers the retained slices, opens tasks 7/16 or 23/21 and replays cached HW_PARAMS.
 Closing before preparation sends no commands to the fresh, unopened tasks.
 Offline tests cover the reconstruction and failures at every request; hardware
 qualification of this new DSP/provider pair is still pending.
@@ -171,3 +171,42 @@ blockers.
 The normal default boot and recovery must stay preserved. Another test boot
 is useful only when it exercises a reviewed correction with explicit pass/fail
 criteria for the complete affected path.
+
+
+## 0.1.24 complete duplex source candidate
+
+The 0.1.23 bundle booted all three DSPs on boot `384ed0c0`, kernel 31, without
+retained faults. No PM test was run on that boot. Its successful startup does
+not qualify the REINIT correction. The newer 0.1.24 source adds HiFi5 capture,
+DL1 playback rebind and same-open HW_FREE/HW_PARAMS; it requires the matching
+AFE and PCM client ABI 3. Both read-only frontend options default off.
+
+Reconstruction of the selected Windows path also found two defects before
+hardware deployment: endpoint IRQ routes were conflated with task-core enums,
+and the shared descriptor encoder hard-coded playback direction/threshold.
+The corrected targets are HiFi1 `0xa000` and primary HiFi5 `0x9d04`; capture
+uses direction 2 and threshold 0. Tests verify the transmitted bytes as well
+as registration, START/STOP, every uncertain ACK stage, retained reconstruction,
+DMA-copy ordering, ARM release/acquire pointer publication and recoverable
+capture overrun.
+
+The capture graph is host 23 / processing 21 with six DRAM message slices and
+samples at offset 8192. The two direction owners retain at most 32 KiB SRAM
+each, plus playback's separate 2 KiB IPC. Capture notifications are IRQUL 0x13
+with producer pointer +0x38. No speculative consumer IPC or unproven processing
+tables are sent. Internal and headset codec selections, audible outputs,
+duplex use and post-wake audio/NPU still require hardware qualification;
+beamforming/noise suppression are not established capabilities of these tasks.
+
+`scripts/validate-dsp-audio.py` assembles the complete pre/post-device-PM PCM
+sequence and private evidence. It refuses the old module version, active
+owners and retained errors, and restores `pm_test=none` on failure. This avoids
+requesting a separate reboot for each additional stream feature. Physical
+sleep and long-running use follow only after the full device-only pass.
+
+
+The 0.1.24 source passes the complete driver/sanitizer suite and 148 repository
+unit tests (two skipped). DSP and AFE build with W=1 for kernel 31 without
+warnings; the 15 DSP and 17 AFE existing export CRCs are preserved. Generated
+patch replay and package input hashes agree. These checks qualify the source
+bundle, not capture or suspend on hardware.

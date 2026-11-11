@@ -97,7 +97,7 @@ int mt8901_afe_sram_endpoint(struct mt8901_afe_sram_buffer *buffer,struct mt8901
 {assert(bytes==sizeof(*value) && buffer==&lease && dev_locked==request_locked);if(endpoint_error)return endpoint_error;
  *value=endpoint_data;value->published=lease.published||endpoint_data.published;return 0;}
 int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer)
-{assert(buffer==&lease && dev_locked && request_locked && calls==5 && tasks[4]==7 && history[4]==4);publishes++;
+{assert(buffer==&lease && dev_locked && request_locked && calls==5 && tasks[4]==(dsp.capture?23:7) && history[4]==4);publishes++;
  if(publish_error)return publish_error;lease.published=true;return 0;}
 struct mt8901_afe_sram_buffer *mt8901_afe_sram_reserve_ipc(struct mt8901_afe_sram_buffer *peer,size_t bytes)
 {assert(peer==&lease && bytes==2048 && dev_locked && request_locked && calls==1);
@@ -119,8 +119,8 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
 {assert(buffer==&lease && dev_locked && request_locked && lease.published);
  assert(afe_prepares==irq_prepares+1 && !dsp.primary_pcm_prepared);irq_prepares++;if(!irq_prepare_error)endpoint_data.irq_prepared=true;return irq_prepare_error;}
 int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer,unsigned core)
-{assert(buffer==&lease && core==3 && dev_locked && request_locked);
- assert(history[calls-2]==0x10 && tasks[calls-2]==7 && history[calls-1]==0x10 && tasks[calls-1]==16);
+{assert(buffer==&lease && core==(dsp.capture?3U:2U) && dev_locked && request_locked);
+ assert(history[calls-2]==0x10 && tasks[calls-2]==(dsp.capture?23:7) && history[calls-1]==0x10 && tasks[calls-1]==(dsp.capture?21:16));
  endpoint_data.irq_prepared=false;return 0;}
 void mt8901_afe_sram_retire(struct mt8901_afe_sram_buffer *buffer)
 {assert(buffer==&lease && lease.published && dsp.primary_sram==buffer && dsp.primary_owner);
@@ -146,6 +146,41 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  const struct n1x_adsp_ipc_request *request,struct n1x_adsp_ipc_reply *reply)
 {
  assert(context==&dsp && dev_locked && request_locked && dsp.primary_task_active);
+ if(dsp.capture) {
+  assert((request->channel==23 || request->channel==21) && request->ack_mode==1 && !request->token);
+  assert(calls<1024);tasks[calls]=request->channel;history[calls++]=request->command;
+  if(request->command==5 || request->command==6) {
+   unsigned offset=4096+(request->command-5)*1024;
+   assert(request->channel==21 && request->data_mode==1 && request->parameter1==32);
+   assert(get64(request->payload)==dsp.dma+offset && get64(request->payload+8)==(uintptr_t)(memory+offset));
+   assert(get64(request->payload+16)==1024 && !get64(request->payload+24));
+  } else if(request->data_mode==1) {
+   bool host=request->channel==23;
+   bool hw=request->command==0x201 || (!host && request->command==0x203);
+   const u8 *packet=host?memory:memory+4096;
+   u64 base=host?0xe0002000:0x4e5c0000;unsigned bytes=host?7680:3840;
+   assert(request->command==4 || request->command==0x201 || request->command==0x203 || request->command==3);
+   assert(request->parameter1==8 && get64(request->payload)==dsp.dma+(host?0:4096));
+   assert(get64(packet)==base && get64(packet+8)==base+bytes && get64(packet+16)==base && get64(packet+24)==base);
+   assert(get64(packet+32)==bytes && n1x_adsp_ipc_get32(packet+48)==16 && n1x_adsp_ipc_get32(packet+52)==48000);
+   assert(n1x_adsp_ipc_get32(packet+60)==2 && !n1x_adsp_ipc_get32(packet+64));
+   assert(packet[80]==hw && packet[81]==(hw?8:0) && packet[82]==(hw?8:0) && packet[83]==1);
+   for(unsigned i=8192;i<8192+7680;i++)assert(!memory[i]);
+   assert(!messages.published && !dsp.processing_messages && !ipc_publishes);
+  } else {
+   unsigned p1=0,p2=0;
+   switch(request->command) {
+   case 1:case 2:case 9:case 0x10:break;
+   case 0x202:assert(request->channel==21);p1=1;break;
+   case 0x1f:assert(request->channel==23);p1=21;break;
+   case 0x11:assert(request->channel==23);p1=0x30;break;
+   case 0x0f:if(request->channel==23){p1=1;p2=21;}else p2=1;break;
+   default:assert(0);
+   }
+   assert(!request->payload && request->parameter1==p1 && request->parameter2==p2);
+  }
+  goto respond;
+ }
  assert((request->channel==7 || request->channel==16) && request->ack_mode==1 && !request->token && (request->parameter2==0 || (request->command==0x0f && request->channel==7 && request->parameter2==16)));
  assert(calls<1024);tasks[calls]=request->channel;history[calls++]=request->command;
  if(request->command==5 || request->command==6){
@@ -184,6 +219,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
   assert(request->parameter1==(request->command==0x202?1U:0U) && !request->payload);
   if(request->command==0x202)assert(request->channel==16);
  }
+respond:
  if(fail_at==calls)return -ETIMEDOUT;
  memset(reply,0,sizeof(*reply));reply->packet[18]=bad_at==calls && bad_field==1?8:request->channel;
  reply->packet[21]=2;n1x_adsp_ipc_put16(reply->packet+22,request->command+(bad_at==calls && bad_field==2));
@@ -211,7 +247,10 @@ static struct n1x_adsp_primary *open_primary(void)
 {struct n1x_adsp_primary *p=n1x_adsp_primary_open(&device);assert(!IS_ERR(p) && calls==1);return p;}
 static void configure(struct n1x_adsp_primary *p)
 {struct mt8901_afe_sram_buffer *buffer=&lease;assert(!n1x_adsp_primary_configure(p,&defaults,&buffer) && !buffer && calls==7);
- assert(dsp.primary_pcm_configured && dsp.processing_active && dsp.processing_messages==&messages && !symbol_refs);}
+ assert(dsp.primary_pcm_configured && dsp.processing_active &&
+ (dsp.capture?!dsp.processing_messages:dsp.processing_messages==&messages) && !symbol_refs);}
+static void capture_reset(void)
+{reset();dsp.capture=true;target=targets[0];endpoint_data.memif=endpoint_data.irq=8;}
 int main(void)
 {
  reset();ipc_afe_base=0x30001000;struct n1x_adsp_primary *relocated=open_primary();
@@ -395,7 +434,38 @@ int main(void)
  }
  assert(n1x_adsp_primary_configure(NULL,&defaults,&buffer)==-EINVAL);
  assert(n1x_adsp_primary_prepare_pcm(NULL)==-EINVAL && n1x_adsp_primary_pcm_view(NULL,NULL)==-EINVAL);
- puts("DSP PCM pipeline: tasks 7/16, SRAM message ownership, HWPARAM/PREPARE/close vectors and terminal faults: PASS");
+ /* Native microphone path: host task 23, DRAM processing task 21, IRQ route 3. */
+ capture_reset();p=open_primary();configure(p);
+ assert(!n1x_adsp_primary_prepare_pcm(p) && calls==11);
+ assert(n1x_adsp_primary_commit(p,0)==-EOPNOTSUPP && !dsp.primary_write_publications);
+ for(unsigned cycle=0;cycle<32;cycle++) {
+  if(cycle)assert(!n1x_adsp_primary_prepare_pcm(p));
+  unsigned begin=calls;dsp.primary_period=(void *)1;
+  assert(!n1x_adsp_primary_start(p) && calls==begin+4 && dsp.primary_running);
+  const u16 capture_start[]={0xf,0x1f,0x11,0xf};
+  const u8 capture_tasks[]={21,23,23,23};
+  assert(!memcmp(history+begin,capture_start,sizeof(capture_start)));
+  assert(!memcmp(tasks+begin,capture_tasks,sizeof(capture_tasks)));
+  assert(!n1x_adsp_primary_stop(p) && calls==begin+6 && !dsp.primary_running);
+ }
+ assert(!n1x_adsp_primary_close(p));closed();
+ for(unsigned stage=2;stage<=15;stage++)for(unsigned echo=0;echo<3;echo++) {
+  capture_reset();p=open_primary();struct mt8901_afe_sram_buffer *buffer=&lease;
+  if(stage>=8)configure(p);
+  if(stage>=12)assert(!n1x_adsp_primary_prepare_pcm(p));
+  if(echo){bad_at=stage;bad_field=echo;}else fail_at=stage;
+  dsp.primary_period=(void *)1;
+  int error=stage<8?n1x_adsp_primary_configure(p,&defaults,&buffer):
+   stage<12?n1x_adsp_primary_prepare_pcm(p):n1x_adsp_primary_start(p);
+  assert(error==(echo?-EPROTO:-ETIMEDOUT) && calls==stage && dsp.primary_task_error==error);
+  assert(!messages.published && !dsp.processing_messages && !ipc_publishes && !ipc_releases);
+  assert(n1x_adsp_primary_close(p)==error && calls==stage);closed();
+ }
+ capture_reset();p=open_primary();configure(p);post_reinit=true;
+ dsp.primary_restore_pending=true;dsp.primary_task_active=dsp.processing_active=false;dsp.processing_registered=false;
+ assert(!n1x_adsp_primary_prepare_pcm(p) && calls==18 && !dsp.primary_restore_pending && !ipc_publishes);
+ assert(!n1x_adsp_primary_close(p));closed();
+ puts("DSP PCM pipeline: playback 7/16, capture 23/21, native wire/ownership, reconstruction and terminal faults: PASS");
  return 0;
 }
 '''

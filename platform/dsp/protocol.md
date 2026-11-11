@@ -313,7 +313,7 @@ for the speaker/headphone route 2. `0x140027438` inserts the first free task
 assigns both groups to native core enum 3 (HiFi1) on route 2. The exclusive
 Linux primary API uses the first member of each group, 7 and 16. Route 3
 selects a different native primary group; the task-7 API rejects it before
-registration. That graph is not implemented.
+registration. The separate route-3 graph is described below.
 
 The message allocator's mask at `0x140025018` is `0x20010400`. Task 16 therefore
 uses SRAM message buffers, unlike task 7's boot-owned coherent DRAM. Task 16
@@ -663,8 +663,10 @@ For a fresh start, speaker handler `0x140083a10` prepares the IRQ after the
 stream's configuration/PREPARE method, starts the DSP stream, then takes the
 IRQ reference. DSP IRQ method `0x140026830` increments its reference count
 without writing the IRQ enable or target. The stop method `0x1400268b0`
-disables the last-user IRQ and clears its target; native HiFi1 enum 3 uses
-`0x9d04`. The normal stream's gain helpers cannot supply this IRQ contract.
+disables the last-user IRQ and clears its target. Its argument is the
+endpoint route: 2 selects HiFi1 at `0xa000`, 3 primary HiFi5 at `0x9d04`,
+and 4 secondary HiFi5 at `0x9d08`. Task-core enum 3 also means HiFi1 but
+is a different enum; the old interpretation of this argument was incorrect. The normal stream's gain helpers cannot supply this IRQ contract.
 Actual firmware START behavior still needs hardware qualification.
 
 The driver implements the configuration step as a separate AFE-owner
@@ -701,7 +703,7 @@ the typed trigger does not duplicate the stock CPU memif trigger.
 STOP sends command `0x10` to task 7, then task 16, then calls the AFE owner's
 HiFi1 IRQ stop operation. For the owned IRQ, the owner clears CFG0 bit 0,
 reads CFG1 and toggles its bit 31 to acknowledge a pending IRQ, then removes
-that IRQ's MCU target in `0x9d00` and HiFi1 target in `0x9d04`. The clear-bit
+that IRQ's MCU target in `0x9d00` and HiFi1 target in `0xa000`. The clear-bit
 operation follows the existing MT8901 Linux AFE trigger and the separate
 native IRQ-stop path. Every I/O result is checked. Other IRQ bits are preserved;
 no memif enable or gain register is written.
@@ -732,7 +734,7 @@ playback IRQs and preservation of unrelated target bits.
 The driver integrates a DL0 playback client into the existing nonatomic
 AFE/SoundWire frontend. The AFE `dsp_playback` parameter defaults to false and
 is read-only after module load. The client requires `n1x_adsp_primary_abi()`
-to return primary-client ABI 2 before OPEN. This contract includes retained
+to return primary-client ABI 3 before OPEN. This contract includes retained
 lease retirement and an `at_end` flag alongside the normalized consumed byte
 offset. The flag distinguishes a firmware read address at the end boundary
 from the base address; the firmware wire record is unchanged.
@@ -826,5 +828,71 @@ its snapshot memory is allocated during probe. On wake it powers up and restores
 SRAM before DSP D0 is permitted. A failed restoration retains the saved flag
 and blocks consumers. This follows the platform's D3/D0 retention model, not a
 new claim of whole-core shutdown. Runtime autosuspend and DMA reclamation stay
-blocked. HiFi5 microphone processing is not implemented; ordinary capture uses
-the existing ALSA path. No physical qualification is claimed by these changes.
+blocked. The opt-in HiFi5 capture graph below uses the existing ALSA input
+routing; its endpoint and sleep qualification is still pending. No physical qualification is claimed by these changes.
+
+
+## Primary HiFi5 capture and duplex (PCM client ABI 3)
+
+Static analysis of the pinned `nvasd.sys` reconstructs the MICP endpoint path 3
+(SSDT3 endpoint mask bit 1). `0x140006ed0` maps it to task-core 1, primary HiFi5;
+this is distinct from the IRQ route enum. Microphone setup `0x1400810e8` calls
+constructor `0x140027ba8`: nonzero non-RAW processing modes select host task
+23; RAW GUID `9e90ea20-b493-4fd1-a1a8-7e1361a956cf` selects 22. The Linux
+candidate implements 23. `0x140027438` selects processing task 21.
+
+The allocation mask `0x20010400` excludes both 23 and 21. Host registrations
+5/6/0x20a/0x20b use DRAM offsets 0..4095; processing registrations 5/6 use
+4096..6143; samples start at 8192. Neither task registers IPC SRAM. Configuration,
+PREPARE and CLOSE have the same command ordering as playback, with tasks 23/21.
+Direction helper `0x14002aed8` returns 2 for both tasks. Configuration
+`0x14002a0b0` writes this at descriptor offset 0x3c and clears the start
+threshold at 0x40 for capture; playback uses direction 1. Copying playback's
+constant direction/threshold would therefore produce invalid capture semantics.
+
+The address translation helper `0x140025fe0` selects context+0x50 for selector
+2 (AFE/VAD) and +0x58 for selectors 3/4 (HiFi5). Initializer `0x140024560`
+populates them from the firmware SRAM tuple, defaulting to 0x1a6c0000 and
+0x4e5c0000. Message allocator `0x1400249e8` maps task-core 3 to translation
+selector 2, and task-core 1 to selector 3. Linux uses the corresponding AFE
+lease metadata, never a guessed interchangeable DMA address.
+
+Native capture START `0x140029310` sends:
+
+| Task | Command | Parameter 1 | Parameter 2 |
+| --- | --- | --- | --- |
+| 21 | 0x0f | 0 | 1 |
+| 23 | 0x1f | 21 | 0 |
+| 23 | 0x11 | 0x30 | 0 |
+| 23 | 0x0f | 1 | 21 |
+
+The 0x30 selector is opaque. Its optional client-table copy is absent when the
+constructor's pointer/count remain zero; no invented table is uploaded. The
+last prepared host message is retained, matching that native zero-copy case.
+STOP sends 0x10 to host then processing before disabling UL1 and its HiFi5 IRQ.
+
+The native IRQUL listener accepts class 0, ACK 0, task 23, command 0x13 and a
+96-byte inline descriptor. Its producer pointer is packet+0x38, rather than
+playback's consumed pointer at +0x30. The native capture engine neither applies
+the playback generation filter nor publishes a host consumer IPC. Linux checks
+payload length, owned extent and frame alignment, then defers the DMA copy.
+The ALSA pointer advances only after samples have been copied to its managed
+staging ring. Pending bytes include in-flight copies; reaching a full ring
+reports a recoverable ALSA XRUN. Transport or backend faults remain terminal.
+
+The frontend owns one stream per direction. Its persistent 32 KiB playback and
+capture rings plus 2 KiB playback IPC fit the 80 KiB pool. Playback may rebind
+DL0 to DL1 after normal task CLOSE and checked idle old/new IRQs and memifs;
+UL1 remains capture-only. HW_FREE/HW_PARAMS can reopen the same ALSA file with
+new geometry without leaking leases. REINIT reconstructs either graph using
+the retained buffers and card links.
+
+The stock UCM routes both internal and headset microphones through UL1, whereas
+native Windows HSMP is direct path 0. Applying the HiFi5 graph to Linux UL1 is
+an integration choice requiring tests of both codec selections. No beamforming,
+noise suppression, secondary-HiFi5 PCM or whole-core shutdown is inferred.
+`analyze-dsp-pcm.py` emits the pinned code ranges and protocol facts without
+executing Windows code. Actual-function sanitizer harnesses cover native
+message values, fault stages, repeated duplex retention votes, ring wrap,
+copy ordering, XRUN and recovery. These are offline results; full capture,
+endpoint switching and post-REINIT hardware qualification remain pending.

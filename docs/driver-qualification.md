@@ -18,8 +18,9 @@ not the new context/client code.
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
-[`1db0cf2`](https://github.com/johannhartmann/n1x-npu-linux/commit/1db0cf2)
-or an ABI-compatible merged revision. Use that checkout for the sibling NPU tree.
+[`3ea7a7f`](https://github.com/johannhartmann/n1x-npu-linux/commit/3ea7a7f)
+or an ABI-compatible merged revision with typed REINIT support. DSP 0.1.24
+and the matching AFE must both use PCM client ABI 3. Use that checkout for the sibling NPU tree.
 First run the offline suites and pin the matching provider snapshot:
 
 ```sh
@@ -74,7 +75,7 @@ against the old already-loaded modules.
 6. With the retention option absent, published DSPs must still reject sleep in
    PM `prepare` without losing audio devices. With a separate candidate boot
    using `n1x_adsp.enable_retention_sleep=1`, qualify the ASoC-ordered DSP s2idle path
-   described in [the DSP guide](../platform/dsp/README.md#hardware-qualification):
+   described in [the DSP guide](audio.md#qualification-after-the-fresh-boot):
    `pm_test=devices` first, then real/repeated sleep, firmware IPC, audio and
    numerical NPU execution. All DSP DMA/provider leases must remain retained;
    failed D3 completion or resume must remain terminal. This is retention,

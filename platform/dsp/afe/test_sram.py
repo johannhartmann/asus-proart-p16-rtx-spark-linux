@@ -68,9 +68,14 @@ typedef uint8_t u8;typedef uint32_t u32;typedef uint64_t u64;typedef _Atomic int
 #define AFE_IRQ0_MCU_CFG0 0x9d40
 #define AFE_IRQ_MCU_EN 0x9d00
 #define AFE_IRQ_MCU_DSP_EN 0x9d04
+#define AFE_IRQ_MCU_DSP3_EN 0xa000
 #define AFE_DL0_CON0 0x4460
+#define AFE_DL1_CON0 0x4490
+#define AFE_VUL1_CON0 0x4db0
 #define DL_ON_SFT 28
 #define MT8901_AFE_MEMIF_DL0 0
+#define MT8901_AFE_MEMIF_DL1 1
+#define MT8901_AFE_MEMIF_UL1 8
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
 #define IS_ALIGNED(n,a) (!((n)&((a)-1)))
 #define ERR_PTR(e) ((void *)(intptr_t)(e))
@@ -105,6 +110,7 @@ struct snd_pcm_substream {struct snd_pcm *pcm;int stream;struct snd_pcm_runtime 
 #define MT8901_AFE_MEMIF_NUM 16
 #define MT8901_AFE_MEMIF_UL_START 7
 #define SNDRV_PCM_STREAM_PLAYBACK 0
+#define SNDRV_PCM_STREAM_CAPTURE 1
 struct resource {unsigned long start,end;const char *name;};
 #define DEFINE_RES_MEM(base,bytes) { .start=(base),.end=(base)+(bytes)-1 }
 struct gen_pool {unsigned long base;unsigned char used[5120];};
@@ -159,8 +165,14 @@ static int regmap_write(void *map,int reg,u32 value)
  const u32 values[]={0x1a6c0000+expected_offset,0x1a6c0000+expected_offset+3839,0,0};
  assert(reg==regs[program_calls] && value==values[program_calls]);
  program_calls++;return program_calls==program_fail_at?-EIO:0;}
+static unsigned engine_memif;
+static bool moving;static unsigned move_reads,move_fail;static u32 move_words[4];
 static int regmap_read(void *map,int reg,u32 *value)
-{if(irq_stopping){
+{if(moving){
+ const int regs[]={0x9d40,AFE_DL0_CON0,0x9d48,AFE_DL1_CON0};
+ assert(locked && map==afe.regmap && move_reads<4 && reg==regs[move_reads]);
+ *value=move_words[move_reads++];return move_reads==move_fail?-EIO:0;
+ }if(irq_stopping){
  assert(locked && pm_refs && pm_active && map==afe.regmap && reg==0x9d44+(int)expected_irq*8 && stop_calls==2);
  stop_calls++;if(stop_fail_step==stop_calls)return -EIO;*value=clear_read=counter_word;return 0;
  }assert(locked && pm_refs && pm_active && map==afe.regmap && reg==0x9d40+(int)expected_irq*8);
@@ -168,17 +180,19 @@ static int regmap_read(void *map,int reg,u32 *value)
 static int regmap_update_bits(void *map,int reg,u32 mask,u32 value)
 {if(engine_starting){
  assert(locked && pm_refs && pm_active && map==afe.regmap && engine_updates<7);
- const int regs[]={0x9d44,0x9d40,0x9d40,AFE_IRQ_MCU_EN,AFE_IRQ_MCU_DSP_EN,AFE_DL0_CON0,AFE_IRQ0_MCU_CFG0};
- const u32 masks[]={0xffffff,0x1f<<4,7<<9,BIT(0),BIT(0),BIT(28),BIT(0)},values[]={480,10<<4,1<<9,0,BIT(0),BIT(28),BIT(0)};
+ int cfg=AFE_IRQ0_MCU_CFG0+expected_irq*8;int target=engine_memif==8?AFE_IRQ_MCU_DSP_EN:AFE_IRQ_MCU_DSP3_EN;int enable=engine_memif==8?AFE_VUL1_CON0:AFE_DL0_CON0;
+ const int regs[]={cfg+4,cfg,cfg,AFE_IRQ_MCU_EN,target,enable,cfg};
+ const u32 masks[]={0xffffff,0x1f<<4,7<<9,BIT(expected_irq),BIT(expected_irq),BIT(28),BIT(0)},values[]={480,10<<4,1<<9,0,BIT(expected_irq),BIT(28),BIT(0)};
  assert(reg==regs[engine_updates] && mask==masks[engine_updates] && value==values[engine_updates]);
- u32 *word=reg==AFE_IRQ_MCU_EN?&mcu_word:reg==AFE_IRQ_MCU_DSP_EN?&dsp_word:reg==AFE_DL0_CON0?&memif_word:reg==0x9d44?&counter_word:&cfg_word;
+ u32 *word=reg==AFE_IRQ_MCU_EN?&mcu_word:reg==target?&dsp_word:reg==enable?&memif_word:reg==cfg+4?&counter_word:&cfg_word;
  *word=(*word&~mask)|(value&mask);engine_updates++;return engine_updates==engine_fail_at?-EIO:0;
  }if(irq_stopping){
  assert(locked && pm_refs && pm_active && map==afe.regmap && stop_calls<6 && stop_calls!=2);
- const int regs[]={AFE_DL0_CON0,0x9d40+(int)expected_irq*8,0,0x9d44+(int)expected_irq*8,0x9d00,0x9d04};
+ int enable=engine_memif==8?AFE_VUL1_CON0:AFE_DL0_CON0;
+ const int regs[]={enable,0x9d40+(int)expected_irq*8,0,0x9d44+(int)expected_irq*8,0x9d00,engine_memif==8?0x9d04:0xa000};
  const u32 masks[]={BIT(28),1,0,BIT(31),BIT(expected_irq),BIT(expected_irq)};const u32 values[]={0,0,0,~clear_read&BIT(31),0,0};
  assert(reg==regs[stop_calls] && mask==masks[stop_calls] && value==values[stop_calls]);
- u32 *word=reg==AFE_DL0_CON0?&memif_word:reg==0x9d40+(int)expected_irq*8?&cfg_word:reg==0x9d44+(int)expected_irq*8?&counter_word:reg==0x9d00?&mcu_word:&dsp_word;
+ u32 *word=reg==enable?&memif_word:reg==0x9d40+(int)expected_irq*8?&cfg_word:reg==0x9d44+(int)expected_irq*8?&counter_word:reg==0x9d00?&mcu_word:&dsp_word;
  *word=(*word&~mask)|(value&mask);stop_calls++;return stop_calls==stop_fail_step?-EIO:0;
  }assert(locked && pm_refs && pm_active && map==afe.regmap && program_calls==4 && irq_updates<3);
  const int regs[]={0x9d44+(int)expected_irq*8,0x9d40+(int)expected_irq*8,0x9d40+(int)expected_irq*8};const u32 masks[]={0xffffff,0x1f<<4,7<<9};
@@ -279,6 +293,11 @@ static void regcache_mark_dirty(void *map) {assert(map==(void *)3);hardware_call
 static bool dsp_enabled;
 static bool mt8901_afe_dsp_enabled(void){return dsp_enabled;}
 #define MT8901_AFE_MEMIF_DL0 0
+#define MT8901_AFE_MEMIF_DL1 1
+#define MT8901_AFE_MEMIF_UL1 8
+static unsigned long mt8901_get_prefetch_delay(struct mtk_base_afe *a,int id,unsigned minlen,unsigned rate,unsigned channels,unsigned bits)
+{(void)a;(void)id;(void)minlen;(void)rate;(void)channels;(void)bits;return 1;}
+static void udelay(unsigned long us) {assert(us==1);}
 ''' + domain + owner + suspend + r'''
 static void reset(void)
 {
@@ -336,7 +355,7 @@ int main(void)
   switch(fault){case 1:card.instantiated=false;break;case 2:card.dev=NULL;break;
    case 3:pcm.card=NULL;break;case 4:stream.pcm=NULL;break;case 5:stream.stream=1;break;
    case 6:afe.memif[0].substream=NULL;break;case 7:device.driver=NULL;break;
-   case 8:dai.id=1;break;case 9:rtd.card=NULL;break;}
+   case 8:dai.id=2;break;case 9:rtd.card=NULL;break;}
   struct device *result=mt8901_afe_pcm_card_device(&stream);
   if(!fault){assert(result==&card_device && card_refs==1);put_device(result);}
   else assert(IS_ERR(result) && !card_refs);
@@ -502,6 +521,30 @@ int main(void)
   _exit(0);
  }
  assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ for(unsigned fault=0;fault<9;fault++) {
+  reset();init();child=fork();assert(child>=0);
+  if(!child) {
+   b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+   assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+   mt8901_afe_sram_retire(b);afe.memif[0].substream=NULL;
+   struct mtk_base_memif_data next=memif_data;next.enable_reg=AFE_DL1_CON0;
+   afe.memif[1].data=&next;dai.id=1;afe.memif[1].substream=&stream;
+   moving=true;move_reads=move_fail=0;memset(move_words,0,sizeof(move_words));
+   if(fault>=1 && fault<=4)move_words[fault-1]=(fault==1 || fault==3)?1:BIT(28);
+   if(fault>=5)move_fail=fault-4;
+   int result=mt8901_afe_sram_rebind(b,&stream);
+   if(!fault) {
+    assert(!result && move_reads==4 && !private.sram->memif[0] && private.sram->memif[1]==b);
+    assert(b->endpoint.memif==1 && b->endpoint.irq==1 && b->substream==&stream);
+   } else {
+    assert(result==(fault>=5?-EIO:-EBUSY));
+    assert(private.sram->memif[0]==b && !private.sram->memif[1] && !b->substream && !b->endpoint.memif);
+   }
+   assert(b->published && module_refs==1 && pm_refs==1);
+   _exit(0);
+  }
+  assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ }
  assert(mt8901_afe_sram_prepare(NULL)==-EINVAL && mt8901_afe_sram_prepare(ERR_PTR(-EIO))==-EINVAL);
  for(unsigned fault=0;fault<28;fault++){
   reset();init();child=fork();assert(child>=0);
@@ -604,6 +647,29 @@ int main(void)
   }
   assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));empty();
  }
+ reset();init();child=fork();assert(child>=0);
+ if(!child) {
+  engine_memif=expected_irq=dai.id=8;stream.stream=1;memif_data.enable_reg=AFE_VUL1_CON0;
+  irq_data.id=irq_data.irq_mask_shift=8;irq_data.irq_en_reg=0x9d80;
+  irq_data.irq_cnt_reg=irq_data.irq_clr_reg=0x9d84;
+  irq_data.irq_fs_reg=irq_data.irq_domain_reg=0x9d80;private.dai_priv[8]=&memif_clock;
+  b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+  assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+  assert(!mt8901_afe_sram_prepare(b));
+  for(unsigned cycle=0;cycle<32;cycle++) {
+   irq_updates=0;assert(!mt8901_afe_sram_prepare_irq(b));
+   runtime.running=true;engine_starting=true;engine_updates=0;
+   assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==7 && b->started);
+   assert(dsp_word&BIT(8));assert(!(mcu_word&BIT(8)) && (memif_word&BIT(28)) && (cfg_word&1));
+   engine_starting=false;irq_stopping=true;stop_calls=0;
+   assert(mt8901_afe_sram_stop_irq(b,2)==-EOPNOTSUPP && !stop_calls);
+   assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && !b->started);
+   assert(!(dsp_word&BIT(8)) && !(memif_word&BIT(28)) && !(cfg_word&1));
+   runtime.running=false;irq_stopping=false;
+  }
+  _exit(0);
+ }
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
  assert(mt8901_afe_sram_start_pcm(NULL,&dai)==-EINVAL);
  assert(mt8901_afe_sram_start_pcm(&stream,NULL)==-EINVAL);
  for(unsigned fault=0;fault<30;fault++) {
@@ -638,7 +704,7 @@ int main(void)
     assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==7);
     for(unsigned cycle=0;cycle<32;cycle++) {
      engine_starting=false;irq_stopping=true;stop_calls=0;
-     assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && !b->started);
+     assert(!mt8901_afe_sram_stop_irq(b,2) && stop_calls==6 && !b->started);
      assert(memif_word==old_memif && cfg_word==old_cfg && !(dsp_word&1U));
      runtime.running=false;irq_stopping=false;irq_updates=0;
      assert(!mt8901_afe_sram_prepare_irq(b));
@@ -650,8 +716,8 @@ int main(void)
     engine_fail_at=0;assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && engine_updates==fault);
     assert(mt8901_afe_sram_pm_prepare(&afe)==-ENOTRECOVERABLE);
     engine_starting=false;irq_stopping=true;
-    if(fault<=3)assert(mt8901_afe_sram_stop_irq(b,3)==-EIO && !stop_calls && b->irq_error==-EIO);
-    else assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && b->start_error==-EIO);
+    if(fault<=3)assert(mt8901_afe_sram_stop_irq(b,2)==-EIO && !stop_calls && b->irq_error==-EIO);
+    else assert(!mt8901_afe_sram_stop_irq(b,2) && stop_calls==6 && b->start_error==-EIO);
    } else {
     assert(result<0 && !engine_updates && !b->started);
     assert(memif_word==old_memif && cfg_word==old_cfg && mcu_word==old_mcu && dsp_word==old_dsp);
@@ -675,9 +741,9 @@ int main(void)
    }
    assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
    assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b));
-   runtime.running=true;cfg_word|=1;irq_stopping=true;unsigned core=3;
+   runtime.running=true;cfg_word|=1;irq_stopping=true;unsigned core=2;
    switch(fault){
-   case 1:counter_word|=BIT(31);break;case 2:core=2;break;case 3:b->irq_prepared=false;break;
+   case 1:counter_word|=BIT(31);break;case 2:core=3;break;case 3:b->irq_prepared=false;break;
    case 4:b->substream=NULL;break;case 5:runtime.rate=44100;break;case 6:dai.dev=NULL;break;
    case 7:afe.memif[0].irq_usage=1;break;case 8:irq_data.id=1;break;case 9:irq_data.irq_en_reg++;break;
    case 10:irq_data.irq_en_shift=1;break;case 11:irq_data.irq_clr_reg++;break;case 12:irq_data.irq_clr_shift=30;break;
@@ -727,7 +793,7 @@ int main(void)
   assert(mt8901_afe_sram_endpoint(b,&retired,sizeof(retired))==-ENODEV);
   assert(!memcmp(&retired,&saved_retired,sizeof(retired)));
   assert(mt8901_afe_sram_prepare(b)==-ENODEV && mt8901_afe_sram_prepare_irq(b)==-ENODEV);
-  assert(mt8901_afe_sram_stop_irq(b,3)==-ENODEV && mt8901_afe_sram_publish(b)==-ENODEV);
+  assert(mt8901_afe_sram_stop_irq(b,2)==-ENODEV && mt8901_afe_sram_publish(b)==-ENODEV);
   mt8901_afe_sram_retire(b);mt8901_afe_sram_retire(NULL);
   assert(program_calls+irq_updates+stop_calls==writes);
   assert(mt8901_afe_sram_release(b)==-EBUSY && module_refs==1 && device_refs==1 && pm_refs==1);
@@ -762,7 +828,43 @@ int main(void)
   assert(a+3840<=b || b+3840<=a);
  }
  empty();assert(!pthread_barrier_destroy(&rendezvous));cleanup();assert(!pools);
- puts("AFE SRAM owner: firmware/resource faults, lifetime balance, publication retention, forced-suspend guard and eight concurrent leases: PASS");
+ /* Full duplex must fit simultaneously, with one independently owned lease
+  * per direction and playback IPC. No overlapping address ranges or votes.
+  */
+ reset();init();child=fork();assert(child>=0);
+ if(!child) {
+  struct mt8901_afe_sram_buffer *play=mt8901_afe_sram_reserve(&device,32768);
+  struct mt8901_afe_sram_buffer *capture=mt8901_afe_sram_reserve(&device,32768);
+  assert(!IS_ERR(play) && !IS_ERR(capture));
+  assert(!mt8901_afe_sram_bind(play,&stream));
+  struct mt8901_afe_sram_buffer *ipc=mt8901_afe_sram_reserve_ipc(play,2048);
+  assert(!IS_ERR(ipc));
+  struct snd_soc_dai cap_dai=dai;cap_dai.id=8;
+  struct snd_soc_pcm_runtime cap_rtd=rtd;cap_rtd.cpu=&cap_dai;
+  struct snd_pcm_substream cap_stream=stream;cap_stream.stream=1;cap_stream.rtd=&cap_rtd;
+  afe.memif[8].substream=&cap_stream;
+  assert(!mt8901_afe_sram_bind(capture,&cap_stream));
+  assert(private.sram->memif[0]==play && private.sram->memif[8]==capture);
+  struct mt8901_afe_sram_view a,b,c;
+  assert(!mt8901_afe_sram_view(play,&a) && !mt8901_afe_sram_view(capture,&b) && !mt8901_afe_sram_view(ipc,&c));
+  assert(a.cpu_address+a.bytes<=b.cpu_address && b.cpu_address+b.bytes<=c.cpu_address);
+  assert(!mt8901_afe_sram_publish(play) && !mt8901_afe_sram_publish(capture) && !mt8901_afe_sram_publish_ipc(ipc));
+  assert(!mt8901_afe_sram_allow_retention(play) && !mt8901_afe_sram_allow_retention(capture) && !mt8901_afe_sram_allow_retention(ipc));
+  assert(atomic_read(&private.sram->users)==3 && atomic_read(&private.sram->retention_users)==3);
+  for(unsigned cycle=0;cycle<32;cycle++) {
+   device_lock(&device);assert(!mt8901_afe_sram_pm_prepare(&afe));device_unlock(&device);
+   assert(!mt8901_afe_sram_suspend(play) && !mt8901_afe_sram_suspend(ipc));
+   device_lock(&device);assert(mt8901_afe_sram_pm_save(&afe)==-EBUSY);device_unlock(&device);
+   assert(!mt8901_afe_sram_suspend(capture));
+   device_lock(&device);assert(!mt8901_afe_sram_pm_save(&afe));mt8901_afe_sram_pm_restore(&afe);device_unlock(&device);
+   assert(!mt8901_afe_sram_resume(play) && !mt8901_afe_sram_resume(capture) && !mt8901_afe_sram_resume(ipc));
+   device_lock(&device);mt8901_afe_sram_pm_complete(&afe);device_unlock(&device);
+   assert(!atomic_read(&private.sram->sleeping_users));
+  }
+  _exit(0);
+ }
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));empty();cleanup();
+ puts("AFE SRAM owner: independent duplex leases/votes, 32 PM cycles, publication faults and concurrent ownership: PASS");
  return 0;
 }
 '''
