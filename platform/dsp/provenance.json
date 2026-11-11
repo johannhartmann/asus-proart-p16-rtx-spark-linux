@@ -617,7 +617,8 @@
     ],
     "independent_power_state_decoder_verified": false,
     "hardware_qualified": false,
-    "restart_power": "After a provider-recorded retirement, require a successful native D0 before operating DMA allocation/publication; avoid duplicate D0 if runtime resume already performed it"
+    "restart_power": "After a provider-recorded retirement, require a successful native D0 before operating DMA allocation/publication; avoid duplicate D0 if runtime resume already performed it",
+    "maintenance_recovery": "Read-only replacement preflight; root-owned same-boot stage/parameter/service journal and explicit --resume. Resume software errors without repeating completed power transitions; accepted-but-not-ready upload recovery stays behind checked native shutdown; unknown uploads/power results never replayed"
   },
   "capture_register_cache": {
     "source_defect": "Firmware-mutated memif state remained cacheable; capture checks could see stale enable=0 and STOP could skip clearing hardware",

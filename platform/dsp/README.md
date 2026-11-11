@@ -135,7 +135,13 @@ the idle sound card, quiesces all cores, retires them, unloads DSP/AFE and reloa
 the installed modules with the original parameters. It restores previously
 active services on success or failure and checks that the ALSA card binds.
 Another application's live ALSA reference can refuse module removal; nothing
-is force-unloaded or killed. See [audio validation](../../docs/audio.md#module-reload-qualification).
+is force-unloaded or killed. Replacement module files are checked before
+interrupting audio. The root-only same-boot journal retains stage, parameters
+and service state after a software failure; `--resume` continues that operation
+without repeating completed power transitions. It can finish card/service
+restoration with already-ready DSPs, or quiesce an accepted-but-not-ready DSP
+through the same checked kernel path. Unknown uploads and power completions
+remain protected failures. The journal is removed only after full success. See [audio validation](../../docs/audio.md#module-reload-qualification).
 
 ## Firmware address bounds
 

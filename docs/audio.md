@@ -274,3 +274,24 @@ New DSP/AFE module files must already be installed for the running kernel before
 maintenance; the helper neither compiles nor installs code. It keeps the NPU
 provider loaded so verified per-image retirement survives. System-sleep and
 physical endpoint qualification remain separate gates, even after reload works.
+
+The maintenance helper checks replacement module files, minimum versions,
+kernel vermagic and dependency paths before stopping desktop audio. A private
+root-owned journal in `/run/n1x-adsp-audio-reload.json` saves the invoking user,
+boot identity, original module parameters, active services and completed stage.
+If a software operation fails, correct the module file or service problem and
+continue in the same boot:
+
+```sh
+pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --resume
+```
+
+Continuation after complete DSP retirement does not send D3/abandon again.
+If the new DSPs are already ready, a sound-card or service retry keeps that
+firmware instance. An accepted upload with released staging but missing ready
+may instead use another checked native quiesce/reload; a never-published core
+needs no firmware shutdown transaction. Kernel provider admission and the
+shared-core barrier still apply. An uncertain loader result or power completion
+is never replayed, and a journal from another boot or user is refused. Success
+removes the journal. This software recovery is implemented and fault-tested;
+physical shutdown, failed-boot recovery and repeated reload remain unqualified.

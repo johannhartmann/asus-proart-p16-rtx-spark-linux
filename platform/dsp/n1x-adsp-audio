@@ -3,11 +3,14 @@
 import argparse
 import errno
 import fcntl
+import json
 import os
 from pathlib import Path
 import pwd
 import re
+import stat
 import subprocess
+import tempfile
 import time
 
 SYS = Path('/sys')
@@ -76,11 +79,101 @@ def card_bound(root=SYS):
                for card in (root / 'class/sound').glob('card[0-9]*'))
 
 
-def reload_audio(uid, root=SYS, run=subprocess.run):
-    """Explicit audio maintenance: stop the caller's audio services, then reload.
+PARAMETERS = (('n1x_adsp', ('enable_boot', 'auto_boot', 'enable_retention_sleep')),
+              ('snd_soc_mt8901_afe', ('dsp_playback', 'dsp_capture')),
+              ('mt8901_acp_sdw_legacy_mach', ('dsp_playback',)))
+UNITS = ('wireplumber.service', 'pipewire-pulse.service', 'pipewire.service',
+         'pipewire-pulse.socket', 'pipewire.socket')
+STATE = Path('/run/n1x-adsp-audio-reload.json')
+MINIMUM = {'n1x_adsp': (0, 1, 25), 'snd_soc_mt8901_afe': (0, 1, 27)}
 
-    Kernel prerequisites are checked before interrupting audio. Never force
-    unload, bypass ownership, or retry an uncertain power transaction.
+
+def require_version(module, version):
+    minimum = MINIMUM[module]
+    if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version) or tuple(map(int, version.split('.'))) < minimum:
+        raise RuntimeError('Reload requires ' + module + ' >= ' + '.'.join(map(str, minimum)))
+
+
+def module_versions(root=SYS):
+    for module in MINIMUM:
+        require_version(module, (root/'module'/module/'version').read_text().strip())
+
+
+def replacement_modules(capture=subprocess.check_output):
+    """Read-only checks before removing working audio; kernel loading is separate."""
+    release = os.uname().release
+    for module, _ in PARAMETERS:
+        def info(field):
+            return capture(['/usr/bin/modinfo', '-F', field, module], text=True, timeout=15).strip()
+        vermagic = info('vermagic').split()
+        if not vermagic or vermagic[0] != release:
+            raise RuntimeError('Replacement module has the wrong kernel ABI: ' + module)
+        if module in MINIMUM:
+            require_version(module, info('version'))
+        if not Path(info('filename')).is_file():
+            raise RuntimeError('Replacement module file is missing: ' + module)
+        dependencies = capture(['/usr/bin/modprobe', '--show-depends', module], text=True, timeout=15)
+        for line in dependencies.splitlines():
+            parts = line.split()
+            if parts and parts[0] == 'insmod' and (len(parts) < 2 or not Path(parts[1]).is_file()):
+                raise RuntimeError('Replacement module dependency is missing: ' + module)
+
+
+def save_reload(path, state):
+    with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, prefix='.n1x-audio-', delete=False) as stream:
+        temporary = Path(stream.name)
+        try:
+            json.dump(state, stream)
+            stream.write('\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
+def read_reload(path, uid):
+    metadata = path.lstat()
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.geteuid() or metadata.st_mode & 0o077:
+        raise RuntimeError('Untrusted audio-maintenance state file')
+    state = json.loads(path.read_text())
+    if not isinstance(state, dict):
+        raise RuntimeError('Invalid audio-maintenance state')
+    if state.get('uid') != uid or state.get('kernel') != os.uname().release or \
+            state.get('boot_id') != Path('/proc/sys/kernel/random/boot_id').read_text().strip():
+        raise RuntimeError('Audio-maintenance state belongs to another user, kernel or boot')
+    if state.get('phase') not in ('stopping', 'released', 'loading', 'restoring') or \
+            not isinstance(state.get('active'), list) or any(unit not in UNITS for unit in state['active']):
+        raise RuntimeError('Invalid audio-maintenance phase or service list')
+    saved = state.get('parameters', {})
+    if not isinstance(saved, dict) or set(saved) != {module for module, _ in PARAMETERS}:
+        raise RuntimeError('Invalid saved module set')
+    for module, names in PARAMETERS:
+        values = saved[module]
+        if not isinstance(values, list) or len(values) != len(names) or \
+                any(value not in (name+'=0', name+'=1') for name, value in zip(names, values)):
+            raise RuntimeError('Invalid saved module parameters')
+    return state
+
+
+def shutdown_kind(device):
+    control = fields(device/'shutdown')
+    if control.get('released') == '1' and control.get('power_off') == '1':
+        return 'released'
+    status = fields(device/'status')
+    if status.get('published') == '0' and status.get('loader_published') == '0':
+        return 'unpublished'
+    if status.get('published') == '1' and status.get('loader_accepted') == '1' and \
+            status.get('loader_staging_released') == '1':
+        return 'published'
+    raise RuntimeError('DSP publication is uncertain; no firmware retry: ' + device.name)
+
+
+def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=STATE):
+    """Explicit audio maintenance, with same-boot continuation after software errors.
+
+    The journal records stages before module removal and before loading anything
+    new. Resume never replays uncertain power or secure-loader operations.
     """
     if uid <= 0:
         raise RuntimeError('Reload requires the invoking desktop user UID')
@@ -89,100 +182,163 @@ def reload_audio(uid, root=SYS, run=subprocess.run):
     if runtime.stat().st_uid != uid:
         raise RuntimeError('Unexpected desktop runtime directory owner')
     devices = endpoints(root)
-    for module, minimum in (('n1x_adsp', (0, 1, 25)), ('snd_soc_mt8901_afe', (0, 1, 27))):
-        version = (root / 'module' / module / 'version').read_text().strip()
-        if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version) or tuple(map(int, version.split('.'))) < minimum:
-            raise RuntimeError('Reload requires ' + module + ' >= ' + '.'.join(map(str, minimum)) +
-                               '; the running old driver cannot be replaced safely')
-    for device in devices:
-        if fields(device / 'shutdown').get('supported') != '1':
-            raise RuntimeError('Missing hardened kernel power shutdown or provider ABI v5: ' + device.name)
     machine = 'mt8901_acp_sdw_legacy_mach'
-    saved = {}
-    for module, names in (('n1x_adsp', ('enable_boot', 'auto_boot', 'enable_retention_sleep')),
-                          ('snd_soc_mt8901_afe', ('dsp_playback', 'dsp_capture')),
-                          (machine, ('dsp_playback',))):
-        saved[module] = [name + '=' + boolean(root / 'module' / module / 'parameters' / name)
-                         for name in names]
-    if 'auto_boot=1' not in saved['n1x_adsp'] or 'enable_boot=1' not in saved['n1x_adsp']:
-        raise RuntimeError('Reload requires the automatic DSP audio configuration')
+    if resume:
+        state = read_reload(state_path, uid)
+        saved = state['parameters']
+    else:
+        if state_path.exists():
+            raise RuntimeError('Unfinished audio maintenance; use --resume instead of starting over')
+        module_versions(root)
+        saved = {module: [name+'='+boolean(root/'module'/module/'parameters'/name) for name in names]
+                 for module, names in PARAMETERS}
+        if 'auto_boot=1' not in saved['n1x_adsp'] or 'enable_boot=1' not in saved['n1x_adsp']:
+            raise RuntimeError('Reload requires the automatic DSP audio configuration')
+        state = {'uid': uid, 'kernel': os.uname().release,
+                 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+                 'phase': 'stopping', 'parameters': saved, 'active': []}
+    phase = state['phase']
+    if phase == 'released' and (root/'module/n1x_adsp').exists():
+        for device in devices:
+            status = fields(device/'shutdown')
+            if shutdown_kind(device) not in ('released', 'unpublished') or status.get('error') != '0':
+                raise RuntimeError('Released-stage DSP state changed; refusing module removal')
+    if phase in ('loading', 'restoring') and (root/'module/n1x_adsp').exists():
+        module_versions(root)
+        # A previous load may have published firmware despite modprobe returning
+        # success. Incomplete firmware boot is not a file-load retry or reset.
+        try:
+            verify(root)
+        except (OSError, RuntimeError):
+            if phase != 'loading':
+                raise
+            # The accepted loader result and released staging make native
+            # quiesce available even when a firmware-ready reply was missing.
+            # Unknown uploads remain retained; the kernel owns final admission.
+            for device in devices:
+                shutdown_kind(device)
+            state['phase'] = phase = 'stopping'
+        for module, names in PARAMETERS:
+            if not (root/'module'/module).exists():
+                continue
+            if [name+'='+boolean(root/'module'/module/'parameters'/name) for name in names] != saved[module]:
+                raise RuntimeError('Loaded module options differ from saved maintenance state: ' + module)
+    if phase == 'stopping':
+        module_versions(root)
+        for device in devices:
+            status = fields(device/'shutdown')
+            if status.get('supported') != '1':
+                raise RuntimeError('Missing hardened power shutdown or provider ABI v5: ' + device.name)
+            shutdown_kind(device)
+            if status.get('attempted') == '1' and status.get('power_off') != '1' and \
+                    status.get('error') not in ('0', str(-errno.EBUSY)):
+                raise RuntimeError('Uncertain DSP power completion; no replay: ' + device.name)
+    replacement_modules()
     user_systemctl = ['/usr/bin/runuser', '--user', user.pw_name, '--', '/usr/bin/env',
                       'XDG_RUNTIME_DIR=' + str(runtime),
-                      'DBUS_SESSION_BUS_ADDRESS=unix:path=' + str(runtime / 'bus'),
+                      'DBUS_SESSION_BUS_ADDRESS=unix:path=' + str(runtime/'bus'),
                       '/usr/bin/systemctl', '--user']
-    units = ('wireplumber.service', 'pipewire-pulse.service', 'pipewire.service',
-             'pipewire-pulse.socket', 'pipewire.socket')
-    active = []
     machine_removed = False
     reloaded = False
 
     def command(arguments, check=True):
         return run(arguments, check=check, timeout=180)
 
+    current = [unit for unit in UNITS if command(user_systemctl+['is-active', '--quiet', unit], check=False).returncode == 0]
+    if not resume:
+        state['active'] = current
+    # Record a loading-to-stopping recovery before any new power operation.
+    save_reload(state_path, state)
+    active = state['active']
     try:
-        # Record the original state first; stopping sockets prevents activation
-        # during maintenance. Other users and arbitrary client processes stay.
-        for unit in units:
-            if command(user_systemctl + ['is-active', '--quiet', unit], check=False).returncode == 0:
-                active.append(unit)
-        if active:
-            command(user_systemctl + ['stop', *active])
-        command(['/usr/bin/modprobe', '-r', machine])
-        machine_removed = True
-        # Secondary HiFi5 depends on primary HiFi5. The provider enforces this
-        # ordering even if someone writes the individual attributes manually.
-        for operation in ('quiesce', 'stop'):
-            for index in (1, 0, 2):
-                control = devices[index] / 'shutdown'
-                for attempt in range(3):
-                    try:
-                        control.write_text(operation + '\n')
-                        break
-                    except OSError as error:
-                        if error.errno != errno.EBUSY or attempt == 2:  # EBUSY: unsubmitted stage or a live borrower
-                            raise
-                        time.sleep(0.1)
-                state = fields(control)
-                expected = 'power_off' if operation == 'quiesce' else 'released'
-                if state.get(expected) != '1' or state.get('error') != '0':
-                    raise RuntimeError('DSP shutdown incomplete: ' + devices[index].name)
-        command(['/usr/bin/modprobe', '-r', 'n1x_adsp'])
-        command(['/usr/bin/modprobe', '-r', 'snd_soc_mt8901_afe'])
-        command(['/usr/bin/modprobe', 'snd_soc_mt8901_afe', *saved['snd_soc_mt8901_afe']])
-        prepare(root)
-        command(['/usr/bin/modprobe', 'n1x_adsp', *saved['n1x_adsp']])
-        for attempt in range(150):
-            try:
-                verify(root)
-                break
-            except (OSError, RuntimeError):
-                if attempt == 149:
-                    raise
+        if phase != 'restoring' and current:
+            command(user_systemctl+['stop', *current])
+        if phase == 'stopping':
+            command(['/usr/bin/modprobe', '-r', machine])
+            machine_removed = True
+            # All three cores reach native D3/abandon before any allocation retires.
+            for operation in ('quiesce', 'stop'):
+                for index in (1, 0, 2):
+                    if shutdown_kind(devices[index]) == 'unpublished':
+                        continue
+                    control = devices[index]/'shutdown'
+                    for attempt in range(3):
+                        try:
+                            control.write_text(operation+'\n')
+                            break
+                        except OSError as error:
+                            if error.errno != errno.EBUSY or attempt == 2:
+                                raise
+                            time.sleep(0.1)
+                    status = fields(control)
+                    expected = 'power_off' if operation == 'quiesce' else 'released'
+                    if status.get(expected) != '1' or status.get('error') != '0':
+                        raise RuntimeError('DSP shutdown incomplete: ' + devices[index].name)
+            if any(shutdown_kind(device) not in ('released', 'unpublished') for device in devices):
+                raise RuntimeError('DSP publication changed during shutdown; module retained')
+            state['phase'] = phase = 'released'
+            save_reload(state_path, state)
+        if phase == 'released':
+            # The durable stage record precedes both unloads. Repeating a normal
+            # module removal after a software error is safe; nothing is forced.
+            command(['/usr/bin/modprobe', '-r', machine])
+            command(['/usr/bin/modprobe', '-r', 'n1x_adsp'])
+            command(['/usr/bin/modprobe', '-r', 'snd_soc_mt8901_afe'])
+            state['phase'] = phase = 'loading'
+            save_reload(state_path, state)
+        if phase == 'loading':
+            if not (root/'module/snd_soc_mt8901_afe').exists():
+                command(['/usr/bin/modprobe', 'snd_soc_mt8901_afe', *saved['snd_soc_mt8901_afe']])
+            prepare(root)
+            if not (root/'module/n1x_adsp').exists():
+                command(['/usr/bin/modprobe', 'n1x_adsp', *saved['n1x_adsp']])
+            for attempt in range(150):
+                try:
+                    verify(root)
+                    break
+                except (OSError, RuntimeError):
+                    if attempt == 149:
+                        raise
+                    time.sleep(0.1)
+            command(['/usr/bin/modprobe', machine, *saved[machine]])
+            for attempt in range(150):
+                if card_bound(root):
+                    break
                 time.sleep(0.1)
-        command(['/usr/bin/modprobe', machine, *saved[machine]])
-        for attempt in range(150):
-            if card_bound(root):
-                break
-            time.sleep(0.1)
-        else:
-            raise RuntimeError('DSP firmware ready but the ALSA sound card did not bind')
-        reloaded = True
+            else:
+                raise RuntimeError('DSP firmware ready but the ALSA sound card did not bind')
+            state['phase'] = phase = 'restoring'
+            save_reload(state_path, state)
+        if phase == 'restoring':
+            verify(root)
+            if not card_bound(root):
+                raise RuntimeError('The restored ALSA card is no longer bound')
+            reloaded = True
+    except BaseException as error:
+        state['last_error'] = str(error)
+        try:
+            recorded = read_reload(state_path, uid)
+            recorded['last_error'] = str(error)
+            save_reload(state_path, recorded)
+        except (OSError, RuntimeError, ValueError):
+            pass
+        raise
     finally:
-        # Restore an unchanged card if maintenance failed before any hardware
-        # stop. Never rebind a card onto an uncertain or partially stopped DSP.
         try:
             untouched = False
             if machine_removed and not reloaded:
                 try:
-                    untouched = all(fields(device / 'shutdown').get('attempted') == '0'
-                                    for device in devices)
+                    untouched = all(fields(device/'shutdown').get('attempted') == '0' for device in devices)
                 except OSError:
                     pass
             if untouched:
                 command(['/usr/bin/modprobe', machine, *saved[machine]])
         finally:
             if active:
-                command(user_systemctl + ['start', *reversed(active)])
+                command(user_systemctl+['start', *reversed(active)])
+    # If module loading or service restoration failed, leave the same-boot
+    # journal for explicit continuation. Success starts a new generation.
+    state_path.unlink()
 
 
 def main():
@@ -191,6 +347,7 @@ def main():
     mode.add_argument('--prepare', action='store_true')
     mode.add_argument('--verify', action='store_true')
     mode.add_argument('--reload', action='store_true', help='Explicit maintenance: interrupt caller audio and reload DSP/AFE modules')
+    mode.add_argument('--resume', action='store_true', help='Continue interrupted audio maintenance in this boot')
     parser.add_argument('--uid', type=int, default=os.environ.get('PKEXEC_UID', '-1'),
                         help='Desktop user; normally supplied by pkexec')
     args = parser.parse_args()
@@ -209,9 +366,10 @@ def main():
                     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 except BlockingIOError as error:
                     raise RuntimeError('Another DSP audio maintenance operation is running') from error
-                reload_audio(args.uid)
-    except (OSError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
-        parser.exit(1, str(error)+'; maintenance stopped, no forced reset or unload\n')
+                reload_audio(args.uid, resume=args.resume)
+    except (OSError, RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
+        hint = '; use --resume after fixing a software error' if (args.reload or args.resume) and STATE.exists() else ''
+        parser.exit(1, str(error)+'; maintenance stopped, no forced reset or unload'+hint+'\n')
 
 
 if __name__ == '__main__':
