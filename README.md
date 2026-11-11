@@ -10,188 +10,90 @@ results for BIOS 303 and 305. Follow the procedure for your kernel and firmware;
 these are separate installation paths. Platform modules match ACPI resources
 and firmware interfaces; board policy and firmware preparation can be P16-specific.
 
-## Hardware and Linux support
+## Choose an installation path
 
-The inventory below combines the repository's driver work, recorded hardware
-tests and a read-only inventory of a 20-CPU H7607BA on BIOS 300 on 2026-11-11.
-**Enumerated** means Linux exposes the device; it does not establish that every
-function has been physically tested. Memory, storage and CPU counts can differ
-between SKUs. See [driver status](docs/platform-driver-status.md) for source
-implementation limits and [physical validation](improvements/VALIDATION.md)
-for the tested kernel/BIOS combinations.
+These are hardware-enablement sources for the **ARM64 H7607BA**, used on top
+of a working Linux installation. They are not an installer for the AMD/x86 P16.
 
-| Hardware found | Driver / Linux interface | Support and use |
+| Your starting point | Use | Validation and prerequisites |
 | --- | --- | --- |
-| N1X ARM CPU complex: 10 Cortex-X925 + 10 Cortex-A725 cores on the inventoried unit | ARM64, cpufreq, cpuidle and ACPI/PSCI | All 20 CPUs online; ordinary ARM64 applications use the normal scheduler. Inspect topology with `lscpu`. 18-CPU coordinated-sleep support remains tentative. |
-| Blackwell RTX Spark N1X GPU, PCI `10de:2e03`, CUDA capability 12.1 | NVIDIA open kernel modules, DRM/KMS and CUDA | Desktop rendering and numerical CUDA execution tested with NVIDIA 615.78.08. Use normal graphics applications or CUDA programs; see [GPU usage](#gpu-display-and-cuda). |
-| Internal OLED display and brightness control | NVIDIA DRM/KMS; `/sys/class/backlight/nvidia_0` | Internal desktop active and backlight interface present. Use desktop display/brightness settings. External display combinations still need separate validation. |
-| ASUS keyboard `0b05:4b42`, backlight and hotkeys | I2C HID, `hid_asus`, `asus_nb_wmi`, evdev and LED class | Normal keyboard input; Fn+Esc and ASUS application key tested. Keyboard brightness is exposed as `asus::kbd_backlight`. Bind the application key in the desktop; Fn+F7 external-display selection remains unvalidated. |
-| Touchpad `093a:4f01` | `i2c_hid_acpi`, `hid_multitouch`, libinput | Touchpad working in use; configure pointer and gestures through libinput/desktop settings. The extra vendor HID collection does not establish DialPad support. |
-| Touchscreen and stylus `222a:5554` | I2C HID, `hid_multitouch`, evdev | Touch and stylus input devices enumerate. Use touch/pen-aware applications; pressure, buttons and complete pen behavior need physical qualification. |
-| MediaTek MT7925 Wi-Fi, PCI `14c3:7925` | `mt7925e` / `mt76`, cfg80211 | Use NetworkManager or another normal network manager. The Linux 7.3 series includes the upstream MLO correction; simultaneous 5/6 GHz links and connectivity were tested. Inter-AP roaming was not validated. |
-| MediaTek Bluetooth, USB `13d3:3602` | `btusb`, `btmtk`, BlueZ | Pair through desktop Bluetooth settings or `bluetoothctl`. Bluetooth audio and reconnection after one s2idle cycle were tested. |
-| NVMe storage: Sandisk `15b7:5063` and Samsung `144d:a80f` controllers on the inventoried unit | `nvme`, Linux block devices | Both drives bound and exposed as normal NVMe disks. Use `lsblk` and the distribution's storage tools; installed models/capacities vary. |
-| Genesys Logic GL9767 SD UHS-II / SD Express reader, PCI `17a0:9767` | `sdhci_pci`, `sdhci_uhs2` | Reader bound; SD recovery after sleep recorded. Insert a card and use normal removable-storage tools. Each advertised speed mode, including SD Express, is not separately qualified. |
-| USB host controllers, USB-C and USB4 routers | xHCI, `ucsi_acpi`, Type-C and `thunderbolt_platform` | USB peripherals enumerate; a connected USB 3 device remained readable after a tested sleep cycle. Use normal USB devices; USB4 docks, tunnelling and external displays remain unvalidated. |
-| ASUS FHD RGB and IR webcam, USB `636e:0bdb` | `uvcvideo`, V4L2 | RGB and IR video/metadata nodes enumerate. Select the RGB camera in a camera/conferencing application; use `v4l2-ctl --list-devices` to identify nodes. Image quality and IR authentication are not qualified. |
-| Camera-associated proximity / attention sensor | `hid_sensor_prox`, IIO | A separate `prox` IIO device exposes proximity and attention channels. Applications can consume those channels; automatic presence detection or login policy is not supplied. |
-| VEML3328 ambient-light / color sensor behind SCP and SPI HID (`MSFW1111`) | `spi_hid_acpi` → HID sensor hub → `hid_sensor_als`, IIO | Illumination responds to cover/light changes and was read after resume. Color temperature and chromaticity channels are exposed with descriptor-specific scales. Use [sensor interfaces](#sensors-fans-and-power); absolute optical calibration remains unverified. |
-| MT8901 audio front end and SoundWire bus; Cirrus CS42L43 codec and CS35L56 amplifiers | ALSA/ASoC, UCM, PipeWire and WirePlumber | Internal speaker/headphone routing and jack switching tested with local firmware/tuning. Microphone capture interfaces exist; qualify each endpoint. See [audio usage](#audio-and-the-three-dsps) for required firmware and the public speaker graph's limits. |
-| NVIDIA HDMI/DisplayPort audio (`NVDA2014`) | `snd_hda_acpi`, `snd_hda_codec_tegrahdmi`, ALSA | Four HDMI/DP playback PCMs enumerate. Select the corresponding desktop output when a display is connected; physical external-output playback remains unvalidated. |
-| Two Cadence HiFi5 DSPs (`NVDA8301`, `NVDA8302`) and one HiFi1 DSP (`NVDA8303`) | `n1x_adsp`, SROOT secure loading and AFE-owned SRAM | Signed-firmware boot and bounded IPC implemented; experimental HiFi1 route-2 ALSA playback client. HiFi5 microphone processing/beamforming is not implemented. Firmware startup is opt-in; complete audio and sleep qualification is still required. |
-| NPU/DLA (`NVDA200A`) and shared SROOT secure firmware service (`NVDA8600`) | `n1x_npu_bootstrap`, DRM accelerator `/dev/accel/accel0` | Numerical inference tested. The companion project provides an FP16/INT8 compiler, ONNX runtime and cuDLA backend; see [NPU usage](#npu-inference). SROOT also authenticates the audio DSP images. |
-| SCP sensor microcontroller (`NVDA8200`) | `n1x_scp`, debugfs diagnostics | Read firmware logs, version and checked sensor descriptors. Measurements use the standard HID/IIO sensor path; see [SCP diagnostics](#scp-and-security-device-diagnostics). |
-| Pluton security processor (`NVDA8601`) | `n1x_pluton`, `/dev/n1x-pluton` | Typed PCBI running-firmware, service and protocol-version queries implemented. Key operations and firmware updates are not implemented. This driver does not provide a TPM interface. |
-| Separate TPM 2.0 (`NTC0702`) | `tpm_crb_acpi`, `/dev/tpm0`, `/dev/tpmrm0` | TPM class device enumerates. Standard TPM2 tools can use it; measured boot, sealing and disk-unlock workflows need their own qualification. |
-| Battery, AC/USB-C supplies, firmware profiles, lid/power buttons and fans | ACPI power-supply/input interfaces, ASUS WMI, platform profile and hwmon | Battery reporting, charge-threshold interface, `quiet`/`balanced`/`performance` profiles and CPU/GPU fan RPM exposed. Use desktop power settings and [power interfaces](#sensors-fans-and-power); firmware controls fan speed. |
-| N1X power and thermal telemetry (`NVDA8810`) | `spbm` from `spark_hwmon`, hwmon `spbm_n1x` | SoC/CPU/GPU/DLA temperatures and system/component power readings available to `sensors` and desktop monitors. Channels depend on firmware; see [telemetry setup](improvements/telemetry/README.md). |
+| BIOS 300, working ARM64 Arch/Omarchy with Limine/mkinitcpio | [Pinned 7.2.8 packages](#build) and [installation](#installation-and-updates) below | Board preparation scripts enforce BIOS 300. Preserve a working boot entry; newer driver candidates need their own fresh-boot qualification. |
+| BIOS 303 or 305, integrating Linux 7.3 into a distribution | [Ordered kernel series](improvements/kernel/README.md), then [speaker routing](improvements/audio/README.md) and [telemetry](improvements/telemetry/README.md) | Physical evidence covers integrated 20-CPU kernels; the compact export has separate source-test limits. Use the distro's packaging/boot process and the separate guide's ACPI policy; do not import the BIOS-300 SSDT package. |
+| Experimental DSP/AFE/provider changes | [Driver qualification](docs/driver-qualification.md) and the [DSP guide](platform/dsp/README.md) | Keep the matching kernel, AFE, DSP and SROOT ABI together. Published devices cannot be replaced live. |
+| Another BIOS, kernel version or distribution | Port and qualify the relevant source changes | Neither recipe establishes support for an untested combination. Do not run BIOS-300 ACPI preparation on another BIOS or apply the 7.3 series over an already patched tree. |
 
-The kernel also supplies the PCIe, I2C, SPI, GPIO/pinctrl, interrupt, IOMMU and
-power-domain infrastructure used by these devices. ACPI discovery alone does
-not imply a usable driver: for example, the inventoried `NVDA0820` platform
-control device had no bound driver. The inventory does not claim support for
-undocumented vendor functions.
+## Hardware enablement in this project
 
-## Using the hardware
+This table covers changes maintained or integrated here. Reference kernel
+patches retain their upstream authorship; carrying a driver is not a claim
+that this project wrote it. See [driver status](docs/platform-driver-status.md)
+and [physical validation](improvements/VALIDATION.md) for implementation and
+hardware-test limits.
 
-Install the matching kernel, modules and locally prepared firmware first using
-one of the build paths below. The commands here inspect or use those installed
-interfaces; they are not a replacement for driver installation. Device numbers
-and desktop node names can change between boots.
+| Area | Work in this repository | Driver/interface and qualification |
+| --- | --- | --- |
+| N1X coordinated s2idle | CPU/domain coordination, LPS0 timing, P16 admission and BIOS 305 timing fixes in patches 1120–1127 | Use the [Linux 7.3 sleep procedure](improvements/kernel/README.md#suspend-and-recovery). Physical results cover 20-CPU BIOS 303/305; 18-CPU admission remains tentative. |
+| NVIDIA GPU boot integration | N1X GPU/IOMMU prerequisites, firmware-framebuffer policy, NVIDIA modules in the encrypted-disk initramfs and kernel/userspace version checks | Matching NVIDIA packages are required; see [GPU integration](#driver-and-userspace-interfaces). The NVIDIA GPU driver itself comes from NVIDIA. |
+| ASUS keyboard and hotkeys | Integrated reference patches for backlight, Fn-lock and media keys; early `hid_asus` loading for the encrypted-disk prompt | Early input uses I2C HID and `hid_asus`; WMI provides hotkey events. Fn+Esc and the application key were tested; Fn+F7 external-display selection remains unvalidated. |
+| PixArt touchpad `093a:4f01` | P16 libinput pressure/palm policy in `config/p16-touchpad.quirks`, plus the reference pressure-pad patch | Installed by `p16-platform-policy`, consumed by libinput. Touchpad operation was tested. |
+| MT7925 Wi-Fi MLO | Backport of Andrei Rusu de Castro's upstream MLO membership correction, patch 9105 | Remains in the existing `mt7925e`/`mt76` stack. Simultaneous 5/6 GHz links and bounded connectivity tests passed; inter-AP roaming remains unvalidated. |
+| GL9767 SD-reader resume | Bounded PCIe identity retry for the soldered P16 reader, patch 1121 | Included in the Linux 7.3 series; SD recovery after sleep was tested. This is a resume fix, not a new storage driver. |
+| N1X USB4 and USB power management | Integrated reference ACPI/Type-C/USB4 and xHCI PM patches, plus packaged host-router power policy | Follow the kernel guide and keep its matching power policy. USB recovery was tested; USB4 docks, tunnelling and external displays remain unvalidated. |
+| VEML3328 light/color sensor over SPI HID | Virtual-GPIO, deferred-IRQ and ACPI-reset fixes; serialized HID transactions and per-channel ALS scale backport | Exposed through HID/IIO and `iio-sensor-proxy`; see [sensor interfaces](#driver-and-userspace-interfaces). Light response and a resume cycle were tested; optical calibration remains unverified. |
+| MT8901 / Cirrus speaker audio | CS35L56 firmware extraction/packaging, P16 DAPM routing, public PipeWire crossover graph and AFE SRAM/playback integration | Follow [speaker setup](improvements/audio/README.md). Local routing/tuning was tested; the public graph still needs its own listening validation. |
+| Two HiFi5 DSPs and one HiFi1 DSP | `n1x_adsp`: signed-image preparation, SROOT loading, bounded IPC and experimental HiFi1 ALSA playback | Follow the [DSP guide](platform/dsp/README.md). Startup is opt-in; HiFi5 microphone processing is not implemented. Complete audio and sleep qualification remains required. |
+| NPU / SROOT integration | Provider snapshot and DKMS packaging, signed-firmware package, isolated-IOMMU boot service and DSP secure-loader interface | Follow [provider setup](docs/update-safe.md#npu-and-dsp). Inference driver/compiler/runtime development lives in the [companion project](https://github.com/johannhartmann/n1x-npu-linux). |
+| SCP diagnostics | `n1x_scp`: firmware-log snapshots and checked version/descriptor queries | Debugfs interfaces are documented in the [SCP guide](platform/scp/README.md); sensor measurements use HID/IIO. |
+| Pluton diagnostics | `n1x_pluton`: ACPI PFI transport and typed PCBI metadata queries | Use the [Pluton CLI](platform/pluton/pluton-info.py). Key operations and firmware updates are not implemented. |
+| ASUS WMI, battery and fan reporting | ARM64 WMI integration, optional-capability guards, charge-threshold handling, firmware-profile/fan interfaces and critical-battery policy | Use [power interfaces](#driver-and-userspace-interfaces). Firmware retains fan control; the pinned policy requests a 100% charge threshold. |
+| N1X thermal/power monitoring | `spark_hwmon` platform/firmware matching patches, hwmon integration and the repository's thermal monitor | Follow [telemetry setup](improvements/telemetry/README.md); read with `sensors` or `scripts/p16-temperatures`. Channel availability depends on firmware. |
 
-### GPU, display and CUDA
+## Driver and userspace interfaces
 
-Use normal Wayland/X11 display settings for the panel and connected displays.
-Check the loaded GPU driver and run the repository's small CUDA vector-add
-check after installing an ARM64 CUDA toolkit with `sm_121` support:
+**Audio:** the MT8901 AFE and SoundWire machine driver feed the existing
+CS42L43/CS35L56 ALSA/ASoC stack. `alsa-ucm-conf` supplies routing profiles;
+PipeWire and WirePlumber provide desktop integration. The P16 additions are
+Cirrus firmware preparation, machine DAPM routes, a public speaker-band
+crossover graph, and the experimental DSP-backed DL0 frontend. See
+[speaker integration](improvements/audio/README.md) and the
+[DSP/AFE interface](platform/dsp/README.md). The three DSPs use `n1x_adsp`
+and SROOT rather than a SOF firmware port. HiFi5 microphone processing is not
+implemented. Published DSP memory/provider leases remain retained until reboot;
+complete analog-endpoint and candidate sleep qualification is still required.
 
-```sh
-nvidia-smi
-bash scripts/check-cuda.sh
-```
+**Light/color sensor:** `spi_hid_acpi` → `hid_sensor_hub` →
+`hid_sensor_als` → IIO. The SPI/GPIO/reset fixes restore transport; the
+[ALS backport](platform/als/README.md) preserves each channel's descriptor
+scale. `iio-sensor-proxy` is the desktop-facing consumer. `n1x_scp` provides
+[firmware diagnostics](platform/scp/README.md), not a duplicate sensor driver.
 
-The CUDA check expects `nvcc` under `/opt/cuda` and currently checks for BIOS
-300. On another supported BIOS, compile the same test directly:
+**NPU and DSP secure loading:** `n1x_npu_bootstrap` owns the DLA/SROOT endpoints
+and exposes the DRM accelerator interface at `/dev/accel/accel0`. This
+repository packages its provider and isolated-IOMMU startup service,
+`n1x-platform-npu.service`, for DSP integration. The
+[companion project](https://github.com/johannhartmann/n1x-npu-linux) maintains
+the inference driver, native `t254` compiler, ONNX runtime and cuDLA backend.
+Its standalone `n1x-npu.service` is an alternative package path; do not install
+both service stacks for the same devices.
 
-```sh
-/opt/cuda/bin/nvcc -O2 -std=c++17 -arch=sm_121 cuda/vector-add.cu -o /tmp/p16-vector-add
-/tmp/p16-vector-add
-```
+**Power and telemetry:** ASUS WMI exposes firmware profiles, charge thresholds
+and fan RPM. The patched `spbm` driver exposes N1X temperature/power channels
+through hwmon as `spbm_n1x`; `scripts/p16-temperatures` is the repository's
+read-only monitor. Firmware retains fan control. The pinned policy package
+requests a 100% charge threshold; the Linux 7.3 patch series imposes no threshold.
 
-Use the distribution/vendor's matching NVIDIA kernel and userspace packages.
-Unified system memory is not a separate pool of dedicated VRAM; an unsupported
-NVML memory counter does not establish missing GPU support.
+**Pluton:** `n1x_pluton` exposes typed PCBI metadata queries through
+`/dev/n1x-pluton` and the packaged `n1x-pluton-info` diagnostic CLI. The
+[protocol guide](platform/pluton/protocol.md) documents its allowlisted
+commands. Key operations and firmware updates are not implemented.
 
-### NPU inference
-
-Follow the companion [N1X NPU setup](https://github.com/johannhartmann/n1x-npu-linux/blob/master/docs/setup.md)
-for firmware acquisition, the native `t254` compiler and runtime. The
-[demos](https://github.com/johannhartmann/n1x-npu-linux/blob/master/demo/README.md)
-cover super-resolution, denoising, classification and ONNX execution. After
-following that project's installation procedure, run from its checkout:
-
-```sh
-./demo-onnx --model emotion --precision fp16 --output-dir results/emotion-fp16
-./demo-onnx --model emotion --precision int8 --output-dir results/emotion-int8
-```
-
-For applications, use its `N1xInferenceSession` ONNX interface or cuDLA backend;
-the kernel interface is `/dev/accel/accel0`. Operator coverage and model
-compatibility are documented in that project. This repository's packaged DSP
-provider uses `n1x-platform-npu.service`; the companion's standalone package
-uses `n1x-npu.service`. Choose one matching provider/package path, following
-[provider installation](docs/update-safe.md#npu-and-dsp), rather than installing
-both service stacks for the same hardware.
-
-### Audio and the three DSPs
-
-Applications use the `mt8901-soundwire` ALSA card through PipeWire/WirePlumber
-and its UCM profiles. Inspect available endpoints with:
-
-```sh
-aplay -l
-arecord -l
-wpctl status -n
-```
-
-Install the board's locally extracted Cirrus firmware and matching machine
-routes. For speakers, follow the [speaker routing and PipeWire guide](improvements/audio/README.md):
-the physical outputs serve different speaker bands. Its public crossover graph
-requires mapping checks and physical validation; the locally tested OEM-derived
-tuning is not redistributed. Headphone, Bluetooth and HDMI outputs use their
-normal desktop selections.
-
-The [DSP driver guide](platform/dsp/README.md) describes secure firmware loading
-and the experimental HiFi1 playback path. Two HiFi5 cores also boot, but
-microphone DSP processing, beamforming and noise suppression are not supplied.
-DSP publication retains DMA memory and provider references until reboot.
-Default published instances block system sleep; any candidate retention-sleep
-path requires separate qualification. Keep the ordinary audio/boot path while
-testing matching DSP, AFE and SROOT candidates.
-
-### Sensors, fans and power
-
-Use `sensors` for fan RPM, temperatures and power channels. The repository's
-thermal monitor also reports the limits actually provided by firmware:
-
-```sh
-sensors
-python3 scripts/p16-temperatures --watch
-cat /sys/firmware/acpi/platform_profile_choices
-cat /sys/firmware/acpi/platform_profile
-cat /sys/class/power_supply/BAT*/charge_control_end_threshold
-```
-
-Choose a firmware profile or charge threshold with the distribution's power
-manager. The pinned policy package requests a 100% charge threshold; the Linux
-7.3 patch series exposes the control without imposing a threshold. An exposed
-attribute can still return an error on a particular running firmware/driver
-combination. Fan RPM reporting leaves fan control with the firmware.
-
-For light measurements, install `iio-sensor-proxy` and use `monitor-sensor`;
-automatic brightness depends on desktop support. To identify the light and
-camera proximity devices directly:
-
-```sh
-for device in /sys/bus/iio/devices/iio:device*; do
-  printf '%s: ' "$device"
-  cat "$device/name"
-  ls "$device"/in_*
-done
-```
-
-IIO raw values must be interpreted using each channel's scale and offset.
-The [ALS backport](platform/als/README.md) fixes differing illumination,
-color-temperature and chromaticity scales. The SCP diagnostic mailbox does
-not provide an additional sensor device.
-
-### SCP and security-device diagnostics
-
-With the SCP driver loaded and debugfs mounted, administrators can read
-`/sys/kernel/debug/n1x_scp/firmware_log` and `status`. Its `firmware_version`
-and `sensor_descriptors` files perform bounded firmware queries when mailbox
-support is enabled. See the [SCP guide](platform/scp/README.md).
-
-The [Pluton CLI](platform/pluton/pluton-info.py) reads driver status by default;
-with transport enabled it can query protocol versions, services and running
-firmware metadata. For example, as an administrator:
-
-```sh
-python3 platform/pluton/pluton-info.py --versions --services --device-info
-```
-
-See the [PCBI interface](platform/pluton/protocol.md) for its restricted query
-API. TPM applications instead use the separate TPM 2.0 device and standard
-TPM2 userspace tools.
-
-### Suspend and resume
-
-The Linux 7.3 series adds coordinated N1X s2idle; physical results exist for
-20-CPU BIOS 303 and 305 systems. Inspect the selected sleep mode with
-`cat /sys/power/mem_sleep` and follow the [sleep setup/recovery guide](improvements/kernel/README.md#suspend-and-recovery).
-The [validation record](improvements/VALIDATION.md) lists tested device recovery,
-sleep energy and remaining gaps, including RTC timed wake. Those results do not
-qualify sleep with experimental DSP firmware published.
+**GPU integration:** NVIDIA supplies the open GPU modules, DRM/KMS and CUDA
+userspace. This repository carries N1X IOMMU prerequisites, the
+firmware-framebuffer boot policy, early NVIDIA initramfs loading and module/UKI
+version checks. `cuda/vector-add.cu` and `scripts/check-cuda.sh` provide the
+project's arithmetic smoke test (`sm_121`); the script enforces BIOS 300.
+Hardware video encode/decode has no recorded qualification here. CUDA or
+desktop rendering results do not establish that capability.
 
 ## Components
 
@@ -226,24 +128,34 @@ requires runtime and physical listening validation.
 
 ## Build
 
-Use an AArch64 Arch Linux build environment with `base-devel`, `dkms`,
-`python`, `binutils`, `libarchive` and the target kernel headers. Kernel builds
-also require the dependencies in `kernel/PKGBUILD`. Build packages as a normal
-user; installation is a separate root operation.
-
-```sh
-python3 -m unittest discover -s tests -v
-make -C platform KDIR=/usr/lib/modules/$(uname -r)/build W=1 -j2
-```
-
-DSP, SCP and Pluton support normal Kconfig/Kbuild integration and external
-module builds. Each driver's PKGBUILD supplies DKMS packaging. See
-[platform build instructions](platform/README.md) for native KUnit tests.
+The steps below are for the BIOS-300 Arch/Omarchy package path. Start from a
+working AArch64 installation with mounted `/boot`, Limine, mkinitcpio, matching
+running-kernel headers and a working NVIDIA installation. Before any package
+changes, prepare the [recovery entry](#recovery) below. This repository does
+not provision a base OS, disk layout, encryption or firmware bootloader.
 
 On a fresh Omarchy Nightly installation, run `omarchy update -y` before
-installing build dependencies so the online package databases are available.
+installing dependencies. Required tools include `base-devel`, `dkms`, `git`,
+`python`, `binutils`, `libarchive`, `gnupg`, `patch`, `7zip`, `innoextract` and
+`wimlib`. The kernel's complete build dependency list is in
+[`kernel/PKGBUILD`](kernel/PKGBUILD); the policy also requires UPower 1.91.5 or
+newer. Install the distribution's NVIDIA open DKMS/kernel-module package and
+matching `nvidia-utils`; this repository does not package NVIDIA's driver.
+Secure Boot signing/enrolment is not automated here; a signing setup must cover
+the kernel/UKI and external modules before using them under an enforcing system.
 
-Prepare board firmware locally:
+### 1. Check out and test the sources
+
+Run builds as a normal user. Commands below start at the repository root;
+subshells keep directory changes local to each build.
+
+```sh
+git clone https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux.git
+cd asus-proart-p16-rtx-spark-linux
+python3 -m unittest discover -s tests -v
+```
+
+### 2. Prepare board firmware and policy packages
 
 ```sh
 sudo scripts/dump-acpi.sh
@@ -252,50 +164,260 @@ python3 scripts/peripherals.py prepare
 make -C packages MAKEPKG='makepkg --nodeps'
 ```
 
-The package build skips runtime dependency installation; install the resulting
-packages together. Source checksums remain enforced.
+The dump creates `build/firmware`; it refuses to overwrite an existing capture.
+The ACPI builder produces `build/acpi/kernel/firmware/acpi/SSDT.aml`, and
+`peripherals.py prepare` downloads/verifies the ASUS archive and extracts three
+Cirrus files into `build/speaker-firmware`. No Windows installer is executed.
 
-The ACPI package contains only the generated SSDT. A captured DSDT has
-boot-dependent memory addresses and must not be installed into an initramfs.
-OEM firmware and machine table dumps stay outside Git; package checksums
-verify the local inputs and do not grant redistribution rights.
+| Package | Built package directory | Installed role |
+| --- | --- | --- |
+| `p16-acpi-firmware` | `build/packages/p16-acpi-firmware/` | Early BIOS-300 SSDT at `/usr/lib/firmware/acpi/p16/SSDT.aml` |
+| `p16-speaker-firmware` | `build/packages/p16-speaker-firmware/` | Cirrus images and speaker-ID aliases under `/usr/lib/firmware/cirrus/` |
+| `p16-platform-policy` | `build/packages/p16-platform-policy/` | Initramfs, boot/update guards, input and battery policy |
 
-Build the kernel with `scripts/build-kernel.sh`. The recipe creates
-`linux-p16-platform` and matching headers. For isolated candidate builds,
-`scripts/prepare-kernel-candidate.py --output DIR --build` stages all source
-and build output in a new directory. Signed upstream patches retain their
-original authorship and notices.
+Only the generated SSDT is installed. A captured DSDT embeds boot-dependent
+memory addresses and must never be included in an initramfs. OEM firmware and
+machine captures remain local and are not redistribution grants.
+
+### 3. Build the platform drivers and their firmware
+
+Build the independent DKMS packages:
+
+```sh
+(
+  for component in sensorhub als scp pluton; do
+    (cd "platform/$component" && makepkg --nodeps) || exit 1
+  done
+)
+```
+
+Every build must succeed before continuing. The resulting packages remain in
+the corresponding `platform/COMPONENT/` directory. `--nodeps` defers dependency
+installation until the package transaction; it does not disable checksums/tests.
+The sensorhub/ALS packages replace their corresponding modules: follow the
+[ALS initramfs checks](platform/als/README.md) and do not retain competing copies.
+
+For the SROOT provider, place the companion NPU checkout at `../n1x-lab/npu`
+and use the matching revision linked by this checkout's
+[qualification guide](docs/driver-qualification.md#reproducible-candidates).
+Follow its [firmware acquisition procedure](https://github.com/johannhartmann/n1x-npu-linux/blob/master/docs/setup.md)
+to obtain and verify `sources/sroot-v0.bin` and `sources/sroot-v1.bin`; copy
+those two files into `platform/dsp/provider/firmware/`. Then:
+
+```sh
+python3 scripts/prepare-sroot-provider.py
+(cd platform/dsp/provider/firmware && makepkg)
+(cd platform/dsp/provider && makepkg --nodeps)
+(cd platform/dsp && makepkg --nodeps)
+```
+
+The snapshot script rejects a provider/client header mismatch and writes the
+provider PKGBUILD and receipt. Do not bypass that check or combine a newer
+companion driver with an older DSP client. Outputs are respectively
+`n1x-sroot-firmware-local`, `n1x-sroot-provider-dkms` and `n1x-adsp-dkms` in
+the three build directories. Installing the DSP module does not enable boot.
+
+If explicitly qualifying DSP firmware, prepare its signed images separately:
+
+```sh
+python3 scripts/prepare-platform-sources.py --fetch-vendor
+python3 scripts/extract-platform-drivers.py
+python3 scripts/prepare-dsp-firmware.py --dest platform/dsp/firmware
+(cd platform/dsp/firmware && makepkg)
+```
+
+Extraction uses the pinned OEM inputs and produces `n1x-adsp-firmware-local`.
+Leave DSP startup disabled during ordinary platform qualification.
+
+Prepare and register the matching hwmon source without loading it:
+
+```sh
+bash scripts/prepare-spark-hwmon.sh
+sudo dkms add "$PWD/build/spark_hwmon"
+```
+
+Skip `dkms add` if that exact source version is already registered; preserve
+and investigate any source conflict instead of overwriting it. Target-kernel
+DKMS builds happen after its headers are installed. The helper's printed
+`install-dkms.sh` command reloads the running kernel's module and is not the
+candidate-staging path. See [telemetry instructions](improvements/telemetry/README.md)
+for the separate Linux 7.3 source path.
+
+### 4. Build the matching kernel and headers
+
+```sh
+bash scripts/build-kernel.sh
+```
+
+This verifies upstream signatures with an isolated keyring and produces
+`linux-p16-platform` and `linux-p16-platform-headers` in `kernel/` (unless
+`PKGDEST` is set). To identify exact package filenames without guessing a
+version, run `makepkg --packagelist` from each package's build directory.
+
+For isolated candidate builds, use
+`scripts/prepare-kernel-candidate.py --output DIR --build`; its packages go
+under `DIR/packages/`, with a manifest recording input/output identities.
+See [candidate qualification](docs/driver-qualification.md) for matching
+platform and NVIDIA module builds. A successful build is not a boot result.
 
 ## Installation and updates
 
-Use `pacman -U` for the resulting firmware, policy, kernel/header and DKMS
-packages. Do not mix modules from different kernel releases. Configure the
-packaged update guard before the next package transaction:
+Use the exact newly built package paths, excluding stale versions and `.sig`
+files. The sequence for the pinned package path is:
+
+1. Install `p16-acpi-firmware`, `p16-speaker-firmware` and `p16-platform-policy`
+   together with `pacman -U`. This installs board policy before the new kernel;
+   keep the recovery copy and original kernel/modules intact. With the default
+   `.pkg.tar.zst` package suffix and one fresh build in each directory:
+
+   ```sh
+   sudo pacman -U build/packages/p16-acpi-firmware/*.pkg.tar.zst \
+     build/packages/p16-speaker-firmware/*.pkg.tar.zst \
+     build/packages/p16-platform-policy/*.pkg.tar.zst
+   ```
+
+2. Install the update guard immediately, before another package transaction:
+
+   ```sh
+   sudo /usr/lib/p16-platform/install-guard
+   ```
+
+3. Install the kernel and headers together with the four independent DKMS
+   packages, SROOT firmware/provider and DSP module. Include the optional DSP
+   firmware only for an explicit candidate. For example, on a fresh build tree:
+
+   ```sh
+   sudo pacman -U kernel/linux-p16-platform-*.pkg.tar.zst \
+     platform/sensorhub/n1x-sensorhub-dkms-*.pkg.tar.zst \
+     platform/als/hid-sensor-als-dkms-*.pkg.tar.zst \
+     platform/scp/n1x-scp-dkms-*.pkg.tar.zst \
+     platform/pluton/n1x-pluton-dkms-*.pkg.tar.zst \
+     platform/dsp/provider/firmware/n1x-sroot-firmware-local-*.pkg.tar.zst \
+     platform/dsp/provider/n1x-sroot-provider-dkms-*.pkg.tar.zst \
+     platform/dsp/n1x-adsp-dkms-*.pkg.tar.zst
+   ```
+
+   The kernel glob includes its headers. Review the expanded files first; use
+   exact paths instead if the directories contain multiple builds. Required
+   NVIDIA and `spbm` modules must also be installed for the new release.
+4. Confirm every DKMS build succeeded. The managed hook checks module ABIs and
+   then invokes `limine-mkinitcpio linux-p16-platform`. Its expected UKI is
+   `/boot/EFI/Linux/omarchy_linux-p16-platform.efi`, with a generated Limine
+   entry carrying `kernel-id=linux-p16-platform`. After correcting any failed
+   hook, explicitly run:
+
+   ```sh
+   sudo dkms autoinstall -k TARGET_RELEASE
+   sudo limine-mkinitcpio linux-p16-platform
+   sudo p16-platform-update-check --all
+   ```
+
+   Replace `TARGET_RELEASE` with the release in the built package/manifest,
+   not the old value from `uname -r`. A post-transaction failure can leave
+   packages installed; stop and fix it before rebooting.
+5. Keep the working entry as default and select the candidate manually for the
+   first boot. The pinned BIOS-300 image needs the packaged
+   `acpi_osi="!Windows 2022"` policy, early SSDT, input/GPU modules and the existing
+   root/encryption arguments. Preserve `console=tty0 acpi=nospcr`. Do not copy
+   another machine's complete command line. Check the generated image before
+   choosing it:
+
+   ```sh
+   sudo python3 scripts/verify-boot.py \
+     --image /boot/EFI/Linux/omarchy_linux-p16-platform.efi
+   ```
+
+   This verifier is specific to the BIOS-300 package path; it checks image/menu
+   hashes, payload and module dependencies. It does not establish Secure Boot
+   trust or apply to the separate BIOS 303/305 patch path.
+6. Enable `p16-charge-limit.service` and, if using this provider package,
+   `n1x-platform-npu.service` for subsequent boots. Restart UPower so its
+   critical-battery power-off policy is active:
+
+   ```sh
+   sudo systemctl enable p16-charge-limit.service n1x-platform-npu.service
+   sudo systemctl restart upower
+   ```
+
+The pinned battery policy requests 100%; adjust it through normal systemd
+configuration overrides if desired. The Linux 7.3 patch path imposes no charge
+threshold. Follow [update procedures](docs/update-safe.md) for subsequent
+transactions and `.pacnew` files. DSP firmware publication remains opt-in;
+retained allocations cannot be released by unloading a live instance.
+
+## Verify the installation
+
+After manually selecting the new entry, confirm the running release matches
+the build, then inspect the interfaces changed here:
 
 ```sh
-sudo /usr/lib/p16-platform/install-guard
-sudo systemctl enable p16-charge-limit.service
+uname -r
+dkms status
+nvidia-smi
+cat /sys/firmware/acpi/platform_profile_choices
+cat /sys/power/mem_sleep
+sensors
+cat /proc/asound/cards
+systemctl status n1x-platform-npu.service
+journalctl -b -p err
 ```
 
-The battery policy writes 100 to existing `charge_control_end_threshold`
-attributes through systemd-tmpfiles. Its udev rule also handles battery
-appearance. Adjust the policy through the normal systemd configuration
-override directories if a different charge limit is wanted.
+Expected results: DKMS lists the required modules as installed for the new
+release; NVIDIA reports the matching userspace driver; firmware profiles are
+exposed; `[s2idle]` is selected; `spbm_n1x`/ASUS monitoring and the SoundWire
+card appear. The NPU service must report successful startup. These checks
+establish interfaces, not physical audio, inference accuracy or sleep recovery.
 
-At critical battery charge, the policy package configures UPower to power
-off instead of suspending and continuing to drain the battery. Run
-`sudo systemctl restart upower` after installing or upgrading this policy;
-`scripts/verify-platform-install.py` checks the running daemon's action.
+For the fully installed BIOS-300 platform bundle, the bounded diagnostic audit
+writes a new report without installing/replacing modules or starting services:
 
-The NPU/SROOT provider has a separate package and boot service; see
-[update procedures](docs/update-safe.md). DSP boot and playback remain
-experimental and are disabled by default. Published DSP memory stays retained
-until reboot because verified whole-core shutdown is unfinished.
+```sh
+sudo python3 scripts/verify-platform-install.py --report build/postboot-report.json
+```
 
-Keep a tested recovery image and menu entry before selecting a new kernel.
-A successful build is insufficient to promote a candidate. Check display,
-USB/cameras, CPU topology, audio, sensors and numerical NPU results after boot.
-The [update guide](docs/update-safe.md) describes the package hooks and checks.
+It performs firmware queries and fails on missing/mismatched components.
+Choose a new report filename each run. For proof of a new boot, record
+`cat /proc/sys/kernel/random/boot_id` beforehand and pass that old value with
+`--after-boot-id`. The auditor is not a generic check for the Linux 7.3 path.
+
+Physical qualification must cover early keyboard input, the packaged touchpad
+policy, light response, corrected audio routes and numerical NPU output. Test suspend only in a disposable session
+using the relevant [sleep guide](improvements/kernel/README.md#suspend-and-recovery)
+and DSP restrictions. Promote a candidate only after those results are recorded.
+
+## Recovery
+
+Before changing packages, identify the UKI used by the working Limine entry.
+Copy that **actual working image** to a separate filename; do not rename or
+replace it. For example, replacing `WORKING.efi` with its real basename:
+
+```sh
+sudo cp -a /boot/EFI/Linux/WORKING.efi /boot/EFI/Linux/p16-recovery.efi
+b2sum /boot/EFI/Linux/p16-recovery.efi
+```
+
+Save `/boot/limine.conf` separately and add a top-level entry using the full
+128-character BLAKE2b digest just printed:
+
+```text
+/Omarchy-P16-Recovery
+    protocol: efi
+    path: boot():/EFI/Linux/p16-recovery.efi#BLAKE2B_DIGEST
+```
+
+Keep exactly one `timeout: 5` and `quiet: no` setting in the menu. Preserve
+its existing working `default_entry`. Boot the recovery copy once before
+relying on it, and retain that kernel's installed package, headers and modules:
+a UKI copy alone does not preserve modules needed after mounting the root filesystem.
+The managed wrapper does not rebuild this separate recovery copy.
+
+If the candidate fails, select `Omarchy-P16-Recovery` in Limine and keep it as
+the default while diagnosing. Do not unload NVIDIA during desktop use or
+force-unload published DSP/provider modules. Repair/reinstall the failed
+candidate's matching packages, rerun DKMS and the image checks, then retry
+manually. If the menu itself is damaged, use a known-working ARM64 rescue
+medium to mount the installed root and boot partitions and restore the saved
+menu and recovery image; follow the distribution's unlock/mount/chroot procedure.
 
 ## Sources and licenses
 
@@ -318,12 +440,12 @@ Your contributions and shared experience are much appreciated!
 
 ## Installation field report
 
-A second H7607BA (SKU 90NB16A1-M00Y90; 64 GB, 3K OLED, 1 TB;
-BIOS H7607BA.300, EC 2.16) completed the older installation guide at commit
+A second H7607BA (BIOS H7607BA.300, EC 2.16) completed the older
+installation guide at commit
 `4b34f31` on Nightly 2026.10.26.466, with `omarchy update -y` before
 installing dependencies. On `7.2.8-23-omarchy-p16-asus`, the boot checks
-passed; the keyboard, touchpad (`093A:4F01`) and touchscreen/stylus
-(`222A:5554`) enumerated, and the touchpad worked in use. Battery charge,
+passed; the keyboard and touchpad (`093A:4F01`) enumerated, and the
+touchpad worked in use. Battery charge,
 power profiles, the SoundWire card and NVIDIA driver 615.78.08 were present.
 Audible playback, CUDA and suspend were not tested. This report predates the
 package-based instructions above and does not validate the newer procedure.
