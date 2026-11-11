@@ -40,11 +40,20 @@ other images alone.
 sudo p16-platform-update-check --all
 ```
 
-The postcheck validates the ACPI allocator, required configuration, module
-ABIs/dependencies, NVIDIA kernel/userspace versions and embedded SPI HID
-modules. UKIs must contain the SSDT and no captured DSDT. Firmware GNVS
-addresses change between boots; a captured DSDT can disable USB/cameras and
-break CPU-topology enumeration.
+The default legacy postcheck validates the ACPI override allocator, required
+configuration, module ABIs/dependencies, NVIDIA kernel/userspace versions and
+embedded SPI HID modules. That profile requires the exact reference SSDT and
+rejects other ACPI overrides. Firmware GNVS addresses change between boots;
+a captured DSDT can disable USB/cameras and break CPU-topology enumeration.
+
+For a separately staged native-ACPI candidate, policy 1.3.0 adds an explicit
+`--acpi-mode native` to the image checker. That profile requires absence of
+all ACPI override files and does not require the override allocator/table-upgrade
+option. Module, kernel, configuration and command-line checks remain active.
+Automatic update hooks still use legacy mode; installing this source preparation
+does not switch an existing kernel to native ACPI. See the
+[removal and qualification procedure](native-acpi-migration.md) before changing
+the default or removing `p16-acpi-firmware`.
 
 The Limine policy verifies Linux image hashes and preserves unrelated entries.
 It keeps a valid selected P16 image, or selects `Omarchy-P16-Recovery` when the

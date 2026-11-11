@@ -3,19 +3,21 @@
 set -euo pipefail
 export PATH=/usr/bin:/bin
 fail() { echo "P16 update check: $*" >&2; exit 1; }
-release= image= all=false
+release= image= all=false acpi_mode=legacy
 while (($#)); do
     case $1 in
         --all) all=true; shift ;;
+        --acpi-mode) acpi_mode=${2:?}; shift 2 ;;
         --release) release=${2:?}; shift 2 ;;
         --image) image=${2:?}; shift 2 ;;
-        *) fail 'Usage: p16-platform-update-check --all|--release RELEASE|--image UKI [--release RELEASE]' ;;
+        *) fail 'Usage: p16-platform-update-check --all|--release RELEASE|--image UKI [--release RELEASE] [--acpi-mode legacy|native]' ;;
     esac
 done
+[[ $acpi_mode == legacy || $acpi_mode == native ]] || fail 'Invalid ACPI profile'
 if $all; then
     for base in /usr/lib/modules/*/pkgbase; do
         [[ $(<"$base") == linux-p16-platform || $(<"$base") == linux-p16-platform-* ]] || continue
-        "$0" --release "$(basename "${base%/pkgbase}")" --image "/boot/EFI/Linux/omarchy_$(<"$base").efi"
+        "$0" --acpi-mode "$acpi_mode" --release "$(basename "${base%/pkgbase}")" --image "/boot/EFI/Linux/omarchy_$(<"$base").efi"
     done
     exit 0
 fi
@@ -33,8 +35,11 @@ fi
 modules=/usr/lib/modules/$release
 [[ -s $modules/pkgbase && ( $(<"$modules/pkgbase") == linux-p16-platform || $(<"$modules/pkgbase") == linux-p16-platform-* ) ]] || fail 'Unmanaged P16 kernel'
 [[ $(pacman -Qqo "$modules/vmlinuz") == "$(<"$modules/pkgbase")" ]] || fail 'Kernel package owner mismatch'
-grep -q ' T arch_alloc_acpi_tables$' "$modules/build/System.map" || fail 'Missing ARM64 ACPI allocation fix'
-for option in CONFIG_ACPI_TABLE_UPGRADE=y CONFIG_ASUS_WMI=m CONFIG_ASUS_NB_WMI=m CONFIG_SPI_HID_ACPI=m; do
+if [[ $acpi_mode == legacy ]]; then
+    grep -q ' T arch_alloc_acpi_tables$' "$modules/build/System.map" || fail 'Missing ARM64 ACPI allocation fix'
+    grep -Fxq 'CONFIG_ACPI_TABLE_UPGRADE=y' "$modules/build/.config" || fail 'Missing CONFIG_ACPI_TABLE_UPGRADE=y'
+fi
+for option in CONFIG_ASUS_WMI=m CONFIG_ASUS_NB_WMI=m CONFIG_SPI_HID_ACPI=m; do
     grep -Fxq "$option" "$modules/build/.config" || fail "Missing $option"
 done
 for name in n1x_scp n1x_pluton spi_hid spi_hid_acpi n1x_adsp n1x_npu_bootstrap nvidia nvidia_drm spbm; do
@@ -53,8 +58,7 @@ if [[ $image ]]; then
     cmp -n "$(stat -c %s "$modules/vmlinuz")" "$modules/vmlinuz" "$tmp/linux" || fail 'UKI contains a different kernel'
     mkdir "$tmp/tree"
     (cd "$tmp/tree"; lsinitcpio -x "$tmp/initrd" > /dev/null)
-    [[ ! -e "$tmp/tree/kernel/firmware/acpi/DSDT.aml" ]] || fail 'Static DSDT override contains a boot-specific GNVS address'
-    cmp /usr/lib/firmware/acpi/p16/SSDT.aml "$tmp/tree/kernel/firmware/acpi/SSDT.aml" || fail 'Wrong early ASUS SSDT override'
+    /usr/lib/p16-platform/acpi-policy --tree "$tmp/tree" --mode "$acpi_mode" || fail 'Invalid ACPI override profile'
     grep -Fq 'acpi_osi="!Windows 2022"' "$tmp/cmdline" || fail 'Native DSDT requires the negative Windows-2022 OSI setting'
     for name in spi_hid spi_hid_acpi; do
         installed=$(modinfo -k "$release" -n "$name")
