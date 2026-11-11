@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
-check_machine
+check_arch
 [[ $EUID != 0 ]] || { echo 'makepkg als normaler Benutzer ausführen.' >&2; exit 1; }
 # Isolated keyring: upstream signatures remain enabled.
 export GNUPGHOME="$REPO/build/gnupg"

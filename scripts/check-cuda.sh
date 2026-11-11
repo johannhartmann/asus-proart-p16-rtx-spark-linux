@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
-check_machine
+check_arch
 nvcc=/opt/cuda/bin/nvcc
 "$nvcc" --version
 mkdir -p "$REPO/build/cuda"

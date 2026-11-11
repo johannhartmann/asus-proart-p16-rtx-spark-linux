@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/common.sh"
 require_root
-check_machine
+check_model
 prepare_build_dir
 out="$REPO/build/firmware"
 [[ ! -e $out ]] || { echo "$out existiert bereits; zum erneuten Dump umbenennen." >&2; exit 1; }
