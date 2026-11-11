@@ -1,8 +1,9 @@
 # Retire the reference SSDT override
 
-Status: preparation only. The default package profile, installed UKIs, recovery
-entry and running firmware are unchanged. A native-ACPI candidate must pass its
-own physical qualification before the legacy package dependency is removed.
+Status: test tooling is available; physical comparison is pending. The default
+package profile remains legacy. A separate native test entry can be installed
+without selecting it or changing the working/recovery images. The candidate
+must pass physical qualification before the legacy dependency is removed.
 
 ## What the test changes
 
@@ -11,6 +12,8 @@ The reference SSDT replaces response buffers in EC methods `RRA9`, `RRA8`,
 that workaround is still necessary with the current FF-A/FFH kernel handling.
 The older captured DSDT was already removed; its SSPM-discovery workaround is
 handled by the existing negative Windows-2022 OSI policy.
+The reference builder now requires only the original ASUS SSDT and generates
+only its verified replacement, with no DSDT transformation or combined CPIO.
 
 This test removes only `kernel/firmware/acpi/SSDT.aml` from the early initramfs
 of a known working UKI. The kernel, command line, embedded modules, other PE
@@ -74,10 +77,25 @@ source kernel. Keep package/module versions and the command line unchanged
 between baseline and candidate. Use a baseline without experimental DSP
 publication so the ACPI test does not also become a DSP recovery experiment.
 
-Preserve the existing working and recovery entries. When scheduling the test,
-copy the candidate to a separate filename such as
-`/boot/EFI/Linux/p16-native-acpi-test.efi`, calculate its BLAKE2b hash and add
-one separate top-level entry:
+Install the staged candidate through the separate helper:
+
+```sh
+pkexec --disable-internal-agent /usr/bin/python3 \
+  "$PWD/scripts/install-native-acpi-test.py" \
+  --candidate "$PWD/build/native-acpi-candidate"
+```
+
+It revalidates the source against the hash-pinned default and the staging
+manifest, verifies that only the reference SSDT was removed, and rejects DSP
+autostart parameters. It backs up `limine.conf`, adds only the test image/entry
+shown below, then verifies all menu hashes and the unchanged default/recovery.
+The operation uses the existing boot-partition lock and refuses to replace an
+existing test image, entry or installation record. `installation.json` records
+the backup and installed image hashes separately from the staging manifest.
+The helper never selects an entry, changes packages or reboots.
+
+The helper preserves the existing working and recovery entries and installs
+`/boot/EFI/Linux/p16-native-acpi-test.efi` with a separate top-level entry:
 
 ```text
 /Omarchy-P16-Native-ACPI-Test
@@ -96,6 +114,25 @@ not the reference override hash
 `9b28ffc14c19f8b7ea2278de88ff9ec070f5f70401107d81fef067a916aa9695`.
 Check `/sys/firmware/acpi/tables/SSDT*` and the ACPI table-upgrade boot messages;
 matching `uname -r` alone cannot distinguish these two images.
+
+On the source boot, capture the legacy baseline; repeat on the native boot
+with `--phase native` and a new output directory:
+
+```sh
+pkexec --disable-internal-agent /usr/bin/python3 \
+  "$PWD/scripts/collect-native-acpi.py" \
+  --candidate "$PWD/build/native-acpi-candidate" --phase legacy \
+  --output "$PWD/build/native-acpi-candidate/legacy-before"
+```
+
+The collector records table hashes, boot/kernel/command-line identities, DSP
+publication state, battery/profile/hwmon readings, module identities and the
+kernel journal. It rejects admission if the kernel, command line or expected
+ASUS SSDT differs, or a DSP is published. It preserves unavailable readings as
+errors. Its reports are observations and always have `hardware_qualified: false`;
+the physical checks below must be performed and recorded separately. Capture
+new snapshots after AC changes and resume. Do not treat identical failures on
+both boots as passing qualification.
 
 | Area | Required comparison with the legacy baseline |
 | --- | --- |

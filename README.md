@@ -196,8 +196,10 @@ make -C packages MAKEPKG='makepkg --nodeps'
 ```
 
 The dump creates `build/firmware`; it refuses to overwrite an existing capture.
-The ACPI builder produces `build/acpi/kernel/firmware/acpi/SSDT.aml`, and
-`peripherals.py prepare` downloads/verifies the ASUS archive and extracts three
+The ACPI builder uses only the original ASUS power SSDT and produces
+`build/acpi/kernel/firmware/acpi/SSDT.aml`; it generates no DSDT override or
+combined ACPI CPIO archive. `peripherals.py prepare`
+downloads/verifies the ASUS archive and extracts three
 Cirrus files into `build/speaker-firmware`. No Windows installer is executed.
 
 | Package | Built package directory | Installed role |

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive ACPI overrides from the machine's original tables; no firmware distribution."""
+"""Derive only the ASUS power SSDT from original firmware; no firmware distribution."""
 import importlib.util
 import json
 from pathlib import Path
@@ -26,8 +26,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 report = module.build(build / 'firmware', repo=out, iasl=str(compiler / 'generate/unix/bin/iasl'))
 (out / 'manifest.json').write_text(json.dumps(report, indent=2) + '\n')
-subprocess.run(['bsdtar', '-xf', str(out / module.ARCHIVE_PATH), '-C', str(out)], check=True)
-for name, expected in [('DSDT.aml', module.DSDT_OUTPUT), ('SSDT.aml', module.SSDT_OUTPUT)]:
-    if not hashlib.sha256((out / 'kernel/firmware/acpi' / name).read_bytes()).hexdigest() == expected:
-        raise ValueError('Validierung fehlgeschlagen')
-print('ACPI-Dateien:', out / 'kernel/firmware/acpi')
+ssdt = out / module.OVERRIDE_PATH
+if hashlib.sha256(ssdt.read_bytes()).hexdigest() != module.SSDT_OUTPUT:
+    raise ValueError('SSDT output SHA-256 mismatch')
+print('ACPI-SSDT:', ssdt)

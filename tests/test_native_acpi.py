@@ -141,8 +141,10 @@ class NativeStageTests(unittest.TestCase):
             source, output = root / 'source.efi', root / 'candidate'
             original_initrd = archive([(policy.REFERENCE_SSDT, REFERENCE), ('early-other', b'keep')])
             original_initrd += b'\x1f\x8bmain-payload-unchanged'
-            payloads = {'.linux': b'kernel payload', '.initrd': original_initrd,
-                        '.uname': b'7.2.8-test\0', '.cmdline': b'preserve existing arguments\0'}
+            # Keep initrd last and unaligned: shrinking it with --update-section
+            # used to leave a truncated raw extent and stale VirtualSize.
+            payloads = {'.linux': b'kernel payload', '.uname': b'7.2.8-test\0',
+                        '.cmdline': b'preserve existing arguments\0', '.initrd': original_initrd}
             command = ['objcopy']
             for index, (name, data) in enumerate(payloads.items()):
                 file = root / name[1:]
@@ -163,6 +165,8 @@ class NativeStageTests(unittest.TestCase):
                 self.assertFalse(report['hardware_qualified'])
                 after = stage.BOOT.sections(output / 'native-acpi.efi')
                 before = stage.BOOT.sections(source)
+                self.assertEqual(stage.section_layout((output / 'native-acpi.efi').read_bytes()),
+                                 stage.section_layout(source_bytes))
                 for name, data in before.items():
                     if name != '.initrd':
                         self.assertEqual(after[name], data, name)

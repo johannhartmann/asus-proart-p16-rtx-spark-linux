@@ -71,6 +71,21 @@ def default_image(menu=Path('/boot/limine.conf'), boot_root=Path('/boot')):
     return path
 
 
+def section_layout(data):
+    """Record load addresses and flags so objcopy cannot relocate other payloads."""
+    pe = struct.unpack_from('<I', data, 60)[0]
+    optional = pe + 24
+    image_base = struct.unpack_from('<Q', data, optional + 24)[0]
+    headers = optional + struct.unpack_from('<H', data, pe + 20)[0]
+    result = {}
+    for index in range(struct.unpack_from('<H', data, pe + 6)[0]):
+        header = headers + index * 40
+        name = data[header:header + 8].rstrip(b'\0').decode()
+        result[name] = (image_base + struct.unpack_from('<I', data, header + 12)[0],
+                        struct.unpack_from('<I', data, header + 36)[0])
+    return result
+
+
 def stage(source, output):
     source, output = Path(source).resolve(strict=True), Path(output).resolve()
     if output.exists() or any(output.is_relative_to(Path(p)) for p in ('/boot', '/efi')):
@@ -78,6 +93,7 @@ def stage(source, output):
     original = source.read_bytes()
     sections = BOOT.sections(source)
     require_unsigned(original, sections)
+    layout = section_layout(original)
     BOOT.verify_image(source, acpi_mode='legacy')
     modified = POLICY.without_reference_ssdt(sections['.initrd'])
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -86,11 +102,18 @@ def stage(source, output):
         snapshot, initrd, candidate = work / 'source.efi', work / 'initrd', work / 'native-acpi.efi'
         snapshot.write_bytes(original)
         initrd.write_bytes(modified)
-        subprocess.run(['objcopy', '--update-section', '.initrd=' + str(initrd),
+        # BFD --update-section can retain the old VirtualSize and omit final
+        # file padding when shrinking the last PE section. Re-add the section
+        # at the same load address to regenerate both sizes consistently.
+        subprocess.run(['objcopy', '--remove-section', '.initrd',
+                        '--add-section', '.initrd=' + str(initrd),
+                        '--change-section-vma', '.initrd=' + hex(layout['.initrd'][0]),
+                        '--set-section-flags', '.initrd=alloc,load,readonly,data',
                         str(snapshot), str(candidate)], check=True, capture_output=True)
         after = BOOT.sections(candidate)
         require_unsigned(candidate.read_bytes(), after)
-        if set(after) != set(sections) or after['.initrd'] != modified or \
+        if section_layout(candidate.read_bytes()) != layout or \
+                set(after) != set(sections) or after['.initrd'] != modified or \
                 any(after[name] != data for name, data in sections.items() if name != '.initrd'):
             raise ValueError('Unexpected change to UKI payloads')
         BOOT.verify_image(candidate, acpi_mode='native')

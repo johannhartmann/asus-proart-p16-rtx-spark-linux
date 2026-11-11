@@ -111,14 +111,15 @@ class ACPIInputCompatibilityTests(unittest.TestCase):
             dump, output = root / 'dump', root / 'output'
             dump.mkdir()
             table = bytearray(36)
-            table[:4] = b'DSDT'
+            table[:4] = b'SSDT'
+            table[10:24] = acpi.ASUS_SSDT
             struct.pack_into('<I', table, 4, len(table))
             table[9] = -sum(table) % 256
             (dump / 'DSDT').write_bytes(table)
-            with patch.object(acpi, 'patch_dsdt') as transform, \
+            with patch.object(acpi, 'splice_ssdt') as transform, \
                  patch.object(acpi, 'check_iasl') as compile_check, \
                  patch.object(acpi, 'publish') as publish:
-                with self.assertRaisesRegex(ValueError, 'unsupported DSDT input layout'):
+                with self.assertRaisesRegex(ValueError, 'unsupported ASUS SSDT input layout'):
                     acpi.build(dump, repo=output)
                 transform.assert_not_called()
                 compile_check.assert_not_called()
