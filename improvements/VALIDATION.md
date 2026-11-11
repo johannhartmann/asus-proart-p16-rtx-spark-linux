@@ -1,6 +1,7 @@
 # Hardware validation and remaining work
 
-These observations are from an ASUS ProArt P16 H7607BA, N1X ARM64, BIOS 303.
+The initial observations below are from an ASUS ProArt P16 H7607BA, N1X ARM64,
+BIOS 303. A separate BIOS 305 record follows.
 They describe what was tested, not certification of every distro or BIOS.
 
 | Area | Evidence | Limits |
@@ -56,7 +57,7 @@ These observations do not establish that all MT7925 problems are fixed.
 
 The compact export remains a separate source-tested patch combination, not a
 claim of a full standalone build or physical qualification of every feature.
-Only the H7607BA BIOS 303 20-CPU configuration has been physically tested here;
+Only the H7607BA BIOS 303/305 20-CPU configurations have been physically tested here;
 18-CPU N1X admission is tentative and depends on the same structural firmware
 checks; no 18-CPU physical boot, suspend, resume or power result is available.
 
@@ -75,3 +76,48 @@ early wake involving a USB mouse receiver. Stock behavior cannot be compared
 for timed wake because it woke immediately. Timed RTC wake is not validated
 by this export; USB receivers and other wake sources may affect sleep. These
 observations do not establish a firmware root cause or a new fix.
+
+## BIOS 305 validation (2026-11-10)
+
+On the same 20-CPU H7607BA with BIOS H7607BA.305, experimental kernel
+`7.3.0-44.10` admitted all 20 CPUs, three parent levels and seven compositions,
+without the previous `-22` rejection. One manual lid cycle lasted 6 min
+34.688 s. Battery discharge was 0.209 Wh over a 400.983 s measurement interval,
+about 1.876 W including transitions and 6.295 s awake. The suspend success
+counter increased by one and the failure counter remained zero; NVIDIA,
+Wi-Fi and the ambient light sensor recovered.
+
+The main `7.3.0-44.10` kernel subsequently booted with coordinated admission
+and no failed services. A suspend-power test on that main boot was not run.
+These are tests of the integrated distro kernels, not a separate full build
+or hardware qualification of this compact standalone export. The BIOS 303
+results above remain valid for their original kernels and test conditions.
+
+Patch 1126 retains the validated candidate bytes while using the next free
+series number. It accepts the known enabled parent descriptors and exact
+paired system timing sentinel without changing firmware timing values.
+The policy harness extracts the actual admission functions; the governor
+harness extracts `cpu_system_power_down_ok` and checks unconstrained QoS,
+finite QoS rejection and disabled states against that sentinel.
+
+One cycle and battery-gauge energy do not prove physical DRIPS residency or
+a steady-state power rate. No 18-CPU hardware was tested. RTC timed wake
+remains unvalidated; this change does not claim an RTC wake fix.
+
+## Fallback latency overflow follow-up
+
+Patch 1127 saturates the historical fallback latency addition before converting
+to nanoseconds. An enabled BIOS 305 paired `U32_MAX` sentinel therefore remains
+`U32_MAX` instead of wrapping to 6609 microseconds. The real setup/selection
+harness reproduces the overflow before the fix and checks sentinel, boundary,
+finite, coordinated and non-N1x cases after it. Patch 1125 remains unchanged.
+This source regression test adds no physical sleep or DRIPS residency evidence.
+
+## Governor harness correction
+
+The governor regression now extracts the actual `pm_qos.h` constants and their
+`S32_MAX` definition from the prepared kernel. The no-constraint value is
+`S32_MAX` microseconds (2147483647000 ns), not -1 or an infinite nanosecond
+budget. A finite constraint of `INT32_MAX - 1` rejects the BIOS 305 timing
+sentinel. Removing the governor's explicit no-constraint exception makes the
+regression fail. This corrects the test mocks; no kernel behavior is changed.

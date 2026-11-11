@@ -1,7 +1,8 @@
 # Linux 7.3 hardware patch series
 
 Target: ASUS ProArt P16 **H7607BA, NVIDIA N1X/RTX Spark, AArch64**.
-This is not the AMD/x86 ProArt P16. BIOS 303 is the physically tested firmware.
+This is not the AMD/x86 ProArt P16. BIOS 303 and 305 have physical test evidence;
+see the validation record for the different scope of each test.
 
 ## Inputs and patch order
 
@@ -22,6 +23,8 @@ the additions build on Johann Hartmann and Josephine Pfeiffer's P16 work.
 | 1123 | In-tree LPS0 late-suspend/early-resume notifications and EC timing |
 | 1124 | Automatic P16/N1X hardware admission, retaining firmware compatibility checks |
 | 1125 | Preserve existing DRIPS latency for non-coordinated fallback states |
+| 1126 | Accept validated BIOS 305 enabled parent LPI profiles and the exact paired system timing sentinel |
+| 1127 | Saturate fallback DRIPS latency addition to preserve U32_MAX without wrapping |
 | 2110-2120 | SPI-HID transport prerequisites |
 | 9100 | ASUS WMI on ARM64, battery response handling and preserving the charge threshold |
 | 9101 | MT8901 interrupt-only GPIOs 182-208, including sensor GPIO 190 |
@@ -108,6 +111,11 @@ The coordinated path matches ASUS ProArt P16 plus the N1X ACPI device; it is
 not pinned to a BIOS number. OSLPI acknowledgement, PSCI OSI availability,
 complete CPU coverage and the expected firmware state contracts must still pass. Other
 firmware can be rejected safely rather than entering an incompatible hierarchy.
+1126 accepts uniformly enabled known parent descriptors as well as the BIOS 303
+masked form. Only the system level may use the exact enabled, paired `U32_MAX`
+timing sentinel; firmware timing values and finite system QoS limits are preserved.
+It does not write MPEL, ELST or SYSRAM. `check.sh` automatically includes the
+actual-function BIOS 305 policy and system-governor regression harnesses.
 Ordinary CPU idle does not use the coordinated shared-domain suspend states.
 
 For troubleshooting, boot with `acpi.n1x_coordinated_s2idle=0` to disable the
@@ -139,7 +147,7 @@ The coordinated-sleep series admits 18- and 20-CPU N1X configurations when
 all existing hardware, ACPI/LPI hierarchy, register, state and CPU-coverage
 checks pass. The 18-CPU admission is tentative: it assumes those SKUs retain
 the same firmware contracts with two fewer CPUs. Physical validation here is
-limited to the 20-CPU H7607BA BIOS 303 configuration; accepting a CPU count is
+limited to the 20-CPU H7607BA BIOS 303/305 configurations; accepting a CPU count is
 not a claim of working sleep or power draw on an 18-CPU unit. Other CPU counts
 and incompatible firmware retain the normal non-coordinated fallback.
 

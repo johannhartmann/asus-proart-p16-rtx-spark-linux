@@ -1,6 +1,7 @@
 # P16 hardware support
 
-These additions target H7607BA/N1X ARM64, with BIOS 303 physically tested.
+These additions target H7607BA/N1X ARM64, with physical evidence on BIOS 303
+and 305. See the validation record for the scope and limits of each test.
 
 1. Read [validation and limits](VALIDATION.md) and identify the exact hardware.
 2. Prepare [Linux 7.3 and the ordered kernel patches](kernel/README.md).

@@ -26,7 +26,7 @@
       ],
       "adaptation": "Consolidated Linux7.3 port, P16 automatic firmware admission and suspend-only policy; not a new upstream sign-off"
     },
-    "patch_count": 84,
+    "patch_count": 86,
     "adaptation_note": "The exported subset omits unrelated scheduler, x86 and Qualcomm changes from the reference distro. The coordinated follow-up tentatively admits 18 or 20 present CPUs while retaining the existing complete-coverage and firmware hierarchy contracts; only the 20-CPU P16 is physically validated. Use olddefconfig; no full rebuild of this compact subset is claimed.",
     "followups": [
       {
@@ -51,6 +51,31 @@
         "change": "Actual admission regression covers 18/20-CPU acceptance with the existing hierarchy and 16/19 rejection; structural and transient-error checks remain required",
         "sha256": "05d79541ee7964f979ca1b58e28de35e6b10b29b60b57957fc066c5ba9b99941",
         "sku_reference": "https://www.nvidia.com/en-us/products/rtx-spark/specifications/"
+      },
+      {
+        "file": "kernel/1126-acpi-n1x-p16-bios305-lpi-profiles.patch",
+        "change": "Byte-identical validated BIOS 305 candidate, renumbered from 1127; accept uniform known parent flags and the exact enabled paired system timing sentinel without rewriting firmware values",
+        "sha256": "dffd663320dd98c2fc48521a2622bda207a1b5fc7d9b461abc39207a1bf9c0d7"
+      },
+      {
+        "file": "kernel/test_bios305_policy.py",
+        "change": "Extract actual admission and composition functions; cover BIOS 303/305 profiles, preserved sentinels and malformed-profile rejection",
+        "sha256": "4f67a0db010a39f1f5ee1d6cf92e32efe9a6e972699e84bd673dc4be229345a1"
+      },
+      {
+        "file": "kernel/test_bios305_governor.py",
+        "change": "Extract actual system governor and kernel pm_qos/limits constant definitions; test S32_MAX no-constraint sentinel, finite QoS, disabled states and rejection of a mutant without the no-constraint exception",
+        "sha256": "1b8c40e6859dd928b63345aee239ee81894539ef7cd5f82122cd2421f467782e"
+      },
+      {
+        "file": "kernel/1127-acpi-n1x-saturate-drips-fallback-latency.patch",
+        "change": "Saturate fallback DRIPS latency addition without rewriting 1125; preserve U32_MAX and finite boundary behavior",
+        "sha256": "268972349396916e52b75fc1d8e0468f7db7966086be5d5c3a780c9febd3ddb5"
+      },
+      {
+        "file": "kernel/test_fallback_latency.py",
+        "change": "Actual setup and selection regression: paired sentinel, near/exact saturation boundary, finite adjustment and unaffected coordinated/non-N1x cases",
+        "sha256": "5d3b5a1d8b77b3663b53439a477e3e847248e690778444fa1d6d5bcc22a43782"
       }
     ]
   },
@@ -62,7 +87,10 @@
   },
   "validation": {
     "physical_hardware": "ASUS ProArt P16 H7607BA NVIDIA N1X AArch64",
-    "bios": "H7607BA.303",
+    "bios": [
+      "H7607BA.303",
+      "H7607BA.305"
+    ],
     "record": "VALIDATION.md",
     "export": "Kernel series clean-applied and source harnesses tested; no separate full build of compact vanilla series claimed"
   },

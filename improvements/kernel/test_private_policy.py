@@ -24,6 +24,7 @@ preamble=r'''
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#define U32_MAX UINT32_MAX
 typedef uint32_t u32;typedef uint64_t u64;typedef const char *acpi_handle;
 #define ACPI_CSTATE_FFH 1
 #define ACPI_CSTATE_INTEGER 2
