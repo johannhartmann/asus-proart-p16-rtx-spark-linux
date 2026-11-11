@@ -122,3 +122,13 @@ period count, exclusive HiFi5 target, enabled UL1 and exact base/end/MSB words.
 A mismatch or failed read is terminal and retains the lease; there is no
 fallback that rewrites an active IRQ. Actual boot evidence and the remaining
 qualification boundary are recorded in [the audio review](../../../docs/audio-review.md).
+
+
+AFE 0.1.26 hands the disabled UL1 IRQ off from the default MCU routing during
+PREPARE, before the firmware START. The checked write preserves every other IRQ
+bit; failure retains a terminal IRQ error. Resume invalidates cached ring/IRQ
+preparation without freeing retained memory, including a prepared idle stream.
+Capture validation failures log the register, observed value, expected value
+and mask. The hardware failure that prompted this change did not retain the
+original mismatched register, so this remains a correction awaiting hardware
+qualification rather than proof that every capture issue has been resolved.

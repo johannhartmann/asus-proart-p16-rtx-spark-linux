@@ -684,6 +684,19 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer)
 	ret = mt8901_afe_sram_program_irq(buffer, afe);
 	if (ret)
 		goto unlock;
+	/* AFE init routes every memif IRQ to the host MCU. Transfer this
+	 * disabled capture IRQ before HiFi5 START enables it autonomously.
+	 */
+	if (buffer->endpoint.memif == MT8901_AFE_MEMIF_UL1) {
+		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN,
+					 BIT(buffer->endpoint.irq), 0);
+		if (ret) {
+			buffer->irq_error = ret;
+			dev_err(afe->dev, "capture PREPARE: IRQ%u MCU handoff failed: %d\n",
+				buffer->endpoint.irq, ret);
+			goto unlock;
+		}
+	}
 	buffer->irq_prepared = true;
 	buffer->irq_stopped = false;
 unlock:
@@ -731,10 +744,17 @@ static int mt8901_afe_sram_capture_started(struct mt8901_afe_sram_buffer *buffer
 	checks[0].expected = 1 | fs << 4 | domain << 9;
 	for (i = 0; i < ARRAY_SIZE(checks); i++) {
 		ret = regmap_read(afe->regmap, checks[i].reg, &value);
-		if (ret)
+		if (ret) {
+			dev_err(afe->dev, "capture START: read register %#x failed: %d\n",
+				checks[i].reg, ret);
 			return ret;
-		if ((value & checks[i].mask) != checks[i].expected)
+		}
+		if ((value & checks[i].mask) != checks[i].expected) {
+			dev_err(afe->dev,
+				"capture START: register %#x = %#x, expected %#x under mask %#x\n",
+				checks[i].reg, value, checks[i].expected, checks[i].mask);
 			return -EIO;
+		}
 	}
 	return 0;
 }
@@ -1002,6 +1022,11 @@ int mt8901_afe_sram_resume(struct mt8901_afe_sram_buffer *buffer)
 		ret = -EHOSTDOWN;
 	} else {
 		buffer->asleep = false;
+		/* Retained memory survives; volatile address/IRQ preparation belongs
+		 * to the old power generation, including an idle prepared stream.
+		 */
+		buffer->prepared = false;
+		buffer->irq_prepared = false;
 		atomic_dec(&buffer->sram->sleeping_users);
 	}
 	device_unlock(buffer->dev);

@@ -19,7 +19,7 @@ DEVICES = tuple(Path("/sys/bus/platform/devices") / f"NVDA830{i}:00" for i in (1
 FAULTS = ("error", "power_error", "ipc_error", "primary_error", "primary_task_error",
           "primary_pcm_error", "pcm_period_error")
 VERSION = "0.1.24"
-AFE_VERSION = "0.1.25"
+AFE_VERSION = "0.1.26"
 
 
 def fields(text):
@@ -66,7 +66,7 @@ def preflight():
         raise RuntimeError("Requires the matching DSP 0.1.24 / PCM ABI 3 candidate")
     afe_version = Path("/sys/module/snd_soc_mt8901_afe/version")
     if not afe_version.exists() or afe_version.read_text().strip() != AFE_VERSION:
-        raise RuntimeError("Requires AFE 0.1.25 with checked firmware-owned capture START")
+        raise RuntimeError("Requires AFE 0.1.26 with capture IRQ ownership handoff")
     for name, value in zip(("dsp_playback", "dsp_capture"), frontend_options()):
         if value != "Y":
             raise RuntimeError(f"AFE {name} is not enabled on this boot")

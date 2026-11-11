@@ -88,7 +88,7 @@ class AudioValidationTests(unittest.TestCase):
                 patch.object(audio, "frontend_options") as options:
             path.return_value.read_text.return_value = "0.1.24"
             path.return_value.exists.return_value = False
-            with self.assertRaisesRegex(RuntimeError, "Requires AFE 0.1.25"):
+            with self.assertRaisesRegex(RuntimeError, "Requires AFE 0.1.26"):
                 audio.preflight()
             options.assert_not_called()
 

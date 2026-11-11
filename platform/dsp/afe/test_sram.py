@@ -185,7 +185,7 @@ static int regmap_read(void *map,int reg,u32 *value)
  stop_calls++;if(stop_fail_step==stop_calls)return -EIO;*value=clear_read=counter_word;return 0;
  }if(capture_live) {
  assert(locked && pm_refs && pm_active && map==afe.regmap && capture_reads<11 && (unsigned)reg==capture_regs[capture_reads]);
- *value=capture_values[capture_reads++];if(capture_bad==capture_reads)*value^=(capture_reads>=3 && capture_reads<=6)?BIT(8):capture_reads==7?BIT(28):1;
+ *value=reg==AFE_IRQ_MCU_EN?mcu_word:capture_values[capture_reads];capture_reads++;if(capture_bad==capture_reads)*value^=(capture_reads>=3 && capture_reads<=6)?BIT(8):capture_reads==7?BIT(28):1;
  return capture_io==capture_reads?-EIO:0;
  }assert(locked && pm_refs && pm_active && map==afe.regmap && reg==0x9d40+(int)expected_irq*8);
  if(irq_read_error)return irq_read_error;*value=cfg_word;return 0;}
@@ -206,6 +206,9 @@ static int regmap_update_bits(void *map,int reg,u32 mask,u32 value)
  assert(reg==regs[stop_calls] && mask==masks[stop_calls] && value==values[stop_calls]);
  u32 *word=reg==enable?&memif_word:reg==0x9d40+(int)expected_irq*8?&cfg_word:reg==0x9d44+(int)expected_irq*8?&counter_word:reg==0x9d00?&mcu_word:&dsp_word;
  *word=(*word&~mask)|(value&mask);stop_calls++;return stop_calls==stop_fail_step?-EIO:0;
+ }if(expected_irq==8 && reg==AFE_IRQ_MCU_EN) {
+ assert(locked && pm_refs && pm_active && map==afe.regmap && irq_updates==3 && mask==BIT(8) && !value);
+ irq_updates++;if(irq_updates==irq_fail_at)return -EIO;mcu_word&=~BIT(8);return 0;
  }assert(locked && pm_refs && pm_active && map==afe.regmap && program_calls==4 && irq_updates<3);
  const int regs[]={0x9d44+(int)expected_irq*8,0x9d40+(int)expected_irq*8,0x9d40+(int)expected_irq*8};const u32 masks[]={0xffffff,0x1f<<4,7<<9};
  const u32 values[]={480,10<<4,1<<9};
@@ -302,6 +305,8 @@ static int mt8901_afe_disable_mtcmos(struct mtk_base_afe *a,int pd) {assert(a==&
 static void regcache_cache_only(void *map,bool only) {assert(map==(void *)3);(void)only;hardware_calls++;}
 static void regcache_mark_dirty(void *map) {assert(map==(void *)3);hardware_calls++;}
 #define dev_warn(dev,...) ((void)(dev))
+static unsigned diagnostic_logs;
+#define dev_err(dev,...) ((void)(dev),diagnostic_logs++)
 static bool dsp_enabled;
 static bool mt8901_afe_dsp_enabled(void){return dsp_enabled;}
 #define MT8901_AFE_MEMIF_DL0 0
@@ -666,7 +671,8 @@ int main(void)
   assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
   assert(!mt8901_afe_sram_prepare(b));
   for(unsigned cycle=0;cycle<32;cycle++) {
-   irq_updates=0;assert(!mt8901_afe_sram_prepare_irq(b));
+   irq_updates=0;mcu_word|=BIT(8);u32 mcu_before=mcu_word;
+   assert(!mt8901_afe_sram_prepare_irq(b) && irq_updates==4 && mcu_word==(mcu_before&~BIT(8)));
    /* Native task START already enabled UL1 and routed its IRQ to HiFi5. */
    runtime.running=true;engine_updates=0;capture_live=true;capture_reads=0;
    cfg_word|=1;dsp_word|=BIT(8);mcu_word&=~BIT(8);memif_word|=BIT(28);
@@ -681,6 +687,51 @@ int main(void)
   _exit(0);
  }
  assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ reset();init();child=fork();assert(child>=0);
+ if(!child) {
+  engine_memif=expected_irq=dai.id=8;stream.stream=1;memif_data.enable_reg=AFE_VUL1_CON0;
+  irq_data.id=irq_data.irq_mask_shift=8;irq_data.irq_en_reg=0x9d80;
+  irq_data.irq_cnt_reg=irq_data.irq_clr_reg=0x9d84;
+  irq_data.irq_fs_reg=irq_data.irq_domain_reg=0x9d80;private.dai_priv[8]=&memif_clock;
+  b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+  assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+  assert(!mt8901_afe_sram_prepare(b));mcu_word|=BIT(8);u32 before=mcu_word;
+  irq_fail_at=4;diagnostic_logs=0;
+  assert(mt8901_afe_sram_prepare_irq(b)==-EIO && b->irq_error==-EIO && !b->irq_prepared);
+  assert(irq_updates==4 && mcu_word==before && diagnostic_logs==1);
+  irq_fail_at=0;
+  assert(mt8901_afe_sram_prepare_irq(b)==-EIO && irq_updates==4 && diagnostic_logs==1);
+  assert(b->published && module_refs==1 && pm_refs==1);
+  _exit(0);
+ }
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ reset();init();child=fork();assert(child>=0);
+ if(!child) {
+  engine_memif=expected_irq=dai.id=8;stream.stream=1;memif_data.enable_reg=AFE_VUL1_CON0;
+  irq_data.id=irq_data.irq_mask_shift=8;irq_data.irq_en_reg=0x9d80;
+  irq_data.irq_cnt_reg=irq_data.irq_clr_reg=0x9d84;
+  irq_data.irq_fs_reg=irq_data.irq_domain_reg=0x9d80;private.dai_priv[8]=&memif_clock;
+  b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+  assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+  assert(!mt8901_afe_sram_allow_retention(b));
+  for(unsigned cycle=0;cycle<32;cycle++) {
+   program_calls=irq_updates=0;mcu_word|=BIT(8);cfg_word&=~1U;
+   assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b));
+   assert(b->prepared && b->irq_prepared && program_calls==4 && irq_updates==4);
+   assert(!(mcu_word&BIT(8)) && !b->started);
+   device_lock(&device);assert(!mt8901_afe_sram_pm_prepare(&afe));device_unlock(&device);
+   assert(!mt8901_afe_sram_suspend(b));
+   device_lock(&device);assert(!mt8901_afe_sram_pm_save(&afe));device_unlock(&device);
+   assert(mt8901_afe_sram_resume(b)==-EHOSTDOWN);
+   mcu_word|=BIT(8);cfg_word=0; /* AFE power generation changed. */
+   device_lock(&device);mt8901_afe_sram_pm_restore(&afe);device_unlock(&device);
+   assert(!mt8901_afe_sram_resume(b) && !b->prepared && !b->irq_prepared);
+   device_lock(&device);mt8901_afe_sram_pm_complete(&afe);device_unlock(&device);
+   assert(b->published && b->substream==&stream && b->bytes==3840 && module_refs==1 && pm_refs==1);
+  }
+  _exit(0);
+ }
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
  for(unsigned fault=1;fault<=22;fault++) {
   reset();init();child=fork();assert(child>=0);
   if(!child) {
@@ -690,14 +741,15 @@ int main(void)
    irq_data.irq_fs_reg=irq_data.irq_domain_reg=0x9d80;private.dai_priv[8]=&memif_clock;
    b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
    assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
-   assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b));
-   runtime.running=true;capture_live=true;capture_reads=0;
+   mcu_word|=BIT(8);
+   assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b) && !(mcu_word&BIT(8)));
+   runtime.running=true;capture_live=true;capture_reads=diagnostic_logs=0;
    if(fault<=11)capture_bad=fault;else capture_io=fault-11;
    unsigned writes=program_calls+irq_updates;u32 before_cfg=cfg_word;
    assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && b->start_error==-EIO && !b->started);
-   assert(capture_reads==(fault<=11?fault:fault-11));
+   assert(capture_reads==(fault<=11?fault:fault-11) && diagnostic_logs==1);
    assert(cfg_word==before_cfg && writes==program_calls+irq_updates && !engine_updates);
-   assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && !b->started);
+   assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && !b->started && diagnostic_logs==1);
    assert(b->published && module_refs==1 && pm_refs==1);
    _exit(0);
   }

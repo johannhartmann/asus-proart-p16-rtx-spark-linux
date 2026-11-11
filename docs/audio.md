@@ -12,7 +12,7 @@ The [interface matrix](platform-driver-status.md#current-dsp-interface-requireme
 records SROOT v4 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2 separately.
 Implemented capture/duplex transport does not establish hardware qualification.
 
-The DSP 0.1.24 / AFE 0.1.25 candidate automatically loads the signed DSP images and registers the
+The DSP 0.1.24 / AFE 0.1.26 candidate automatically loads the signed DSP images and registers the
 three firmware-ready DSPs as auxiliary components of the ASoC sound card. Its
 DL0/DL1 playback frontend uses HiFi1 tasks 7 and 16. UL1 capture uses
 primary HiFi5 tasks 23 and 21; playback and capture have independent owners. Repeated STOP/PREPARE/START,
@@ -120,12 +120,16 @@ PipeWire otherwise probes both playback PCMs concurrently, exceeds the single
 playback owner contract and discards the entire HiFi profile. This rule does
 not implement two simultaneous DSP playback streams.
 
-AFE 0.1.25 distinguishes the two hardware START contracts. HiFi1 still needs
+AFE 0.1.26 distinguishes the two hardware START contracts. HiFi1 still needs
 host memif/IRQ activation. HiFi5 capture already enabled its hardware after
 native task START: the AFE verifies the active IRQ's rate/domain/count,
 exclusive processor target, enabled memif and all base/end address words.
 It adopts only an exact match and performs no live reconfiguration; mismatches
-and read errors remain terminal. This correction is built/offline-tested but
+and read errors remain terminal. Before firmware START, PREPARE clears only the
+owned capture IRQ's default MCU route while the IRQ is verified disabled.
+After an AFE power cycle, cached address/IRQ preparation is invalidated even
+for an idle prepared stream. Failed handoff and START validation log the exact
+register/read error and expected value. This correction is built/offline-tested but
 needs fresh-boot capture and duplex qualification.
 
 Install PipeWire, WirePlumber, `alsa-ucm-conf`, ALSA tools, the board's Cirrus
@@ -193,7 +197,7 @@ headset microphone capture and ordinary PipeWire client close/open/recovery.
 A successful playback command is insufficient: DSP consumed-data/period
 counters must advance, and real audio must be confirmed.
 
-Use the bounded validator for DSP 0.1.24 with AFE 0.1.25, with a known microphone
+Use the bounded validator for DSP 0.1.24 with AFE 0.1.26, with a known microphone
 stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
 duplex, then optionally device-only PM and the complete PCM sequence again:
 

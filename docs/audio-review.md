@@ -260,3 +260,30 @@ AFE export CRCs. Its source is still awaiting fresh-boot capture qualification.
 The validator rejects earlier AFE modules before authorizing PCM/PM; it reads
 0400 frontend options once through a read-only desktop polkit operation while
 keeping all PCM workloads under the ordinary user account.
+
+
+## AFE 0.1.25 cold-boot qualification and 0.1.26 correction
+
+Boot `0e486dfe` loaded DSP 0.1.24 and AFE 0.1.25 with all cores ready.
+S16_LE playback passed with 142 firmware notifications. S16_LE capture failed
+at START with EIO and zero bytes; the sequencer stopped before duplex or PM.
+The retained AFE lease had start_error=-5. Read-only inspection after normal
+STOP/CLOSE showed the exact 32 KiB ring, format, 1024-frame period and unchanged
+IRQ reload word, with no DSP/IPC/power fault. Lockdep had exhausted its entry
+budget before these tests.
+
+The old validation code did not record the first mismatched register. It is
+therefore not possible to establish that exact past comparison retrospectively.
+Source review established a missing handoff: AFE init routes IRQ0..15 to MCU,
+while capture expected IRQ8's MCU bit clear before adopting firmware START.
+The previous successful-looking register snapshots followed a failed stream's
+STOP, which had already cleared that target. AFE 0.1.26 explicitly clears the
+owned MCU bit during disabled-IRQ PREPARE, checks failure, and preserves all
+unrelated routes. It also invalidates address/IRQ preparation after power loss
+so a prepared idle stream cannot bypass that handoff on wake. Register mismatch
+and read errors now emit exact diagnostics before the retained terminal error.
+Offline tests cover cold routing masks, 32 prepared-idle retention cycles,
+handoff failure with no replay, and one diagnostic per terminal START failure.
+These are source corrections; capture, duplex and hardware resume remain
+unqualified. No retry, reset or physical/device sleep was performed after the
+failed capture on this boot.

@@ -41,9 +41,9 @@ This implements the native non-RAW capture transport; beamforming and noise
 suppression are not proven firmware capabilities. This is not a SOF firmware port. See [the audio setup and validation
 guide](../../docs/audio.md) for the complete installation and exact limits.
 
-The complete desktop candidate requires AFE 0.1.25 and the board UCM package
+The complete desktop candidate requires AFE 0.1.26 and the board UCM package
 in `ucm/`. The UCM package preserves the installed vendor codec controls while
-declaring the single-playback restriction. AFE 0.1.25 validates firmware-owned
+declaring the single-playback restriction. AFE 0.1.26 validates firmware-owned
 capture START rather than reconfiguring its already-active IRQ. See
 [the qualification guide](../../docs/audio.md) for installation and recorded
 hardware results; capture, duplex and resume are still pending qualification.

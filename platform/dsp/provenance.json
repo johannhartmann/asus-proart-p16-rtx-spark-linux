@@ -567,5 +567,17 @@
     "old_failure": "Second host program_irq returned EBUSY; normal STOP/CLOSE succeeded, no retained backend fault",
     "correction": "AFE 0.1.25 validates eleven IRQ/target/memif/ring words without reprogramming active capture hardware",
     "hardware_qualified": false
+  },
+  "capture_cold_start_handoff": {
+    "boot": "0e486dfe-d924-46a7-8ad3-a36eac25953f",
+    "loaded_afe": "0.1.25",
+    "result": "S16 playback 142 notifications; S16 capture EIO, zero bytes; no duplex/PM attempted",
+    "exact_past_mismatch": "Not recorded by old code; unknown retrospectively",
+    "confirmed_source_gap": "mt8901_afe_init_regs routes IRQ0..15 to MCU; capture PREPARE lacked explicit ownership handoff",
+    "new_afe": "0.1.26",
+    "handoff": "Clear owned MCU bit in disabled-IRQ PREPARE with checked write; preserve unrelated bits",
+    "resume": "Invalidate cached ring/IRQ preparation after AFE restoration, including idle prepared streams",
+    "diagnostics": "Log register/read failure and observed/expected/mask before terminal error",
+    "hardware_qualified": false
   }
 }

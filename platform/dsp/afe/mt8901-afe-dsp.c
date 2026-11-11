@@ -18,7 +18,7 @@
 /* The processing task also needs two independently retained 1 KiB IPC slices. */
 #define MT8901_DSP_IPC_BYTES 2048U
 
-MODULE_VERSION("0.1.25");
+MODULE_VERSION("0.1.26");
 
 static bool dsp_capture;
 module_param(dsp_capture, bool, 0400);
