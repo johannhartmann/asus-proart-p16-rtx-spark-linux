@@ -446,6 +446,20 @@
     "dsp_preflight": "Acquire scoped provider at probe; reserve before power/DRAM and publish lease before DSP DMA writes; validate all upload success fields before waiting for ready",
     "whole_core_release_verified": false
   },
+  "operating_memory_release_analysis": {
+    "analysis_script": "scripts/analyze-dsp-shutdown.py --dsp nvadsp.sys",
+    "native_dsp_sha256": "8b21e4652bb0ac178a2c470c8d6f982155e715c46112ac3b93de3ebfe00b13d6",
+    "native_release_hardware": "0x14004eee0",
+    "native_free_call": "0x14004f0d4; DMA_OPERATIONS offset 0x18",
+    "allocation_fields": "adapter +0x250, CPU +0x258, DMA +0x268, size +0x270",
+    "windows_precondition": "Normal WDF teardown after device power-off; failed PrepareHardware also invokes cleanup",
+    "pep_complete_bit": "PoFx input notification phase, not firmware DMA-off acknowledgement",
+    "scmi_set": "Correlated transport acknowledgement; no decoded DSP power-state result",
+    "scmi_get": "Three words with no verified DSP-off decoder",
+    "device_abandon": "Action 0x05000000; no verified DMA-off contract",
+    "operating_memory_release_implemented": false,
+    "hardware_qualified": false
+  },
   "system_sleep_retention": {
     "status": "0.1.22_device_pm_failed; 0.1.23_clean_boot; 0.1.24_duplex_and_reinit_hardware_unqualified",
     "default_enabled": false,

@@ -517,7 +517,19 @@ callback calls `0x140006d70` (`ADSP_Flush_Pending_Ack`) and `0x140007020`
 (`ADSP_Flush_Pending_Notification`). Those functions cancel queued host
 requests under their queue locks. They do not send a firmware stop packet.
 Release-hardware stops the two host worker threads, unmaps register apertures
-and releases the DMA allocation through the vendor allocator interface.
+and releases operating DRAM through `DMA_OPERATIONS.FreeCommonBuffer` at
+table offset `0x18` (indirect call `0x14004f0d4`). The context stores the DMA
+adapter at `+0x250`, CPU pointer at `+0x258`, DMA address at `+0x268` and
+allocation size at `+0x270`. This is separate from SROOT's image staging buffer.
+The three DMF cleanup calls also reach host event signaling/waiting
+(`0x140019c68` / `0x14003c190`); they do not establish a DSP-off acknowledgement.
+
+Microsoft's [ReleaseHardware contract](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/wdfdevice/nc-wdfdevice-evt_wdf_device_release_hardware)
+places normal teardown after queue shutdown, interrupt disconnection and device
+power-off. It also covers failed PrepareHardware cleanup. Copying the buffer
+free into Linux without reproducing the successful hardware power-off contract
+would omit a framework precondition. The native callback itself is not that
+contract.
 
 These callback bodies do not establish that DMA has stopped. That guarantee
 must be traced through the platform power transition and its completion
@@ -537,6 +549,12 @@ has been established for those words. This distinguishes a host GET command
 from unsolicited notifications on the second mailbox, but provides no basis
 for interpreting a reply as confirmed D3 or DMA-off. No GET request was sent
 to the live SSPM during this analysis.
+
+Use `scripts/analyze-dsp-shutdown.py --sroot nvsrootmbx.sys --pep nvpep.sys
+--dsp nvadsp.sys --output NEW_DIRECTORY` to extract these pinned instruction
+ranges and the release/queue-flush call sites. The optional `--dsp` input is
+hash checked, like the two required inputs; no Windows code executes and no
+hardware command is sent.
 
 Occurrences of `SoftwareBreakpoint(0xf003, ...)` in the decompilation are
 ARM64 trap instructions, not firmware command definitions.
@@ -778,12 +796,24 @@ against a blocked period worker. The complete path still has no hardware streami
 
 The pinned `nvpep.sys` device-power callback at `0x14001fb40` constructs its
 SCMI SET composite as the ACPI action word OR device state shifted by 16,
-driver-complete shifted by 8 and the system-state-transition byte. It calls
+the `Complete` notification phase shifted by 8 and the system-transition byte. It calls
 `0x1400169d0`, then the common SET implementation at `0x1400430c0`. The matching
 Linux wrapper encodes D3/complete on suspend and D0/incomplete on resume. The
 candidate uses `sys_trans=1` specifically for system sleep; ordinary runtime
 PM retains `sys_trans=0`. The existing `scripts/analyze-dsp-shutdown.py`
 extractor now includes the pinned PEP device-power callback for reproducibility.
+
+The callback processes D0 with `Complete=0` and non-D0 with `Complete=1`;
+it skips the opposite phases. Microsoft's
+[`PEP_DEVICE_POWER_STATE` definition](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/pepfx/ns-pepfx-_pep_device_power_state)
+defines `Complete` as an input supplied by PoFx around the Windows driver-stack
+transition, not an SSPM reply or a request to wait for physical power-off.
+Likewise, the callback's handled return value is not a hardware-state result.
+Linux `sspm_ci_set()` correlates the SET acknowledgement but does not decode a
+power-state result. Neither a successful SET, the `Complete` bit, nor the
+uninterpreted three-word GET reply permits operating-memory reclamation.
+`mtk_pwrap_dev_remove()` sends action `0x05000000` (device abandon), whose name
+alone provides no stronger DMA-off guarantee.
 
 In pinned `nvadsp.sys`, D0 entry `0x1400074e0` and post-interrupt entry
 `0x1400077e0` update driver state; D0 exit `0x140007630` updates state and

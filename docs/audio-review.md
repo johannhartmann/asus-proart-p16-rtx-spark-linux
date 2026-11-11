@@ -287,3 +287,42 @@ handoff failure with no replay, and one diagnostic per terminal START failure.
 These are source corrections; capture, duplex and hardware resume remain
 unqualified. No retry, reset or physical/device sleep was performed after the
 failed capture on this boot.
+
+## Lifecycle audit after the AFE 0.1.26 correction
+
+Implementation and hardware qualification are separate release gates. This
+matrix covers the selected normal playback/capture path; it does not imply
+RAW capture, DSP effects or secondary-HiFi5 audio support.
+
+| Stage | Current source and offline coverage | Hardware boundary |
+| --- | --- | --- |
+| Probe and boot | Provider reservation before address publication; 32-bit bounds; fail before publication or retain afterwards; boot/IRQ fault injection | All three DSPs boot on kernel 31 with DSP 0.1.24 |
+| OPEN and HW_PARAMS | Independent direction owners; actual card binding and PM links; bounded retained allocations; failed OPEN and concurrent-owner tests | Playback measured; full capture lifecycle pending |
+| PREPARE | Task descriptors and IRQ ownership; AFE 0.1.26 cold MCU handoff and checked diagnostics; prepared-idle state invalidated after AFE power loss | Corrected capture handoff not yet run |
+| START and data flow | Native task sequences, playback publication, capture copy-before-pointer ordering, underrun/overrun and transport faults | Playback advances; AFE 0.1.25 capture failed and remains terminal on the current boot |
+| STOP, HW_FREE, CLOSE and reopen | Ordered remote task stop, IRQ stop, listener detach and work drain; same-open reconfiguration and retained-buffer rebind tests | Earlier playback restart/reopen measured; current capture and duplex pending |
+| System sleep admission | Reject unsupported modes and retained faults; card-to-DSP-to-AFE and DSP-to-provider ordering; late STOP/IRQ faults rechecked | No PM attempted after the current capture failure |
+| Suspend and aborted suspend | Freeze IPC, drain IRQ/work, reject pending packets; D3 before SRAM/provider votes; checked rollback and timeout tests | Earlier device-only test exposed missing firmware reconstruction |
+| Resume | AFE SRAM restoration, D0, startup descriptor rewrite, canonical REINIT plus fresh ready; same-buffer task reconstruction; failures retain leases | Corrected REINIT, post-wake audio/NPU and physical s2idle unqualified |
+| Whole-core shutdown and reload | Published module, DMA and provider leases intentionally retained; runtime autosuspend/unbind unavailable | **Missing verified DSP-off contract; not implemented or safe to infer from task CLOSE** |
+
+The pinned Windows teardown has now been traced through WDF callback
+registration, D0 exit, pending-request flushes, worker termination and operating
+DRAM release. Windows relies on a framework power-off precondition before that
+release. The PEP `Complete` bit is an input transition phase, and SCMI SET
+acknowledgement supplies no decoded DSP power/DMA result. The GET reply remains
+three uninterpreted words. These findings narrow the outstanding work to the
+actual platform power-off completion contract; they do not justify an invented
+STOP command or freeing memory after D3 acknowledgement. See the
+[native shutdown evidence](../platform/dsp/protocol.md#device-power-down-callbacks)
+and its hash-pinned extractor.
+
+On the current source, the 28 focused repository tests for DSP IPC/lifetime,
+driver PM, AFE ownership/frontend/cache and qualification sequencing pass,
+along with the actual boot/IRQ/remove fault harness. The updated extractor
+also runs successfully against all three pinned Windows binaries. These are
+offline results, not an additional hardware pass. The next hardware sequence
+must use the same DSP/provider/AFE/machine bundle and cover both formats,
+capture and duplex before device-only PM, followed by the same PCM tests after
+resume. A failure stops the sequence and preserves evidence; it is not a reason
+to request another reboot without diagnosing the recorded failure first.
