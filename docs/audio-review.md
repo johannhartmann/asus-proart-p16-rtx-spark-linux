@@ -210,3 +210,47 @@ unit tests (two skipped). DSP and AFE build with W=1 for kernel 31 without
 warnings; the 15 DSP and 17 AFE existing export CRCs are preserved. Generated
 patch replay and package input hashes agree. These checks qualify the source
 bundle, not capture or suspend on hardware.
+
+
+## 2026-11-11 boot acc75220: desktop profile and capture START
+
+DSP 0.1.24 and AFE `537B927FCEADD3EADCDE612` booted with all three firmware
+instances ready and all retained errors zero. A 3-second S16_LE 48-kHz stereo
+silence playback completed with 142 real DSP notifications and no retained
+fault. Audible analog output was not assessed. Lockdep again exhausted its
+entry budget during container startup, before qualification.
+
+The stock UCM offered simultaneous Speaker and Headphones mappings. ACP's
+verbose probe opened DL1 and then rejected DL0 (`EOPNOTSUPP`) because the DSP
+frontend owns one playback stream. The board UCM overlay now declares the
+outputs mutually exclusive while including all original vendor routing. ACP
+then discovers four HiFi profiles; the internal Speaker/Mic combination is
+available. After installing the package and reloading idle WirePlumber, real
+speaker and microphone nodes reappear. This does not qualify microphone data.
+
+The first S16 capture failed at START with `EBUSY` and produced zero bytes.
+Bounded kretprobe tracing identified the exact return: PREPARE saw IRQ CFG0
+`0x9d80=0x2a0`; all four native DSP START commands succeeded; then CFG0 was
+`0x2a1`, so the host's second IRQ-programming attempt returned `-16`.
+Read-only BTF/MMIO inspection at that point showed IRQ reload `0x80000400`,
+HiFi5 target `0x100`, MCU/other DSP targets clear for IRQ8, enabled UL1 CON0
+`0x10332a48`, and the correct retained ring `0x1a6c8800..0x1a6d07ff`.
+Firmware had already activated capture. Normal STOP/CLOSE completed; no DSP,
+transport, period or power fault was retained. No PM test followed the failed
+capture, and no live module was reset or replaced.
+
+AFE 0.1.25 replaces the duplicate capture activation with eleven checked reads
+of IRQ metadata/targets, memif enable and ring bounds. It never rewrites the
+active capture configuration. Tests cover every mismatched/read-failed check,
+retained terminal errors, no register writes and repeated native capture
+adoption/STOP. Playback keeps its established host trigger. Capture, duplex
+and REINIT hardware qualification remain pending for this corrected AFE.
+
+
+For this follow-up, the complete driver/sanitizer suite passes and 132 current
+repository unit tests pass (the unrelated vLLM tests moved to their own repo).
+AFE 0.1.25 builds with W=1 without warnings and preserves all 17 existing
+AFE export CRCs. Its source is still awaiting fresh-boot capture qualification.
+The validator rejects earlier AFE modules before authorizing PCM/PM; it reads
+0400 frontend options once through a read-only desktop polkit operation while
+keeping all PCM workloads under the ordinary user account.

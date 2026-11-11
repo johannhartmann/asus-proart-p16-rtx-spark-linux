@@ -692,9 +692,56 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(mt8901_afe_sram_prepare_irq);
 
+/* HiFi5 capture START enables its own prepared IRQ and memif. Validate that
+ * complete grant without changing live IRQ configuration or DMA addresses.
+ */
+static int mt8901_afe_sram_capture_started(struct mt8901_afe_sram_buffer *buffer,
+					 struct mtk_base_afe *afe)
+{
+	u32 bit = BIT(buffer->endpoint.irq);
+	u32 address = buffer->endpoint.memory.afe_address;
+	int fs;
+	int domain = mt8901_afe_sram_domain(afe, buffer->endpoint.memif);
+	struct {
+		unsigned int reg, mask, expected;
+	} checks[] = {
+		{ AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8, 0xff1, 0 },
+		{ AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8 + 4,
+		  0xffffff, buffer->endpoint.period_frames },
+		{ AFE_IRQ_MCU_EN, bit, 0 },
+		{ AFE_IRQ_MCU_DSP_EN, bit, bit },
+		{ AFE_IRQ_MCU_DSP2_EN, bit, 0 },
+		{ AFE_IRQ_MCU_DSP3_EN, bit, 0 },
+		{ AFE_VUL1_CON0, BIT(DL_ON_SFT), BIT(DL_ON_SFT) },
+		{ AFE_VUL1_BASE_MSB, U32_MAX, 0 },
+		{ AFE_VUL1_BASE, U32_MAX, address },
+		{ AFE_VUL1_END_MSB, U32_MAX, 0 },
+		{ AFE_VUL1_END, U32_MAX, address + buffer->endpoint.memory.bytes - 1 },
+	};
+	unsigned int i, value;
+	int ret;
+
+	if (!afe->irq_fs)
+		return -EOPNOTSUPP;
+	fs = afe->irq_fs(buffer->substream, buffer->endpoint.rate);
+	if (fs < 0 || domain < 0)
+		return fs < 0 ? fs : domain;
+	if (fs > 0x1f || domain > 7)
+		return -ERANGE;
+	checks[0].expected = 1 | fs << 4 | domain << 9;
+	for (i = 0; i < ARRAY_SIZE(checks); i++) {
+		ret = regmap_read(afe->regmap, checks[i].reg, &value);
+		if (ret)
+			return ret;
+		if ((value & checks[i].mask) != checks[i].expected)
+			return -EIO;
+	}
+	return 0;
+}
+
 /* The DSP task ACK is not a hardware trigger. The AFE still owns the memif
- * and IRQ. Start only the published DL0 lease after both task START ACKs,
- * with the IRQ routed to native core 3 (HiFi1), not to the host MCU handler.
+ * and IRQ. HiFi1 playback needs host activation after its task START ACKs;
+ * HiFi5 capture already activated its hardware and requires checked adoption.
  */
 int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 {
@@ -746,6 +793,14 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 		ret = -EOPNOTSUPP;
 		goto unlock;
 	}
+	if (dai->id == MT8901_AFE_MEMIF_UL1) {
+		ret = mt8901_afe_sram_capture_started(buffer, afe);
+		if (ret)
+			buffer->start_error = ret;
+		else
+			buffer->started = true;
+		goto unlock;
+	}
 	ret = mt8901_afe_sram_program_irq(buffer, afe);
 	if (ret)
 		goto unlock;
@@ -756,8 +811,6 @@ int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_so
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, data->enable_reg,
 					 BIT(data->enable_shift), BIT(data->enable_shift));
-	if (!ret)
-		mt8901_afe_sram_prefetch(afe, dai->id, substream);
 	if (!ret)
 		ret = regmap_update_bits(afe->regmap, cfg, 1, 1);
 	if (ret)

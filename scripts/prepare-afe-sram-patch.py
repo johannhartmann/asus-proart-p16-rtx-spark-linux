@@ -47,8 +47,6 @@ def sources(base):
                               'int mt8901_afe_sram_pm_save(struct mtk_base_afe *afe);\n'
                               'void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);\n\n'
                               'int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);\n'
-                              'void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,\n'
-                              '\t\t\t      struct snd_pcm_substream *substream);\n\n'
                               'int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,\n'
                               '\t\t\t    struct snd_soc_dai *dai);\n\n'
                               'int mt8901_afe_fs_timing(')
@@ -81,16 +79,7 @@ def sources(base):
                               '\t\treturn -ERANGE;\n'
                               '\treturn memif->domain;\n'
                               '}\n\n'
-                              'void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,\n'
-                              '\t\t\t      struct snd_pcm_substream *substream)\n'
-                              '{\n'
-                              '\tstruct mt8901_afe_private *priv = afe->platform_priv;\n'
-                              '\tstruct mtk_dai_memif_priv *memif = priv->dai_priv[id];\n'
-                              '\tstruct snd_pcm_runtime *runtime = substream->runtime;\n\n'
-                              '\tif (substream->stream == SNDRV_PCM_STREAM_CAPTURE)\n'
-                              '\t\tudelay(mt8901_get_prefetch_delay(afe, id, memif->minlen,\n'
-                              '\t\t\t\t\t runtime->rate, runtime->channels, runtime->sample_bits));\n'
-                              '}\n\nstatic int mt8901_afe_fe_trigger(')
+                              'static int mt8901_afe_fe_trigger(')
     after[path] = replace_once(after[path], 'ret = mtk_afe_fe_startup(substream, dai);',
                               'ret = mt8901_afe_sram_startup(substream, dai);\n'
                               '\tif (ret < 0)\n\t\treturn ret;\n'

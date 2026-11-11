@@ -551,5 +551,21 @@
       "noise suppression"
     ],
     "hardware_qualified": false
+  },
+  "capture_start_ownership": {
+    "observed_boot": "acc75220-3ff3-4e13-b0fa-6bb7619110f0",
+    "dsp_version": "0.1.24",
+    "old_afe_srcversion": "537B927FCEADD3EADCDE612",
+    "method": "Bounded bpftrace kretprobe and read-only BTF/MMIO sampling; no diagnostic register writes",
+    "prepared_irq_cfg": "0x2a0",
+    "after_native_start_irq_cfg": "0x2a1",
+    "reload": "0x80000400",
+    "hifi5_target": "0x100",
+    "other_cpu_and_dsp_targets_for_irq8": "clear",
+    "enabled_memif": "0x10332a48",
+    "afe_ring": "0x1a6c8800..0x1a6d07ff",
+    "old_failure": "Second host program_irq returned EBUSY; normal STOP/CLOSE succeeded, no retained backend fault",
+    "correction": "AFE 0.1.25 validates eleven IRQ/target/memif/ring words without reprogramming active capture hardware",
+    "hardware_qualified": false
   }
 }

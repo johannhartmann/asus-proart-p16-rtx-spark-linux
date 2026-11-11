@@ -30,6 +30,7 @@ typedef uint8_t u8;typedef uint32_t u32;typedef uint64_t u64;typedef unsigned lo
 #define GFP_KERNEL 0
 #define module_param(a,b,c)
 #define MODULE_PARM_DESC(a,b)
+#define MODULE_VERSION(a)
 #define READ_ONCE(x) __atomic_load_n(&(x),__ATOMIC_SEQ_CST)
 #define WRITE_ONCE(x,v) __atomic_store_n(&(x),(v),__ATOMIC_SEQ_CST)
 #define smp_store_release(p,v) __atomic_store_n((p),(v),__ATOMIC_RELEASE)

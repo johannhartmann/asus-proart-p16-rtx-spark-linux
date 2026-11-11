@@ -83,6 +83,15 @@ class AudioValidationTests(unittest.TestCase):
                 audio.preflight()
             snapshot.assert_not_called()
 
+    def test_old_afe_is_rejected_before_authorization_or_pcm(self):
+        with patch.object(audio, "Path") as path, \
+                patch.object(audio, "frontend_options") as options:
+            path.return_value.read_text.return_value = "0.1.24"
+            path.return_value.exists.return_value = False
+            with self.assertRaisesRegex(RuntimeError, "Requires AFE 0.1.25"):
+                audio.preflight()
+            options.assert_not_called()
+
     def test_pcm_timeout_terminates_only_the_own_test_process(self):
         from tempfile import TemporaryDirectory
 
@@ -96,6 +105,20 @@ class AudioValidationTests(unittest.TestCase):
                 audio.pcm_round(Path(directory), "before", "playback", "S16_LE", 1, "hw:0", "hw:8")
         job.terminate.assert_called_once_with()
         job.kill.assert_not_called()
+
+    def test_private_options_use_one_read_only_authorization(self):
+        audio.frontend_options.cache_clear()
+        try:
+            with patch.object(audio, "Path") as path, \
+                    patch.object(audio.subprocess, "check_output", return_value="Y\nY\n") as command:
+                path.return_value.read_text.side_effect = PermissionError("root-only option")
+                self.assertEqual(audio.frontend_options(), ("Y", "Y"))
+                self.assertEqual(audio.frontend_options(), ("Y", "Y"))
+                command.assert_called_once()
+                self.assertEqual(command.call_args.args[0][:3],
+                                 ["pkexec", "--disable-internal-agent", "/usr/bin/cat"])
+        finally:
+            audio.frontend_options.cache_clear()
 
     def test_old_notifications_cannot_qualify_a_different_pcm(self):
         from tempfile import TemporaryDirectory

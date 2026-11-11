@@ -7,6 +7,7 @@ the sequence. Device-only PM is a separate, explicit graphical polkit operation.
 """
 import argparse
 from datetime import datetime, timezone
+from functools import cache
 import hashlib
 import json
 import os
@@ -18,6 +19,7 @@ DEVICES = tuple(Path("/sys/bus/platform/devices") / f"NVDA830{i}:00" for i in (1
 FAULTS = ("error", "power_error", "ipc_error", "primary_error", "primary_task_error",
           "primary_pcm_error", "pcm_period_error")
 VERSION = "0.1.24"
+AFE_VERSION = "0.1.25"
 
 
 def fields(text):
@@ -42,11 +44,31 @@ def healthy(state, idle=True):
             raise RuntimeError(f"{name}: audio client active; leave it running and retry later")
 
 
+@cache
+def frontend_options():
+    # These parameters are immutable, and published DSPs cannot be unloaded.
+    paths = [Path("/sys/module/snd_soc_mt8901_afe/parameters", name)
+             for name in ("dsp_playback", "dsp_capture")]
+    try:
+        return tuple(path.read_text().strip() for path in paths)
+    except PermissionError:
+        # A single read-only desktop authorization; PCM still runs as the user.
+        values = subprocess.check_output(
+            ["pkexec", "--disable-internal-agent", "/usr/bin/cat", *map(str, paths)],
+            text=True, timeout=180).splitlines()
+        if len(values) != len(paths):
+            raise RuntimeError("Invalid AFE option readback")
+        return tuple(values)
+
+
 def preflight():
     if Path("/sys/module/n1x_adsp/version").read_text().strip() != VERSION:
         raise RuntimeError("Requires the matching DSP 0.1.24 / PCM ABI 3 candidate")
-    for name in ("dsp_playback", "dsp_capture"):
-        if Path("/sys/module/snd_soc_mt8901_afe/parameters", name).read_text().strip() != "Y":
+    afe_version = Path("/sys/module/snd_soc_mt8901_afe/version")
+    if not afe_version.exists() or afe_version.read_text().strip() != AFE_VERSION:
+        raise RuntimeError("Requires AFE 0.1.25 with checked firmware-owned capture START")
+    for name, value in zip(("dsp_playback", "dsp_capture"), frontend_options()):
+        if value != "Y":
             raise RuntimeError(f"AFE {name} is not enabled on this boot")
     state = snapshot()
     healthy(state)

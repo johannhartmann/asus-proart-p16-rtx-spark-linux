@@ -68,7 +68,7 @@ hardware-test limits.
 | N1X USB4 and USB power management | Integrated reference ACPI/Type-C/USB4 and xHCI PM patches, plus packaged host-router power policy | Follow the kernel guide and keep its matching power policy. USB recovery was tested; USB4 docks, tunnelling and external displays remain unvalidated. |
 | VEML3328 light/color sensor over SPI HID | Virtual-GPIO, deferred-IRQ and ACPI-reset fixes; serialized HID transactions and per-channel ALS scale backport | Exposed through HID/IIO and `iio-sensor-proxy`; see [sensor interfaces](#driver-and-userspace-interfaces). Light response and a resume cycle were tested; optical calibration remains unverified. |
 | MT8901 / Cirrus speaker audio | CS35L56 firmware extraction/packaging, P16 DAPM routing, public PipeWire crossover graph and AFE SRAM/playback integration | Follow [speaker setup](improvements/audio/README.md). Local routing/tuning was tested; the public graph still needs its own listening validation. |
-| Two HiFi5 DSPs and one HiFi1 DSP | `n1x_adsp`: signed-image preparation, SROOT loading, bounded IPC and experimental HiFi1 ALSA playback | Follow the [DSP guide](platform/dsp/README.md). Startup is opt-in; HiFi5 microphone processing is not implemented. Complete audio and sleep qualification remains required. |
+| Two HiFi5 DSPs and one HiFi1 DSP | `n1x_adsp`: signed-image preparation, SROOT loading, bounded IPC, HiFi1 ALSA playback and primary HiFi5 capture | Follow the [DSP guide](platform/dsp/README.md). Startup is opt-in; HiFi5 capture requires the matching AFE correction and hardware qualification. Complete audio and sleep qualification remains required. |
 | NPU / SROOT integration | Provider snapshot and DKMS packaging, signed-firmware package, isolated-IOMMU boot service and DSP secure-loader interface | Follow [provider setup](docs/update-safe.md#npu-and-dsp). Inference driver/compiler/runtime development lives in the [companion project](https://github.com/johannhartmann/n1x-npu-linux). |
 | SCP diagnostics | `n1x_scp`: firmware-log snapshots and checked version/descriptor queries | Debugfs interfaces are documented in the [SCP guide](platform/scp/README.md); sensor measurements use HID/IIO. |
 | Pluton diagnostics | `n1x_pluton`: ACPI PFI transport and typed PCBI metadata queries | Use the [Pluton CLI](platform/pluton/pluton-info.py). Key operations and firmware updates are not implemented. |
@@ -81,11 +81,11 @@ hardware-test limits.
 CS42L43/CS35L56 ALSA/ASoC stack. `alsa-ucm-conf` supplies routing profiles;
 PipeWire and WirePlumber provide desktop integration. The P16 additions are
 Cirrus firmware preparation, machine DAPM routes, a public speaker-band
-crossover graph, and the experimental DSP-backed DL0 frontend. See
+crossover graph, and the opt-in DSP-backed DL0/DL1 playback and UL1 capture frontends. See
 [speaker integration](improvements/audio/README.md) and the
 [DSP/AFE interface](platform/dsp/README.md). The three DSPs use `n1x_adsp`
-and SROOT rather than a SOF firmware port. HiFi5 microphone processing is not
-implemented. Published DSP memory/provider leases remain retained until reboot;
+and SROOT rather than a SOF firmware port. The native HiFi5 capture transport is implemented; beamforming and noise
+suppression are not established firmware capabilities. Published DSP memory/provider leases remain retained until reboot;
 complete analog-endpoint and candidate sleep qualification is still required.
 
 **Light/color sensor:** `spi_hid_acpi` → `hid_sensor_hub` →

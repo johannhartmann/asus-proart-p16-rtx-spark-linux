@@ -859,7 +859,7 @@ streaming qualification.
  	u32 hw_ver;               /* acpi-asd-hw-ver from _DSD */
  	struct mtk_dai_memif_irq_priv irq_priv[MT8901_AFE_IRQ_NUM];
  	int pm_runtime_bypass_reg_ctl;
-@@ -86,6 +91,24 @@
+@@ -86,6 +91,21 @@
  	/* dai */
  	void *dai_priv[MT8901_DAI_NUM];
  };
@@ -876,9 +876,6 @@ streaming qualification.
 +void mt8901_afe_sram_pm_restore(struct mtk_base_afe *afe);
 +
 +int mt8901_afe_sram_domain(struct mtk_base_afe *afe, int id);
-+void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,
-+			      struct snd_pcm_substream *substream);
-+
 +int mt8901_afe_sram_startup(struct snd_pcm_substream *substream,
 +			    struct snd_soc_dai *dai);
  
@@ -886,7 +883,7 @@ streaming qualification.
  /* dai register */
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-dsp.c
-@@ -0,0 +1,598 @@
+@@ -0,0 +1,600 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/dma-mapping.h>
 +#include <linux/err.h>
@@ -906,6 +903,8 @@ streaming qualification.
 +
 +/* The processing task also needs two independently retained 1 KiB IPC slices. */
 +#define MT8901_DSP_IPC_BYTES 2048U
++
++MODULE_VERSION("0.1.25");
 +
 +static bool dsp_capture;
 +module_param(dsp_capture, bool, 0400);
@@ -1549,7 +1548,7 @@ streaming qualification.
  
  	mt8901_afe_config_cm(afe, cm, channels, rate, domain);
  
-@@ -563,6 +576,33 @@
+@@ -563,6 +576,21 @@
  	mt8901_memif_set_maxlen(afe, id, memif_priv->maxlen);
  
  	return mtk_afe_fe_hw_params(substream, params, dai);
@@ -1568,22 +1567,10 @@ streaming qualification.
 +	if (memif->domain > 7)
 +		return -ERANGE;
 +	return memif->domain;
-+}
-+
-+void mt8901_afe_sram_prefetch(struct mtk_base_afe *afe, int id,
-+			      struct snd_pcm_substream *substream)
-+{
-+	struct mt8901_afe_private *priv = afe->platform_priv;
-+	struct mtk_dai_memif_priv *memif = priv->dai_priv[id];
-+	struct snd_pcm_runtime *runtime = substream->runtime;
-+
-+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-+		udelay(mt8901_get_prefetch_delay(afe, id, memif->minlen,
-+					 runtime->rate, runtime->channels, runtime->sample_bits));
  }
  
  static int mt8901_afe_fe_trigger(struct snd_pcm_substream *substream, int cmd,
-@@ -582,6 +622,9 @@
+@@ -582,6 +610,9 @@
  	int fs;
  	int ret;
  
@@ -1593,7 +1580,7 @@ streaming qualification.
  	switch (cmd) {
  	case SNDRV_PCM_TRIGGER_START:
  	case SNDRV_PCM_TRIGGER_RESUME:
-@@ -635,12 +678,36 @@
+@@ -635,12 +666,36 @@
  	}
  }
  
@@ -1633,7 +1620,7 @@ streaming qualification.
  	.trigger	= mt8901_afe_fe_trigger,
  };
  
-@@ -1506,6 +1573,16 @@
+@@ -1506,6 +1561,16 @@
  
  static bool mt8901_is_volatile_reg(struct device *dev, unsigned int reg)
  {
@@ -1650,7 +1637,7 @@ streaming qualification.
  	/* registers with read-only bits cannot be cached */
  	switch (reg) {
  	/* AUDIO_TOP: contains RO status bits */
-@@ -1923,6 +2000,10 @@
+@@ -1923,6 +1988,10 @@
  	int ret;
  	bool skip = false;
  
@@ -1661,7 +1648,7 @@ streaming qualification.
  	if (!afe->regmap || afe_priv->pm_runtime_bypass_reg_ctl) {
  		skip = true;
  		goto skip_regmap;
-@@ -2138,6 +2219,10 @@
+@@ -2138,6 +2207,10 @@
  	afe->memif_32bit_supported = 1;
  
  	platform_set_drvdata(pdev, afe);
@@ -1672,7 +1659,7 @@ streaming qualification.
  
  	device_property_read_u32(dev, "acpi-asd-hw-ver", &afe_priv->hw_ver);
  
-@@ -2260,7 +2345,7 @@
+@@ -2260,7 +2333,7 @@
  		afe_priv->default_mtcmos_vote_dropped = true;
  
  	/* Publish the component only once the PM baseline is established. */
@@ -1681,7 +1668,7 @@ streaming qualification.
  					      afe->dai_drivers,
  					      afe->num_dai_drivers);
  	if (ret) {
-@@ -2324,15 +2409,21 @@
+@@ -2324,15 +2397,21 @@
  };
  MODULE_DEVICE_TABLE(acpi, mt8901_afe_acpi_match);
  
@@ -1750,7 +1737,7 @@ streaming qualification.
 +#endif
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-sram.c
-@@ -0,0 +1,1018 @@
+@@ -0,0 +1,1071 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/atomic.h>
 +#include <linux/err.h>
@@ -2445,9 +2432,56 @@ streaming qualification.
 +}
 +EXPORT_SYMBOL_GPL(mt8901_afe_sram_prepare_irq);
 +
++/* HiFi5 capture START enables its own prepared IRQ and memif. Validate that
++ * complete grant without changing live IRQ configuration or DMA addresses.
++ */
++static int mt8901_afe_sram_capture_started(struct mt8901_afe_sram_buffer *buffer,
++					 struct mtk_base_afe *afe)
++{
++	u32 bit = BIT(buffer->endpoint.irq);
++	u32 address = buffer->endpoint.memory.afe_address;
++	int fs;
++	int domain = mt8901_afe_sram_domain(afe, buffer->endpoint.memif);
++	struct {
++		unsigned int reg, mask, expected;
++	} checks[] = {
++		{ AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8, 0xff1, 0 },
++		{ AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8 + 4,
++		  0xffffff, buffer->endpoint.period_frames },
++		{ AFE_IRQ_MCU_EN, bit, 0 },
++		{ AFE_IRQ_MCU_DSP_EN, bit, bit },
++		{ AFE_IRQ_MCU_DSP2_EN, bit, 0 },
++		{ AFE_IRQ_MCU_DSP3_EN, bit, 0 },
++		{ AFE_VUL1_CON0, BIT(DL_ON_SFT), BIT(DL_ON_SFT) },
++		{ AFE_VUL1_BASE_MSB, U32_MAX, 0 },
++		{ AFE_VUL1_BASE, U32_MAX, address },
++		{ AFE_VUL1_END_MSB, U32_MAX, 0 },
++		{ AFE_VUL1_END, U32_MAX, address + buffer->endpoint.memory.bytes - 1 },
++	};
++	unsigned int i, value;
++	int ret;
++
++	if (!afe->irq_fs)
++		return -EOPNOTSUPP;
++	fs = afe->irq_fs(buffer->substream, buffer->endpoint.rate);
++	if (fs < 0 || domain < 0)
++		return fs < 0 ? fs : domain;
++	if (fs > 0x1f || domain > 7)
++		return -ERANGE;
++	checks[0].expected = 1 | fs << 4 | domain << 9;
++	for (i = 0; i < ARRAY_SIZE(checks); i++) {
++		ret = regmap_read(afe->regmap, checks[i].reg, &value);
++		if (ret)
++			return ret;
++		if ((value & checks[i].mask) != checks[i].expected)
++			return -EIO;
++	}
++	return 0;
++}
++
 +/* The DSP task ACK is not a hardware trigger. The AFE still owns the memif
-+ * and IRQ. Start only the published DL0 lease after both task START ACKs,
-+ * with the IRQ routed to native core 3 (HiFi1), not to the host MCU handler.
++ * and IRQ. HiFi1 playback needs host activation after its task START ACKs;
++ * HiFi5 capture already activated its hardware and requires checked adoption.
 + */
 +int mt8901_afe_sram_start_pcm(struct snd_pcm_substream *substream, struct snd_soc_dai *dai)
 +{
@@ -2499,6 +2533,14 @@ streaming qualification.
 +		ret = -EOPNOTSUPP;
 +		goto unlock;
 +	}
++	if (dai->id == MT8901_AFE_MEMIF_UL1) {
++		ret = mt8901_afe_sram_capture_started(buffer, afe);
++		if (ret)
++			buffer->start_error = ret;
++		else
++			buffer->started = true;
++		goto unlock;
++	}
 +	ret = mt8901_afe_sram_program_irq(buffer, afe);
 +	if (ret)
 +		goto unlock;
@@ -2509,8 +2551,6 @@ streaming qualification.
 +	if (!ret)
 +		ret = regmap_update_bits(afe->regmap, data->enable_reg,
 +					 BIT(data->enable_shift), BIT(data->enable_shift));
-+	if (!ret)
-+		mt8901_afe_sram_prefetch(afe, dai->id, substream);
 +	if (!ret)
 +		ret = regmap_update_bits(afe->regmap, cfg, 1, 1);
 +	if (ret)

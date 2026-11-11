@@ -68,10 +68,15 @@ typedef uint8_t u8;typedef uint32_t u32;typedef uint64_t u64;typedef _Atomic int
 #define AFE_IRQ0_MCU_CFG0 0x9d40
 #define AFE_IRQ_MCU_EN 0x9d00
 #define AFE_IRQ_MCU_DSP_EN 0x9d04
+#define AFE_IRQ_MCU_DSP2_EN 0x9d08
 #define AFE_IRQ_MCU_DSP3_EN 0xa000
 #define AFE_DL0_CON0 0x4460
 #define AFE_DL1_CON0 0x4490
 #define AFE_VUL1_CON0 0x4db0
+#define AFE_VUL1_BASE_MSB 0x4d90
+#define AFE_VUL1_BASE 0x4d94
+#define AFE_VUL1_END_MSB 0x4da0
+#define AFE_VUL1_END 0x4da4
 #define DL_ON_SFT 28
 #define MT8901_AFE_MEMIF_DL0 0
 #define MT8901_AFE_MEMIF_DL1 1
@@ -166,6 +171,9 @@ static int regmap_write(void *map,int reg,u32 value)
  assert(reg==regs[program_calls] && value==values[program_calls]);
  program_calls++;return program_calls==program_fail_at?-EIO:0;}
 static unsigned engine_memif;
+static bool capture_live;static unsigned capture_reads,capture_bad,capture_io;
+static const unsigned capture_regs[]={0x9d80,0x9d84,0x9d00,0x9d04,0x9d08,0xa000,0x4db0,0x4d90,0x4d94,0x4da0,0x4da4};
+static const u32 capture_values[]={0xa5a502a1,0x80000000|480,0,BIT(8),0,0,BIT(28)|0x332a48,0,0x1a6c0000,0,0x1a6c0eff};
 static bool moving;static unsigned move_reads,move_fail;static u32 move_words[4];
 static int regmap_read(void *map,int reg,u32 *value)
 {if(moving){
@@ -175,6 +183,10 @@ static int regmap_read(void *map,int reg,u32 *value)
  }if(irq_stopping){
  assert(locked && pm_refs && pm_active && map==afe.regmap && reg==0x9d44+(int)expected_irq*8 && stop_calls==2);
  stop_calls++;if(stop_fail_step==stop_calls)return -EIO;*value=clear_read=counter_word;return 0;
+ }if(capture_live) {
+ assert(locked && pm_refs && pm_active && map==afe.regmap && capture_reads<11 && (unsigned)reg==capture_regs[capture_reads]);
+ *value=capture_values[capture_reads++];if(capture_bad==capture_reads)*value^=(capture_reads>=3 && capture_reads<=6)?BIT(8):capture_reads==7?BIT(28):1;
+ return capture_io==capture_reads?-EIO:0;
  }assert(locked && pm_refs && pm_active && map==afe.regmap && reg==0x9d40+(int)expected_irq*8);
  if(irq_read_error)return irq_read_error;*value=cfg_word;return 0;}
 static int regmap_update_bits(void *map,int reg,u32 mask,u32 value)
@@ -295,9 +307,6 @@ static bool mt8901_afe_dsp_enabled(void){return dsp_enabled;}
 #define MT8901_AFE_MEMIF_DL0 0
 #define MT8901_AFE_MEMIF_DL1 1
 #define MT8901_AFE_MEMIF_UL1 8
-static unsigned long mt8901_get_prefetch_delay(struct mtk_base_afe *a,int id,unsigned minlen,unsigned rate,unsigned channels,unsigned bits)
-{(void)a;(void)id;(void)minlen;(void)rate;(void)channels;(void)bits;return 1;}
-static void udelay(unsigned long us) {assert(us==1);}
 ''' + domain + owner + suspend + r'''
 static void reset(void)
 {
@@ -658,10 +667,12 @@ int main(void)
   assert(!mt8901_afe_sram_prepare(b));
   for(unsigned cycle=0;cycle<32;cycle++) {
    irq_updates=0;assert(!mt8901_afe_sram_prepare_irq(b));
-   runtime.running=true;engine_starting=true;engine_updates=0;
-   assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && engine_updates==7 && b->started);
+   /* Native task START already enabled UL1 and routed its IRQ to HiFi5. */
+   runtime.running=true;engine_updates=0;capture_live=true;capture_reads=0;
+   cfg_word|=1;dsp_word|=BIT(8);mcu_word&=~BIT(8);memif_word|=BIT(28);
+   assert(!mt8901_afe_sram_start_pcm(&stream,&dai) && !engine_updates && b->started && capture_reads==11);
    assert(dsp_word&BIT(8));assert(!(mcu_word&BIT(8)) && (memif_word&BIT(28)) && (cfg_word&1));
-   engine_starting=false;irq_stopping=true;stop_calls=0;
+   capture_live=false;irq_stopping=true;stop_calls=0;
    assert(mt8901_afe_sram_stop_irq(b,2)==-EOPNOTSUPP && !stop_calls);
    assert(!mt8901_afe_sram_stop_irq(b,3) && stop_calls==6 && !b->started);
    assert(!(dsp_word&BIT(8)) && !(memif_word&BIT(28)) && !(cfg_word&1));
@@ -670,6 +681,28 @@ int main(void)
   _exit(0);
  }
  assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ for(unsigned fault=1;fault<=22;fault++) {
+  reset();init();child=fork();assert(child>=0);
+  if(!child) {
+   engine_memif=expected_irq=dai.id=8;stream.stream=1;memif_data.enable_reg=AFE_VUL1_CON0;
+   irq_data.id=irq_data.irq_mask_shift=8;irq_data.irq_en_reg=0x9d80;
+   irq_data.irq_cnt_reg=irq_data.irq_clr_reg=0x9d84;
+   irq_data.irq_fs_reg=irq_data.irq_domain_reg=0x9d80;private.dai_priv[8]=&memif_clock;
+   b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+   assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+   assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b));
+   runtime.running=true;capture_live=true;capture_reads=0;
+   if(fault<=11)capture_bad=fault;else capture_io=fault-11;
+   unsigned writes=program_calls+irq_updates;u32 before_cfg=cfg_word;
+   assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && b->start_error==-EIO && !b->started);
+   assert(capture_reads==(fault<=11?fault:fault-11));
+   assert(cfg_word==before_cfg && writes==program_calls+irq_updates && !engine_updates);
+   assert(mt8901_afe_sram_start_pcm(&stream,&dai)==-EIO && !b->started);
+   assert(b->published && module_refs==1 && pm_refs==1);
+   _exit(0);
+  }
+  assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));
+ }
  assert(mt8901_afe_sram_start_pcm(NULL,&dai)==-EINVAL);
  assert(mt8901_afe_sram_start_pcm(&stream,NULL)==-EINVAL);
  for(unsigned fault=0;fault<30;fault++) {

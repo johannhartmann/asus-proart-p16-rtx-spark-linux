@@ -43,7 +43,8 @@ not changed by this preparation.
 
 After the complete native task START sequence, the frontend asks the AFE owner to
 start its published PCM lease. The owner checks the active substream, prepared
-ring, IRQ metadata and sleep state, removes the MCU target, selects HiFi1 (`0xa000`) or primary HiFi5 (`0x9d04`),
+ring, IRQ metadata and sleep state. HiFi1 playback removes the MCU target and
+selects HiFi1 (`0xa000`),
 restores the period/rate/domain, enables the memif and enables the IRQ. Shared IRQ
 configuration and routing registers are volatile because firmware/hardware
 can modify them. Restoring configuration on every START also covers a prepared
@@ -113,3 +114,11 @@ power-up before DSP D0. A failed suspend performs its own force-resume rollback;
 a failed restoration keeps the snapshot marked saved so consumers cannot wake.
 All DMA/PM/module leases stay owned throughout; no STOP ACK is treated as a
 whole-core release contract. This candidate still needs physical qualification.
+
+
+AFE 0.1.25 adopts firmware-started HiFi5 capture instead of trying to program
+an already-enabled IRQ. Eleven checked reads require the prepared rate/domain,
+period count, exclusive HiFi5 target, enabled UL1 and exact base/end/MSB words.
+A mismatch or failed read is terminal and retains the lease; there is no
+fallback that rewrites an active IRQ. Actual boot evidence and the remaining
+qualification boundary are recorded in [the audio review](../../../docs/audio-review.md).

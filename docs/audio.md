@@ -8,7 +8,7 @@ No application-specific DSP client is needed for normal audio.
 
 ## Candidate capabilities and limits
 
-The new candidate automatically loads the signed DSP images and registers the
+The DSP 0.1.24 / AFE 0.1.25 candidate automatically loads the signed DSP images and registers the
 three firmware-ready DSPs as auxiliary components of the ASoC sound card. Its
 DL0/DL1 playback frontend uses HiFi1 tasks 7 and 16. UL1 capture uses
 primary HiFi5 tasks 23 and 21; playback and capture have independent owners. Repeated STOP/PREPARE/START,
@@ -99,6 +99,31 @@ The kernel recipe includes the generated
 provider packages as described in [driver qualification](driver-qualification.md).
 Provider ABI v4, its additive REINIT export and PCM client ABI v3 are required; older modules cannot be mixed.
 
+The single-playback DSP client also needs the small board-specific UCM package:
+
+```sh
+test -r /usr/share/alsa/ucm2/MediaTek/mt8901-soundwir/HiFi-cs42l43-cs35l56x4.conf
+(cd platform/dsp/ucm && makepkg -si)
+```
+
+It adds a board master and a verb that includes the installed vendor codec
+routes and declares Speaker/Headphones mutually exclusive. It replaces no
+vendor-owned file, so package updates retain the overlay. Without a DSP ASoC
+supplier the master falls back to the stock topology dispatcher. The existing
+vendor profile is required (provided here by `omarchy-settings-dev`). On an
+idle desktop reload WirePlumber with `systemctl --user restart wireplumber`.
+PipeWire otherwise probes both playback PCMs concurrently, exceeds the single
+playback owner contract and discards the entire HiFi profile. This rule does
+not implement two simultaneous DSP playback streams.
+
+AFE 0.1.25 distinguishes the two hardware START contracts. HiFi1 still needs
+host memif/IRQ activation. HiFi5 capture already enabled its hardware after
+native task START: the AFE verifies the active IRQ's rate/domain/count,
+exclusive processor target, enabled memif and all base/end address words.
+It adopts only an exact match and performs no live reconfiguration; mismatches
+and read errors remain terminal. This correction is built/offline-tested but
+needs fresh-boot capture and duplex qualification.
+
 Install PipeWire, WirePlumber, `alsa-ucm-conf`, ALSA tools, the board's Cirrus
 firmware and the locally prepared signed N1X firmware packages. After hardware qualification, the DSP DKMS
 package also installs `n1x-adsp-audio.service` and its small domain/readiness
@@ -164,7 +189,7 @@ headset microphone capture and ordinary PipeWire client close/open/recovery.
 A successful playback command is insufficient: DSP consumed-data/period
 counters must advance, and real audio must be confirmed.
 
-Use the bounded validator for the matching 0.1.24 bundle, with a known microphone
+Use the bounded validator for DSP 0.1.24 with AFE 0.1.25, with a known microphone
 stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
 duplex, then optionally device-only PM and the complete PCM sequence again:
 
