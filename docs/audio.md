@@ -9,10 +9,10 @@ No application-specific DSP client is needed for normal audio.
 ## Candidate capabilities and limits
 
 The [interface matrix](platform-driver-status.md#current-dsp-interface-requirements)
-records SROOT v4 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2 separately.
+records SROOT v5 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2 separately.
 Implemented capture/duplex transport does not establish hardware qualification.
 
-The DSP 0.1.24 / AFE 0.1.26 candidate automatically loads the signed DSP images and registers the
+The DSP 0.1.25 / AFE 0.1.27 candidate automatically loads the signed DSP images and registers the
 three firmware-ready DSPs as auxiliary components of the ASoC sound card. Its
 DL0/DL1 playback frontend uses HiFi1 tasks 7 and 16. UL1 capture uses
 primary HiFi5 tasks 23 and 21; playback and capture have independent owners. Repeated STOP/PREPARE/START,
@@ -29,7 +29,8 @@ endpoint tests. There is no evidence that tasks 23/21 provide beamforming or
 noise suppression; these effects and arbitrary DSP compute are not claimed.
 The secondary HiFi5 is booted and participates in PM, but has no PCM stream.
 Published operating allocations and module/runtime-PM references stay owned;
-whole-core release and runtime autosuspend are still unavailable.
+runtime autosuspend remains unavailable. Explicit shutdown/reload is implemented
+as an unqualified candidate with the hardened kernel power prerequisite.
 
 The opt-in s2idle path orders ALSA stream stop, DSP D3, SRAM retention and
 checked NPU stop; wake restores SRAM and the provider before DSP D0 and
@@ -197,7 +198,7 @@ headset microphone capture and ordinary PipeWire client close/open/recovery.
 A successful playback command is insufficient: DSP consumed-data/period
 counters must advance, and real audio must be confirmed.
 
-Use the bounded validator for DSP 0.1.24 with AFE 0.1.26, with a known microphone
+Use the bounded validator for DSP 0.1.25 with AFE 0.1.27, with a known microphone
 stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
 duplex, then optionally device-only PM and the complete PCM sequence again:
 
@@ -239,3 +240,37 @@ memory so its resume does not depend on filesystem or display-locator access.
 Without the candidate parameters, the existing direct audio path remains the
 baseline. Successful hardware qualification is required before making the new
 DSP path the default boot.
+
+
+## Module reload qualification
+
+The initial load of the new bundle still requires a matching kernel boot:
+DSP 0.1.25, AFE 0.1.27, provider package 0.1.0-12 / ABI v5, and
+`p16-dsp-shutdown-power.patch`. A running 0.1.24 module cannot gain a shutdown
+callback by replacing its file. Do not force-unload that older instance.
+The patch changes the global SSPM timeout policy: a submitted timeout prevents
+further power commands until reboot. Mailbox-busy before submission remains
+retryable; no old acknowledgement may authorize reclamation.
+
+First run the complete playback/capture/duplex validator against the freshly
+booted bundle. Then perform two reload cycles, with numerical NPU validation and
+the same six PCM tests after each cycle. The reload command intentionally
+interrupts the caller's PipeWire/WirePlumber services and restores their prior
+state; it does not stop other users or arbitrary ALSA applications:
+
+```sh
+pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --reload
+python3 scripts/validate-dsp-audio.py --output /path/to/new-private-reload-results
+```
+
+The helper performs a group quiesce before memory release. Its per-core
+`shutdown` state reports native completion and resource retirement; this is
+not an independent physical power-state sensor. The implementation follows
+NVIDIA/MediaTek's [MT8901 device-abandon power contract](https://github.com/NVIDIA/NV-Kernels/blob/dd99802c8b0c384169bb36293c9517fa67238e47/sound/soc/sof/mediatek/mt8901/mt8901.c)
+and the reconstructed Windows teardown ordering. Hardware qualification of that
+combination remains required. Keep the known-working default/recovery boot.
+
+New DSP/AFE module files must already be installed for the running kernel before
+maintenance; the helper neither compiles nor installs code. It keeps the NPU
+provider loaded so verified per-image retirement survives. System-sleep and
+physical endpoint qualification remain separate gates, even after reload works.

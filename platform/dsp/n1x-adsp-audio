@@ -1,8 +1,13 @@
 #!/usr/bin/python3
 """Prepare isolated DSP DMA domains or verify kernel-owned ASoC readiness."""
 import argparse
+import errno
+import fcntl
 import os
 from pathlib import Path
+import pwd
+import subprocess
+import time
 
 SYS = Path('/sys')
 HIDS = ('NVDA8301', 'NVDA8302', 'NVDA8303')
@@ -51,21 +56,160 @@ def verify(root=SYS):
             raise RuntimeError('Firmware-backed ASoC component unavailable: '+device.name)
 
 
+def fields(path):
+    return dict(item.split('=', 1) for item in path.read_text().split())
+
+
+def boolean(path):
+    value = path.read_text().strip()
+    if value not in ('Y', 'N', '1', '0'):
+        raise RuntimeError('Unexpected module parameter: ' + str(path))
+    return '1' if value in ('Y', '1') else '0'
+
+
+def card_bound(root=SYS):
+    matches = list((root / 'bus/platform/devices').glob('mtk_sdw_mc*'))
+    if len(matches) != 1 or not (matches[0] / 'driver').exists():
+        return False
+    return any((card / 'device').resolve() == matches[0].resolve()
+               for card in (root / 'class/sound').glob('card[0-9]*'))
+
+
+def reload_audio(uid, root=SYS, run=subprocess.run):
+    """Explicit audio maintenance: stop the caller's audio services, then reload.
+
+    Kernel prerequisites are checked before interrupting audio. Never force
+    unload, bypass ownership, or retry an uncertain power transaction.
+    """
+    if uid <= 0:
+        raise RuntimeError('Reload requires the invoking desktop user UID')
+    user = pwd.getpwuid(uid)
+    runtime = Path('/run/user') / str(uid)
+    if runtime.stat().st_uid != uid:
+        raise RuntimeError('Unexpected desktop runtime directory owner')
+    devices = endpoints(root)
+    if (root / 'module/n1x_adsp/version').read_text().strip() != '0.1.25':
+        raise RuntimeError('Reload requires DSP 0.1.25; the running old driver cannot be replaced safely')
+    if (root / 'module/snd_soc_mt8901_afe/version').read_text().strip() != '0.1.27':
+        raise RuntimeError('Reload requires AFE 0.1.27')
+    for device in devices:
+        if fields(device / 'shutdown').get('supported') != '1':
+            raise RuntimeError('Missing hardened kernel power shutdown or provider ABI v5: ' + device.name)
+    machine = 'mt8901_acp_sdw_legacy_mach'
+    saved = {}
+    for module, names in (('n1x_adsp', ('enable_boot', 'auto_boot', 'enable_retention_sleep')),
+                          ('snd_soc_mt8901_afe', ('dsp_playback', 'dsp_capture')),
+                          (machine, ('dsp_playback',))):
+        saved[module] = [name + '=' + boolean(root / 'module' / module / 'parameters' / name)
+                         for name in names]
+    if 'auto_boot=1' not in saved['n1x_adsp'] or 'enable_boot=1' not in saved['n1x_adsp']:
+        raise RuntimeError('Reload requires the automatic DSP audio configuration')
+    user_systemctl = ['/usr/bin/runuser', '--user', user.pw_name, '--', '/usr/bin/env',
+                      'XDG_RUNTIME_DIR=' + str(runtime),
+                      'DBUS_SESSION_BUS_ADDRESS=unix:path=' + str(runtime / 'bus'),
+                      '/usr/bin/systemctl', '--user']
+    units = ('wireplumber.service', 'pipewire-pulse.service', 'pipewire.service',
+             'pipewire-pulse.socket', 'pipewire.socket')
+    active = []
+    machine_removed = False
+    reloaded = False
+
+    def command(arguments, check=True):
+        return run(arguments, check=check, timeout=180)
+
+    try:
+        # Record the original state first; stopping sockets prevents activation
+        # during maintenance. Other users and arbitrary client processes stay.
+        for unit in units:
+            if command(user_systemctl + ['is-active', '--quiet', unit], check=False).returncode == 0:
+                active.append(unit)
+        if active:
+            command(user_systemctl + ['stop', *active])
+        command(['/usr/bin/modprobe', '-r', machine])
+        machine_removed = True
+        # Secondary HiFi5 depends on primary HiFi5. The provider enforces this
+        # ordering even if someone writes the individual attributes manually.
+        for operation in ('quiesce', 'stop'):
+            for index in (1, 0, 2):
+                control = devices[index] / 'shutdown'
+                for attempt in range(3):
+                    try:
+                        control.write_text(operation + '\n')
+                        break
+                    except OSError as error:
+                        if error.errno != errno.EBUSY or attempt == 2:  # EBUSY: unsubmitted stage or a live borrower
+                            raise
+                        time.sleep(0.1)
+                state = fields(control)
+                expected = 'power_off' if operation == 'quiesce' else 'released'
+                if state.get(expected) != '1' or state.get('error') != '0':
+                    raise RuntimeError('DSP shutdown incomplete: ' + devices[index].name)
+        command(['/usr/bin/modprobe', '-r', 'n1x_adsp'])
+        command(['/usr/bin/modprobe', '-r', 'snd_soc_mt8901_afe'])
+        command(['/usr/bin/modprobe', 'snd_soc_mt8901_afe', *saved['snd_soc_mt8901_afe']])
+        prepare(root)
+        command(['/usr/bin/modprobe', 'n1x_adsp', *saved['n1x_adsp']])
+        for attempt in range(150):
+            try:
+                verify(root)
+                break
+            except (OSError, RuntimeError):
+                if attempt == 149:
+                    raise
+                time.sleep(0.1)
+        command(['/usr/bin/modprobe', machine, *saved[machine]])
+        for attempt in range(150):
+            if card_bound(root):
+                break
+            time.sleep(0.1)
+        else:
+            raise RuntimeError('DSP firmware ready but the ALSA sound card did not bind')
+        reloaded = True
+    finally:
+        # Restore an unchanged card if maintenance failed before any hardware
+        # stop. Never rebind a card onto an uncertain or partially stopped DSP.
+        try:
+            untouched = False
+            if machine_removed and not reloaded:
+                try:
+                    untouched = all(fields(device / 'shutdown').get('attempted') == '0'
+                                    for device in devices)
+                except OSError:
+                    pass
+            if untouched:
+                command(['/usr/bin/modprobe', machine, *saved[machine]])
+        finally:
+            if active:
+                command(user_systemctl + ['start', *reversed(active)])
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--prepare', action='store_true')
     mode.add_argument('--verify', action='store_true')
+    mode.add_argument('--reload', action='store_true', help='Explicit maintenance: interrupt caller audio and reload DSP/AFE modules')
+    parser.add_argument('--uid', type=int, default=os.environ.get('PKEXEC_UID', '-1'),
+                        help='Desktop user; normally supplied by pkexec')
     args = parser.parse_args()
     try:
         if args.prepare:
             if os.geteuid() != 0:
                 parser.error('DMA domain preparation requires root')
             prepare()
-        else:
+        elif args.verify:
             verify()
-    except (OSError, RuntimeError) as error:
-        parser.exit(1, str(error)+'; no reset, retry, unbind or module removal\n')
+        else:
+            if os.geteuid() != 0:
+                parser.error('Reload requires graphical root authentication')
+            with open('/run/lock/n1x-adsp-audio-reload.lock', 'a') as lock:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError as error:
+                    raise RuntimeError('Another DSP audio maintenance operation is running') from error
+                reload_audio(args.uid)
+    except (OSError, RuntimeError, KeyError, subprocess.SubprocessError) as error:
+        parser.exit(1, str(error)+'; maintenance stopped, no forced reset or unload\n')
 
 
 if __name__ == '__main__':

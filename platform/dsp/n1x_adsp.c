@@ -35,6 +35,9 @@
 #include "n1x_sroot_client.h"
 #include "n1x_sroot_firmware.h"
 
+/* Optional export from the hardened platform-power prerequisite. */
+extern int mtk_pwrap_dev_shutdown(void *dev_cfg, u32 *completed);
+
 #define ADSP_RX_OFFSET 0x20
 #define ADSP_CONFIG_OFFSET 0x3a0
 #define ADSP_RX_BYTES 0x120
@@ -126,6 +129,7 @@ struct n1x_adsp {
 	struct n1x_sroot_client_result_v2 loader;
 	const struct n1x_sroot_client_ops *sroot_ops;
 	const struct n1x_sroot_client_sleep_ops *sleep_ops;
+	const struct n1x_sroot_client_shutdown_ops *shutdown_ops;
 	typeof(n1x_sroot_reinit_dsp_v1) *reinit_dsp;
 	struct n1x_sroot_client *sroot_client;
 	struct work_struct power_work;
@@ -145,6 +149,10 @@ struct n1x_adsp {
 	u32 sleep_config_before[2], sleep_config_after[2];
 	bool sleep_config_valid, sleep_config_checked;
 	int sleep_error;
+	bool shutdown_attempted, shutdown_done, shutdown_power_off;
+	bool shutdown_provider_retired;
+	u32 shutdown_completed;
+	int shutdown_error;
 };
 
 static int n1x_adsp_group_member(struct device *member, void *data)
@@ -425,6 +433,7 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 	size_t allocation_bytes = dsp->target->dram_bytes + PAGE_SIZE;
 	u64 end;
 	u32 pending, previous_dma, previous_bytes;
+	u8 previously_stopped = 0;
 	int err;
 
 	if (!enable_boot || (!kernel_client && !capable(CAP_SYS_RAWIO)))
@@ -456,7 +465,11 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 	/* Reserve the specific provider before taking power or publishing DMA.
 	 * Probe has already established the dependency and held its interface.
 	 */
-	err = dsp->sroot_ops->prepare(dsp->sroot_client);
+	if (dsp->shutdown_ops)
+		err = dsp->shutdown_ops->prepare(dsp->sroot_client, dsp->target->image_id,
+						 &previously_stopped);
+	else
+		err = dsp->sroot_ops->prepare(dsp->sroot_client);
 	if (err)
 		return err;
 	err = request_firmware_direct(&firmware, dsp->firmware, dsp->dev);
@@ -497,8 +510,9 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 	pending = readl(dsp->mailbox + ADSP_OUT_STATUS);
 	previous_dma = readl(dsp->shared + ADSP_CONFIG_OFFSET);
 	previous_bytes = readl(dsp->shared + ADSP_CONFIG_OFFSET + 8);
-	if (pending || (previous_dma >= 0xe0000000 && !(previous_dma & 255) &&
-		       previous_bytes && (u64)previous_dma + previous_bytes <= 0x100000000ULL)) {
+	if (pending || (!previously_stopped && previous_dma >= 0xe0000000 &&
+		       !(previous_dma & 255) && previous_bytes &&
+		       (u64)previous_dma + previous_bytes <= 0x100000000ULL)) {
 		dev_info(dsp->dev, "boot deferred: pending=%#x config0=%#x config8=%#x\n",
 			 pending, previous_dma, previous_bytes);
 		err = -EBUSY;
@@ -798,15 +812,61 @@ static ssize_t asoc_ready_show(struct device *dev, struct device_attribute *attr
 	mutex_lock(&dsp->lock);
 	size = sysfs_emit(buf, "%u\n", dsp->component_registered && dsp->boot_ready &&
 			  dsp->loader.accepted && dsp->loader.staging_released &&
-			  !n1x_adsp_failed(dsp));
+			  !dsp->shutdown_attempted && !n1x_adsp_failed(dsp));
 	mutex_unlock(&dsp->lock);
 	return size;
 }
 static DEVICE_ATTR_RO(asoc_ready);
 
+static int n1x_adsp_shutdown(struct n1x_adsp *dsp, bool release);
+
+static ssize_t shutdown_show(struct device *dev, struct device_attribute *attr, char *buffer)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	typeof(mtk_pwrap_dev_shutdown) *power_off = symbol_get(mtk_pwrap_dev_shutdown);
+	typeof(mt8901_afe_sram_release_stopped) *release_sram;
+	ssize_t bytes;
+
+	release_sram = symbol_get(mt8901_afe_sram_release_stopped);
+	mutex_lock(&dsp->lock);
+	bytes = sysfs_emit(buffer,
+			   "supported=%u attempted=%u power_off=%u completed=%#x "
+			   "provider_retired=%u released=%u error=%d\n",
+			   !!(power_off && release_sram && dsp->shutdown_ops),
+			   dsp->shutdown_attempted, dsp->shutdown_power_off,
+			   dsp->shutdown_completed,
+			   dsp->shutdown_provider_retired, dsp->shutdown_done, dsp->shutdown_error);
+	mutex_unlock(&dsp->lock);
+	if (release_sram)
+		symbol_put(mt8901_afe_sram_release_stopped);
+	if (power_off)
+		symbol_put(mtk_pwrap_dev_shutdown);
+	return bytes;
+}
+
+static ssize_t shutdown_store(struct device *dev, struct device_attribute *attr,
+			      const char *buffer, size_t count)
+{
+	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	unsigned int sleep_flags;
+	int err;
+
+	if (!capable(CAP_SYS_RAWIO))
+		return -EPERM;
+	if (!sysfs_streq(buffer, "stop") && !sysfs_streq(buffer, "quiesce"))
+		return -EINVAL;
+	sleep_flags = lock_system_sleep();
+	device_lock(dev);
+	err = n1x_adsp_shutdown(dsp, sysfs_streq(buffer, "stop"));
+	device_unlock(dev);
+	unlock_system_sleep(sleep_flags);
+	return err ? err : count;
+}
+static DEVICE_ATTR_RW(shutdown);
+
 static struct attribute *n1x_adsp_attrs[] = {
 	&dev_attr_boot.attr, &dev_attr_status.attr, &dev_attr_inspect.attr,
-	&dev_attr_sleep_status.attr, &dev_attr_asoc_ready.attr, NULL
+	&dev_attr_sleep_status.attr, &dev_attr_asoc_ready.attr, &dev_attr_shutdown.attr, NULL
 };
 ATTRIBUTE_GROUPS(n1x_adsp);
 
@@ -817,29 +877,30 @@ static void n1x_adsp_put_provider(void *data)
 	/* Published handles deliberately retain their provider lifetime. */
 	dsp->sroot_ops->put(dsp->sroot_client);
 	symbol_put(n1x_sroot_reinit_dsp_v1);
-	symbol_put(n1x_sroot_client_ops_v4);
+	symbol_put(n1x_sroot_client_ops_v5);
 }
 
 static int n1x_adsp_get_provider(struct n1x_adsp *dsp)
 {
-	typeof(n1x_sroot_client_ops_v4) *get_ops;
+	typeof(n1x_sroot_client_ops_v5) *get_ops;
 
-	get_ops = symbol_get(n1x_sroot_client_ops_v4);
+	get_ops = symbol_get(n1x_sroot_client_ops_v5);
 	if (!get_ops)
 		return -EPROBE_DEFER;
 	dsp->reinit_dsp = symbol_get(n1x_sroot_reinit_dsp_v1);
 	if (!dsp->reinit_dsp) {
-		symbol_put(n1x_sroot_client_ops_v4);
+		symbol_put(n1x_sroot_client_ops_v5);
 		return -EPROBE_DEFER;
 	}
-	dsp->sleep_ops = get_ops();
+	dsp->shutdown_ops = get_ops();
+	dsp->sleep_ops = dsp->shutdown_ops->sleep;
 	dsp->sroot_ops = dsp->sleep_ops->client;
 	dsp->sroot_client = dsp->sroot_ops->get(dsp->dev);
 	if (IS_ERR(dsp->sroot_client)) {
 		int err = PTR_ERR(dsp->sroot_client);
 
 		symbol_put(n1x_sroot_reinit_dsp_v1);
-		symbol_put(n1x_sroot_client_ops_v4);
+		symbol_put(n1x_sroot_client_ops_v5);
 		return err;
 	}
 	return devm_add_action_or_reset(dsp->dev, n1x_adsp_put_provider, dsp);
@@ -995,6 +1056,142 @@ static int n1x_adsp_probe(struct platform_device *pdev)
 	return 0;
 }
 
+/* The ALSA card must first be detached so its users and borrowed substreams
+ * cannot outlive firmware reclamation. Module exit cannot veto a failed stop.
+ */
+static int n1x_adsp_shutdown(struct n1x_adsp *dsp, bool release)
+{
+	typeof(mtk_pwrap_dev_shutdown) *power_off;
+	typeof(mt8901_afe_sram_release_stopped) *release_sram;
+	bool drop_module = false;
+	int err;
+
+	power_off = symbol_get(mtk_pwrap_dev_shutdown);
+	release_sram = symbol_get(mt8901_afe_sram_release_stopped);
+	if (!power_off || !release_sram) {
+		err = -EOPNOTSUPP;
+		goto put;
+	}
+	mutex_lock(&dsp->lock);
+	if (dsp->shutdown_done) {
+		err = 0;
+		goto unlock;
+	}
+	if (dsp->shutdown_attempted) {
+		if (dsp->shutdown_power_off)
+			goto cleanup;
+		if (dsp->shutdown_error == -EBUSY)
+			goto native_power;
+		err = dsp->shutdown_error ?: -ENOTRECOVERABLE;
+		goto unlock;
+	}
+	if (!dsp->published || !dsp->shutdown_ops || !dsp->loader.accepted ||
+	    !dsp->loader.staging_released) {
+		err = -EOPNOTSUPP;
+		goto unlock;
+	}
+	if (dsp->sleep_prepared || dsp->sleep_suspended || dsp->primary_owner) {
+		err = -EBUSY;
+		goto unlock;
+	}
+	err = dsp->shutdown_ops->admit(dsp->sroot_client);
+	if (err)
+		goto unlock;
+	dsp->shutdown_attempted = true;
+	dsp->sleep_prepared = true;
+	dsp->sleep_draining = true;
+	disable_irq(dsp->irq);
+	dsp->sleep_irq_disabled = true;
+	flush_work(&dsp->power_work);
+	/* The mutex excludes host transfers. Unknown old firmware packets are
+	 * neither acknowledged nor replayed: hardware power-off retires them.
+	 */
+native_power:
+	/* Use the native D3/abandon contract with a transport that refuses
+	 * reuse after an uncertain SET. No guessed firmware STOP or reset.
+	 * The distinct symbol is absent on older, unhardened kernels.
+	 */
+	err = power_off(dsp->pwrap, &dsp->shutdown_completed);
+	if (err)
+		goto failed;
+	dsp->shutdown_power_off = true;
+	WRITE_ONCE(dsp->boot_ready, false);
+cleanup:
+	if (!dsp->shutdown_provider_retired) {
+		err = dsp->shutdown_ops->quiesced(dsp->sroot_client);
+		if (err)
+			goto failed;
+	}
+	if (!release) {
+		dsp->shutdown_error = 0;
+		err = 0;
+		goto unlock;
+	}
+	/* The provider gates reclamation on all three cores reaching D3/abandon,
+	 * keeping shared resources and every allocation until that barrier.
+	 */
+	if (!dsp->shutdown_provider_retired) {
+		err = dsp->shutdown_ops->retire(dsp->sroot_client);
+		if (err)
+			goto failed;
+		dsp->shutdown_provider_retired = true;
+	}
+	/* SRAM also has an independent AFE DMA user. Release verifies that
+	 * hardware memif and the retired ALSA borrower before consuming it.
+	 */
+	if (dsp->processing_messages) {
+		err = release_sram(dsp->processing_messages);
+		if (err)
+			goto failed;
+		dsp->processing_messages = NULL;
+		dsp->processing_area = NULL;
+	}
+	if (dsp->primary_sram) {
+		err = release_sram(dsp->primary_sram);
+		if (err)
+			goto failed;
+		dsp->primary_sram = NULL;
+	}
+	dma_free_coherent(dsp->dev, dsp->target->dram_bytes + PAGE_SIZE, dsp->dram, dsp->dma);
+	dsp->dram = NULL;
+	dsp->dma = 0;
+	/* No runtime D0/D3 may follow the successful device abandon. */
+	pm_runtime_dont_use_autosuspend(dsp->dev);
+	pm_runtime_disable(dsp->dev);
+	pm_runtime_put_noidle(dsp->dev);
+	err = pm_runtime_set_suspended(dsp->dev);
+	if (err)
+		dev_warn(dsp->dev, "stopped DSP runtime status update failed: %d\n", err);
+	WRITE_ONCE(dsp->published, false);
+	dsp->shutdown_done = true;
+	dsp->shutdown_error = 0;
+	dsp->sleep_prepared = false;
+	dsp->sleep_draining = false;
+	drop_module = true;
+	dev_info(dsp->dev, "DSP native shutdown complete; operating DMA and SRAM released\n");
+	err = 0;
+	goto unlock;
+failed:
+	dsp->shutdown_error = err;
+	/* EBUSY means the current power stage was not submitted. Its completed
+	 * mask permits a later call to continue without replaying acknowledged D3.
+	 */
+	if (err != -EBUSY || dsp->shutdown_power_off)
+		dsp->error = err;
+	dev_err(dsp->dev, "DSP shutdown failed: %d, power_off=%u; unreleased memory/leases retained\n",
+		err, dsp->shutdown_power_off);
+unlock:
+	mutex_unlock(&dsp->lock);
+	if (drop_module)
+		module_put(THIS_MODULE);
+put:
+	if (release_sram)
+		symbol_put(mt8901_afe_sram_release_stopped);
+	if (power_off)
+		symbol_put(mtk_pwrap_dev_shutdown);
+	return err;
+}
+
 static void n1x_adsp_remove(struct platform_device *pdev)
 {
 	struct n1x_adsp *dsp = platform_get_drvdata(pdev);
@@ -1003,6 +1200,8 @@ static void n1x_adsp_remove(struct platform_device *pdev)
 	/* Published instances pin the module and suppress manual sysfs unbind. */
 	devm_free_irq(&pdev->dev, dsp->irq, dsp);
 	cancel_work_sync(&dsp->power_work);
+	if (dsp->shutdown_done)
+		return;
 	err = pm_runtime_resume_and_get(&pdev->dev);
 	pm_runtime_dont_use_autosuspend(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
@@ -1015,6 +1214,8 @@ static int n1x_adsp_runtime_suspend(struct device *dev)
 {
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 
+	if (READ_ONCE(dsp->shutdown_done))
+		return 0;
 	if (READ_ONCE(dsp->published))
 		return -EBUSY;
 	return mtk_pwrap_dev_suspend(dsp->pwrap, 0);
@@ -1024,6 +1225,8 @@ static int n1x_adsp_runtime_resume(struct device *dev)
 {
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 
+	if (READ_ONCE(dsp->shutdown_done))
+		return -EHOSTDOWN;
 	return mtk_pwrap_dev_resume(dsp->pwrap, 0);
 }
 
@@ -1056,6 +1259,8 @@ static int n1x_adsp_prepare(struct device *dev)
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 	int err = 0;
 
+	if (READ_ONCE(dsp->shutdown_done))
+		return 0;
 	/* Admission must happen before any device suspends. Retention is not a
 	 * shutdown/reclamation contract and cannot support hibernation or deep
 	 * sleep. ASoC ordering stops streams before the DSP/AFE retention path.
@@ -1201,6 +1406,8 @@ static int n1x_adsp_suspend(struct device *dev)
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 	int err, rollback;
 
+	if (READ_ONCE(dsp->shutdown_done))
+		return 0;
 	if (!dsp->published)
 		return pm_runtime_force_suspend(dev);
 	mutex_lock(&dsp->lock);
@@ -1268,6 +1475,8 @@ static int n1x_adsp_resume(struct device *dev)
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
 	int err = 0;
 
+	if (READ_ONCE(dsp->shutdown_done))
+		return 0;
 	if (!dsp->published)
 		return pm_runtime_force_resume(dev);
 	mutex_lock(&dsp->lock);
@@ -2572,7 +2781,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.24");
+MODULE_VERSION("0.1.25");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

@@ -16,7 +16,7 @@ def test_remove(source):
 #include <errno.h>
 struct device {int unused;};
 struct work_struct {bool pending;};
-struct n1x_adsp {int irq;struct work_struct power_work;void *pwrap;};
+struct n1x_adsp {int irq;struct work_struct power_work;void *pwrap;bool shutdown_done;};
 struct platform_device {struct device dev;};
 static struct platform_device pdev;
 static struct n1x_adsp dsp;

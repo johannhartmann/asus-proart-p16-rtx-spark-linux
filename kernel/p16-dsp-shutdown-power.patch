@@ -1,0 +1,184 @@
+From: Johann Hartmann <johann@mayflower.de>
+Subject: [PATCH] soc: mediatek: fail closed on uncertain SSPM power completion
+
+A SET reply uses a shared request/reply slot. After a submitted timeout, a
+late IRQ can observe a new request header, even after a bounded drain. Never
+reuse this transport after an uncertain command, including driver rebind.
+Mailbox-busy before submission remains retryable.
+
+Add the distinct native D3/abandon helper needed by an idle DSP shutdown
+consumer. Its symbol presence identifies the hardened transport prerequisite;
+it is not an independent physical power-status query.
+
+Reference: https://github.com/NVIDIA/NV-Kernels/pull/570
+
+diff --git a/drivers/soc/mediatek/sspm_ci/sspm_ci.c b/drivers/soc/mediatek/sspm_ci/sspm_ci.c
+--- a/drivers/soc/mediatek/sspm_ci/sspm_ci.c
++++ b/drivers/soc/mediatek/sspm_ci/sspm_ci.c
+@@ -123,15 +123,11 @@
+ /* Set once a reply echoed our token; until then a token-0 echo is accepted. */
+ static bool _token_echo_seen;
+ static unsigned int _stale_acks;
+-/*
+- * Set by a SET timeout: the next sspm_ci_set() first gives the late reply a
+- * bounded window to arrive (and be dropped as stale) before it rewrites the
+- * shared slot and publishes a new header. Without this, a firmware that does
+- * not echo tokens could have that late reply complete the next command, and
+- * a late interrupt could read the next command's header back from the slot.
++/* A submitted timeout makes the physical result unknown. The reply header
++ * lives in the same slot as the request, so neither token matching nor a
++ * bounded drain can make later reuse safe. Keep this latch across unbind.
+  */
+-static bool _drain_needed;
+-#define SSPM_CI_DRAIN_MS	100
++static bool _completion_unknown;
+ 
+ /*
+  * Per-transaction sequence number placed in the SCMI message header token
+@@ -161,32 +157,9 @@
+ 	WRITE_ONCE(_inflight_hdr, 0);
+ 	_token_echo_seen = false;
+ 	_stale_acks = 0;
+-	_drain_needed = false;
+ 	_scmi_token = 1;
+ }
+ 
+-/*
+- * After a timed-out SET, wait a bounded time for its late reply so the
+- * handler drops it as stale (nothing is in flight) before the slot is reused.
+- * Called with _hw_rsc held. Returns early as soon as a stale ack was seen.
+- */
+-static void sspm_ci_drain_late_ack(void)
+-{
+-	unsigned int stale = READ_ONCE(_stale_acks);
+-	unsigned int ms;
+-
+-	if (!_drain_needed)
+-		return;
+-	_drain_needed = false;
+-
+-	for (ms = 0; ms < SSPM_CI_DRAIN_MS; ms++) {
+-		if (READ_ONCE(_stale_acks) != stale) {
+-			dev_dbg(__dev, "late SET ack drained after %u ms\n", ms);
+-			return;
+-		}
+-		mdelay(1);
+-	}
+-}
+ 
+ static ssize_t sspm_alive_show(struct device *kobj,
+ 	struct device_attribute *attr, char *buf)
+@@ -229,7 +202,8 @@
+  *   or keep its current state.
+  * * -ETIMEDOUT - the command WAS written and the doorbell rung, but no ack
+  *   arrived in time; the firmware may still complete it, so the outcome is
+- *   unknown. A late ack is drained before the next command.
++ *   unknown. Further commands return -ENOTRECOVERABLE until reboot.
++ * * -ENOTRECOVERABLE - a prior submitted command timed out; nothing sent.
+  */
+ int sspm_ci_set(u32 feature_id,
+ 	u32 p1, u32 p2, u32 p3, u32 p4, u32 p5)
+@@ -264,6 +238,11 @@
+ 		return -ENODEV;
+ 	}
+ 
++	if (_completion_unknown) {
++		mutex_unlock(&_hw_rsc);
++		return -ENOTRECOVERABLE;
++	}
++
+ 	/*
+ 	 * Assign a fresh sequence token per transaction (under _hw_rsc so the
+ 	 * counter is not raced). Distinct tokens let firmware/response tracing
+@@ -273,7 +252,6 @@
+ 	message_header = pack_message_header(message_id, message_type,
+ 					     protocol_id, token);
+ 	scmi_tx.message_header = message_header;
+-	sspm_ci_drain_late_ack();
+ 	while (readl((void __iomem *)MBOX_IN_SET(SSPM_CI_SET_ID))) {
+ 		count++;
+ 		if (count > SSPM_CI_MAX_POLL_COUNT) {
+@@ -318,7 +296,7 @@
+ 			 * instead of completing the next command.
+ 			 */
+ 			WRITE_ONCE(_inflight_hdr, 0);
+-			_drain_needed = true;
++			_completion_unknown = true;
+ 			mutex_unlock(&_hw_rsc);
+ 			dev_err(__dev, "scmi ack timeout (hdr %#x), completion unknown\n",
+ 				message_header);
+diff --git a/drivers/soc/mediatek/sspm_ci/sspm_ci.h b/drivers/soc/mediatek/sspm_ci/sspm_ci.h
+--- a/drivers/soc/mediatek/sspm_ci/sspm_ci.h
++++ b/drivers/soc/mediatek/sspm_ci/sspm_ci.h
+@@ -11,7 +11,8 @@
+ /*
+  * Returns 0 on ack, -ENODEV without a mailbox, -EBUSY if the command could not
+  * be submitted (nothing sent, caller state unchanged), -ETIMEDOUT if it was
+- * sent but not acknowledged in time (completion unknown).
++ * sent but not acknowledged in time (completion unknown). Subsequent calls
++ * return -ENOTRECOVERABLE without submission until reboot.
+  */
+ int sspm_ci_set(u32 feature_id,
+ 	u32 p1, u32 p2, u32 p3, u32 p4, u32 p5);
+diff --git a/drivers/soc/mediatek/power_wrap/power_wrap.c b/drivers/soc/mediatek/power_wrap/power_wrap.c
+--- a/drivers/soc/mediatek/power_wrap/power_wrap.c
++++ b/drivers/soc/mediatek/power_wrap/power_wrap.c
+@@ -346,6 +346,35 @@
+ 				   __func__);
+ }
+ EXPORT_SYMBOL_GPL(mtk_pwrap_dev_remove);
++
++/* Explicit native D3 followed by device abandon, for an idle client that has
++ * frozen submissions and drained its IRQ/work. The hardened SET transport
++ * never reuses a channel after an uncertain completion. A timeout must retain
++ * every DMA allocation; this is not the system-sleep retention operation.
++ * The caller must keep runtime PM active until this returns, then disable PM
++ * without another hardware transition. Hardware qualification is still needed
++ * before enabling buffer reclamation in a consumer.
++ */
++int mtk_pwrap_dev_shutdown(void *dev_cfg, u32 *completed)
++{
++	int ret;
++
++	if (!dev_cfg || !completed || (*completed != 0 && *completed != 1 && *completed != 3))
++		return -EINVAL;
++	if (!(*completed & 1)) {
++		ret = mtk_pwrap_dev_suspend(dev_cfg, 0);
++		if (ret)
++			return ret;
++		*completed = 1;
++	}
++	if (*completed & 2)
++		return 0;
++	ret = mtk_pwrap_dev_remove(dev_cfg);
++	if (!ret)
++		*completed = 3;
++	return ret;
++}
++EXPORT_SYMBOL_GPL(mtk_pwrap_dev_shutdown);
+ 
+ int mtk_pwrap_dev_suspend(void *dev_cfg, u8 sys_trans)
+ {
+diff --git a/include/linux/soc/mediatek/mtk-pwrap.h b/include/linux/soc/mediatek/mtk-pwrap.h
+--- a/include/linux/soc/mediatek/mtk-pwrap.h
++++ b/include/linux/soc/mediatek/mtk-pwrap.h
+@@ -71,6 +71,7 @@
+ int mtk_send_power_control_req(struct _power_cntrl_request *pwrctlreq);
+ int mtk_pwrap_dev_request(void *dev_ctrl);
+ int mtk_pwrap_dev_remove(void *dev_ctrl);
++int mtk_pwrap_dev_shutdown(void *dev_ctrl, u32 *completed);
+ int mtk_pwrap_dev_suspend(void *dev_ctrl, u8 sys_trans);
+ int mtk_pwrap_dev_resume(void *dev_ctrl, u8 sys_trans);
+ int mtk_pwrap_com_idle(void *dev_ctrl, u8 com_idx);
+@@ -92,6 +93,11 @@
+ static inline int mtk_pwrap_dev_remove(void *dev_ctrl)
+ {
+ 	return -ENODEV;
++}
++
++static inline int mtk_pwrap_dev_shutdown(void *dev_ctrl, u32 *completed)
++{
++	return -EOPNOTSUPP;
+ }
+ 
+ static inline int mtk_pwrap_dev_suspend(void *dev_ctrl, u8 sys_trans)

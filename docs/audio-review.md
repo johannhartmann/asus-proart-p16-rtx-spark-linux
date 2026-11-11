@@ -304,7 +304,7 @@ RAW capture, DSP effects or secondary-HiFi5 audio support.
 | System sleep admission | Reject unsupported modes and retained faults; card-to-DSP-to-AFE and DSP-to-provider ordering; late STOP/IRQ faults rechecked | No PM attempted after the current capture failure |
 | Suspend and aborted suspend | Freeze IPC, drain IRQ/work, reject pending packets; D3 before SRAM/provider votes; checked rollback and timeout tests | Earlier device-only test exposed missing firmware reconstruction |
 | Resume | AFE SRAM restoration, D0, startup descriptor rewrite, canonical REINIT plus fresh ready; same-buffer task reconstruction; failures retain leases | Corrected REINIT, post-wake audio/NPU and physical s2idle unqualified |
-| Whole-core shutdown and reload | Published module, DMA and provider leases intentionally retained; runtime autosuspend/unbind unavailable | **Missing verified DSP-off contract; not implemented or safe to infer from task CLOSE** |
+| Whole-core shutdown and reload | DSP 0.1.25 / AFE 0.1.27 native D3/abandon, hardened SSPM completion, provider v5 shared-core barrier and explicit retirement | Implemented candidate; physical shutdown, reload and post-reload audio/NPU unqualified |
 
 The pinned Windows teardown has now been traced through WDF callback
 registration, D0 exit, pending-request flushes, worker termination and operating
@@ -326,3 +326,31 @@ must use the same DSP/provider/AFE/machine bundle and cover both formats,
 capture and duplex before device-only PM, followed by the same PCM tests after
 resume. A failure stops the sequence and preserves evidence; it is not a reason
 to request another reboot without diagnosing the recorded failure first.
+
+
+## Native shutdown candidate after lifecycle review
+
+The source now implements a complete explicit quiesce/release/reload path,
+including provider v5 image ownership, a barrier across all three DSPs, separate
+AFE memif/IRQ retirement, PM/module-reference release and same-provider restart
+markers. No physical power-state decoder was recovered. The implementation
+uses the pinned vendor device-abandon contract and Windows removal ordering,
+with a stricter SSPM policy that never reuses a channel after unknown completion.
+This is a native-contract candidate, not a newly observed hardware result.
+
+The review also found a remaining register-cache defect before another boot:
+capture START checked firmware-mutated memif state through regmap, and STOP
+could skip clearing hardware when the cached enable bit was already clear.
+AFE 0.1.27 checks hardware directly and writes a fresh disabled memif image,
+then reads it back; the cache retains the correct format for normal resume.
+Both capture validation and shutdown tests now model that stale cached bit.
+The earlier 0.1.26 candidate was therefore superseded before qualification.
+
+The existing helper's explicit `--reload` performs two phases, quiescing every
+core before retiring any allocation. It preserves module parameters and restores
+previously active desktop audio services on failures as well as success. Its
+preflight refuses the currently running old module or a kernel without the
+hardened power export before interrupting audio. Hardware qualification must
+cover the complete matching bundle, two reload cycles, the full PCM matrix and
+numerical NPU execution after each cycle. An uncertain platform power or secure
+loader transaction remains a protected failure that can still require reboot.

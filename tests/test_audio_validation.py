@@ -86,9 +86,9 @@ class AudioValidationTests(unittest.TestCase):
     def test_old_afe_is_rejected_before_authorization_or_pcm(self):
         with patch.object(audio, "Path") as path, \
                 patch.object(audio, "frontend_options") as options:
-            path.return_value.read_text.return_value = "0.1.24"
+            path.return_value.read_text.return_value = "0.1.25"
             path.return_value.exists.return_value = False
-            with self.assertRaisesRegex(RuntimeError, "Requires AFE 0.1.26"):
+            with self.assertRaisesRegex(RuntimeError, "Requires AFE 0.1.27"):
                 audio.preflight()
             options.assert_not_called()
 

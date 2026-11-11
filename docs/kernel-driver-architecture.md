@@ -65,14 +65,14 @@ ordering; the component framework alone does not provide this ordering. The
 link is established before firmware publication, remains across post-publication
 failures and is explicitly removed during component unbind. Existing runtime-PM
 leases are unchanged. The candidate provider owns per-device contexts. The DSP
-requires ABI v4 (the v3 base handle plus sleep votes) and the separately versioned
+requires ABI v5 (the v3/v4 base handle and votes, plus explicit image retirement) and the separately versioned
 REINIT export. Handles add DSP-to-DLA dependency ordering at probe. A handle reserves the provider before
 DSP DRAM allocation and commits its lease before the first DSP address write.
 Only unpublished reservations can be canceled. Lookup uses unique siblings in
 the firmware namespace because the captured AML provides no `_DEP`/`_DSD`
 association; ambiguity is an error. AFE/DSP lookups use the same scoped rule.
 This does not resolve their bidirectional SRAM/audio ownership into an upstream
-ASoC/SOF provider model, or establish whole-core shutdown. Use
+ASoC/SOF provider model, or qualify the native shutdown/reload candidate on hardware. Use
 firmware-described associations where justified; do not fabricate links between
 the first globally matching ACPI devices.
 

@@ -27,7 +27,8 @@ struct device {int unused;};
 struct n1x_sroot_client {int unused;};
 struct n1x_adsp {struct device *dev;const struct n1x_sroot_client_ops *sroot_ops;
  struct n1x_sroot_client *sroot_client;const struct n1x_sroot_client_sleep_ops *sleep_ops;
- typeof(n1x_sroot_reinit_dsp_v1) *reinit_dsp;};
+ typeof(n1x_sroot_reinit_dsp_v1) *reinit_dsp;
+ const struct n1x_sroot_client_shutdown_ops *shutdown_ops;};
 static struct device device;
 static struct n1x_sroot_client client;
 static unsigned symbols,handles,fault;
@@ -39,12 +40,13 @@ static int put_client(struct n1x_sroot_client *c)
 {assert(c==&client && handles==1 && symbols==2);if(published)return -EBUSY;handles--;return 0;}
 static const struct n1x_sroot_client_ops ops={.get=get_client,.put=put_client};
 static const struct n1x_sroot_client_sleep_ops sleep_ops={.client=&ops};
-static const struct n1x_sroot_client_sleep_ops *get_ops(void){assert(symbols==2);return &sleep_ops;}
+static const struct n1x_sroot_client_shutdown_ops shutdown_ops={.sleep=&sleep_ops};
+static const struct n1x_sroot_client_shutdown_ops *get_ops(void){assert(symbols==2);return &shutdown_ops;}
 static int reinit(struct n1x_sroot_client *c,struct n1x_sroot_reinit_result *r)
 {(void)c;(void)r;assert(0);return 0;}
 static void *get_symbol(const char *name)
 {
- if(!strcmp(name,"n1x_sroot_client_ops_v4")) {assert(!symbols);if(fault==1)return NULL;symbols++;return get_ops;}
+ if(!strcmp(name,"n1x_sroot_client_ops_v5")) {assert(!symbols);if(fault==1)return NULL;symbols++;return get_ops;}
  assert(!strcmp(name,"n1x_sroot_reinit_dsp_v1") && symbols==1);
  if(fault==4)return NULL;symbols++;return reinit;
 }

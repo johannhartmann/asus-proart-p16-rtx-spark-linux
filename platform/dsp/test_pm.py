@@ -47,7 +47,7 @@ static unsigned card_refs;
 struct n1x_adsp {
  pthread_mutex_t lock;
  struct device *dev;
- bool published, sleep_prepared, sleep_suspended, sleep_irq_disabled;
+ bool published, sleep_prepared, sleep_suspended, sleep_irq_disabled, shutdown_done, shutdown_attempted;
  bool boot_ready, ipc_poisoned, primary_task_active, processing_active;
  bool primary_attempted, primary_ready, processing_registered, primary_pcm_prepared;
  bool primary_start_attempted, primary_stopped, primary_restore_pending;

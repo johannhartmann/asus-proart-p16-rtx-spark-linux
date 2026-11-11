@@ -8,7 +8,7 @@ normal firmware loader, with per-core defaults and a `firmware-name` override.
 See [protocol.md](protocol.md) for wire formats and reference provenance.
 
 Firmware startup is disabled by default. Published DSP operating DRAM, AFE
-SRAM and provider/module/runtime-PM leases are retained until reboot. Task
+SRAM and provider/module/runtime-PM leases are retained until an explicit checked shutdown completes. Task
 STOP, CLOSE and IRQ disable do not establish whole-core DMA quiescence.
 Shutdown and reclamation must be verified before default startup is enabled.
 
@@ -41,9 +41,9 @@ This implements the native non-RAW capture transport; beamforming and noise
 suppression are not proven firmware capabilities. This is not a SOF firmware port. See [the audio setup and validation
 guide](../../docs/audio.md) for the complete installation and exact limits.
 
-The complete desktop candidate requires AFE 0.1.26 and the board UCM package
+The complete desktop candidate requires DSP 0.1.25, AFE 0.1.27 and the board UCM package
 in `ucm/`. The UCM package preserves the installed vendor codec controls while
-declaring the single-playback restriction. AFE 0.1.26 validates firmware-owned
+declaring the single-playback restriction. AFE 0.1.27 validates firmware-owned
 capture START rather than reconfiguring its already-active IRQ. See
 [the qualification guide](../../docs/audio.md) for installation and recorded
 hardware results; capture, duplex and resume are still pending qualification.
@@ -97,18 +97,55 @@ execution remain pending. Preserve the working boot and qualify the exact DSP,
 provider, AFE/machine and kernel artifacts together. Do not replace a published
 live module.
 
+## Explicit shutdown and module reload
+
+DSP 0.1.25 adds a native-power shutdown candidate, with AFE 0.1.27 and provider
+ABI v5. It requires `kernel/p16-dsp-shutdown-power.patch`; older kernels report
+`shutdown: supported=0` and refuse the operation. This path is not yet
+hardware-qualified and does not run automatically during module exit or sleep.
+
+The shutdown attribute accepts `quiesce`, then `stop`. Quiesce freezes IPC,
+synchronizes IRQ/work and performs the native D3/abandon sequence. All three
+cores must complete that sequence before any published allocation is released.
+Secondary HiFi5 goes before primary HiFi5. Provider v5 enforces the shared-core
+barrier and blocks a new dependent boot during shutdown. AFE release separately
+stops and checks its memif, clears the owned IRQ, retires the reservation and
+balances SRAM/PM/module references. Operating DRAM and the DSP self-reference
+are then released. The next load receives an exclusive image slot and may
+replace stale startup descriptors only when that provider recorded retirement.
+
+An unsubmitted `EBUSY` stage may continue using its completed-stage mask. An
+uncertain SET timeout permanently prevents further SSPM submissions until
+reboot, including after driver rebind. Neither a late IRQ nor waiting 100 ms
+re-establishes completion. Partial software cleanup after completed native
+power-off can continue without sending D3/abandon again. Keep the provider
+loaded across DSP/AFE reloads so its retirement records remain available.
+
+The existing audio helper supplies the whole maintenance sequence:
+
+```sh
+pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --reload
+```
+
+This explicitly interrupts the invoking desktop user's audio services, removes
+the idle sound card, quiesces all cores, retires them, unloads DSP/AFE and reloads
+the installed modules with the original parameters. It restores previously
+active services on success or failure and checks that the ALSA card binds.
+Another application's live ALSA reference can refuse module removal; nothing
+is force-unloaded or killed. See [audio validation](../../docs/audio.md#module-reload-qualification).
+
 ## Firmware address bounds
 
 The HiFi1 firmware rejects every audio address if its 32-bit shared-DRAM
 exclusive end overflows. DSP 0.1.22 reserves one additional, unadvertised page
 inside the normal coherent DMA allocation and checks the advertised exclusive
 end before publishing it. This fixes the former 16 MiB allocation at
-`0xff000000`. Published operating memory is still retained until reboot.
+`0xff000000`. Published operating memory remains retained until explicit shutdown succeeds.
 See [the firmware validator evidence](protocol.md#hifi1-shared-dram-exclusive-end-constraint).
 
 ## Secure loading and IPC
 
-The driver acquires SROOT client ABI v4 and the additive typed REINIT export
+The driver acquires SROOT client ABI v5 and the additive typed REINIT export
 during probe. An older provider defers probe rather than losing resume support. Its referenced handle
 selects a unique provider under the same firmware parent and establishes
 DSP → DLA → SROOT ordering for system PM. Missing providers defer probe;
@@ -138,7 +175,7 @@ component still does not establish card binding or PCM progress. The
 defects, measured playback and the remaining capture, endpoint and resume
 qualification gaps. The
 [interface matrix](../../docs/platform-driver-status.md#current-dsp-interface-requirements)
-distinguishes SROOT v4 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2.
+distinguishes SROOT v5 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2.
 
 ## Playback
 

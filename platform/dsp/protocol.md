@@ -536,8 +536,10 @@ must be traced through the platform power transition and its completion
 semantics before Linux may release a published buffer. The existing Linux
 `mtk_pwrap_dev_suspend()` submits the configured SCMI device-state transition
 to D3 through SSPM; a matching API call alone is not proof that the DSP's bus
-accesses have ceased. The Linux release path remains unimplemented until that
-contract and its failure cases are established.
+accesses have ceased. The explicit native shutdown candidate below implements D3/abandon with a
+strict transport failure policy and a shared-core barrier. Its hardware
+qualification remains outstanding; it is not an independently decoded DSP
+power-state query.
 
 The OEM PEP also has a host-initiated TINYSYS GET path:
 `0x140016ca8` calls `0x140043748`, whose constants at `0x1400439b8` encode
@@ -606,7 +608,7 @@ explicitly retain the `EBUSY` guard when a published lease has no remaining
 staging allocation. DSP boot tests reject every inconsistent v2 success flag
 without freeing published operating memory. These are offline checks; staging
 release still requires fresh-boot hardware qualification, and whole-core
-shutdown/DMA release remains unfinished.
+shutdown/DMA release is implemented as the unqualified native-power candidate below.
 
 ## Linux AFE hardware-ring preparation
 
@@ -926,3 +928,54 @@ executing Windows code. Actual-function sanitizer harnesses cover native
 message values, fault stages, repeated duplex retention votes, ring wrap,
 copy ordering, XRUN and recovery. These are offline results; full capture,
 endpoint switching and post-REINIT hardware qualification remain pending.
+
+
+## Native shutdown and reload candidate
+
+DSP 0.1.25 / AFE 0.1.27 uses the power contract in NVIDIA/MediaTek's pinned
+[MT8901 driver](https://github.com/NVIDIA/NV-Kernels/blob/dd99802c8b0c384169bb36293c9517fa67238e47/sound/soc/sof/mediatek/mt8901/mt8901.c):
+device abandon transitions that DSP to D3. The Windows callback ordering above
+places operating-memory release after the framework's power-off stage. The
+candidate sends explicit D3 with `Complete=1, SystemTransition=0`, then abandon,
+and requires successful completion of both. It does not decode an independent
+physical DSP-off register. **That native API contract and the complete Linux
+reload sequence still require hardware qualification.**
+
+The hardened helper records completed stages (bit 0 D3, bit 1 abandon). Only an
+unsubmitted `EBUSY` can continue the current stage; acknowledged D3 is not
+replayed. The original SSPM shared-slot transport could consume a very late
+interrupt after a bounded drain, including by reading back the next request's
+header. The local patch permanently rejects further submissions after an
+uncertain SET timeout. A driver rebind does not reset that latch. This narrows
+completion handling; it does not turn a transport ACK into a power sensor.
+
+Provider v5 binds an exclusive image slot before DMA publication. Its shutdown
+admission freezes that image's lifetime and rejects primary-HiFi5 shutdown while
+the secondary is still running. A completed native transition is recorded
+without releasing memory. Reclamation waits for every published DSP image to
+reach that barrier, so shared core resources remain protected. Legacy clients
+without this protocol prevent retirement. System PM rejects a stopping image.
+Only then can the provider clear that image's lifetime reservation and permit
+future upload; the consumer separately frees its operating DRAM and AFE leases.
+Failed or uncertain secure-loader transactions still prohibit retirement.
+
+The DSP freezes IPC under its mutex, synchronizes its IRQ and drains queued
+power work. Old ambiguous firmware messages are not acknowledged or replayed;
+native power-off retires that transport. AFE release requires a retired ALSA
+borrower and no foreign owner of the stored IRQ. It stops and reads back the
+independent AFE memif before returning SRAM to the pool. Capture START and
+memif STOP use hardware reads instead of cached firmware-mutated state. SRAM,
+PM, module and provider references are balanced; partial software cleanup can
+continue after completed power-off without repeating hardware transitions.
+
+For a later load, only the same provider's completed retirement marker permits
+replacing a stale startup DRAM descriptor. The marker is exclusive to an image
+reservation. A pending unexplained mailbox still refuses boot. The maintenance
+helper keeps that provider loaded and reloads only the sound-card, DSP and AFE
+modules. It preserves module options and the invoking user's audio-service
+state. No unbind, force unload, guessed SROOT command or register reset is used.
+
+The locally named `sroot-v0.bin` / `sroot-v1.bin` are upload inputs for image
+`0xc0302`; their payload is DLA firmware. The plaintext v1 payload contains DLA
+engine and network-processing code, not the secure SROOT command dispatcher.
+It supplies no DSP shutdown opcode; command-number adjacency is not evidence.

@@ -102,9 +102,8 @@ int mt8901_afe_sram_prepare_irq(struct mt8901_afe_sram_buffer *buffer);
 /* After acknowledged task STOPs, disable the owned memif, disable/clear
  * its IRQ and remove its MCU and DSP target bits. The route argument is
  * endpoint enum 2 for HiFi1 or 3 for primary HiFi5, not a task-core enum.
- * Allows the still-running ALSA STOP callback, but requires
- * unchanged ownership and
- * format. Repeated success writes nothing; failed I/O is terminal. Does not
+ * Allows the still-running ALSA STOP callback, but requires unchanged ownership
+ * and format. Repeated success writes nothing; failed I/O is terminal. Does not
  * prove whole-core quiescence; no published memory may be released. The caller
  * serializes handle lifetime. This call sleeps.
  */
@@ -118,9 +117,9 @@ int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int
 void mt8901_afe_sram_retire(struct mt8901_afe_sram_buffer *buffer);
 
 /* Call after binding and before publishing a buffer address to firmware or
- * hardware. A published lease cannot be released by the current API and blocks
- * AFE runtime suspend. System sleep requires every owner
- * to participate in the retained-SRAM protocol.
+ * hardware. Publication blocks ordinary release and AFE runtime suspend.
+ * System sleep requires every owner to participate in the retained-SRAM
+ * protocol; explicit native shutdown uses release_stopped().
  * Service acknowledgements do not establish whole-core DMA quiescence.
  */
 int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer);
@@ -131,6 +130,16 @@ int mt8901_afe_sram_publish(struct mt8901_afe_sram_buffer *buffer);
  * The caller serializes operations on each handle. This call sleeps.
  */
 int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer);
+
+/* Kernel shutdown consumer only: first freeze new DSP/ALSA work, drain IRQ
+ * and workers, and complete the hardened native DSP D3/abandon operation.
+ * This function verifies that no ALSA borrower or independent AFE memif DMA
+ * remains, then consumes the published lease and its retention/PM/module
+ * references. A negative return retains the entire handle; success consumes
+ * it even if the last AFE runtime suspend reports an error. It never infers
+ * whole-core shutdown from task STOP/CLOSE and cannot establish DSP-off itself.
+ */
+int mt8901_afe_sram_release_stopped(struct mt8901_afe_sram_buffer *buffer);
 
 /* Retained system-sleep protocol for published DSP-owned SRAM. The owner must
  * have a DSP -> AFE PM link and participate in the sound card's ASoC ordering.

@@ -175,7 +175,7 @@ def main():
              'firmware-described SRAM layout. Each lease retains device, module and\n'
              'runtime-PM references. Require retention votes for system sleep and\n'
              'disable manual driver detachment. Published buffers remain retained\n'
-             'until reboot; whole-core quiesce and release are separate work.\n\n'
+             'until explicit native DSP shutdown and checked AFE retirement.\n\n'
              'Add opt-in DL0/DL1 playback and UL1 capture to the AFE/SoundWire route.\n'
              'Copy playback commits and capture notifications through owned rings and\n'
              'defer complete-period notifications to workqueue context. Synchronize\n'

@@ -743,7 +743,7 @@ static int mt8901_afe_sram_capture_started(struct mt8901_afe_sram_buffer *buffer
 		return -ERANGE;
 	checks[0].expected = 1 | fs << 4 | domain << 9;
 	for (i = 0; i < ARRAY_SIZE(checks); i++) {
-		ret = regmap_read(afe->regmap, checks[i].reg, &value);
+		ret = regmap_read_bypassed(afe->regmap, checks[i].reg, &value);
 		if (ret) {
 			dev_err(afe->dev, "capture START: read register %#x failed: %d\n",
 				checks[i].reg, ret);
@@ -842,13 +842,68 @@ unlock:
 	return ret;
 }
 
-int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int core)
+static int mt8901_afe_sram_disable_memif(struct mtk_base_afe *afe,
+				       const struct mtk_base_memif_data *data)
+{
+	u32 value;
+	int ret;
+
+	/* Firmware can enable the memif without updating the host regcache.
+	 * Preserve fresh hardware format bits and update the cache on the write.
+	 */
+	ret = regmap_read_bypassed(afe->regmap, data->enable_reg, &value);
+	if (!ret)
+		ret = regmap_write(afe->regmap, data->enable_reg, value & ~BIT(data->enable_shift));
+	if (!ret)
+		ret = regmap_read_bypassed(afe->regmap, data->enable_reg, &value);
+	if (!ret && (value & BIT(data->enable_shift)))
+		ret = -EIO;
+	return ret;
+}
+
+static int mt8901_afe_sram_stop_hardware(struct mt8901_afe_sram_buffer *buffer,
+				       struct mtk_base_afe *afe)
 {
 	const struct mtk_base_memif_data *data;
 	const struct mtk_base_irq_data *irq;
-	struct mtk_base_afe *afe;
 	u32 bit, clear;
 	int cfg, ret;
+
+	if (buffer->endpoint.memif >= afe->memif_size || buffer->endpoint.irq >= afe->irqs_size)
+		return -EINVAL;
+	irq = afe->irqs[buffer->endpoint.irq].irq_data;
+	data = afe->memif[buffer->endpoint.memif].data;
+	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
+	if (!mt8901_afe_sram_enable_valid(data, buffer->endpoint.memif) ||
+	    !irq || irq->id != buffer->endpoint.irq ||
+	    irq->irq_en_reg != cfg || irq->irq_en_shift ||
+	    irq->irq_clr_reg != cfg + 4 || irq->irq_clr_shift != 31 ||
+	    irq->irq_mask_reg != AFE_IRQ_MCU_EN ||
+	    irq->irq_mask_shift != buffer->endpoint.irq) {
+		ret = -EOPNOTSUPP;
+		return ret;
+	}
+	bit = BIT(buffer->endpoint.irq);
+	buffer->irq_prepared = false;
+	ret = mt8901_afe_sram_disable_memif(afe, data);
+	if (!ret)
+		ret = regmap_update_bits(afe->regmap, cfg, 1, 0);
+	if (!ret)
+		ret = regmap_read(afe->regmap, cfg + 4, &clear);
+	if (!ret)
+		ret = regmap_update_bits(afe->regmap, cfg + 4, BIT(31), ~clear & BIT(31));
+	if (!ret)
+		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
+	if (!ret)
+		ret = regmap_update_bits(afe->regmap,
+				 mt8901_afe_sram_target(buffer->endpoint.memif), bit, 0);
+	return ret;
+}
+
+int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int core)
+{
+	struct mtk_base_afe *afe;
+	int ret;
 
 	if (IS_ERR_OR_NULL(buffer) || buffer->ipc)
 		return -EINVAL;
@@ -866,34 +921,11 @@ int mt8901_afe_sram_stop_irq(struct mt8901_afe_sram_buffer *buffer, unsigned int
 		ret = -EINVAL;
 		goto unlock;
 	}
-	irq = afe->irqs[buffer->endpoint.irq].irq_data;
-	data = afe->memif[buffer->endpoint.memif].data;
-	cfg = AFE_IRQ0_MCU_CFG0 + buffer->endpoint.irq * 8;
-	if (!mt8901_afe_sram_enable_valid(data, buffer->endpoint.memif) ||
-	    !irq || irq->id != buffer->endpoint.irq ||
-	    irq->irq_en_reg != cfg || irq->irq_en_shift ||
-	    irq->irq_clr_reg != cfg + 4 || irq->irq_clr_shift != 31 ||
-	    irq->irq_mask_reg != AFE_IRQ_MCU_EN ||
-	    irq->irq_mask_shift != buffer->endpoint.irq) {
-		ret = -EOPNOTSUPP;
-		goto unlock;
-	}
-	bit = BIT(buffer->endpoint.irq);
-	buffer->irq_prepared = false;
-	ret = regmap_update_bits(afe->regmap, data->enable_reg, BIT(data->enable_shift), 0);
-	if (!ret)
-		ret = regmap_update_bits(afe->regmap, cfg, 1, 0);
-	if (!ret)
-		ret = regmap_read(afe->regmap, cfg + 4, &clear);
-	if (!ret)
-		ret = regmap_update_bits(afe->regmap, cfg + 4, BIT(31), ~clear & BIT(31));
-	if (!ret)
-		ret = regmap_update_bits(afe->regmap, AFE_IRQ_MCU_EN, bit, 0);
-	if (!ret)
-		ret = regmap_update_bits(afe->regmap, mt8901_afe_sram_target(buffer->endpoint.memif), bit, 0);
-	if (ret)
-		buffer->irq_stop_error = ret;
-	else {
+	ret = mt8901_afe_sram_stop_hardware(buffer, afe);
+	if (ret) {
+		if (!buffer->irq_prepared)
+			buffer->irq_stop_error = ret;
+	} else {
 		buffer->started = false;
 		buffer->irq_stopped = true;
 		buffer->irq_prepared = false;
@@ -965,6 +997,69 @@ int mt8901_afe_sram_release(struct mt8901_afe_sram_buffer *buffer)
 	return ret < 0 ? ret : 0;
 }
 EXPORT_SYMBOL_GPL(mt8901_afe_sram_release);
+
+int mt8901_afe_sram_release_stopped(struct mt8901_afe_sram_buffer *buffer)
+{
+	struct mtk_base_afe *afe;
+	struct device *dev;
+	int i, ret;
+
+	if (IS_ERR_OR_NULL(buffer))
+		return -EINVAL;
+	dev = buffer->dev;
+	device_lock(dev);
+	if (dev->driver != &mt8901_afe_pcm_driver.driver) {
+		ret = -ENODEV;
+		goto unlock;
+	}
+	if (!buffer->published || buffer->substream || buffer->asleep ||
+	    buffer->sram->sleep_prepared || buffer->sram->sleep_saved) {
+		ret = -EBUSY;
+		goto unlock;
+	}
+	afe = dev_get_drvdata(dev);
+	if (!buffer->ipc) {
+		if (buffer->endpoint.memif >= afe->memif_size ||
+		    buffer->sram->memif[buffer->endpoint.memif] != buffer ||
+		    afe->memif[buffer->endpoint.memif].substream) {
+			ret = -EBUSY;
+			goto unlock;
+		}
+		for (i = 0; i < afe->memif_size; i++) {
+			if (i != buffer->endpoint.memif && afe->memif[i].substream &&
+			    afe->memif[i].irq_usage == buffer->endpoint.irq) {
+				ret = -EBUSY;
+				goto unlock;
+			}
+		}
+		/* The DSP is off. Its old AFE engine must also stop before reuse,
+		 * including after a terminal firmware-task or capture START fault.
+		 */
+		ret = mt8901_afe_sram_stop_hardware(buffer, afe);
+		if (ret)
+			goto unlock;
+		buffer->sram->memif[buffer->endpoint.memif] = NULL;
+	}
+	if (buffer->retention) {
+		atomic_dec(&buffer->sram->retention_users);
+		buffer->retention = false;
+	}
+	buffer->published = false;
+	get_device(dev);
+	device_unlock(dev);
+	/* No remaining firmware or ALSA borrower may operate on this handle.
+	 * release() consumes it even if the final runtime suspend fails.
+	 */
+	ret = mt8901_afe_sram_release(buffer);
+	if (ret)
+		dev_warn(dev, "retired DSP SRAM freed; AFE runtime suspend failed: %d\n", ret);
+	put_device(dev);
+	return 0;
+unlock:
+	device_unlock(dev);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(mt8901_afe_sram_release_stopped);
 
 int mt8901_afe_sram_allow_retention(struct mt8901_afe_sram_buffer *buffer)
 {

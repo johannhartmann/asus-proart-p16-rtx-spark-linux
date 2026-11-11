@@ -7,7 +7,7 @@ offline tests and firmware-ready notifications do not qualify audio or sleep.
 | Component | Implemented | Remaining work |
 | --- | --- | --- |
 | NPU/SROOT | Serialized secure upload, signed-container bounds checking, numerical task validation and boot service | Fresh-boot qualification of changed sources; upstream accelerator integration |
-| DSP | Secure load, bounded IPC, HiFi1 route-2 playback, primary HiFi5 route-3 capture, independent duplex owners and REINIT resume reconstruction | Capture/duplex and retained-sleep hardware qualification, runtime autosuspend, verified shutdown and DMA reclamation |
+| DSP | Secure load, bounded IPC, HiFi1 route-2 playback, primary HiFi5 route-3 capture, independent duplex owners and REINIT resume reconstruction | Capture/duplex and retained-sleep hardware qualification, runtime autosuspend, native shutdown/reload and DMA-reclamation hardware qualification |
 | AFE | Firmware-described SRAM owner, PCM/IPC leases, checked ring/IRQ programming, DL0/DL1 playback and UL1 capture frontends | Complete endpoint and PM qualification with matching DSP/provider; published-buffer release |
 | SCP | Read-only firmware log snapshots and bounded version/descriptor queries | Subsystem/API review and support for additional firmware ABIs |
 | Pluton | ACPI PFI transport and typed PCBI metadata queries | Other services, including firmware control and key operations |
@@ -26,13 +26,13 @@ compatibility with the others; use the matching provider, DSP and AFE bundle.
 
 | Boundary | Required interface | Meaning |
 | --- | --- | --- |
-| DSP → NPU/SROOT provider | [`n1x_sroot_client_ops_v4()`](../platform/dsp/n1x_sroot_client.h) | Scoped provider handle, publication lease and retained-sleep votes; wraps the v3 base operations. |
-| DSP resume → SROOT provider | [`n1x_sroot_reinit_dsp_v1`](../platform/dsp/n1x_sroot_client.h) | Separately versioned, typed REINIT export required at probe alongside the v4 table. |
+| DSP → NPU/SROOT provider | [`n1x_sroot_client_ops_v5()`](../platform/dsp/n1x_sroot_client.h) | Scoped handle, exclusive image reservation, retained-sleep votes and explicit group-quiesce/retirement operations; retains the v3/v4 base interfaces. |
+| DSP resume → SROOT provider | [`n1x_sroot_reinit_dsp_v1`](../platform/dsp/n1x_sroot_client.h) | Separately versioned, typed REINIT export required at probe alongside the v5 table. |
 | AFE → DSP PCM client | [`N1X_ADSP_PRIMARY_ABI = 3`](../platform/dsp/n1x_adsp_client.h) | Exact ABI check; retained stream lifecycle, DL0/DL1 selection, UL1 capture and independent playback/capture owners. |
 | DSP → AFE SRAM owner | [`mt8901_afe_sram_endpoint.abi_version = 2`](../platform/dsp/mt8901-afe-sram.h) | Checked endpoint, ring and IRQ ownership. This is separate from PCM ABI 3. |
 
 Legacy provider v1/v2 uploads and the v3 operations table remain compatibility
-interfaces. The current DSP requires v4 **and** the additive REINIT export.
+interfaces. The current DSP requires v5 **and** the additive REINIT export.
 The v2 upload-result layout describes staging release, not the minimum provider
 version. See [candidate preparation](driver-qualification.md#reproducible-candidates)
 for the pinned provider source.
@@ -63,11 +63,16 @@ have separate validation boundaries. Neither qualifies the DSP candidate.
 
 DSP publication retains operating DRAM, AFE SRAM and module/runtime-PM
 references. A task ACK, STOP or IRQ disable does not prove whole-core DMA
-quiescence. Device-bound v4 clients reserve the selected provider before DSP
+quiescence. Device-bound v4/v5 clients reserve the selected provider before DSP
 publication and add PM dependency ordering and retained-sleep votes. Their
 v2-compatible upload may release a consumed temporary image buffer after a
 canonical successful upload; that does not release the DSP lifetime
 lease. Failed or uncertain uploads retain staging and poison further requests.
+
+The v5 candidate adds explicit native D3/abandon and waits for all published
+DSP cores before reclamation. It requires the hardened SSPM kernel patch and
+AFE 0.1.27's separate memif/IRQ release checks. This is implemented but not yet
+hardware-qualified; a task ACK still grants no release permission.
 
 Pluton exposes typed commands 4, 5 and 7 through `N1X_PLUTON_QUERY`. It builds
 requests in the kernel and validates complete replies. There is no raw

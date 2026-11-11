@@ -18,8 +18,8 @@ import sys
 DEVICES = tuple(Path("/sys/bus/platform/devices") / f"NVDA830{i}:00" for i in (1, 2, 3))
 FAULTS = ("error", "power_error", "ipc_error", "primary_error", "primary_task_error",
           "primary_pcm_error", "pcm_period_error")
-VERSION = "0.1.24"
-AFE_VERSION = "0.1.26"
+VERSION = "0.1.25"
+AFE_VERSION = "0.1.27"
 
 
 def fields(text):
@@ -46,7 +46,7 @@ def healthy(state, idle=True):
 
 @cache
 def frontend_options():
-    # These parameters are immutable, and published DSPs cannot be unloaded.
+    # Parameters are immutable during this validator; module maintenance is separate.
     paths = [Path("/sys/module/snd_soc_mt8901_afe/parameters", name)
              for name in ("dsp_playback", "dsp_capture")]
     try:
@@ -63,10 +63,10 @@ def frontend_options():
 
 def preflight():
     if Path("/sys/module/n1x_adsp/version").read_text().strip() != VERSION:
-        raise RuntimeError("Requires the matching DSP 0.1.24 / PCM ABI 3 candidate")
+        raise RuntimeError("Requires the matching DSP 0.1.25 / PCM ABI 3 candidate")
     afe_version = Path("/sys/module/snd_soc_mt8901_afe/version")
     if not afe_version.exists() or afe_version.read_text().strip() != AFE_VERSION:
-        raise RuntimeError("Requires AFE 0.1.26 with capture IRQ ownership handoff")
+        raise RuntimeError("Requires AFE 0.1.27 with capture IRQ ownership handoff")
     for name, value in zip(("dsp_playback", "dsp_capture"), frontend_options()):
         if value != "Y":
             raise RuntimeError(f"AFE {name} is not enabled on this boot")

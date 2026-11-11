@@ -19,7 +19,7 @@ share the allocation offset; clients must use the view required by their
 protocol. Releasing an unpublished lease returns its allocation and references.
 
 Clients mark memory published before sending its address to firmware. Release
-then returns `EBUSY`. Runtime autosuspend and module removal remain blocked while leases
+through the ordinary release API then returns `EBUSY`. Runtime autosuspend and module removal remain blocked while leases
 exist. System s2idle has an opt-in, unqualified retention path described below. Publication is retained after uncertain requests. This is an interim
 retention contract; verified DSP quiesce/release is still required.
 
@@ -132,3 +132,24 @@ Capture validation failures log the register, observed value, expected value
 and mask. The hardware failure that prompted this change did not retain the
 original mismatched register, so this remains a correction awaiting hardware
 qualification rather than proof that every capture issue has been resolved.
+
+
+## Explicit retirement after native DSP shutdown
+
+AFE 0.1.27 adds `mt8901_afe_sram_release_stopped()`. Only a kernel consumer that
+has frozen host access, drained IRQ/work and completed the native DSP
+D3/abandon group barrier may call it. Retired ALSA pointers and any foreign
+IRQ borrower refuse release. The AFE independently disables and checks the
+memif, clears its owned IRQ, removes the retained reservation and balances
+retention/device/PM/module references. A failed I/O leaves the allocation
+owned; cleanup can continue after the hardware-off barrier without replaying
+firmware or power commands. Runtime-suspend failure after successful retirement
+is logged without returning an already-consumed handle as if it remained live.
+
+The capture START checks and memif STOP now bypass stale regcache reads.
+STOP writes fresh hardware format bits with the enable bit cleared, updating
+the cached image as well, and reads back the disabled hardware bit. Format
+registers remain cacheable for normal power restoration. Regression fixtures
+keep the cached capture enable clear while firmware has enabled hardware, and
+exercise both directions' retirement, shared IRQ refusal and I/O failures over
+32 cycles. Actual module reload remains unqualified.

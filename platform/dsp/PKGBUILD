@@ -1,11 +1,11 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.24
-pkgrel=4
+pkgver=0.1.25
+pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and duplex audio services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
-depends=('dkms' 'python' 'n1x-sroot-provider-dkms>=0.1.0-11')
+depends=('dkms' 'python' 'n1x-sroot-provider-dkms>=0.1.0-12')
 optdepends=('n1x-adsp-firmware-local: original signed images for explicit DSP boot')
 checkdepends=('python' 'gcc')
 source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.conf'
@@ -14,36 +14,37 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'test_primary.py' 'test_lifecycle.py' 'n1x_adsp_pcm.h' 'pcm_test.c'
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
-        'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('247328bed3159aa7ad5a3e75c752bf37247f20fdd2260ec180bd5ec4c7407c66'
-            'd3c23ebba50587c447a82a3e5551ce88daea07b3ac90e2c85c835c8bbf466aa8'
+        'n1x-adsp-audio.service' 'n1x-adsp-audio' 'test_shutdown.py')
+sha256sums=('8fe1ae5d5c37e2d7d1f9f13cb4676af0011595aedd50b8070bf56e68c24a7b11'
+            'ad7b6acd792e8cabd4169e93e44f8f5998a5c2ece7f7c2cfbc604e6281a0fae9'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '79539414a545ebf95015765b699dd6fa6a5bdb10a0d64872a5a60f33dcd64f3b'
+            '8914dbdee0b4c064127ec66f6a3ea71164b48b15bc1de9a48a24a1fc17f2e018'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
-            '4bd02a854d5cf02286a08042711082035612685774891f7db3416c9d7c7c3f1f'
-            '4154bcfe0dd5a3f87433cc5576f308c35ea0b38d0ceb5d1662b9353235752daf'
-            '0cd40a4e0647d73fb9f714be1cc21435af5dbdeb89ddce0a19b684a33989fec2'
+            '9abaa40d4dc810288b02a0c4046439ae643b2cc0864f2d190e75abce7004e143'
+            'e0c003907b0e9b9fcda59064ad8f36cceda73cc011a490938bc9cd67d75dbe43'
+            '3b8c52e19191ae44c7766ffb187d61fae7072cf394f00cd04265c0f4cc172b6a'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '5ce4f3cfb9c2e7599a4a8759d59fb678bd3a2569028467ff8b2478465a4dbfd3'
             'e9aa0dcc0da19dd325a05c645cc3e7cbf4889bfdbd585ab3e84f5ec60afb7eed'
             '4179280ce67720d36b3eb23b86159a3bac59a26e855c717f5cf7ec6081478b7a'
-            '381b21b1666606b0cbb2a51a345cd1576b2055ad41034e939a763c811d84b2b9'
+            '80061b74b17dfc261d282a0d2b7515ad1a74d7c73a3ecea186963efd5dbb3a50'
             '5b2b660d3b0955862075a145247e47523b6d0c44b1d8c70857ddf752e6d69125'
             '625f3a3db17b928464ea0d31b98f538f88591297e3534e38ed0bde75b31e1180'
             '439f5b8d9cf5f92e3d1df95fe9d431d6865e7cda01249e70fd9436b4b1a95ee4'
             '30a7a96310e87c5c90f7d1a108ed32a9ac1db2f58d778f55634181720bd37efd'
-            '1d60e7d5ba6ef23c2b72b200b227a095679ad7ba2b94b2ef43c220d5de8baabc'
+            'e80f4f87d2d8b99647c3403657d6ce8736355281b1eed8e0c9051d119916fd1d'
             'e78d15937087e65a511689c2a2a58f1c938eca76a5bda2f0e484d70d7efc0846'
             '796211f2465f79036aa6020ad057ae87458435fb7406ac5f32afd2956618e8fc'
             '1e9c5fc77c67ab8ff60e66fc9531e0badc441d7b5bbe914a2ffaa1a0e61f8d93'
             '7aa4c05e0ae216a333849481b34c68ae9679447d4f6fa9a3d3ba5a3e640cd249'
-            'f7fa11fafa3e031f8189d5495538b018d3dc1caee24ca23eb6b4c1388ba959e3'
+            '337150eca8034f1f912c1d27e65ac0e818c638d4030ef75f4044b52ce34d5342'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
-            '1d14f46e86cab6606716d039b4954d44b590744b7d55efa4c38a30b0f763989e'
+            '54cd60ed736bd907f5cf2bb0f074cf2b0ccbb5c3255f2ab534a6ef8f0a1d9505'
             '60d3c9dc75b35172b3d54292f7f55db4b044999d9dd9e88a491a3d36cb24ce39'
             '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'
-            'fcc9ebb0d2e808cc635d5d73190e55852a4e6c6df571c3816c3e3dc3809d0c31')
+            '8fee0d83904d2d1c635fd89ef63e92da20d66f8a9f15aaac004e2da6a2df7fd5'
+            '899f22e58594860cd5792fd73cc40b0d5bd1a1efc4e700bb48edbde98609f17f')
 
 check() {
   cd "$srcdir"
@@ -52,6 +53,7 @@ check() {
   python test_provider.py
   python test_driver.py
   python test_pm.py
+  python test_shutdown.py
   python test_transport.py
   python test_primary.py
   python test_lifecycle.py

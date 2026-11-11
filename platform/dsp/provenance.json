@@ -433,7 +433,7 @@
     ]
   },
   "loader_staging_release": {
-    "client_api": "n1x_sroot_client_ops_v4 (v2 staging semantics)",
+    "client_api": "n1x_sroot_client_ops_v5 (v2 staging semantics; v4 sleep votes)",
     "provider_package": "n1x-sroot-provider-dkms",
     "analysis_script": "scripts/analyze-dsp-shutdown.py",
     "native_loader_sha256": "f814e861b5e076aa4e00619a8a588df3c4ae9ec2b5026c30748ba493ce0e6d8a",
@@ -457,8 +457,9 @@
     "scmi_set": "Correlated transport acknowledgement; no decoded DSP power-state result",
     "scmi_get": "Three words with no verified DSP-off decoder",
     "device_abandon": "Action 0x05000000; no verified DMA-off contract",
-    "operating_memory_release_implemented": false,
-    "hardware_qualified": false
+    "operating_memory_release_implemented": true,
+    "hardware_qualified": false,
+    "qualification": "Native D3/abandon API candidate; no independent physical DSP-off decoder; hardware unqualified"
   },
   "system_sleep_retention": {
     "status": "0.1.22_device_pm_failed; 0.1.23_clean_boot; 0.1.24_duplex_and_reinit_hardware_unqualified",
@@ -592,6 +593,36 @@
     "handoff": "Clear owned MCU bit in disabled-IRQ PREPARE with checked write; preserve unrelated bits",
     "resume": "Invalidate cached ring/IRQ preparation after AFE restoration, including idle prepared streams",
     "diagnostics": "Log register/read failure and observed/expected/mask before terminal error",
+    "hardware_qualified": false
+  },
+  "native_shutdown": {
+    "dsp_version": "0.1.25",
+    "afe_version": "0.1.27",
+    "provider_abi": 5,
+    "kernel_patch": "kernel/p16-dsp-shutdown-power.patch",
+    "vendor_power_contract": "https://github.com/NVIDIA/NV-Kernels/blob/dd99802c8b0c384169bb36293c9517fa67238e47/sound/soc/sof/mediatek/mt8901/mt8901.c",
+    "power_sequence": "D3/Complete=1/SystemTransition=0, then device abandon; completed-stage mask prevents D3 replay",
+    "transport_failure": "Submitted timeout permanently latches unknown completion; no subsequent SET until reboot, including after rebind",
+    "group_barrier": "Secondary HiFi5, primary HiFi5, HiFi1 quiesce before any operating-memory/provider retirement; legacy publications block release",
+    "cleanup": "Independent AFE memif stop/readback, owned IRQ clear, retired substream/IRQ borrower checks, retention and module/PM/reference balancing",
+    "retry_policy": "Only unsubmitted EBUSY power stages or software cleanup after completed native power-off; no timeout replay",
+    "restart": "Exclusive image reservation and prior-retirement marker from the same loaded provider; new operating DMA allocation and canonical firmware upload",
+    "maintenance": "n1x-adsp-audio --reload preserves module options and original invoking-user audio-service state",
+    "tests": [
+      "test_power.py",
+      "test_shutdown.py",
+      "afe/test_sram.py",
+      "tests/test_audio_reload.py",
+      "n1x-npu-linux/scripts/test_linux_context.py"
+    ],
+    "independent_power_state_decoder_verified": false,
+    "hardware_qualified": false
+  },
+  "capture_register_cache": {
+    "source_defect": "Firmware-mutated memif state remained cacheable; capture checks could see stale enable=0 and STOP could skip clearing hardware",
+    "correction": "Read hardware through regmap_read_bypassed; STOP writes fresh format bits with enable clear and reads back hardware; cache retains format for resume",
+    "afe_version": "0.1.27",
+    "past_EIO_exact_guard": "Unknown; old 0.1.25 did not log its first mismatch",
     "hardware_qualified": false
   }
 }
