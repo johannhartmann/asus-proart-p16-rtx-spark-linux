@@ -4,17 +4,22 @@ The candidate is not qualified for normal default-boot deployment. Firmware
 acceptance, component registration and acknowledged commands do not establish
 sample consumption, correct output or working suspend/resume.
 
-## Confirmed implementation defects
+## Corrected implementation defects
+
+The following descriptions record the earlier faulty implementations. Their
+source corrections are present; the versioned results below delimit hardware
+coverage. They are not a list of defects still present in the current source.
 
 ### IRQ configuration uses a stale-cache model
 
-`mt8901_is_volatile_reg()` in the audio prerequisite leaves `AFE_IRQ_MCU_EN`,
-`AFE_IRQ_MCU_DSP_EN` and `AFE_IRQn_MCU_CFG0/1` cacheable under `REGCACHE_FLAT`.
+The earlier `mt8901_is_volatile_reg()` in the audio prerequisite left
+`AFE_IRQ_MCU_EN`, `AFE_IRQ_MCU_DSP_EN` and `AFE_IRQn_MCU_CFG0/1` cacheable under
+`REGCACHE_FLAT`.
 The live DL0 test observed the IRQ CFG1 ACK bit changing independently of Linux.
-The SRAM owner's STOP path reads that register and toggles bit 31 through the
-cached regmap. A cached old bit can therefore request the value already present
-in hardware, rather than acknowledge the current event. Read-modify-write of
-shared routing registers can likewise use an outdated image.
+The SRAM owner's STOP path read that register and toggled bit 31 through the
+cached regmap. A cached old bit could therefore request the value already
+present in hardware, rather than acknowledge the current event. Read-modify-write
+of shared routing registers could likewise use an outdated image.
 
 The source correction makes shared IRQ configuration and target registers
 volatile. Native playback/capture configure their IRQ on START; the DSP SRAM
@@ -27,11 +32,12 @@ playback lifecycle passes. Post-wake IRQ operation remains unqualified.
 
 ### Component registration is insufficient PM ownership evidence
 
-`n1x_adsp_prepare()` exempts active clients when `component_registered` is true.
-That flag is set by component registration, before a sound card necessarily
-binds the component. The same primary API remains available to kernel clients
-that are not managed by that card. The actual callback admits a bare primary
-owner with registration true; no card or retained PCM lease is needed.
+The earlier `n1x_adsp_prepare()` exempted active clients when
+`component_registered` was true.
+That flag was set by component registration, before a sound card necessarily
+bound the component. The same primary API was available to kernel clients
+that were not managed by that card. The old callback admitted a bare primary
+owner with registration true; no card or retained PCM lease was needed.
 
 The source correction adds a typed PCM open API. The AFE validates the real
 instantiated card, selected DL0/DL1 playback or UL1 capture CPU DAI, bound AFE driver and current memif substream.
@@ -119,7 +125,7 @@ qualification of this new DSP/provider pair is still pending.
 - Extend the passed short playback/lifecycle tests to sustained use and
   concurrent ordinary capture; assess every negotiated format/route separately.
 - Qualify device-only PM testing, real/repeated s2idle, post-wake audio and NPU
-  numerical execution only after the ownership/cache defects are corrected.
+  numerical execution with the corrected ownership/cache and REINIT bundle.
   Equal retained mailbox words do not establish firmware liveness.
 - Lockdep disabled itself after exhausting its configured entry budget on the
   current debug boot. This is not a successful lockdep run. Hardware-independent

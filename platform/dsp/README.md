@@ -133,9 +133,12 @@ interface is provided.
 
 Readiness and sleep admission reject retained boot, transport, power and
 primary-service errors, including faults observed after PM preparation. A ready
-component still does not establish card binding or PCM progress. The remaining
-[PM ownership, IRQ-cache and data-path blockers](../../docs/audio-review.md)
-prevent production qualification.
+component still does not establish card binding or PCM progress. The
+[audio review](../../docs/audio-review.md) records corrected ownership/cache
+defects, measured playback and the remaining capture, endpoint and resume
+qualification gaps. The
+[interface matrix](../../docs/platform-driver-status.md#current-dsp-interface-requirements)
+distinguishes SROOT v4 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2.
 
 ## Playback
 

@@ -87,6 +87,7 @@ crossover graph, and the opt-in DSP-backed DL0/DL1 playback and UL1 capture fron
 and SROOT rather than a SOF firmware port. The native HiFi5 capture transport is implemented; beamforming and noise
 suppression are not established firmware capabilities. Published DSP memory/provider leases remain retained until reboot;
 complete analog-endpoint and candidate sleep qualification is still required.
+See the [interface versions and hardware evidence](docs/platform-driver-status.md#current-dsp-interface-requirements).
 
 **Light/color sensor:** `spi_hid_acpi` → `hid_sensor_hub` →
 `hid_sensor_als` → IIO. The SPI/GPIO/reset fixes restore transport; the

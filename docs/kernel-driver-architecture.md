@@ -15,7 +15,7 @@ safe suspend, device removal, firmware recovery, or support on another board.
 | SCP | Read-only debugfs snapshots and bounded queries; firmware owns startup/power | Review with MediaTek SoC/firmware maintainers. Do not claim remoteproc lifecycle support: this driver does not boot or stop the SCP. All live SRAM/mailbox readers serialize with sleep; copied snapshots outlive removal. |
 | Pluton | Root-only, typed PCBI metadata queries through a reference-counted miscdevice | Review the firmware/security interface and UAPI before submission. It is not a TPM implementation. Preserve the command allowlist, canonical reply checks, compat layout and removed-device checks; do not restore the raw mailbox ioctl. |
 | DSP | Signed firmware loader, IRQ/mailbox transport, typed kernel audio clients | Integrate with ASoC/SOF and the platform's firmware/power providers. Whole-core DMA quiescence is unresolved; physical state restoration remains unqualified. Default published instances refuse sleep in `prepare`. The opt-in ASoC candidate coordinates stream stop, DSP D3/D0 and SRAM retention for s2idle; hardware qualification and runtime autosuspend remain open. Leases remain retained. |
-| AFE SRAM/playback | Existing MediaTek ASoC frontend, checked `gen_pool` SRAM leases, deferred ALSA period work | Keep ownership in ASoC. Complete audible-stream, error, close, suspend/resume and reclamation qualification before enabling the DSP route by default. Task STOP/CLOSE is not whole-core DMA shutdown. |
+| AFE SRAM/PCM | Existing MediaTek ASoC playback/capture frontends, checked `gen_pool` SRAM leases, deferred ALSA period work | Keep ownership in ASoC. Complete endpoint, duplex, error, close, suspend/resume and reclamation qualification before enabling DSP routes by default. Task STOP/CLOSE is not whole-core DMA shutdown. |
 | NPU/SROOT | [Separate driver](https://github.com/johannhartmann/n1x-npu-linux), DRM compute-accelerator UAPI, component-bound DLA/SROOT endpoints | `drivers/accel`; cuDLA compatibility belongs in userspace. SROOT-owned referenced contexts and scoped DSP handles replace singleton state. Review firmware bindings and trusted-task UAPI, and establish verified whole-core release and normal remove/recovery contracts. |
 
 The aggregate `platform/Kconfig` and `platform/Kbuild` are a convenient local
@@ -32,11 +32,16 @@ After publication, a probe error must not release mappings still used by
 firmware. The NPU therefore retains both bound components if DRM registration
 fails after firmware startup; its checked shutdown path remains available.
 
-System sleep uses a `prepare`/`complete` gate. The DSP rejects a published
-instance early. NPU preparation rejects known unsafe stop conditions and DSP
-leases and prevents new submissions, diagnostic commands and DSP uploads until
-completion. Completion must reopen admission when another device aborts sleep.
-Runtime suspend must not silently remove power from a published firmware client.
+System sleep uses a `prepare`/`complete` gate. By default the DSP rejects a
+published instance early. The opt-in s2idle candidate requires checked ASoC
+ownership, ordered stream stop, acknowledged DSP D3 and AFE/provider retention
+votes. Provider ABI v4 permits retained DSP leases only under that protocol;
+unsafe or unvoted leases still block sleep. NPU preparation prevents new
+submissions, diagnostic commands and DSP uploads until completion. Completion
+must reopen admission when another device aborts sleep. D0 alone does not
+restore DSP firmware: the candidate requires typed REINIT and fresh readiness.
+This resume path remains hardware-unqualified. Runtime suspend must not
+silently remove power from a published firmware client.
 
 Publication holds module and runtime-PM references. The NPU releases them only
 after explicit, verified hardware shutdown. Successful startup/resume is not
@@ -59,8 +64,9 @@ aggregate owns a stateless DLA-to-SROOT device link for system PM and shutdown
 ordering; the component framework alone does not provide this ordering. The
 link is established before firmware publication, remains across post-publication
 failures and is explicitly removed during component unbind. Existing runtime-PM
-leases are unchanged. The candidate provider owns per-device contexts and ABI v3 DSP handles add
-DSP-to-DLA dependency ordering at probe. A handle reserves the provider before
+leases are unchanged. The candidate provider owns per-device contexts. The DSP
+requires ABI v4 (the v3 base handle plus sleep votes) and the separately versioned
+REINIT export. Handles add DSP-to-DLA dependency ordering at probe. A handle reserves the provider before
 DSP DRAM allocation and commits its lease before the first DSP address write.
 Only unpublished reservations can be canceled. Lookup uses unique siblings in
 the firmware namespace because the captured AML provides no `_DEP`/`_DSD`
@@ -69,6 +75,10 @@ This does not resolve their bidirectional SRAM/audio ownership into an upstream
 ASoC/SOF provider model, or establish whole-core shutdown. Use
 firmware-described associations where justified; do not fabricate links between
 the first globally matching ACPI devices.
+
+AFE/DSP PCM ABI 3 and the AFE SRAM endpoint ABI 2 are separate contracts. The
+[interface matrix and hardware evidence](platform-driver-status.md#current-dsp-interface-requirements)
+record their exact requirements and qualification boundaries.
 
 Use hwmon for calibrated telemetry, IIO for sensors, ALSA/ASoC for audio and DRM
 accel for inference. Do not move vendor compiler binaries or cuDLA into the

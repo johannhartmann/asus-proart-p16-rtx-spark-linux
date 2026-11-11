@@ -18,9 +18,12 @@ not the new context/client code.
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
-[`3ea7a7f`](https://github.com/johannhartmann/n1x-npu-linux/commit/3ea7a7f)
+[`3ea7a7f80e40b24026da3c100c75ca18ed9672f2`](https://github.com/johannhartmann/n1x-npu-linux/commit/3ea7a7f80e40b24026da3c100c75ca18ed9672f2)
 or an ABI-compatible merged revision with typed REINIT support. DSP 0.1.24
-and the matching AFE must both use PCM client ABI 3. Use that checkout for the sibling NPU tree.
+and the matching AFE must both use PCM client ABI 3. The AFE SRAM endpoint
+remains ABI 2; it is a different interface. The
+[interface matrix](platform-driver-status.md#current-dsp-interface-requirements)
+separates all four contracts. Use that checkout for the sibling NPU tree.
 First run the offline suites and pin the matching provider snapshot:
 
 ```sh

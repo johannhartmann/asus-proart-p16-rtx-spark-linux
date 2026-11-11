@@ -23,10 +23,17 @@ and module/runtime-PM references rather than assuming a task ACK stops DMA.
 Verified whole-core shutdown, failure handling and suspend/remove behavior are
 required before enabling DSP startup by default.
 
-The route-2 DL0 frontend has offline fault and concurrency coverage. Repeated stream lifecycle and ASoC/SRAM retention have offline coverage. Full-stream
-hardware qualification, runtime autosuspend, DSP capture and additional endpoints remain open. The
-provider's release of successfully consumed upload staging is a separate
-contract and does not establish DSP shutdown.
+HiFi1 route-2 DL0/DL1 playback, primary HiFi5 route-3 UL1 capture, independent
+duplex owners, repeated stream lifecycle and ASoC/SRAM retention have offline
+fault and concurrency coverage. Native capture transport is implemented;
+capture/duplex hardware qualification remains open. DSP 0.1.22 has short
+playback transfer/restart evidence, but its device-only PM test failed to
+restart firmware after D0. The later REINIT correction and post-wake audio/NPU
+still need matching-artifact hardware tests. Complete analog endpoint coverage
+and runtime autosuspend also remain open. See the
+[interface matrix and evidence](platform-driver-status.md#current-dsp-interface-requirements).
+The provider's release of successfully consumed upload staging is a separate
+contract and does not establish DSP shutdown or release operating buffers.
 
 ## SPI HID and ALS
 

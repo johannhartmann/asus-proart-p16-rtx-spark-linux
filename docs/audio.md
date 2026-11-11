@@ -8,6 +8,10 @@ No application-specific DSP client is needed for normal audio.
 
 ## Candidate capabilities and limits
 
+The [interface matrix](platform-driver-status.md#current-dsp-interface-requirements)
+records SROOT v4 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2 separately.
+Implemented capture/duplex transport does not establish hardware qualification.
+
 The DSP 0.1.24 / AFE 0.1.25 candidate automatically loads the signed DSP images and registers the
 three firmware-ready DSPs as auxiliary components of the ASoC sound card. Its
 DL0/DL1 playback frontend uses HiFi1 tasks 7 and 16. UL1 capture uses
