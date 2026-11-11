@@ -16,6 +16,7 @@ def main():
                        source.index('EXPORT_SYMBOL_GPL(n1x_adsp_primary_close);')]
     configure = source[source.index('static int n1x_adsp_primary_descriptor('):
                        source.index('EXPORT_SYMBOL_GPL(n1x_adsp_primary_commit);')]
+    failed = source[source.index('static bool n1x_adsp_failed('):source.index('static ssize_t asoc_ready_show(')]
     afe_header = re.sub(r'^#include.*\n', '', (HERE / 'mt8901-afe-sram.h').read_text(), flags=re.M)
     code = r'''
 #include <assert.h>
@@ -62,6 +63,7 @@ static unsigned fail_at,bad_at,bad_field,missing_symbol,ipc_fault,ipc_releases;
 static int endpoint_error,publish_error,lock_error,afe_prepare_error;
 static u64 ipc_afe_base;
 static unsigned retirements;static unsigned afe_prepares,irq_prepares;static int irq_prepare_error;
+static bool post_reinit;
 static bool ring_filled;static unsigned late_power_at;
 static u16 history[1024];static u8 tasks[1024];
 static int atomic_read(atomic_t *p) {return *p;}
@@ -84,6 +86,7 @@ static void device_link_del(struct device_link *link) {assert(!link);}
 static void kfree(void *p) {assert(p && allocations);allocations--;free(p);}
 static void dma_wmb(void) {assert(dev_locked && request_locked);barriers++;}
 static void wmb(void) {assert(dev_locked && request_locked);barriers++;}
+static void memset_io(void *p,int c,size_t n) {assert(p==ipc_memory && n==2048);memset(p,c,n);}
 static void memcpy_toio(void *to,const void *from,size_t n)
 {assert(to==ipc_memory && n==96 && messages.published && request_locked);memcpy(to,from,n);}
 static int n1x_adsp_prepare_primary_locked(struct n1x_adsp *context)
@@ -148,7 +151,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
  if(request->command==5 || request->command==6){
   unsigned offset=(request->command-5)*1024;
   assert(request->channel==16 && request->data_mode==1 && request->parameter1==32 && request->payload);
-  assert(messages.published && dsp.processing_messages==&messages && !lease.published);
+  assert(messages.published && dsp.processing_messages==&messages && (!lease.published || post_reinit));
   assert(get64(request->payload)==ipc_afe_base+offset && get64(request->payload+8)==(uintptr_t)(ipc_memory+offset));
   assert(get64(request->payload+16)==1024 && !get64(request->payload+24));
  }else if(request->data_mode==1){
@@ -157,7 +160,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
   bool hardware=request->command==0x201 || (request->channel==16 && request->command==0x203);
   bool bridge=request->channel==16 && !hardware;
   assert(request->command==4 || request->command==0x201 || preparing);
-  assert(dsp.primary_pcm_attempted && dsp.primary_pcm_configured==preparing && !dsp.primary_pcm_prepared);
+  assert(dsp.primary_pcm_attempted && dsp.primary_pcm_configured==(preparing || post_reinit) && !dsp.primary_pcm_prepared);
   assert(request->parameter1==8 && request->payload);
   const u8 *packet=request->channel==7?memory:ipc_memory;
   assert(get64(request->payload)==(request->channel==7?dsp.dma:ipc_afe_base));
@@ -188,7 +191,7 @@ static int n1x_adsp_transfer_locked(struct n1x_adsp *context,
 }
 static bool auto_boot;
 static int n1x_adsp_boot(struct n1x_adsp *dsp,bool kernel_client) {(void)dsp;(void)kernel_client;assert(0);return -EIO;}
-''' + lifecycle + configure + r'''
+''' + failed + lifecycle + configure + r'''
 static const struct n1x_adsp_primary_pcm_params defaults={48000,2,16,480,4};
 static void reset(void)
 {
@@ -201,7 +204,7 @@ static void reset(void)
   .memory={.area=sram_memory,.bytes=3840,.cpu_address=0x1a6c0000,.afe_address=0x1a6c0000,.dsp_address=0x4e5c0000},
   .rate=48000,.channels=2,.sample_bits=16,.period_frames=480,.periods=2};
  ipc_afe_base=0x1a6c1000;calls=publishes=ipc_publishes=barriers=fail_at=bad_at=bad_field=missing_symbol=ipc_fault=ipc_releases=0;
- endpoint_error=publish_error=lock_error=afe_prepare_error=0;afe_prepares=irq_prepares=0;irq_prepare_error=0;ring_filled=false;late_power_at=0;retirements=0;
+ endpoint_error=publish_error=lock_error=afe_prepare_error=0;afe_prepares=irq_prepares=0;irq_prepare_error=0;ring_filled=post_reinit=false;late_power_at=0;retirements=0;
 }
 static void closed(void) {assert(retirements==(unsigned)lease.published && !dsp.primary_retire);assert(!refs && !allocations && !symbol_refs && !dev_locked && !request_locked);}
 static struct n1x_adsp_primary *open_primary(void)
@@ -263,6 +266,39 @@ int main(void)
   retirements=0;assert(!n1x_adsp_primary_close(p));closed();
   assert(dsp.primary_sram==&lease && dsp.processing_messages==&messages && lease.published && messages.published);
  }
+ /* Fresh firmware must reconstruct the graph while retaining both leases. */
+ for(unsigned cycle=0;cycle<32;cycle++) {
+  reset();p=open_primary();configure(p);post_reinit=true;
+  dsp.primary_restore_pending=true;dsp.primary_task_active=dsp.processing_active=false;
+  dsp.processing_registered=false;
+  assert(!n1x_adsp_primary_prepare_pcm(p) && calls==18 && !dsp.primary_restore_pending);
+  const u16 rebuilt[]={1,5,6,1,4,0x201,4,0x203,3,0x203,3};
+  const u8 rebuilt_tasks[]={7,16,16,16,7,16,16,16,16,7,7};
+  assert(!memcmp(history+7,rebuilt,sizeof(rebuilt)) && !memcmp(tasks+7,rebuilt_tasks,sizeof(rebuilt_tasks)));
+  assert(publishes==1 && ipc_publishes==1 && !ipc_releases && dsp.processing_registered);
+  assert(!n1x_adsp_primary_close(p));closed();
+ }
+ for(unsigned stage=8;stage<=14;stage++)for(unsigned echo=0;echo<3;echo++) {
+  reset();p=open_primary();configure(p);post_reinit=true;
+  dsp.primary_restore_pending=true;dsp.primary_task_active=dsp.processing_active=false;
+  dsp.processing_registered=false;
+  if(echo){bad_at=stage;bad_field=echo;}else fail_at=stage;
+  int error=echo?-EPROTO:-ETIMEDOUT;
+  assert(n1x_adsp_primary_prepare_pcm(p)==error && calls==stage && dsp.primary_task_error==error);
+  assert(n1x_adsp_primary_prepare_pcm(p)==-ENOTRECOVERABLE && calls==stage);
+  assert(publishes==1 && ipc_publishes==1 && !ipc_releases);
+  assert(n1x_adsp_primary_close(p)==error && calls==stage);closed();
+ }
+ /* Closing before the lazy rebuild must not CLOSE nonexistent remote tasks. */
+ reset();p=open_primary();configure(p);
+ dsp.primary_restore_pending=true;dsp.primary_task_active=dsp.processing_active=false;dsp.processing_registered=false;
+ assert(!n1x_adsp_primary_close(p) && calls==7 && !dsp.primary_restore_pending);closed();
+ /* An idle OPEN only needs its host task recreated, no processing allocation. */
+ reset();p=open_primary();dsp.primary_restore_pending=true;dsp.primary_task_active=false;
+ device_lock(&device);mutex_lock(&dsp.lock);
+ assert(!n1x_adsp_primary_restore_locked(&dsp) && calls==2 && !dsp.primary_restore_pending);
+ mutex_unlock(&dsp.lock);device_unlock(&device);
+ assert(!messages.published && !lease.published && !n1x_adsp_primary_close(p) && calls==4);closed();
  for(unsigned fault=0;fault<29;fault++){
   reset();p=open_primary();struct n1x_adsp_primary_pcm_params params=defaults;struct mt8901_afe_sram_buffer *buffer=&lease;
   switch(fault){
@@ -349,7 +385,7 @@ int main(void)
   assert(n1x_adsp_primary_close(p)==expected_error && calls==stage && messages.published && lease.published);closed();
  }
  reset();p=open_primary();struct mt8901_afe_sram_buffer *buffer=&lease;publish_error=-EBUSY;
- assert(n1x_adsp_primary_configure(p,&defaults,&buffer)==-EBUSY && buffer==&lease && calls==5 && !lease.published);
+ assert(n1x_adsp_primary_configure(p,&defaults,&buffer)==-EBUSY && buffer==&lease && calls==5 && (!lease.published || post_reinit));
  assert(messages.published && !ipc_releases && n1x_adsp_primary_close(p)==-EBUSY && calls==5);closed();
  for(unsigned stage=2;stage<=11;stage++){
   reset();p=open_primary();buffer=&lease;if(stage>=8)configure(p);late_power_at=stage;

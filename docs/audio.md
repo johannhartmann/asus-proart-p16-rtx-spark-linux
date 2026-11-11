@@ -22,36 +22,66 @@ Published operating allocations and module/runtime-PM references stay owned;
 whole-core release and runtime autosuspend are still unavailable.
 
 The opt-in s2idle path orders ALSA stream stop, DSP D3, SRAM retention and
-checked NPU stop; wake restores SRAM and the provider before DSP D0.
-Hibernate and deep sleep remain blocked. Active-client PM ownership still
-needs the correction described in [the release blockers](audio-review.md).
+checked NPU stop; wake restores SRAM and the provider before DSP D0 and
+a checked firmware REINIT.
+Hibernate and deep sleep remain blocked. Active-client PM admission validates
+the actual ALSA card/substream and owns a card-to-DSP PM link; component
+registration alone is insufficient.
 A timeout or failed restoration is terminal and retains memory. There is no
 reset, forced unload or firmware retry after uncertain publication.
 
-**This source candidate has offline coverage, not completed physical audio or
-sleep qualification.** Keep the known-working boot entry and install the exact
-matching kernel, AFE/machine modules, DSP and SROOT provider as a separate test
-boot. Never replace an already-published live instance.
+**Playback to the AFE SRAM is hardware-verified. The 0.1.22 device-only PM test
+failed; corrected 0.1.23 resume and complete analog endpoints remain unqualified.** Preserve the known-working boot entry
+and install the exact matching kernel, AFE/machine modules, DSP and SROOT
+provider as a separate test boot. Never replace an already-published live
+instance.
 
-DSP 0.1.19 removes the second full-ring start gate for the explicit ALSA START.
-It also compares mailbox state immediately before D3 and after D0 instead of
-assuming that startup fields retain their original boot values. `sleep_status`
-records the before/after words and whether the comparison ran. These are
-candidate corrections; matching mailbox words alone do not establish firmware
-liveness. Both streaming and sleep recovery still require physical tests.
+DSP 0.1.22 fixes a firmware address-validation failure: the former
+`0xff000000 + 16 MiB` shared-DRAM extent overflowed the firmware's 32-bit
+exclusive end and caused audio descriptors to be rejected. The driver keeps
+one unadvertised page in its normal coherent allocation. The tested HiFi1
+window starts at `0xfe000000` and ends at `0xff000000`; see the
+[firmware validator evidence](../platform/dsp/protocol.md#hifi1-shared-dram-exclusive-end-constraint).
+The matching AFE owns DL0/IRQ triggering, reads shared IRQ state without a
+stale cache, and restores period/rate/domain on each actual START.
 
-A live silent-stream snapshot with DSP 0.1.19 showed ALSA RUNNING and task
-START acknowledgements, but DL0 enable, IRQ enable and the HiFi1 IRQ target
-were all clear; the hardware cursor and DSP period counter did not advance.
-The AFE frontend now explicitly starts the owned DL0 channel after those
-acknowledgements and disables it after acknowledged task STOPs. A follow-up
-silent-stream test with the corrected AFE confirmed the enable bits and an
-advancing hardware cursor (`0x1a6c9580` to `0x1a6cb580` in about 22 ms). ALSA's
-hardware pointer and the DSP consumed-position notification count nevertheless
-remained zero. Additional normal ALSA writes after START also failed to produce
-notifications. Normal STOP/CLOSE and a later OPEN/PREPARE/START completed without
-transport or task errors. These observations verify the host DMA trigger, not
-end-to-end playback: streaming and suspend remain unqualified.
+The tested kernel is `7.2.8-31-rtx-spark-npu`, DSP source version
+`DE3B0DAE3C1469277AB6669`, AFE `417B4A1282694D05F8C7B04`. At 48 kHz stereo,
+S16_LE and S24_LE each advanced ALSA by 96,256 frames over approximately two
+seconds, with 94–95 consumed-position notifications and no retained DSP, PCM,
+period, transport or power fault. Two snapshots per format showed matching
+nonzero host/AFE extents and FNV-1a hashes: 32,768 bytes / `3c699dc5` for S16,
+65,536 bytes / `6ac9ddc5` for S24. Speaker amplifier gains were attenuated for
+this test and restored exactly; desktop mute and volume were preserved.
+
+Three CLOSE/OPEN runs each passed three STOP/PREPARE/START cycles with partial
+and full prefill. Each also passed a deliberate ALSA underrun (`EPIPE`) and
+normal `snd_pcm_recover()` followed by resumed progress. These results verify
+the playback data path and lifecycle. They do not establish audible output,
+microphone processing, physical suspend or post-wake operation. The debug
+kernel exhausted its lockdep entry budget during container startup before the
+audio tests; this is not a clean lockdep qualification.
+
+## Resume correction awaiting hardware qualification
+
+The first device-only PM test (`pm_test=devices`) on 2026-11-11 acknowledged
+DSP D3 and provider restart, but all three shared-SRAM startup descriptors were
+lost after DSP D0. The retained-config check returned `-EIO`, left IRQs disabled
+and kept DMA/provider leases. Audio endpoints disappeared. `pm_test` was reset
+to `none`; physical standby was not attempted or retried on the faulted boot.
+
+Native `nvadsp.sys` function `0x14004e000` reveals the missing step: first
+activation after D0 rewrites the startup descriptor and requests firmware
+REINIT, then waits for a new ready event. DSP 0.1.23 implements this through the
+typed provider export `n1x_sroot_reinit_dsp_v1` (provider package >=0.1.0-11).
+It accepts only a canonical loader reply plus a fresh DSP-ready notification,
+then rebuilds the task graph lazily on the next PCM prepare with the existing
+allocations. A failed or uncertain operation remains terminal.
+
+The new path passes offline transition, reply/ready timeout, repeated-cycle,
+retained-buffer reconstruction and terminal-fault tests. It must still pass a
+fresh boot, device-only PM and post-wake audio/NPU tests before real s2idle.
+These source results do not establish working suspend.
 
 ## Build and install
 
@@ -60,7 +90,7 @@ The kernel recipe includes the generated
 `scripts/prepare-afe-sram-patch.py` after editing the canonical files in
 `platform/dsp/afe`; package source hashes must match. Build the matching DSP and
 provider packages as described in [driver qualification](driver-qualification.md).
-Provider ABI v4 and playback ABI v2 are required; older modules cannot be mixed.
+Provider ABI v4, its additive REINIT export and playback ABI v2 are required; older modules cannot be mixed.
 
 Install PipeWire, WirePlumber, `alsa-ucm-conf`, ALSA tools, the board's Cirrus
 firmware and the locally prepared signed N1X firmware packages. After hardware qualification, the DSP DKMS

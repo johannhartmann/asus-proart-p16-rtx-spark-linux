@@ -22,7 +22,8 @@ owner now restores period, rate and domain on every actual START as well as
 initial preparation. Checked failures block the stream. The cache/hardware
 regression uses the patched native callbacks and separate hardware/cache
 images, exercises stale ACK and target state, and repeats power-loss cycles.
-These are offline results; the correction is not installed on the running boot.
+The correction is installed in AFE `417B4A1282694D05F8C7B04` and the tested
+playback lifecycle passes. Post-wake IRQ operation remains unqualified.
 
 ### Component registration is insufficient PM ownership evidence
 
@@ -40,7 +41,8 @@ relationship and bound driver; legacy clients and incomplete grants are refused.
 Failed OPEN releases its link. Offline regressions cover those refusals, idle
 and active typed owners, link failures and successful CLOSE. The existing
 DSP-to-AFE and secondary-to-primary ordering is preserved. This correction
-also awaits hardware qualification.
+is installed in DSP 0.1.22. Device-only PM reaches acknowledged D3, but the
+subsequent DSP firmware restart fails as described below.
 
 ### Known service faults were omitted from readiness and PM admission
 
@@ -55,29 +57,55 @@ retry firmware or release memory. Actual-function tests cover every fault
 with and without component registration, plus faults arriving after prepare.
 This software correction does not establish working sample transfer or qualify sleep.
 
-## Unresolved data path
+## Playback data path
 
-The corrected AFE trigger enables DL0 and its IRQ, selects the HiFi1 target
-and produces a moving hardware read cursor. ALSA's hardware pointer and the
-DSP consumed-position notification count still remain zero. Ordinary ALSA
-writes after START advance the producer generation but do not restore progress.
-Host receive-control slices remain empty during the bounded silent test.
-A later bounded S16_LE pseudorandom-pattern test found 24,600 nonzero bytes
-in the 32,768-byte host ring, while the entire AFE ring remained zero in two
-read-only snapshots 20 ms apart. Its hardware cursor moved between snapshots.
-Speaker amplifier gains were temporarily attenuated and restored exactly;
-PipeWire mute/volume were preserved. This rules out using cursor movement as
-evidence of sample copying. Missing task consumption, processing/gain state
-and address translation still require separation; no consumed-position
-notifications arrived. S16_LE/S24_LE tests with 2/4/8 periods and full-ring or
-partial prefill did not restore progress.
+The former host trigger fix enabled DL0 and produced a moving DMA cursor,
+but the 0.1.19 firmware consumer and ALSA pointer stayed at zero. A nonzero
+pattern remained only in the host ring. Transport replies echoed OPEN through
+CLOSE successfully; START parameter 2 echoed task 16 rather than an error.
+The firmware address-validator reconstruction below explains why transport
+ACKs alone did not establish descriptor admission.
 
-A bounded probe of the actual transfer replies confirmed task/command echoes
-for OPEN, HWPARAM, PREPARE, START, STOP and CLOSE. START's second scalar echoes
-the processing task ID, so a nonzero parameter 2 must not be guessed to be an
-error status. Static wrapper inspection has not established an additional
-producer mailbox command. Do not add speculative commands, polling-based fake
-ALSA progress or arbitrary register writes to make this test appear successful.
+With DSP 0.1.22 and AFE `417B4A1282694D05F8C7B04` on kernel
+`7.2.8-31-rtx-spark-npu`, both S16_LE and S24_LE now sustain 48-kHz stereo
+playback. Each two-second run advanced ALSA to 96,256 frames and produced
+94–95 consumed-position notifications. Two read-only snapshots per format
+found matching nonzero host/AFE ring extents and hashes. The guarded operating
+window is `0xfe000000..0xff000000` (exclusive end). Nine normal restart cycles,
+three reopens and three normal underrun/recovery sequences passed, with all
+retained service/transport/period errors still zero. Mixer gains were restored
+exactly. These measurements qualify sample transfer to SRAM and the tested
+lifecycle, not every analog endpoint or power state.
+
+## Confirmed resume defect and source correction
+
+On 2026-11-11, boot `76a1c35d`, `pm_test=devices` acknowledged D3 for all
+three DSPs and restarted the NPU provider. After DSP D0 the startup descriptor
+words were arbitrary values instead of retained contents. All three DSPs
+reported protected `-EIO`, IRQ disabled and zero completed sleep cycles. ALSA
+endpoints disappeared. The test restored `pm_test=none`; no physical standby
+or subsequent PM attempt was made on that boot.
+
+The earlier implementation incorrectly treated D0 as firmware restoration.
+Native `nvadsp.sys` D0-exit function `0x140007630` sets context byte `0x239`.
+First-activation dispatch `0x140003510` then calls `0x14004e000`, which rewrites
+startup DRAM base/size, sends REINIT IOCTL `0x150218` with its image ID and waits
+for fresh ready. `nvsrootmbx.sys` function `0x140031760` expands this to SROOT
+command `0x1a`, three words `(image_id, 0, 1)`. Binary hashes are recorded in
+[provenance.json](../platform/dsp/provenance.json).
+
+The 0.1.23 correction uses a typed provider export bound to the uploaded image,
+requires both the canonical loader reply and a fresh DSP-ready event, and
+permits only one REINIT per provider PM generation. No general reset or raw
+command API is exposed. Startup-config readback occurs before firmware starts;
+pre-D3 SRAM contents are no longer mistaken for a firmware-liveness test.
+
+After success, firmware task registrations are invalidated, while ALSA handles,
+card links, operating DRAM and AFE allocations remain owned. Normal PCM prepare
+re-registers the retained slices, opens tasks 7/16 and replays cached HW_PARAMS.
+Closing before preparation sends no commands to the fresh, unopened tasks.
+Offline tests cover the reconstruction and failures at every request; hardware
+qualification of this new DSP/provider pair is still pending.
 
 ## Additional qualification gaps
 
@@ -85,13 +113,11 @@ ALSA progress or arbitrary register writes to make this test appear successful.
   owners and derived stream wrappers. The native START can manage a hardware
   gain owner separately. Whether that owner is required or bypassed on the
   selected Linux DL0 route remains unproven.
-- Verify nonzero sample content, signedness and valid-bit alignment for the
-  negotiated format. A 32-bit container does not by itself prove that an
-  S24_LE host buffer matches the firmware's sample representation. Silence
-  cannot expose an alignment or gain error.
-- Require sustained consumed-position/ALSA progress, underrun recovery,
-  STOP/PREPARE/START and CLOSE/OPEN reuse before audible speaker/headphone and
-  microphone tests. Existing successful lifecycle ACKs are a narrower result.
+- Verify audible speaker/headphone output and microphone capture. Nonzero S16_LE
+  and S24_LE patterns now match at the host/AFE SRAM boundary, but this does
+  not qualify every analog codec route or recording endpoint.
+- Extend the passed short playback/lifecycle tests to sustained use and
+  concurrent ordinary capture; assess every negotiated format/route separately.
 - Qualify device-only PM testing, real/repeated s2idle, post-wake audio and NPU
   numerical execution only after the ownership/cache defects are corrected.
   Equal retained mailbox words do not establish firmware liveness.
@@ -112,8 +138,9 @@ before descriptor access, despite successful transport ACKs. Source 0.1.22
 keeps an unadvertised guard page inside the ordinary coherent DMA allocation,
 checks its advertised end, and balances the complete allocation on failure.
 See [the exact image, PCs and reproduction commands](../platform/dsp/protocol.md#hifi1-shared-dram-exclusive-end-constraint).
-The rejection is established offline; the new data path still needs a fresh
-hardware boot to show whether further processing or notification defects exist.
+The rejection was established offline and the guarded allocation subsequently
+restored hardware sample transfer and consumed-position notifications. Other
+routes and power states still require their own qualification.
 
 The local Cadence reference corpus contains NatureDSP HiFi3/3z and HiFi5
 sources and HiFi5 NNLib sources. `NDSP_HiFi5s_V310.zip` additionally contains
@@ -137,9 +164,9 @@ DSP 0.1.22 and the matching AFE module build with `W=1` against kernel
 `7.2.8-31-rtx-spark-npu` without warnings. The 14 existing DSP export CRCs
 remain unchanged; the typed PCM API is additive. Driver protocol/sanitizer
 checks pass, as do 126 repository unit tests (two skipped). Patch replay is
-exact, and package versions and source checksums agree. These built modules
-have not replaced the live 0.1.19 DSP/AFE pair. Streaming, real sleep and
-post-wake audio/NPU execution remain release blockers.
+exact, and package versions and source checksums agree. The exact pair subsequently passed the playback tests above. Real sleep,
+complete endpoint coverage and post-wake audio/NPU execution remain release
+blockers.
 
 The normal default boot and recovery must stay preserved. Another test boot
 is useful only when it exercises a reviewed correction with explicit pass/fail

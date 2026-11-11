@@ -1,6 +1,6 @@
 pkgname=n1x-sroot-provider-dkms
 pkgver=0.1.0
-pkgrel=10
+pkgrel=11
 pkgdesc='NVIDIA N1X NPU driver with a serialized SROOT secure-loader API for MT8901 DSPs'
 arch=('aarch64')
 license=('GPL-2.0-only')

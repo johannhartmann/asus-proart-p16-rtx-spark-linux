@@ -1,11 +1,11 @@
 pkgname=n1x-adsp-dkms
-pkgver=0.1.22
+pkgver=0.1.23
 pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and playback services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
-depends=('dkms' 'python' 'n1x-sroot-provider-dkms>=0.1.0-10')
+depends=('dkms' 'python' 'n1x-sroot-provider-dkms>=0.1.0-11')
 optdepends=('n1x-adsp-firmware-local: original signed images for explicit DSP boot')
 checkdepends=('python' 'gcc')
 source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.conf'
@@ -15,14 +15,14 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
         'n1x-adsp-audio.service' 'n1x-adsp-audio')
-sha256sums=('5dce079dc354572b816ef065c739e68296d733ccb494d8eb9b207e807ddc773b'
-            'd68ffe347aa22c2b9318e4f199e4001b85ed471ad40efe5dc789049965cfec5c'
+sha256sums=('6a0d77b80f262f4c445589db2bc35b6d8565311f866b27f2dc27f3340c552dc8'
+            'd3c23ebba50587c447a82a3e5551ce88daea07b3ac90e2c85c835c8bbf466aa8'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '3e4f55d9e7ee8aa95d863c619b1ac7213ac40d3b8edaa8340892d4b28510c7b1'
+            '09ee156f701a39e1b2bae628a83a97d008cd77862f5da4d340a58e62492cd34a'
             '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
-            '09092fa06397294e4540d8df94cfb509a762a271f571d4323e806dbd92b24372'
-            'eb494ccae66ec16b183f1d09dd648e8e6c88d775e19a5a6313517340bc5d39a4'
+            '8f6c12df2fef7b888e0c058dcaa0134f7a1d434b62509c63976f642e59277373'
+            'de70f936331e5331fc0d67bc1c607f05859d6a6c960aefa89444272b1c493ebf'
             '0cd40a4e0647d73fb9f714be1cc21435af5dbdeb89ddce0a19b684a33989fec2'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '7bad602f3e3694f2a1baa682af33a75294a987e9cab54983d3e5487a19fac9f1'
@@ -34,13 +34,13 @@ sha256sums=('5dce079dc354572b816ef065c739e68296d733ccb494d8eb9b207e807ddc773b'
             '01b7fdc92982dc3061f46ce1500574b7340bd74815f4dbd2fe5bd520424b97ac'
             'b2d8f46fc0071b3fdf711c93ac653c6b73aef504811b55c61bc3dbaf6530acf8'
             'edfc3726dca67733241ba2daf92d2451945ffe567302965a8ad9ea27655dcec5'
-            'fb2c76c7a425bb23996fd132b57449d911a344c2ce860c2145fe767ba606cf73'
+            'c5b9d8f49698d6a348de6031c0fc83b832ebfd1807f4daedfc8e76d16c97f439'
             '796211f2465f79036aa6020ad057ae87458435fb7406ac5f32afd2956618e8fc'
             '1e9c5fc77c67ab8ff60e66fc9531e0badc441d7b5bbe914a2ffaa1a0e61f8d93'
             '2bf7e06558e91c71420ff1e95912df855cbc985220ead6b2aa162c2ec8b293b7'
-            '04428c5cbce9b00603ad5f3fd3eddd51c779d98da6dddb790d5c3073b501f7dc'
+            'f7fa11fafa3e031f8189d5495538b018d3dc1caee24ca23eb6b4c1388ba959e3'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
-            '6ae7b254086c4ece4efce01e235e5bc4886158924b1a751ab73d00a1d359ac53'
+            '1d14f46e86cab6606716d039b4954d44b590744b7d55efa4c38a30b0f763989e'
             '26c568e81d01fcd1b69c28dc4cf79a2f70942aa3f68ca1a7d5bd9ecf0413e74a'
             '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'
             'fcc9ebb0d2e808cc635d5d73190e55852a4e6c6df571c3816c3e3dc3809d0c31')

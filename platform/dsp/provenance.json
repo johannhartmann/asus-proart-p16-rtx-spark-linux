@@ -24,7 +24,9 @@
       "ready_notification": "FUN_140006220; u16 offset 22 == 0xf002",
       "sroot_image_upload": "nvsrootmbx FUN_140031c98; command 0x18",
       "power_notification": "FUN_140006220: class 2, command 0xf005, little-endian u32 at packet offset 24",
-      "power_notification_worker": "FUN_140006a70 -> FUN_14004fb38: 16-byte PoFxPowerControl input; u8 request ID 0, u32 words at offsets 4/8/12 = 1/value/0"
+      "power_notification_worker": "FUN_140006a70 -> FUN_14004fb38: 16-byte PoFxPowerControl input; u8 request ID 0, u32 words at offsets 4/8/12 = 1/value/0",
+      "lazy_resume_reinit": "nvadsp 0x14004e000 via first-activation dispatch 0x140003510; D0-exit 0x140007630 sets context byte 0x239",
+      "sroot_reinit": "nvsrootmbx 0x140031760; command 0x1a, three words: image_id, 0, 1"
     }
   },
   "linux_power_reference": {
@@ -442,7 +444,7 @@
     "whole_core_release_verified": false
   },
   "system_sleep_retention": {
-    "status": "candidate_not_hardware_qualified",
+    "status": "0.1.22_device_pm_failed; 0.1.23_reinit_candidate_offline_tested_only",
     "default_enabled": false,
     "module_parameter": "enable_retention_sleep",
     "modes": [
@@ -457,10 +459,19 @@
       "legacy active clients without ASoC ordering",
       "runtime autosuspend",
       "DMA reclamation"
-    ]
+    ],
+    "reinit_api": "n1x_sroot_reinit_dsp_v1 plus fresh class-2 command 0xf002 ready notification",
+    "resume": "AFE restoration, DSP D0, rewrite startup DRAM base/size, typed REINIT, fresh ready, provider vote release; lazy same-buffer task registration and cached HW_PARAMS at next PCM prepare",
+    "failure_evidence": "2026-11-11 boot 76a1c35d: pm_test=devices, all three DSP shared-SRAM descriptors lost after D0; protected terminal -EIO, no physical sleep attempted",
+    "reinit_wire_words": [
+      "image_id",
+      "0",
+      "1"
+    ],
+    "reinit_hardware_qualified": false
   },
   "asoc_audio": {
-    "status": "candidate_not_hardware_qualified",
+    "status": "0.1.22_playback_to_AFE_SRAM_verified; analog_endpoints_and_0.1.23_resume_unqualified",
     "playback_abi": 2,
     "automatic_firmware": "auto_boot plus n1x-adsp-audio.service",
     "card_components": [

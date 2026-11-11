@@ -105,7 +105,7 @@ struct n1x_adsp {
 	bool primary_task_active;
 	int primary_task_error;
 	bool primary_pcm_attempted, primary_pcm_configured;
-	bool primary_pcm_prepared;
+	bool primary_pcm_prepared, primary_restore_pending;
 	bool primary_start_attempted, primary_running, primary_stopped;
 	int primary_pcm_error;
 	struct n1x_adsp_pcm_config primary_host_pcm, primary_afe_pcm;
@@ -115,7 +115,7 @@ struct n1x_adsp {
 	struct mt8901_afe_sram_buffer *processing_messages;
 	void __iomem *processing_area;
 	u64 processing_address;
-	bool processing_active;
+	bool processing_active, processing_registered;
 	struct n1x_adsp_pcm_position primary_position;
 	u64 primary_read_address, primary_write_publications;
 	u32 primary_write_offset, primary_write_counter;
@@ -126,6 +126,7 @@ struct n1x_adsp {
 	struct n1x_sroot_client_result_v2 loader;
 	const struct n1x_sroot_client_ops *sroot_ops;
 	const struct n1x_sroot_client_sleep_ops *sleep_ops;
+	typeof(n1x_sroot_reinit_dsp_v1) *reinit_dsp;
 	struct n1x_sroot_client *sroot_client;
 	struct work_struct power_work;
 	spinlock_t power_lock;
@@ -807,6 +808,7 @@ static void n1x_adsp_put_provider(void *data)
 
 	/* Published handles deliberately retain their provider lifetime. */
 	dsp->sroot_ops->put(dsp->sroot_client);
+	symbol_put(n1x_sroot_reinit_dsp_v1);
 	symbol_put(n1x_sroot_client_ops_v4);
 }
 
@@ -817,12 +819,18 @@ static int n1x_adsp_get_provider(struct n1x_adsp *dsp)
 	get_ops = symbol_get(n1x_sroot_client_ops_v4);
 	if (!get_ops)
 		return -EPROBE_DEFER;
+	dsp->reinit_dsp = symbol_get(n1x_sroot_reinit_dsp_v1);
+	if (!dsp->reinit_dsp) {
+		symbol_put(n1x_sroot_client_ops_v4);
+		return -EPROBE_DEFER;
+	}
 	dsp->sleep_ops = get_ops();
 	dsp->sroot_ops = dsp->sleep_ops->client;
 	dsp->sroot_client = dsp->sroot_ops->get(dsp->dev);
 	if (IS_ERR(dsp->sroot_client)) {
 		int err = PTR_ERR(dsp->sroot_client);
 
+		symbol_put(n1x_sroot_reinit_dsp_v1);
 		symbol_put(n1x_sroot_client_ops_v4);
 		return err;
 	}
@@ -1098,28 +1106,60 @@ static int n1x_adsp_retention_sram(struct n1x_adsp *dsp, bool wake)
 /* Called with dsp->lock held, only after an acknowledged D3 transition. */
 static int n1x_adsp_retention_wake(struct n1x_adsp *dsp, bool voted)
 {
+	struct n1x_sroot_reinit_result result;
 	int err;
 
+	if (dsp->error || dsp->sleep_error)
+		return dsp->error ?: dsp->sleep_error;
 	/* Check AFE restoration before permitting DSP DMA to its SRAM again. */
 	err = n1x_adsp_retention_sram(dsp, true);
 	if (!err)
 		err = mtk_pwrap_dev_resume(dsp->pwrap, 1);
+	/* Native nvadsp rewrites these two startup fields before REINIT. D0
+	 * alone does not restore firmware: the shared SRAM may contain garbage.
+	 * Never acknowledge an unexplained notification or rewrite other state.
+	 */
+	if (!err && readl(dsp->mailbox + ADSP_OUT_STATUS))
+		err = -EBUSY;
 	if (!err) {
+		reinit_completion(&dsp->ready);
+		WRITE_ONCE(dsp->boot_ready, false);
+		writel(lower_32_bits(dsp->dma), dsp->shared + ADSP_CONFIG_OFFSET);
+		writel(dsp->target->dram_bytes, dsp->shared + ADSP_CONFIG_OFFSET + 8);
+		/* Publish the startup descriptor before asking SROOT to run firmware. */
+		wmb();
 		dsp->sleep_config_after[0] = readl(dsp->shared + ADSP_CONFIG_OFFSET);
 		dsp->sleep_config_after[1] = readl(dsp->shared + ADSP_CONFIG_OFFSET + 8);
 		dsp->sleep_config_checked = true;
-		/* The firmware may consume startup fields after boot. Retention
-		 * preserves their pre-D3 contents, not necessarily the boot values.
-		 * This is a memory-retention check, not proof of firmware liveness.
-		 */
-		if (!dsp->sleep_config_valid ||
-		    memcmp(dsp->sleep_config_before, dsp->sleep_config_after,
-			   sizeof(dsp->sleep_config_before)))
+		if (dsp->sleep_config_after[0] != lower_32_bits(dsp->dma) ||
+		    dsp->sleep_config_after[1] != dsp->target->dram_bytes)
 			err = -EIO;
+	}
+	if (!err) {
+		/* REINIT may signal ready before its SROOT reply reaches the host. */
+		dsp->sleep_irq_disabled = false;
+		enable_irq(dsp->irq);
+		err = dsp->reinit_dsp(dsp->sroot_client, &result);
+		if (!err && (!result.attempted || !result.reply_valid ||
+			     !result.accepted || result.reply_header != 0x1a))
+			err = -EPROTO;
+		if (!err && !wait_for_completion_timeout(&dsp->ready, msecs_to_jiffies(30000)))
+			err = -ETIMEDOUT;
+		if (!err && (!READ_ONCE(dsp->boot_ready) || n1x_adsp_failed(dsp)))
+			err = -EIO;
+		dev_info(dsp->dev,
+			 "DSP REINIT error=%d attempted=%u reply=%#x valid=%u accepted=%u ready=%u\n",
+			 err, result.attempted, result.reply_header, result.reply_valid,
+			 result.accepted, READ_ONCE(dsp->boot_ready));
 	}
 	if (!err && voted)
 		err = dsp->sleep_ops->resume(dsp->sroot_client);
 	if (err) {
+		if (!dsp->sleep_irq_disabled) {
+			disable_irq(dsp->irq);
+			dsp->sleep_irq_disabled = true;
+			flush_work(&dsp->power_work);
+		}
 		dsp->sleep_error = err;
 		dsp->error = err;
 		dev_err(dsp->dev,
@@ -1129,9 +1169,21 @@ static int n1x_adsp_retention_wake(struct n1x_adsp *dsp, bool voted)
 			dsp->sleep_config_after[0], dsp->sleep_config_after[1]);
 		return err;
 	}
+	/* A fresh firmware instance owns no old task registrations. Keep ALSA
+	 * ownership and every DMA lease; rebuild tasks on the next normal PCM
+	 * operation after PM complete, when host IPC is admitted again.
+	 */
+	dsp->primary_attempted = false;
+	dsp->primary_ready = false;
+	dsp->primary_completed = 0;
+	dsp->processing_registered = false;
+	dsp->primary_task_active = false;
+	dsp->processing_active = false;
+	dsp->primary_pcm_prepared = false;
+	dsp->primary_start_attempted = false;
+	dsp->primary_stopped = false;
+	dsp->primary_restore_pending = !!dsp->primary_owner;
 	dsp->sleep_suspended = false;
-	dsp->sleep_irq_disabled = false;
-	enable_irq(dsp->irq);
 	return 0;
 }
 
@@ -1436,9 +1488,9 @@ int n1x_adsp_primary_close(struct n1x_adsp_primary *primary)
 	err = dsp->primary_task_error;
 	if (!err && dsp->primary_start_attempted && !dsp->primary_stopped)
 		err = n1x_adsp_primary_stop_locked(dsp);
-	if (!err)
+	if (!err && !dsp->primary_restore_pending)
 		err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 9, 0);
-	if (!err)
+	if (!err && !dsp->primary_restore_pending)
 		err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 2, 0);
 	if (!err && dsp->processing_active) {
 		err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 9, 0);
@@ -1450,6 +1502,7 @@ int n1x_adsp_primary_close(struct n1x_adsp_primary *primary)
 	if (err)
 		dsp->primary_task_error = err;
 	else {
+		dsp->primary_restore_pending = false;
 		dsp->primary_task_active = false;
 		dsp->primary_pcm_attempted = false;
 		dsp->primary_pcm_configured = false;
@@ -1541,13 +1594,15 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 			err = -EBUSY;
 			goto put;
 		}
-		/* Successful HWFREE/CLOSE retired the stream, not its registered
-		 * message memory. Reuse those same retained task-owned slices.
-		 */
 		dsp->primary_pcm_attempted = true;
-		dsp->processing_active = true;
-		err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 1, 0);
-		goto put;
+		if (dsp->processing_registered)
+			goto open;
+		/* REINIT starts a fresh firmware instance; register the same retained
+		 * slices again, without allocating or publishing another lease.
+		 */
+		memory.area = dsp->processing_area;
+		memory.afe_address = dsp->processing_address;
+		goto register_messages;
 	}
 	messages = reserve(peer, 2 * ADSP_MESSAGE_BYTES);
 	if (IS_ERR(messages)) {
@@ -1577,6 +1632,10 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 	err = retention(dsp->processing_messages);
 	if (err)
 		goto put;
+register_messages:
+	memset_io(memory.area, 0, 2 * ADSP_MESSAGE_BYTES);
+	/* Clear both retained slices before exposing them to the fresh task. */
+	wmb();
 	for (i = 0; i < 2; i++) {
 		unsigned int offset = i * ADSP_MESSAGE_BYTES;
 		__le64 payload[4] = {
@@ -1597,6 +1656,8 @@ static int n1x_adsp_processing_open(struct n1x_adsp *dsp,
 			goto put;
 		}
 	}
+	dsp->processing_registered = true;
+open:
 	dsp->processing_active = true;
 	err = n1x_adsp_primary_command(dsp, ADSP_PROCESSING_TASK, 1, 0);
 put:
@@ -1612,6 +1673,55 @@ put:
 		symbol_put(mt8901_afe_sram_view);
 	if (reserve)
 		symbol_put(mt8901_afe_sram_reserve_ipc);
+	return err;
+}
+
+/* Reconstruct firmware tasks after a checked REINIT. Called under dsp->lock
+ * only from normal PCM entry points after the PM core has completed resume.
+ * A failed request is terminal; never replay an uncertain OPEN/HW_PARAMS.
+ */
+static int n1x_adsp_primary_restore_locked(struct n1x_adsp *dsp)
+{
+	u8 packet[N1X_ADSP_PCM_BYTES];
+	int err;
+
+	if (dsp->error || dsp->sleep_error)
+		return -ENOTRECOVERABLE;
+	if (!dsp->primary_restore_pending)
+		return 0;
+	if (dsp->sleep_prepared)
+		return -EBUSY;
+	if (n1x_adsp_failed(dsp))
+		return -ENOTRECOVERABLE;
+	err = n1x_adsp_prepare_primary_locked(dsp);
+	if (err)
+		goto failed;
+	dsp->primary_task_active = true;
+	err = n1x_adsp_primary_command(dsp, ADSP_PRIMARY_TASK, 1, 0);
+	if (err)
+		goto failed;
+	if (dsp->primary_pcm_configured) {
+		err = n1x_adsp_processing_open(dsp, dsp->primary_sram);
+		if (err)
+			goto failed;
+		err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_host_pcm);
+		if (!err)
+			err = n1x_adsp_primary_descriptor(dsp, ADSP_PRIMARY_TASK, 4, packet);
+		if (!err)
+			err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_afe_pcm);
+		if (!err)
+			err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 0x201, packet);
+		if (!err)
+			err = n1x_adsp_pcm_encode(packet, sizeof(packet), &dsp->primary_bridge_pcm);
+		if (!err)
+			err = n1x_adsp_primary_descriptor(dsp, ADSP_PROCESSING_TASK, 4, packet);
+		if (err)
+			goto failed;
+	}
+	dsp->primary_restore_pending = false;
+	return 0;
+failed:
+	dsp->primary_task_error = err;
 	return err;
 }
 
@@ -1664,6 +1774,11 @@ int n1x_adsp_primary_configure(struct n1x_adsp_primary *primary,
 	if (dsp->sleep_prepared) {
 		err = -EBUSY;
 		goto unlock;
+	}
+	if (dsp->primary_owner == primary) {
+		err = n1x_adsp_primary_restore_locked(dsp);
+		if (err)
+			goto unlock;
 	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active) {
 		err = -EINVAL;
@@ -1886,6 +2001,11 @@ int n1x_adsp_primary_prepare_pcm(struct n1x_adsp_primary *primary)
 	if (dsp->sleep_prepared) {
 		err = -EBUSY;
 		goto unlock;
+	}
+	if (dsp->primary_owner == primary) {
+		err = n1x_adsp_primary_restore_locked(dsp);
+		if (err)
+			goto unlock;
 	}
 	if (dsp->primary_owner != primary || !dsp->primary_task_active ||
 	    !dsp->primary_pcm_configured || !dsp->primary_sram ||
@@ -2352,7 +2472,7 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.22");
+MODULE_VERSION("0.1.23");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

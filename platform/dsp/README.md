@@ -64,15 +64,29 @@ SRAM allocations, IOMMU mappings and every provider/module/PM lease remain
 retained. This is a retention protocol, not DMA reclamation.
 
 On wake the AFE powers up and restores SRAM before DSP D0. DLA restarts from its
-cached firmware before its clients resume. Failed AFE restoration blocks DSP
-D0; failed DSP D0 or provider startup leaves that instance terminal with IRQ
-and memory protections retained. The DSP also checks its retained DRAM-window
-descriptor; that check alone does not prove firmware liveness.
+cached firmware before its clients resume. **D0 alone does not restart the DSP
+firmware.** The 0.1.22 device-only PM test lost the shared SRAM configuration
+on all three DSPs and correctly stopped with a protected error state.
 
-The Windows power callbacks and vendor Linux wrappers motivate this candidate.
-Physical state retention, streaming and power savings remain **unqualified**.
-Do not replace a published live module. Preserve the working boot and qualify
-the exact new kernel, AFE, machine, DSP and provider artifacts together.
+DSP 0.1.23 rewrites only the native startup DRAM base/size fields, then calls
+`n1x_sroot_reinit_dsp_v1`. The provider sends native SROOT command `0x1a` with
+three words `(image_id, 0, 1)`, bound to the previously loaded image. Both a
+canonical loader reply and a fresh firmware-ready notification are required
+before the provider sleep vote is released. Missing ready, pending unexplained
+mailbox state, a failed D0 or an uncertain reply leave the IRQ disabled and all
+memory/leases retained, with no retry.
+
+A fresh firmware instance invalidates task registrations. The next normal PCM
+prepare recreates tasks 7/16 and replays cached HW_PARAMS using the same retained
+buffers. The ALSA owner and card PM link survive; closing before preparation
+retires the owner without sending CLOSE to nonexistent remote tasks. No new
+buffer lease is allocated or released by this reconstruction.
+
+The new resume path passes offline fault tests and builds for the test kernel;
+**it is not hardware-qualified**. Physical sleep, post-wake playback and NPU
+execution remain pending. Preserve the working boot and qualify the exact DSP,
+provider, AFE/machine and kernel artifacts together. Do not replace a published
+live module.
 
 ## Firmware address bounds
 
@@ -85,7 +99,8 @@ See [the firmware validator evidence](protocol.md#hifi1-shared-dram-exclusive-en
 
 ## Secure loading and IPC
 
-The driver acquires SROOT client ABI v4 during probe. Its referenced handle
+The driver acquires SROOT client ABI v4 and the additive typed REINIT export
+during probe. An older provider defers probe rather than losing resume support. Its referenced handle
 selects a unique provider under the same firmware parent and establishes
 DSP → DLA → SROOT ordering for system PM. Missing providers defer probe;
 ambiguous associations fail closed. The current firmware has no `_DEP` or

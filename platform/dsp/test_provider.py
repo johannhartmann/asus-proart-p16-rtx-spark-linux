@@ -17,6 +17,7 @@ def main():
 #include <stdbool.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 #include "n1x_sroot_client.h"
 #define EPROBE_DEFER 517
 #define ERR_PTR(e) ((void *)(intptr_t)(e))
@@ -25,36 +26,43 @@ def main():
 struct device {int unused;};
 struct n1x_sroot_client {int unused;};
 struct n1x_adsp {struct device *dev;const struct n1x_sroot_client_ops *sroot_ops;
- struct n1x_sroot_client *sroot_client;const struct n1x_sroot_client_sleep_ops *sleep_ops;};
+ struct n1x_sroot_client *sroot_client;const struct n1x_sroot_client_sleep_ops *sleep_ops;
+ typeof(n1x_sroot_reinit_dsp_v1) *reinit_dsp;};
 static struct device device;
 static struct n1x_sroot_client client;
 static unsigned symbols,handles,fault;
 static bool published;
 static void (*cleanup)(void *);
 static struct n1x_sroot_client *get_client(struct device *dev)
-{assert(dev==&device && symbols==1);if(fault==2)return ERR_PTR(-ENOTUNIQ);handles++;return &client;}
+{assert(dev==&device && symbols==2);if(fault==2)return ERR_PTR(-ENOTUNIQ);handles++;return &client;}
 static int put_client(struct n1x_sroot_client *c)
-{assert(c==&client && handles==1 && symbols==1);if(published)return -EBUSY;handles--;return 0;}
+{assert(c==&client && handles==1 && symbols==2);if(published)return -EBUSY;handles--;return 0;}
 static const struct n1x_sroot_client_ops ops={.get=get_client,.put=put_client};
 static const struct n1x_sroot_client_sleep_ops sleep_ops={.client=&ops};
-static const struct n1x_sroot_client_sleep_ops *get_ops(void){assert(symbols==1);return &sleep_ops;}
-static typeof(n1x_sroot_client_ops_v4) *get_symbol(void)
-{assert(!symbols);if(fault==1)return NULL;symbols++;return get_ops;}
-static void put_symbol(void){assert(symbols==1);symbols--;}
-#define symbol_get(name) get_symbol()
+static const struct n1x_sroot_client_sleep_ops *get_ops(void){assert(symbols==2);return &sleep_ops;}
+static int reinit(struct n1x_sroot_client *c,struct n1x_sroot_reinit_result *r)
+{(void)c;(void)r;assert(0);return 0;}
+static void *get_symbol(const char *name)
+{
+ if(!strcmp(name,"n1x_sroot_client_ops_v4")) {assert(!symbols);if(fault==1)return NULL;symbols++;return get_ops;}
+ assert(!strcmp(name,"n1x_sroot_reinit_dsp_v1") && symbols==1);
+ if(fault==4)return NULL;symbols++;return reinit;
+}
+static void put_symbol(void){assert(symbols);symbols--;}
+#define symbol_get(name) ((typeof(&name))get_symbol(#name))
 #define symbol_put(name) put_symbol()
 static int devm_add_action_or_reset(struct device *dev,void (*fn)(void *),void *data)
-{assert(dev==&device && handles==1 && symbols==1);if(fault==3){fn(data);return -ENOMEM;}
+{assert(dev==&device && handles==1 && symbols==2);if(fault==3){fn(data);return -ENOMEM;}
  cleanup=fn;return 0;}
 ''' + functions + r'''
 int main(void)
 {
  struct n1x_adsp dsp={.dev=&device};
- for(fault=1;fault<=3;fault++) {
-  assert(n1x_adsp_get_provider(&dsp)==(fault==1?-EPROBE_DEFER:fault==2?-ENOTUNIQ:-ENOMEM));
+ for(fault=1;fault<=4;fault++) {
+  assert(n1x_adsp_get_provider(&dsp)==((fault==1 || fault==4)?-EPROBE_DEFER:fault==2?-ENOTUNIQ:-ENOMEM));
   assert(!symbols && !handles);
  }
- fault=0;assert(!n1x_adsp_get_provider(&dsp) && symbols==1 && handles==1 && cleanup);
+ fault=0;assert(!n1x_adsp_get_provider(&dsp) && symbols==2 && handles==1 && cleanup);
  cleanup(&dsp);assert(!symbols && !handles);
  assert(!n1x_adsp_get_provider(&dsp));published=true;cleanup(&dsp);
  assert(!symbols && handles==1); /* Published provider handle retains its own reference. */
@@ -105,7 +113,7 @@ int main(void)
     with tempfile.TemporaryDirectory(prefix='n1x-provider-') as tmp:
         test, binary = Path(tmp)/'test.c', Path(tmp)/'test'
         test.write_text(code)
-        subprocess.run(['cc', '-I'+str(ROOT), '-std=gnu11', '-Wall', '-Wextra', '-Werror',
+        subprocess.run(['cc', '-I'+str(ROOT), '-std=gnu11', '-Wall', '-Wextra', '-Wno-misleading-indentation', '-Werror',
                         '-fsanitize=address,undefined', str(test), '-o', str(binary)], check=True)
         subprocess.run([str(binary)], check=True)
         test.write_text(link_code)
