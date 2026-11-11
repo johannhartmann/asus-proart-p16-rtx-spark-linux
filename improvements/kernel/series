@@ -66,6 +66,7 @@
 1124-n1x-p16-automatic-admission.patch
 1125-acpi-n1x-preserve-drips-fallback-latency.patch
 1126-acpi-n1x-p16-bios305-lpi-profiles.patch
+1127-acpi-n1x-saturate-drips-fallback-latency.patch
 2110-Documentation-Correction-in-HID-output_report-callba.patch
 2111-HID-Add-BUS_SPI-support-and-define-HID_SPI_DEVICE-ma.patch
 2112-HID-spi-hid-add-transport-driver-skeleton-for-HID-ov.patch

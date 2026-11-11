@@ -103,3 +103,21 @@ finite QoS rejection and disabled states against that sentinel.
 One cycle and battery-gauge energy do not prove physical DRIPS residency or
 a steady-state power rate. No 18-CPU hardware was tested. RTC timed wake
 remains unvalidated; this change does not claim an RTC wake fix.
+
+## Fallback latency overflow follow-up
+
+Patch 1127 saturates the historical fallback latency addition before converting
+to nanoseconds. An enabled BIOS 305 paired `U32_MAX` sentinel therefore remains
+`U32_MAX` instead of wrapping to 6609 microseconds. The real setup/selection
+harness reproduces the overflow before the fix and checks sentinel, boundary,
+finite, coordinated and non-N1x cases after it. Patch 1125 remains unchanged.
+This source regression test adds no physical sleep or DRIPS residency evidence.
+
+## Governor harness correction
+
+The governor regression now extracts the actual `pm_qos.h` constants and their
+`S32_MAX` definition from the prepared kernel. The no-constraint value is
+`S32_MAX` microseconds (2147483647000 ns), not -1 or an infinite nanosecond
+budget. A finite constraint of `INT32_MAX - 1` rejects the BIOS 305 timing
+sentinel. Removing the governor's explicit no-constraint exception makes the
+regression fail. This corrects the test mocks; no kernel behavior is changed.

@@ -24,6 +24,7 @@ the additions build on Johann Hartmann and Josephine Pfeiffer's P16 work.
 | 1124 | Automatic P16/N1X hardware admission, retaining firmware compatibility checks |
 | 1125 | Preserve existing DRIPS latency for non-coordinated fallback states |
 | 1126 | Accept validated BIOS 305 enabled parent LPI profiles and the exact paired system timing sentinel |
+| 1127 | Saturate fallback DRIPS latency addition to preserve U32_MAX without wrapping |
 | 2110-2120 | SPI-HID transport prerequisites |
 | 9100 | ASUS WMI on ARM64, battery response handling and preserving the charge threshold |
 | 9101 | MT8901 interrupt-only GPIOs 182-208, including sensor GPIO 190 |
