@@ -310,6 +310,12 @@ The board enablement builds on
 See [LICENSES.md](LICENSES.md) for source and OEM asset terms. Contributor
 attribution, license headers and existing patch sign-offs are preserved.
 
+## Acknowledgements
+
+A big thank-you to **Josephine Pfeiffer**, **Jordi Ibáñez** and
+**Sean Kenneth Doherty** for helping improve Linux support on the ProArt P16.
+Your contributions and shared experience are much appreciated!
+
 ## Installation field report
 
 A second H7607BA (SKU 90NB16A1-M00Y90; 64 GB, 3K OLED, 1 TB;
