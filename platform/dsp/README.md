@@ -113,6 +113,9 @@ stops and checks its memif, clears the owned IRQ, retires the reservation and
 balances SRAM/PM/module references. Operating DRAM and the DSP self-reference
 are then released. The next load receives an exclusive image slot and may
 replace stale startup descriptors only when that provider recorded retirement.
+A retired DSP also receives an explicit checked native D0 before DMA allocation
+and publication, unless its runtime-resume callback already completed D0. Linux
+PM bookkeeping marked active during probe is not treated as a power transition.
 
 An unsubmitted `EBUSY` stage may continue using its completed-stage mask. An
 uncertain SET timeout permanently prevents further SSPM submissions until

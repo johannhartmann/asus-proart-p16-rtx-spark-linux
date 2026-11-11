@@ -30,6 +30,11 @@ class AudioReloadTests(unittest.TestCase):
                     (base / 'version').write_text(version)
                 for name in params:
                     (base / 'parameters' / name).write_text('Y\n')
+            if fault == 'future':
+                (root / 'module/n1x_adsp/version').write_text('0.1.26')
+                (root / 'module/snd_soc_mt8901_afe/version').write_text('0.1.28')
+            if fault == 'old':
+                (root / 'module/n1x_adsp/version').write_text('0.1.24')
             devices = []
             for hid in audio.HIDS:
                 device = root / 'bus/platform/devices' / (hid + ':00')
@@ -83,13 +88,19 @@ class AudioReloadTests(unittest.TestCase):
                     patch.object(audio, 'prepare'), patch.object(audio, 'verify',
                         side_effect=[RuntimeError('probe deferred'), None] if fault == 'deferred' else None), \
                     patch.object(audio, 'card_bound', return_value=True), patch.object(audio.time, 'sleep'):
-                expected = {'unsupported': RuntimeError, 'timeout': OSError, 'load': subprocess.CalledProcessError}
+                expected = {'old': RuntimeError, 'unsupported': RuntimeError, 'timeout': OSError, 'load': subprocess.CalledProcessError}
                 if fault in expected:
                     with self.assertRaises(expected[fault]):
                         audio.reload_audio(1000, root, run)
                 else:
                     audio.reload_audio(1000, root, run)
             return events
+
+    def test_old_running_driver_leaves_audio_untouched(self):
+        self.assertEqual(self.exercise('old'), [])
+
+    def test_later_driver_versions_with_same_shutdown_capability_can_reload(self):
+        self.exercise('future')
 
     def test_unsupported_kernel_leaves_audio_and_modules_untouched(self):
         self.assertEqual(self.exercise('unsupported'), [])

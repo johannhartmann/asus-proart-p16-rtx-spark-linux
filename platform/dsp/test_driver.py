@@ -147,9 +147,8 @@ static void release_firmware(const struct firmware *fw) {assert(fw==&firmware);}
 static int dma_set_mask_and_coherent(struct device *d,u64 mask) {
  assert(d==&device && mask==0xffffffff);return fault==3?-EIO:0;
 }
-static int pm_runtime_resume_and_get(struct device *d) {
- assert(d==&device);if(fault==4)return -EIO;pm_refs++;return 0;
-}
+static int pm_runtime_resume_and_get(struct device *d);
+static int mtk_pwrap_dev_resume(void *p,unsigned transition);
 static void pm_runtime_put(struct device *d) {assert(d==&device && pm_refs==1);pm_refs--;}
 static void *dma_alloc_coherent(struct device *d,size_t bytes,dma_addr_t *dma,int flag) {
  assert(d==&device && bytes==expected_allocation_bytes && flag==GFP_KERNEL && pm_refs==1 && !module_refs);
@@ -194,12 +193,26 @@ static const struct n1x_sroot_client_ops test_sroot_ops={
  .prepare=prepare_stub,.publish=publish_stub,.cancel=cancel_stub,.upload=upload_stub};
 ''' + state + r'''
 static struct n1x_adsp dsp;
+static bool retired_image,callback_d0;
+static unsigned native_d0_calls;
+static int native_d0_error;
+static int mtk_pwrap_dev_resume(void *p,unsigned transition)
+{assert(p==&dsp && !transition && pm_refs==1 && !reads && !writes && !allocation);
+ native_d0_calls++;return native_d0_error;}
+static int pm_runtime_resume_and_get(struct device *d)
+{assert(d==&device);if(fault==4)return -EIO;pm_refs++;
+ if(callback_d0){int err=mtk_pwrap_dev_resume(dsp.pwrap,0);if(err){pm_refs--;return err;}dsp.native_resumed=true;}
+ return 0;}
+static int prepare_image_stub(struct n1x_sroot_client *client,u32 image,u8 *stopped);
+static const struct n1x_sroot_client_shutdown_ops shutdown_ops={.prepare=prepare_image_stub};
 ''' + source[source.index('static void n1x_adsp_ipc_fail('):
              source.index('static bool n1x_adsp_tx_idle(')] + handlers + r'''
 static bool provider_published;
 static int prepare_stub(struct n1x_sroot_client *client)
 {assert(client==(void *)&dsp && !provider_leases && !writes && !pm_refs);
  if(!provider)return -EHOSTDOWN;provider_leases++;return 0;}
+static int prepare_image_stub(struct n1x_sroot_client *client,u32 image,u8 *stopped)
+{assert(image==dsp.target->image_id);*stopped=retired_image;return prepare_stub(client);}
 static int publish_stub(struct n1x_sroot_client *client)
 {assert(client==(void *)&dsp && provider_leases==1 && module_refs==1 && !writes && !provider_published);
  if(fault==18)return -EIO;provider_published=true;return 0;}
@@ -236,7 +249,8 @@ static void reset(void) {
  memset(shared_memory,0,sizeof(shared_memory));memset(mailbox_memory,0,sizeof(mailbox_memory));
  enable_boot=privileged=provider=true;fault=reads=writes=pm_refs=module_refs=provider_leases=uploads=frees=waits=0;
  power_calls=power_reply=in_irq=0;power_value=0;
- provider_published=false;dsp.sroot_ops=&test_sroot_ops;dsp.sroot_client=(void *)&dsp;
+ retired_image=callback_d0=false;native_d0_calls=0;native_d0_error=0;
+ provider_published=false;dsp.pwrap=&dsp;dsp.sroot_ops=&test_sroot_ops;dsp.sroot_client=(void *)&dsp;
  dsp.dev=&device;dsp.target=&targets[0];dsp.firmware=dsp.target->firmware;
  expected_firmware=dsp.firmware;expected_allocation_bytes=dsp.target->dram_bytes+PAGE_SIZE;dsp.shared=shared_memory;dsp.mailbox=mailbox_memory;
  firmware.size=sizeof(firmware_bytes);make_image(firmware_bytes,firmware.size,0xc0304);
@@ -285,6 +299,17 @@ int main(void) {
    if(f<=12)assert(!dsp.boot_ready);else assert(dsp.boot_ready && dsp.error==-EPROTO && !waits);
    assert(n1x_adsp_boot(&dsp, false)==-EALREADY);
   }
+ }
+ for(unsigned callback=0;callback<2;callback++) {
+  reset();retired_image=true;callback_d0=callback;dsp.shutdown_ops=&shutdown_ops;
+  shared_memory[ADSP_CONFIG_OFFSET/4]=0xe0000000;shared_memory[ADSP_CONFIG_OFFSET/4+2]=24U<<20;
+  assert(!n1x_adsp_boot(&dsp,false) && dsp.boot_ready && dsp.native_resumed && native_d0_calls==1);
+ }
+ for(unsigned error=0;error<3;error++) {
+  reset();retired_image=true;dsp.shutdown_ops=&shutdown_ops;
+  native_d0_error=error==0?-EBUSY:error==1?-ETIMEDOUT:-ENOTRECOVERABLE;
+  assert(n1x_adsp_boot(&dsp,false)==native_d0_error && native_d0_calls==1);
+  assert(!pm_refs && !module_refs && !provider_leases && !reads && !writes && !allocation && !uploads);
  }
  reset();assert(!n1x_adsp_boot(&dsp, false));assert(dsp.boot_ready && dsp.loader.accepted && dsp.notifications==1);
  assert(module_refs==1 && pm_refs==1 && provider_leases==1 && !frees && waits==1);

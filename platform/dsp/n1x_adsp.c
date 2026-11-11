@@ -145,6 +145,7 @@ struct n1x_adsp {
 	bool sleep_suspended, sleep_irq_disabled;
 	bool sleep_pcm, sleep_messages, sleep_draining;
 	bool component_registered;
+	bool native_resumed; /* A completed native D0, not merely PM bookkeeping. */
 	u32 sleep_cycles;
 	u32 sleep_config_before[2], sleep_config_after[2];
 	bool sleep_config_valid, sleep_config_checked;
@@ -487,6 +488,16 @@ static int n1x_adsp_boot(struct n1x_adsp *dsp, bool kernel_client)
 	err = pm_runtime_resume_and_get(dsp->dev);
 	if (err < 0)
 		goto release;
+	/* Probe marks the PM object active, but after a recorded retirement
+	 * the physical DSP starts in D3. Acquire D0 unless the runtime callback
+	 * already did so; never publish DMA on bookkeeping alone.
+	 */
+	if (previously_stopped && !READ_ONCE(dsp->native_resumed)) {
+		err = mtk_pwrap_dev_resume(dsp->pwrap, 0);
+		if (err)
+			goto put_pm;
+		WRITE_ONCE(dsp->native_resumed, true);
+	}
 	/* Firmware validates base + size as a 32-bit exclusive end. An
 	 * allocation ending exactly at 4 GiB makes every audio address invalid.
 	 * Keep one unadvertised page inside the normal 32-bit DMA allocation,
@@ -1218,16 +1229,20 @@ static int n1x_adsp_runtime_suspend(struct device *dev)
 		return 0;
 	if (READ_ONCE(dsp->published))
 		return -EBUSY;
+	WRITE_ONCE(dsp->native_resumed, false);
 	return mtk_pwrap_dev_suspend(dsp->pwrap, 0);
 }
 
 static int n1x_adsp_runtime_resume(struct device *dev)
 {
 	struct n1x_adsp *dsp = dev_get_drvdata(dev);
+	int err;
 
 	if (READ_ONCE(dsp->shutdown_done))
 		return -EHOSTDOWN;
-	return mtk_pwrap_dev_resume(dsp->pwrap, 0);
+	err = mtk_pwrap_dev_resume(dsp->pwrap, 0);
+	WRITE_ONCE(dsp->native_resumed, !err);
+	return err;
 }
 
 /* The typed ALSA owner keeps stream lifetime until close. Recheck actual

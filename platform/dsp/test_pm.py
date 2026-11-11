@@ -53,7 +53,7 @@ struct n1x_adsp {
  bool primary_start_attempted, primary_stopped, primary_restore_pending;
  unsigned primary_completed;
  struct completion ready;
- bool component_registered, sleep_pcm, sleep_messages, sleep_draining, primary_running;
+ bool native_resumed, component_registered, sleep_pcm, sleep_messages, sleep_draining, primary_running;
  void *pwrap, *primary_sram, *processing_messages;
  struct n1x_adsp_primary *primary_owner;
  uint8_t *mailbox, *shared;
@@ -220,7 +220,10 @@ int main(void)
  reset();suspend_result=-EIO;
  assert(sleep_cycle()==-EIO && runtime_suspends==1 && !runtime_resumes);
  reset();resume_result=-ETIMEDOUT;assert(sleep_cycle()==-ETIMEDOUT && !dsp.sleep_prepared);
- reset();assert(!n1x_adsp_runtime_suspend(&dev) && !n1x_adsp_runtime_resume(&dev));
+ reset();dsp.native_resumed=true;assert(!n1x_adsp_runtime_suspend(&dev) && !dsp.native_resumed);
+ assert(!n1x_adsp_runtime_resume(&dev) && dsp.native_resumed);
+ suspend_result=-ETIMEDOUT;assert(n1x_adsp_runtime_suspend(&dev)==-ETIMEDOUT && !dsp.native_resumed);
+ resume_result=-EIO;assert(n1x_adsp_runtime_resume(&dev)==-EIO && !dsp.native_resumed);
  healthy();enable_retention_sleep=false;
  for(unsigned i=0;i<32;i++) assert(sleep_cycle()==-EOPNOTSUPP && !suspends && !disables);
  assert(warnings==32 && !dsp.sleep_prepared);
