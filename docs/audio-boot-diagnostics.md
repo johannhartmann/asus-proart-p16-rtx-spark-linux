@@ -19,7 +19,19 @@ minimal userspace test covering vDSO time reads, signal return and fork. EFI
 framebuffer early-console setup also worked in the virtual platform. These
 checks do not exercise N1X ACPI, SSPM, NVIDIA graphics or DSP hardware. A later
 abrupt restart of the kernel23 host remains unexplained; further VM testing on
-that host was stopped. Do not treat these smoke tests as physical qualification.
+that host was initially stopped. On the user's request, a later serialized batch
+ran 18 more KVM boots: six direct and three EFI/framebuffer boots for each image,
+with one vCPU and 2 GiB RAM per guest. All 18 passed while other workloads stayed
+running. No host freeze was reproduced during the batch or more than five
+minutes after the final guest exited. A separate Qwen workload then coincided
+with ACPI thermal readings reaching 95.2 C while no VM was running; this does
+not establish the cause of the earlier freeze. Do not treat the virtual smoke
+tests as physical qualification of the N1X startup path.
+
+The reference machine now has a logging-only replacement entry named
+`RTX-Spark-Audio-Diagnostics`. Its kernel and initramfs remain unchanged; the
+working kernel23 default and recovery entries are preserved. The replacement
+entry is for capturing the next native failure, not a qualified audio boot.
 
 ## Prepare early-console evidence
 
