@@ -14,7 +14,7 @@ STAGE = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(STAGE)
 BOOT = STAGE.BOOT
 
-DIAGNOSTICS = ('efi=debug', 'earlycon=efifb', 'loglevel=7', 'initcall_debug',
+DIAGNOSTICS = ('efi=debug', 'earlycon=efifb', 'keep_bootcon', 'loglevel=8', 'initcall_debug',
                'log_buf_len=4M', 'rd.log=kmsg,file', 'systemd.show_status=true',
                'printk.time=1', 'panic=0')
 KEYS = {argument.split('=', 1)[0] for argument in DIAGNOSTICS}

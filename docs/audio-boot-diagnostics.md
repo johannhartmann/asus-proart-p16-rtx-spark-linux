@@ -58,14 +58,14 @@ The corrected kernel is rebuilt from the previously working kernel31 tree,
 with the same configuration and build identity, applying only the scoped
 SSPM/PowerWrap patch. Hardware startup and full audio reload remain pending.
 
-The scoped candidate is now installed in `RTX-Spark-Audio-Diagnostics`, with
+The scoped candidate was installed in `RTX-Spark-Audio-Diagnostics`, with
 matching kernel31 `vmlinuz`, System.map, debug-stripped vmlinux and symbol
 versions. Its kernel SHA-256 is
 `5b3282f08458c3bfc59e89218f6fe78f0ac3e830a81ea3ed859820db5de9fb2a`;
 the UKI SHA-256 is
 `e45bea823803eabd2f687a7597c8fe3cfb2f58b69c67fcd316e65dff6357ea06`.
 Only the kernel payload changed from the logging-only UKI: initramfs, ACPI,
-EFI stub, command line and section load addresses are preserved. The Limine
+EFI stub, command line and section load addresses were preserved. The Limine
 BLAKE2b pin was updated and verified. Kernel23 remains the default; recovery,
 other entries, installed modules, live drivers and power profile are unchanged.
 The previous test bundle is backed up under
@@ -78,6 +78,43 @@ passed. The additional EFI run was stopped by the host-temperature guard at
 90 C before reaching the userspace marker; it is not a passing EFI result or a
 confirmed kernel failure. The host remained on the same boot. No claim of
 successful native boot or completed DSP reload follows from these checks.
+
+## EFI-to-dummy-console output gap
+
+A second native attempt with the scoped kernel did not reach a usable boot.
+The photograph taken on 12 November at 18:00 shows these final lines:
+
+```text
+Console: colour dummy device 80x25
+printk: legacy console [tty0] enabled
+printk: legacy bootconsole [efifb0] disabled
+```
+
+The last line is at approximately 0.195 seconds. It marks the loss of visible
+output when the dummy VT console replaces EFI earlycon. It does not locate the
+actual hang. The timer firmware warning visible above it also occurs in the
+previous successful kernel31 journal. No failed-boot journal or pstore record
+was recovered. The SSPM correction has not established successful native boot.
+
+A bounded EFI/KVM comparison used the same scoped kernel, one vCPU, 2 GiB RAM,
+`console=tty0` and the same SimpleDRM blacklist. Both guests reached userspace,
+reported independently through the virtual UART. With the old diagnostic
+arguments, the framebuffer remained at the bootconsole-disabled message.
+With `keep_bootcon` and `loglevel=8`, a later userspace marker and initcall
+tracing were visible in a framebuffer screenshot. Maximum host thermal reading
+was 61.2 C. This reproduces the observation gap without claiming to reproduce
+the hardware boot failure.
+
+The revised diagnostic UKI is installed as `RTX-Spark-Audio-Diagnostics`. It
+retains EFI earlycon past dummy-console registration and prints DEBUG-level
+initcall entry/return messages. Kernel, initramfs, ACPI,
+module set and boot policy remain unchanged. Its SHA-256 is
+`5aa846f334bf0a9349591535ab383ff72f1cdd41aab44408ee79a774f05aa07b`.
+The previous image and menu are backed up under
+`/var/lib/p16-platform/audio31-console-handoff-20261112`. This is temporary
+console instrumentation; retained EFI output may overlap a later graphics
+console. Kernel23 remains the default. The actual native boot
+failure still needs output from beyond the old handoff boundary.
 
 ## Prepare early-console evidence
 
@@ -93,14 +130,16 @@ python3 scripts/stage-audio-boot-diagnostics.py \
 ```
 
 The output contains the candidate UKI, command line and a manifest pinning the
-unchanged sections. It enables `efi=debug`, `earlycon=efifb`, informational
-console output and a larger kernel log buffer. Initcall tracing is retained in
-the log buffer. Initramfs messages go to the kernel log and
+unchanged sections. It enables `efi=debug`, `earlycon=efifb`, `keep_bootcon`,
+`loglevel=8` and a larger kernel log buffer. Initcall entry/return tracing is
+printed on the console and retained in the log buffer. Initramfs messages go to the kernel log and
 `/run/initramfs/init.log`; that file is not persistent across a reset. Automatic
 panic reboot is disabled so visible failures remain available for inspection.
-The EFI early console depends on usable firmware framebuffer metadata and
-hands off when a normal console registers. It cannot guarantee a saved log if
-the machine locks before logging or root-filesystem startup.
+The EFI early console depends on usable firmware framebuffer metadata.
+`keep_bootcon` retains it after dummy-console registration for this temporary
+diagnostic boot. Visible output still depends on framebuffer availability;
+this cannot guarantee a saved log if the machine locks before persistent
+logging or root-filesystem startup.
 
 Install only through a reviewed, backed-up boot transaction that verifies the
 manifest and updates the Limine BLAKE2b hash. Preserve the working kernel23 and
