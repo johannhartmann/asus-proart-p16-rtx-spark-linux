@@ -113,15 +113,19 @@ stops and checks its memif, clears the owned IRQ, retires the reservation and
 balances SRAM/PM/module references. Operating DRAM and the DSP self-reference
 are then released. The next load receives an exclusive image slot and may
 replace stale startup descriptors only when that provider recorded retirement.
-A retired DSP also receives an explicit checked native D0 before DMA allocation
-and publication, unless its runtime-resume callback already completed D0. Linux
-PM bookkeeping marked active during probe is not treated as a power transition.
+A retired DSP also requires successful native D0 completion before DMA
+allocation and publication, unless its runtime-resume callback already completed
+D0. Linux PM bookkeeping marked active during probe is not treated as a power
+transition.
 
-An unsubmitted `EBUSY` stage may continue using its completed-stage mask. An
-uncertain SET timeout permanently prevents further SSPM submissions until
-reboot, including after driver rebind. Neither a late IRQ nor waiting 100 ms
-re-establishes completion. Partial software cleanup after completed native
-power-off can continue without sending D3/abandon again. Keep the provider
+An unsubmitted `EBUSY` stage may continue using its completed-stage mask. Any
+submitted SET timeout permanently prevents further checked DSP-shutdown
+commands until reboot, including after driver rebind. Ordinary platform
+boot and power-management commands retain the baseline SSPM recovery policy.
+Neither a late IRQ, a successful ordinary command nor waiting 100 ms
+re-establishes the certainty required for DMA retirement. Partial software
+cleanup after completed native power-off can continue without sending
+D3/abandon again. Keep the provider
 loaded across DSP/AFE reloads so its retirement records remain available.
 
 The existing audio helper supplies the whole maintenance sequence:

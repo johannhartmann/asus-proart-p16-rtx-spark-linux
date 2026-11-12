@@ -335,7 +335,8 @@ including provider v5 image ownership, a barrier across all three DSPs, separate
 AFE memif/IRQ retirement, PM/module-reference release and same-provider restart
 markers. No physical power-state decoder was recovered. The implementation
 uses the pinned vendor device-abandon contract and Windows removal ordering,
-with a stricter SSPM policy that never reuses a channel after unknown completion.
+with a checked SSPM shutdown path that refuses DMA retirement after any unknown
+SET completion. Ordinary boot/power callers keep their baseline recovery policy.
 This is a native-contract candidate, not a newly observed hardware result.
 
 The review also found a remaining register-cache defect before another boot:

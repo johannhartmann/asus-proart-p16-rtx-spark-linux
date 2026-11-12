@@ -602,7 +602,7 @@
     "kernel_patch": "kernel/p16-dsp-shutdown-power.patch",
     "vendor_power_contract": "https://github.com/NVIDIA/NV-Kernels/blob/dd99802c8b0c384169bb36293c9517fa67238e47/sound/soc/sof/mediatek/mt8901/mt8901.c",
     "power_sequence": "D3/Complete=1/SystemTransition=0, then device abandon; completed-stage mask prevents D3 replay",
-    "transport_failure": "Submitted timeout permanently latches unknown completion; no subsequent SET until reboot, including after rebind",
+    "transport_failure": "Any submitted SET timeout permanently disqualifies checked DSP-shutdown commands until reboot, including after rebind or ordinary recovery; existing platform clients retain baseline normal SSPM recovery",
     "group_barrier": "Secondary HiFi5, primary HiFi5, HiFi1 quiesce before any operating-memory/provider retirement; legacy publications block release",
     "cleanup": "Independent AFE memif stop/readback, owned IRQ clear, retired substream/IRQ borrower checks, retention and module/PM/reference balancing",
     "retry_policy": "Only unsubmitted EBUSY power stages or software cleanup after completed native power-off; no timeout replay",

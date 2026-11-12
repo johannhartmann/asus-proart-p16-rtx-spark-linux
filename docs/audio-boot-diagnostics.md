@@ -28,10 +28,56 @@ with ACPI thermal readings reaching 95.2 C while no VM was running; this does
 not establish the cause of the earlier freeze. Do not treat the virtual smoke
 tests as physical qualification of the N1X startup path.
 
-The reference machine now has a logging-only replacement entry named
-`RTX-Spark-Audio-Diagnostics`. Its kernel and initramfs remain unchanged; the
-working kernel23 default and recovery entries are preserved. The replacement
-entry is for capturing the next native failure, not a qualified audio boot.
+A logging-only replacement was first installed as
+`RTX-Spark-Audio-Diagnostics`, retaining the failed kernel and initramfs while
+preserving the working kernel23 default and recovery entries.
+
+## Scoped SSPM correction
+
+The old/new object comparison narrowed executable-code changes to SSPM and
+PowerWrap. In particular, the failed candidate replaced the normal transport's
+bounded late-ACK drain with a permanent rejection of every later SET after one
+submitted timeout. Since platform boot and power management share that
+transport, this could disable subsequent device power transitions. No log from
+the failed native boot establishes that such a timeout actually occurred; the
+previous successful kernel31 journal contains no recorded SSPM timeout.
+
+The corrected patch restores the original normal transport and adds
+`sspm_ci_set_checked()` only for the destructive DSP-shutdown helper. Every
+submitted timeout still permanently disqualifies checked shutdown commands.
+Rebinding, a late ACK or successful normal recovery cannot clear that history
+or authorize DMA reclamation. All six existing PowerWrap dispatch callers,
+plus the direct probe and request paths, retain normal transport semantics.
+
+The actual old/new normal sender functions produced identical results across
+73 simulated transactions, including timeout, late-ACK drain and rebind.
+Separate sanitizer tests cover checked refusal, normal recovery after a
+checked timeout, native D3/abandon wire payloads and partial-stage handling.
+These tests establish the intended software boundary, not physical bootability.
+The corrected kernel is rebuilt from the previously working kernel31 tree,
+with the same configuration and build identity, applying only the scoped
+SSPM/PowerWrap patch. Hardware startup and full audio reload remain pending.
+
+The scoped candidate is now installed in `RTX-Spark-Audio-Diagnostics`, with
+matching kernel31 `vmlinuz`, System.map, debug-stripped vmlinux and symbol
+versions. Its kernel SHA-256 is
+`5b3282f08458c3bfc59e89218f6fe78f0ac3e830a81ea3ed859820db5de9fb2a`;
+the UKI SHA-256 is
+`e45bea823803eabd2f687a7597c8fe3cfb2f58b69c67fcd316e65dff6357ea06`.
+Only the kernel payload changed from the logging-only UKI: initramfs, ACPI,
+EFI stub, command line and section load addresses are preserved. The Limine
+BLAKE2b pin was updated and verified. Kernel23 remains the default; recovery,
+other entries, installed modules, live drivers and power profile are unchanged.
+The previous test bundle is backed up under
+`/var/lib/p16-platform/audio31-scoped-shutdown-20261112`.
+
+All 162 repository tests and the offline driver suite passed. All 8,509
+installed modules' 442,068 symbol imports match the new kernel and installed
+module exports; existing kernel export CRCs are unchanged. Direct KVM startup
+passed. The additional EFI run was stopped by the host-temperature guard at
+90 C before reaching the userspace marker; it is not a passing EFI result or a
+confirmed kernel failure. The host remained on the same boot. No claim of
+successful native boot or completed DSP reload follows from these checks.
 
 ## Prepare early-console evidence
 
@@ -59,5 +105,6 @@ the machine locks before logging or root-filesystem startup.
 Install only through a reviewed, backed-up boot transaction that verifies the
 manifest and updates the Limine BLAKE2b hash. Preserve the working kernel23 and
 recovery images, command lines and default selection. Capture the first visible
-failure before attempting another modification. A diagnostic image is evidence
-gathering, not a correction of the underlying boot failure.
+failure before attempting another modification. This command-line-only staging
+tool gathers evidence; it does not apply the scoped kernel correction described
+above.

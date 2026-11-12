@@ -945,9 +945,12 @@ The hardened helper records completed stages (bit 0 D3, bit 1 abandon). Only an
 unsubmitted `EBUSY` can continue the current stage; acknowledged D3 is not
 replayed. The original SSPM shared-slot transport could consume a very late
 interrupt after a bounded drain, including by reading back the next request's
-header. The local patch permanently rejects further submissions after an
-uncertain SET timeout. A driver rebind does not reset that latch. This narrows
-completion handling; it does not turn a transport ACK into a power sensor.
+header. The local patch records every submitted SET timeout and permanently
+rejects further checked DSP-shutdown commands after one. A driver rebind or successful
+ordinary transaction does not reset that history. All pre-existing platform
+callers keep their original bounded-drain recovery behavior; only the new
+shutdown helper uses the checked transport. This narrows completion handling
+for DMA retirement; it does not turn a transport ACK into a power sensor.
 
 Provider v5 binds an exclusive image slot before DMA publication. Its shutdown
 admission freezes that image's lifetime and rejects primary-HiFi5 shutdown while

@@ -253,9 +253,12 @@ The initial load of the new bundle still requires a matching kernel boot:
 DSP 0.1.25, AFE 0.1.27, provider package 0.1.0-12 / ABI v5, and
 `p16-dsp-shutdown-power.patch`. A running 0.1.24 module cannot gain a shutdown
 callback by replacing its file. Do not force-unload that older instance.
-The patch changes the global SSPM timeout policy: a submitted timeout prevents
-further power commands until reboot. Mailbox-busy before submission remains
-retryable; no old acknowledgement may authorize reclamation.
+The patch preserves the normal SSPM boot and power-management path and adds a
+checked transport for DSP shutdown. Any submitted SET timeout, including an
+ordinary client's timeout, prevents further checked shutdown commands until
+reboot. Rebind or ordinary recovery cannot clear that history. Mailbox-busy
+before submission remains retryable; no old acknowledgement may authorize
+reclamation.
 
 First run the complete playback/capture/duplex validator against the freshly
 booted bundle. Then perform two reload cycles, with numerical NPU validation and
