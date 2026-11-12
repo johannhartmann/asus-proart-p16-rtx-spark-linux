@@ -8,6 +8,11 @@ No application-specific DSP client is needed for normal audio.
 
 ## Candidate capabilities and limits
 
+**Current boot blocker:** the kernel31 shutdown/reload image failed to boot on
+12 November 2026. Keep the working kernel23 default; see
+[the boot investigation and diagnostic staging procedure](audio-boot-diagnostics.md).
+
+
 The [interface matrix](platform-driver-status.md#current-dsp-interface-requirements)
 records SROOT v5 plus REINIT, PCM ABI 3 and AFE SRAM ABI 2 separately.
 Implemented capture/duplex transport does not establish hardware qualification.
