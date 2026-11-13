@@ -9,6 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class AFESRAMTests(unittest.TestCase):
+    def test_fixed_irq_close_retires_borrower_without_releasing_irq(self):
+        subprocess.run(['python3', str(ROOT / 'platform/dsp/afe/test_const_irq.py')],
+                       check=True, timeout=40)
+
     def test_native_irq_cache_and_power_loss(self):
         subprocess.run(['python3', str(ROOT / 'platform/dsp/afe/test_irq_cache.py')],
                        check=True, timeout=40)

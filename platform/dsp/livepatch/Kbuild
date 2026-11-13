@@ -1,0 +1,3 @@
+obj-m += n1x_afe_const_irq_fix.o
+ccflags-y += -I$(AFE_SOURCE) -I$(AFE_SOURCE)/../common
+ccflags-y += -DEXPECTED_AFE_SRCVERSION=\"$(AFE_SRCVERSION)\"

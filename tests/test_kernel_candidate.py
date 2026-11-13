@@ -14,6 +14,16 @@ spec.loader.exec_module(candidate)
 
 
 class KernelDebugTests(unittest.TestCase):
+    def test_separately_installed_candidate_keeps_kernel_and_headers_together(self):
+        raw = (ROOT/'kernel/PKGBUILD').read_bytes()
+        self.assertEqual(candidate.package_recipe(raw, 'linux-p16-platform'), raw)
+        numbered = candidate.package_recipe(raw, 'linux-p16-platform-32').decode()
+        self.assertIn('pkgbase=linux-p16-platform-32\n', numbered)
+        self.assertIn('_kernel=$pkgbase', numbered)
+        for invalid in ('linux', 'linux-p16-platform-0', 'linux-p16-platform-32;id', '../kernel'):
+            with self.assertRaisesRegex(RuntimeError, 'Invalid candidate package base'):
+                candidate.package_recipe(raw, invalid)
+
     def test_default_configuration_stays_identical(self):
         raw = (ROOT/'kernel/config.aarch64').read_bytes()
         self.assertEqual(candidate.set_config(raw, candidate.debug_settings('none')), raw)
@@ -32,6 +42,7 @@ class KernelDebugTests(unittest.TestCase):
                 self.assertEqual(settings['PROVE_LOCKING'], 'y')
                 self.assertEqual(settings['DMA_API_DEBUG'], 'y')
                 self.assertEqual(settings['KUNIT'], 'y')
+                self.assertEqual(settings['LOCKDEP_CHAINS_BITS'], '18')
                 # Model Kconfig dropping an unsupported dependency: packaging must fail.
                 path.write_text(path.read_text().replace('CONFIG_PROVE_LOCKING=y',
                                                          '# CONFIG_PROVE_LOCKING is not set'))

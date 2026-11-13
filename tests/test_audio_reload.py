@@ -121,6 +121,7 @@ class AudioReloadTests(unittest.TestCase):
 
             with patch.object(audio.pwd, 'getpwuid', return_value=SimpleNamespace(pw_name='desktop')), \
                     patch.object(Path, 'stat', stat), patch.object(Path, 'write_text', write), \
+                    patch.object(audio, 'write_control', side_effect=write), \
                     patch.object(audio, 'replacement_modules', side_effect=RuntimeError('bad module file') if fault == 'preflight' else None), \
                     patch.object(audio, 'save_reload', side_effect=save), \
                     patch.object(audio, 'prepare'), patch.object(audio, 'verify',

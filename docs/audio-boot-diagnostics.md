@@ -1,8 +1,9 @@
 # Audio test boot failure, repair and verification
 
 **Native kernel31 boot succeeded on 13 November 2026 after the split-BTF repair.**
-The full DSP shutdown/reload and suspend paths remain unqualified. Kernel23 is
-still the preserved default and recovery baseline.
+The first checked DSP/AFE unload/reload and device-only PM tests also succeeded
+later that morning; repeated reload, real s2idle and clean Lockdep qualification
+remain pending. Kernel23 is still the preserved default and recovery baseline.
 
 On 12 November, selecting `RTX-Spark-Audio-Test` produced an immediate black
 screen that remained for ten minutes. The failed attempt did not leave a
@@ -195,6 +196,43 @@ The debug kernel reported `MAX_LOCKDEP_CHAIN_HLOCKS too low` in a Btrfs
 transaction before PCM testing and disabled lockdep. This is a debug capacity
 failure, so a clean lockdep qualification remains outstanding. The boot entry,
 default selection and power profile were left unchanged during verification.
+
+## Fixed-IRQ lifetime and first native reload
+
+Device-only PM subsequently passed twelve three-second PCM rounds: playback,
+capture and duplex in both formats before and after DSP D3/D0 and firmware
+REINIT. SoundWire card registration finishes asynchronously after PM returns;
+the validator now waits for both ALSA directions before opening PCM devices.
+Eight pinned cuDLA outputs across ReLU, convolution and convolution-plus-ReLU
+graphs matched independently generated references, including changing-input
+task reuse. These tests do not establish real s2idle or physical endpoint quality.
+
+The first shutdown exposed a separate MediaTek common-driver lifetime bug.
+`mtk_afe_fe_shutdown()` cleared `memif->substream` only for dynamically allocated
+IRQs. N1X uses fixed IRQs; the reservation survives close but the borrowed ALSA
+pointer must not. The checked SRAM owner correctly refused retirement with
+`EBUSY`, and read-only tracing showed two closed borrowers still referenced by
+their memifs. `p16-afe-const-irq-shutdown.patch` clears both kinds of borrower
+while retaining the fixed IRQ reservation. The sanitizer regression reproduces
+the old failure and checks both allocation modes.
+
+A tightly scoped [temporary livepatch](../platform/dsp/livepatch/README.md)
+was tested under KVM, checked against six exact private BTF layouts, then applied
+to kernel31. It retired exactly two stale pointers. The maintenance helper
+continued in the same boot, completed native DSP shutdown and SRAM/operating-DMA
+retirement, unloaded/reloaded DSP and AFE, and started all three firmware cores
+with `ready=1 error=0`. Six PCM rounds and eight exact cuDLA outputs passed after
+this first complete reload. The NPU provider stayed loaded throughout.
+
+One aborted device-PM request also exposed Python buffered sysfs replay:
+`TextIOWrapper` could submit again during close after the first write returned
+`EBUSY`. The maintenance helper and validator now use exactly one unbuffered
+`os.write()` per command and never retry an ambiguous hardware operation.
+
+The next separate kernel candidate raises `LOCKDEP_CHAINS_BITS` from 16 to 18,
+increasing chain and held-lock capacity fourfold. Current-boot functional tests
+cannot restore the already-disabled validator; clean Lockdep qualification
+requires that complete matching kernel/module bundle to boot successfully.
 
 ## Prepare early-console evidence
 

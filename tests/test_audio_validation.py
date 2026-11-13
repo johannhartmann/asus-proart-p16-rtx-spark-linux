@@ -21,6 +21,26 @@ def state(cycles=0):
 
 
 class AudioValidationTests(unittest.TestCase):
+    def test_sysfs_write_error_is_never_replayed_on_close(self):
+        import errno
+        with patch.object(audio.os, "open", return_value=77), \
+                patch.object(audio.os, "write", side_effect=OSError(errno.EBUSY, "busy")) as write, \
+                patch.object(audio.os, "close") as close:
+            with self.assertRaises(OSError):
+                audio.write_control(Path("/sys/power/state"), "mem\n")
+        write.assert_called_once_with(77, b"mem\n")
+        close.assert_called_once_with(77)
+
+    def test_resume_waits_for_both_playback_and_capture_card(self):
+        card = "card 3: mt8901soundwire [mt8901-soundwire]"
+        replies = [Mock(returncode=0, stdout=""), Mock(returncode=0, stdout=card),
+                   Mock(returncode=0, stdout=card), Mock(returncode=0, stdout=card)]
+        with patch.object(audio, "snapshot", return_value=state()), \
+                patch.object(audio.subprocess, "run", side_effect=replies), \
+                patch.object(audio.time, "sleep") as sleep:
+            audio.wait_for_soundwire()
+        sleep.assert_called_once()
+
     def test_all_retained_faults_and_clients_stop_the_sequence(self):
         baseline = state()
         audio.healthy(baseline)
@@ -50,7 +70,8 @@ class AudioValidationTests(unittest.TestCase):
 
         with patch.object(audio.os, "geteuid", return_value=0), \
                 patch.object(audio, "preflight", return_value=state()), \
-                patch.object(audio, "Path", side_effect=File):
+                patch.object(audio, "Path", side_effect=File), \
+                patch.object(audio, "write_control", side_effect=lambda p,v: p.write_text(v)):
             with self.assertRaises(OSError):
                 audio.device_pm()
         self.assertEqual([value for _, value in writes], ["devices\n", "mem\n", "none\n"])
@@ -71,7 +92,8 @@ class AudioValidationTests(unittest.TestCase):
         with patch.object(audio.os, "geteuid", return_value=0), \
                 patch.object(audio, "preflight", return_value=state()), \
                 patch.object(audio, "snapshot", return_value=state()), \
-                patch.object(audio, "Path", side_effect=File):
+                patch.object(audio, "Path", side_effect=File), \
+                patch.object(audio, "write_control", side_effect=lambda p,v: p.write_text(v)):
             with self.assertRaisesRegex(RuntimeError, "no completed"):
                 audio.device_pm()
         self.assertEqual(writes, ["devices\n", "mem\n", "none\n"])

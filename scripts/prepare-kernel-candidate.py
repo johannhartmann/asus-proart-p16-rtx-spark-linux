@@ -20,6 +20,10 @@ DEBUG_COMMON = {
     'DEBUG_LOCK_ALLOC': 'y', 'DEBUG_SPINLOCK': 'y', 'DEBUG_MUTEXES': 'y',
     'PROVE_RCU': 'y', 'DMA_API_DEBUG': 'y', 'KUNIT': 'y',
     'KUNIT_ALL_TESTS': 'n',
+    # Container/Btrfs startup exhausts the default 16-bit chain budget before
+    # DSP tests. Keep the validator active with four times as many chains and
+    # held-lock entries. This changes debug capacity, not locking semantics.
+    'LOCKDEP_CHAINS_BITS': '18',
 }
 
 
@@ -96,7 +100,18 @@ def verify_inputs(output, manifest):
             raise RuntimeError('Staged kernel input changed: ' + name)
 
 
-def prepare(output, release, jobs, debug_profile='none'):
+def package_recipe(raw, package_base):
+    """Allow separately installed candidates without replacing the working kernel."""
+    if not re.fullmatch(r'linux-p16-platform(?:-[1-9][0-9]*)?', package_base):
+        raise RuntimeError('Invalid candidate package base')
+    recipe, count = re.subn(r'^pkgbase=linux-p16-platform$',
+                            'pkgbase=' + package_base, raw.decode(), flags=re.M)
+    if count != 1:
+        raise RuntimeError('Unexpected kernel package base')
+    return recipe.encode()
+
+
+def prepare(output, release, jobs, debug_profile='none', package_base='linux-p16-platform'):
     if output.exists():
         raise RuntimeError('Output already exists; use --resume only after a terminal build')
     names = subprocess.check_output(['git', 'ls-files', 'kernel'], cwd=ROOT, text=True).splitlines()
@@ -108,6 +123,7 @@ def prepare(output, release, jobs, debug_profile='none'):
         inputs[name] = path.read_bytes()
     settings = debug_settings(debug_profile)
     configure_debug_inputs(inputs, settings)
+    inputs['kernel/PKGBUILD'] = package_recipe(inputs['kernel/PKGBUILD'], package_base)
     output.mkdir(parents=True, mode=0o700)
     for name, raw in inputs.items():
         target = output / name
@@ -118,7 +134,7 @@ def prepare(output, release, jobs, debug_profile='none'):
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'local_kernel_inputs_pinned': True,
         'kernel_inputs': {name: hashlib.sha256(raw).hexdigest() for name, raw in inputs.items()},
-        'pkgrel': release, 'jobs': jobs,
+        'pkgrel': release, 'jobs': jobs, 'package_base': package_base,
         'expected_release': f'7.2.8-{release}-rtx-spark-npu',
         'debug_profile': debug_profile, 'debug_config': settings,
         'source_date_epoch': subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'],
@@ -147,7 +163,8 @@ def record_packages(output, manifest, job):
         if fields.get('pkgver') != f"7.2.8-{manifest['pkgrel']}" or fields.get('arch') != 'aarch64':
             raise RuntimeError('Unexpected candidate package metadata: ' + path.name)
         names.add(fields.get('pkgname'))
-    if names != {'linux-p16-platform', 'linux-p16-platform-headers'}:
+    package_base = manifest.get('package_base', 'linux-p16-platform')
+    if names != {package_base, package_base + '-headers'}:
         raise RuntimeError('Candidate package names do not match kernel and headers')
     manifest['packages'] = {
         str(p.relative_to(output)): hashlib.sha256(p.read_bytes()).hexdigest() for p in packages
@@ -232,6 +249,8 @@ def main():
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--release', type=int, default=28)
     parser.add_argument('--jobs', type=int, default=2)
+    parser.add_argument('--package-base', default='linux-p16-platform',
+                        help='use a numbered base to preserve an installed candidate')
     parser.add_argument('--debug', choices=('none', 'kasan', 'kcsan'), default='none',
                         help='separate debug candidate; preserves the installed kernel')
     parser.add_argument('--build', action='store_true')
@@ -246,7 +265,7 @@ def main():
                 raise RuntimeError('Resume requires the original candidate directory')
             manifest = json.loads((output / 'manifest.json').read_text())
         else:
-            manifest = prepare(output, args.release, args.jobs, args.debug)
+            manifest = prepare(output, args.release, args.jobs, args.debug, args.package_base)
         with (output / 'build.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             verify_inputs(output, manifest)

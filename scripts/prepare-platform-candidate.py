@@ -118,7 +118,7 @@ def stage(args):
         'kernel_candidate': str(parent), 'kernel_tree': str(kernel),
         'kernel_release': release,
         'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
-        'loader_abi': 4, 'playback_abi': 3, 'jobs': args.jobs, 'inputs': inputs,
+        'loader_abi': 5, 'playback_abi': 3, 'jobs': args.jobs, 'inputs': inputs,
         'hwmon_source_commit': hwmon_head, 'hwmon_patch_sha256': digest(hwmon_patch),
         'nvidia_version': loaded_version,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),

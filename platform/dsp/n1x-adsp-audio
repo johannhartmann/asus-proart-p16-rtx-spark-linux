@@ -17,6 +17,17 @@ SYS = Path('/sys')
 HIDS = ('NVDA8301', 'NVDA8302', 'NVDA8303')
 
 
+def write_control(path, value):
+    """One sysfs command, with no buffered close-time resubmission on error."""
+    payload = value.encode('ascii')
+    fd = os.open(path, os.O_WRONLY | os.O_CLOEXEC | os.O_TRUNC)
+    try:
+        if os.write(fd, payload) != len(payload):
+            raise OSError(errno.EIO, 'Short sysfs control write')
+    finally:
+        os.close(fd)
+
+
 def endpoints(root=SYS):
     result = []
     for hid in HIDS:
@@ -47,7 +58,7 @@ def prepare(root=SYS):
     # rejects a type change if a driver acquired the domain in the meantime.
     for control in controls:
         if control.read_text().strip() == 'identity':
-            control.write_text('DMA\n')
+            write_control(control, 'DMA\n')
         if control.read_text().strip() not in ('DMA', 'DMA-FQ'):
             raise RuntimeError('DSP DMA domain selection failed')
 
@@ -264,7 +275,7 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
                     control = devices[index]/'shutdown'
                     for attempt in range(3):
                         try:
-                            control.write_text(operation+'\n')
+                            write_control(control, operation+'\n')
                             break
                         except OSError as error:
                             if error.errno != errno.EBUSY or attempt == 2:

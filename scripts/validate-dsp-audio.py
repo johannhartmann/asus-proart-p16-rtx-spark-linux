@@ -6,6 +6,7 @@ desktop services, power profiles, modules or boot files. A retained fault stops
 the sequence. Device-only PM is a separate, explicit graphical polkit operation.
 """
 import argparse
+import errno
 from datetime import datetime, timezone
 from functools import cache
 import hashlib
@@ -14,12 +15,25 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import time
+import re
 
 DEVICES = tuple(Path("/sys/bus/platform/devices") / f"NVDA830{i}:00" for i in (1, 2, 3))
 FAULTS = ("error", "power_error", "ipc_error", "primary_error", "primary_task_error",
           "primary_pcm_error", "pcm_period_error")
 VERSION = "0.1.25"
 AFE_VERSION = "0.1.27"
+
+
+def write_control(path, value):
+    """One sysfs command, with no buffered close-time resubmission on error."""
+    payload = value.encode('ascii')
+    fd = os.open(path, os.O_WRONLY | os.O_CLOEXEC | os.O_TRUNC)
+    try:
+        if os.write(fd, payload) != len(payload):
+            raise OSError(errno.EIO, 'Short sysfs control write')
+    finally:
+        os.close(fd)
 
 
 def fields(text):
@@ -88,10 +102,10 @@ def device_pm():
         if fields(item["sleep_status"])["enabled"] != "1":
             raise RuntimeError("DSP system-sleep opt-in is disabled")
     try:
-        control.write_text("devices\n")
-        Path("/sys/power/state").write_text("mem\n")
+        write_control(control, "devices\n")
+        write_control(Path("/sys/power/state"), "mem\n")
     finally:
-        control.write_text("none\n")
+        write_control(control, "none\n")
     after = snapshot()
     healthy(after)
     for name, item in after.items():
@@ -151,6 +165,22 @@ def pcm_round(directory, phase, mode, fmt, seconds, playback, capture):
     return result
 
 
+def wait_for_soundwire(timeout=20):
+    """SoundWire codec/card registration can finish after system PM returns."""
+    started = time.monotonic()
+    while time.monotonic() - started < timeout:
+        healthy(snapshot())
+        ready = True
+        for program in ('aplay', 'arecord'):
+            result = subprocess.run([program, '-l'], capture_output=True, text=True, timeout=3)
+            ready &= result.returncode == 0 and bool(re.search(
+                r'^card [0-9]+: mt8901soundwire \[', result.stdout, re.M))
+        if ready:
+            return time.monotonic() - started
+        time.sleep(0.1)
+    raise RuntimeError('SoundWire playback/capture card did not reappear after resume')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
@@ -181,6 +211,7 @@ def main():
                     ["pkexec", "--disable-internal-agent", sys.executable, str(Path(__file__).resolve()), "--device-pm"],
                     text=True, timeout=180)
                 report["device_pm"] = json.loads(result)
+                report["alsa_resume_ready_seconds"] = wait_for_soundwire()
             for fmt in ("S16_LE", "S24_LE"):
                 for mode in ("playback", "capture", "duplex"):
                     report["rounds"].append(pcm_round(directory, phase, mode, fmt, args.seconds,

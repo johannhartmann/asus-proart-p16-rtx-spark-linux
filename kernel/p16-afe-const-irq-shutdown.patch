@@ -1,0 +1,33 @@
+From: Johann Hartmann <johann@mayflower.de>
+Subject: [PATCH] ASoC: mediatek: clear closed substream for fixed IRQs
+
+The fixed IRQ remains reserved across closes, but its ALSA substream does
+not. Retaining that borrowed pointer after close blocks checked DSP SRAM
+retirement and leaves a pointer to a freed PCM on MT8901. Clear it for both
+IRQ allocation modes. Keep the fixed IRQ reservation intact.
+
+--- a/sound/soc/mediatek/common/mtk-afe-fe-dai.c
++++ b/sound/soc/mediatek/common/mtk-afe-fe-dai.c
+@@ -98,20 +98,21 @@
+ void mtk_afe_fe_shutdown(struct snd_pcm_substream *substream,
+ 			 struct snd_soc_dai *dai)
+ {
+ 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+ 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+ 	struct mtk_base_afe_memif *memif = &afe->memif[snd_soc_rtd_to_cpu(rtd, 0)->id];
+ 	int irq_id;
+ 
+ 	irq_id = memif->irq_usage;
+ 
+ 	mtk_regmap_update_bits(afe->regmap, memif->data->agent_disable_reg,
+ 			       1, 1, memif->data->agent_disable_shift);
+ 
+ 	if (!memif->const_irq) {
+ 		mtk_dynamic_irq_release(afe, irq_id);
+ 		memif->irq_usage = -1;
+-		memif->substream = NULL;
+ 	}
++	/* A fixed IRQ reservation outlives the PCM, its borrower does not. */
++	memif->substream = NULL;
+ }
+ EXPORT_SYMBOL_GPL(mtk_afe_fe_shutdown);

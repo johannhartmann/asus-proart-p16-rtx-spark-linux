@@ -324,4 +324,19 @@ needs no firmware shutdown transaction. Kernel provider admission and the
 shared-core barrier still apply. An uncertain loader result or power completion
 is never replayed, and a journal from another boot or user is refused. Success
 removes the journal. This software recovery is implemented and fault-tested;
-physical shutdown, failed-boot recovery and repeated reload remain unqualified.
+failed-boot recovery and repeated reload remain unqualified. Independent physical power-state telemetry remains unavailable.
+
+On 13 November 2026 the first complete native DSP/AFE unload/reload succeeded
+on kernel31 after correcting a fixed-IRQ borrower lifetime bug in the common
+MediaTek ASoC driver. Six post-reload PCM rounds and eight independently checked
+cuDLA outputs passed. The permanent kernel bundle must include
+`p16-afe-const-irq-shutdown.patch`; a fixed IRQ reservation must not keep the
+closed PCM's substream pointer. The initial kernel31 instance needed the narrowly
+guarded temporary livepatch described in [the boot evidence](audio-boot-diagnostics.md#fixed-irq-lifetime-and-first-native-reload).
+Device-only PM also passed the full twelve-round before/after PCM matrix.
+Repeated reload, real sleep and clean Lockdep checks remain separate gates.
+
+Both maintenance and PM validation issue sysfs commands through a single
+unbuffered write. A control write error stops the operation; buffered close-time
+resubmission must never repeat a power or shutdown command. SoundWire card
+re-registration is awaited before post-resume PCM opens.
