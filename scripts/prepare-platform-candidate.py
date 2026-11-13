@@ -235,6 +235,14 @@ def build(output, manifest):
         'machine': {'path': str(machine), 'sha256': digest(machine),
                     'srcversion': modinfo('srcversion', machine)},
     }
+    # A kernel relink can renumber base BTF types without changing vermagic or
+    # symbol CRCs. Validate both in-tree and external module BTF before staging.
+    artifacts = [item['path'] for build_result in manifest['builds'].values()
+                 for item in build_result['modules'].values()]
+    subprocess.run(['python3', str(ROOT / 'scripts/verify-module-btf.py'),
+                    '--vmlinux', str(kernel / 'vmlinux'),
+                    '--kernel-image', str(kernel / 'arch/arm64/boot/Image'),
+                    '--module-dir', str(kernel), *artifacts], check=True)
     manifest['source_hashes_still_match'] = True
     save(output / 'manifest.json', manifest)
     print(output / 'manifest.json', flush=True)

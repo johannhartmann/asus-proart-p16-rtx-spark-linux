@@ -54,10 +54,14 @@ done
 userspace=$(pacman -Q nvidia-utils)
 userspace=${userspace#* }; userspace=${userspace%-*}
 [[ $(modinfo -k "$release" -F version nvidia) == "$userspace" ]] || fail 'NVIDIA kernel/userspace version mismatch'
+/usr/lib/p16-platform/verify-module-btf --vmlinux "$modules/build/vmlinux" \
+    --kernel-image "$modules/vmlinuz" --module-dir "$modules" || fail 'Kernel/module BTF mismatch'
 if [[ $image ]]; then
     cmp -n "$(stat -c %s "$modules/vmlinuz")" "$modules/vmlinuz" "$tmp/linux" || fail 'UKI contains a different kernel'
     mkdir "$tmp/tree"
     (cd "$tmp/tree"; lsinitcpio -x "$tmp/initrd" > /dev/null)
+    /usr/lib/p16-platform/verify-module-btf --vmlinux "$modules/build/vmlinux" \
+        --kernel-image "$tmp/linux" --module-dir "$tmp/tree/usr/lib/modules/$release" || fail 'UKI module BTF mismatch'
     /usr/lib/p16-platform/acpi-policy --tree "$tmp/tree" --mode "$acpi_mode" || fail 'Invalid ACPI override profile'
     grep -Fq 'acpi_osi="!Windows 2022"' "$tmp/cmdline" || fail 'Native DSDT requires the negative Windows-2022 OSI setting'
     for name in spi_hid spi_hid_acpi; do

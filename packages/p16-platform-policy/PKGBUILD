@@ -1,10 +1,10 @@
 pkgname=p16-platform-policy
-pkgver=1.3.0
+pkgver=1.3.1
 pkgrel=1
 pkgdesc='ASUS P16 platform configuration and managed kernel update checks'
 arch=('aarch64')
 license=('MIT')
-depends=('python' 'bash' 'binutils' 'coreutils' 'dkms' 'kmod' 'mkinitcpio' 'systemd' 'util-linux' 'p16-acpi-firmware' 'upower>=1.91.5')
+depends=('python' 'bash' 'binutils' 'coreutils' 'dkms' 'kmod' 'mkinitcpio' 'systemd' 'util-linux' 'p16-acpi-firmware' 'upower>=1.91.5' 'libbpf>=1.5')
 source=('p16-acpi'
         'zz-p16-hardware-fixes.conf'
         'zz-p16-input.conf'
@@ -34,7 +34,8 @@ source=('p16-acpi'
         'p16-temperatures'
         'MIT.txt'
         '50-p16-critical.conf'
-        'acpi_policy.py')
+        'acpi_policy.py'
+        'verify-module-btf.py')
 sha256sums=('8ec062e0a9367a54b987c63822b40d1bc07406c23364420e811a28826b205bb5'
             'f9c0241f143d5767dc54dfaa132499e4ec8e2a8bcfb85fa51ebdeb53e37ee7ff'
             '1eedbb84066fe765903cd17abfce0aa3519139f66946e22490a98b64122d94bb'
@@ -60,11 +61,12 @@ sha256sums=('8ec062e0a9367a54b987c63822b40d1bc07406c23364420e811a28826b205bb5'
             '84a2623fdd591f77c6587b1d76409dd4fed3dd33bc04cf720511d746409c7982'
             'eb5dc38390cf9d6830c0af860dc0260ff8d654afcc4644482925363a7946b0d0'
             'd394bbae18bb7d5c02d3c6f23177fea7899b8cc47473c4d7b44ace3f32622e27'
-            'c2be1aaab65ae9f06e032b00a6d5fee061b5d1b4b5c9c347d49b5dbbe65b481f'
+            'b0e19efe380d99f40d95d25f76d57547e661d29961a48731985d31eba29a2690'
             '9d326dc959d45aa56cedcfb87470dbb38e11a46c56cb92cc030c075bfed5a557'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3'
             'dfc02d0f211cdf595fa6762f2636447e2fb52d0aea448c62383ac84f8fe10cbc'
-            '58f0c660269d01c3aff2c78ac54dd4dda9766168a1c4040246bfd092625badc7')
+            '58f0c660269d01c3aff2c78ac54dd4dda9766168a1c4040246bfd092625badc7'
+            '0e0ec77fff59a3eb62d8921b22bb530fc0e7373a4c51d4d4d45ae40e62e58fbe')
 backup=('etc/UPower/UPower.conf.d/50-p16-critical.conf'
         'etc/mkinitcpio.conf.d/zz-p16-hardware-fixes.conf'
         'etc/mkinitcpio.conf.d/zz-p16-input.conf'
@@ -104,6 +106,7 @@ package() {
   install -Dm755 "$srcdir/p16-guard-preflight" "$pkgdir/usr/lib/p16-platform/preflight"
   install -Dm755 "$srcdir/p16-boot-menu-policy" "$pkgdir/usr/lib/p16-platform/boot-menu"
   install -Dm755 "$srcdir/install-mkinitcpio-guard.sh" "$pkgdir/usr/lib/p16-platform/install-guard"
+  install -Dm755 "$srcdir/verify-module-btf.py" "$pkgdir/usr/lib/p16-platform/verify-module-btf"
   install -Dm755 "$srcdir/acpi_policy.py" "$pkgdir/usr/lib/p16-platform/acpi-policy"
   install -Dm755 "$srcdir/p16-platform-update-check" "$pkgdir/usr/bin/p16-platform-update-check"
   install -Dm755 "$srcdir/p16-temperatures" "$pkgdir/usr/bin/p16-temperatures"

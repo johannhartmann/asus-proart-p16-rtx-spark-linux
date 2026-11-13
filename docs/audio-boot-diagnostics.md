@@ -105,16 +105,68 @@ tracing were visible in a framebuffer screenshot. Maximum host thermal reading
 was 61.2 C. This reproduces the observation gap without claiming to reproduce
 the hardware boot failure.
 
-The revised diagnostic UKI is installed as `RTX-Spark-Audio-Diagnostics`. It
-retains EFI earlycon past dummy-console registration and prints DEBUG-level
+The revised diagnostic UKI was installed as `RTX-Spark-Audio-Diagnostics`. It
+retained EFI earlycon past dummy-console registration and prints DEBUG-level
 initcall entry/return messages. Kernel, initramfs, ACPI,
 module set and boot policy remain unchanged. Its SHA-256 is
 `5aa846f334bf0a9349591535ab383ff72f1cdd41aab44408ee79a774f05aa07b`.
 The previous image and menu are backed up under
 `/var/lib/p16-platform/audio31-console-handoff-20261112`. This is temporary
 console instrumentation; retained EFI output may overlap a later graphics
-console. Kernel23 remains the default. The actual native boot
-failure still needs output from beyond the old handoff boundary.
+console. Kernel23 remains the default. These arguments exposed the later
+split-BTF module failure described below.
+
+## Confirmed split-BTF module mismatch
+
+The 13 November diagnostic photograph reaches approximately 95 seconds and
+shows repeated `BPF: Invalid name` and
+`failed to validate module [...] BTF: -22`, including WMI, SPI, USB and crypto
+modules. The kernel's relink changed its base BTF, while the earlier deployment
+retained native modules and initramfs copies built against the old base.
+Kernel release and symbol-CRC checks passed despite that incompatible split
+BTF. This is a confirmed package-coherence defect and blocks module loading;
+the earlier SSPM hypothesis did not establish the cause of the failed boot.
+
+Offline parsing reproduces the fault: the old USB module's BTF parses against
+the original vmlinux and returns `EINVAL` against the relinked vmlinux. Native
+modules generally refer directly to base type IDs. External modules carrying
+`.BTF.base` can relocate those references, as described in the
+[Linux BTF documentation](https://docs.kernel.org/bpf/btf.html#btf-base-section).
+The repair regenerates the complete native module set against the current
+kernel, retains BTF validation, checks external-module relocation and rebuilds
+the diagnostic initramfs from the matching installed modules.
+
+A single EFI/KVM guest using the corrected kernel rejects the deliberately
+supplied old WMI module with the expected BTF error, then loads 28 corrected
+modules successfully. They cover WMI, SPI, USB, MMC helpers, crypto, I2C,
+SPI-HID and the NPU/DSP/AFE/ASoC modules plus dependencies. The guest powers off
+normally. These are actual kernel module-loader results; native N1X devices,
+firmware execution and audio streaming are outside that VM qualification.
+
+The read-only verifier `scripts/verify-module-btf.py` uses libbpf to parse split
+BTF and relocate embedded `.BTF.base` descriptions. It also checks that the
+vmlinux BTF bytes occur in the selected raw kernel Image. Candidate preparation
+checks native and external modules; the managed update check checks both
+installed modules and copies extracted from the UKI. The helper is packaged
+with `p16-platform-policy` 1.3.1 and depends on libbpf. It never loads a module.
+Seven regression tests cover changed base type IDs, distilled-base relocation,
+matching kernel images, compressed modules, missing BTF and malformed ELF.
+
+The BTF repair is installed in `RTX-Spark-Audio-Diagnostics`: 8,490 signed native
+modules were replaced, all 8,509 modules passed BTF checks, and all 442,069
+symbol imports matched. All 430 embedded initramfs modules passed the BTF
+check and matched their installed files byte for byte. The new UKI SHA-256 is
+`ba7c8e1a74e77fe07c86ca1b3aa104a20773e473fa7cf144a9e7996c68c27d72`.
+The kernel Image remains
+`5b3282f08458c3bfc59e89218f6fe78f0ac3e830a81ea3ed859820db5de9fb2a`.
+Its base BTF SHA-256 is
+`883dd59a9f0200b4e27e488f2e48a8cc77ab0b7585f5a4441689cc7cef4c0523`.
+The existing early ACPI payload and kernel arguments were preserved. Limine
+hash verification passed. The previous module tree, changed headers, update
+checker and boot files are backed up under
+`/var/lib/p16-platform/audio31-btf-repair-20261113`. Kernel23 remains the default;
+recovery, other boot images, live modules and power profile were unchanged.
+The complete native boot and DSP reload still need physical qualification.
 
 ## Prepare early-console evidence
 

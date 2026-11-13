@@ -28,3 +28,4 @@ scripts/p16-temperatures
 licenses/MIT.txt
 config/50-p16-critical.conf
 scripts/acpi_policy.py
+scripts/verify-module-btf.py
