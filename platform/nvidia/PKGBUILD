@@ -1,6 +1,6 @@
 pkgname=n1x-nvidia-drm-fix
 pkgver=615.78.08
-pkgrel=1
+pkgrel=2
 pkgdesc='NVIDIA DRM colorspace-reset deadlock recovery for RTX Spark'
 arch=('any')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -8,7 +8,7 @@ license=('MIT')
 depends=('dkms' 'nvidia-open-dkms=615.78.08')
 backup=('etc/dkms/nvidia-615.78.08.conf')
 source=('nvidia-615.78.08.conf' 'nvidia-drm-colorspace-deadlock.patch' 'LICENSE')
-sha256sums=('f62c73afade34b05ea02659a019b4dc9b4061d73a44f2f2d3789a3d3027d5ae0' '1ee758a6319ded66ac0a03ab18ed1989dc0bee39eaacf85f7f666273f106dd32' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
+sha256sums=('f62c73afade34b05ea02659a019b4dc9b4061d73a44f2f2d3789a3d3027d5ae0' '25c4ac9d1bfbb4047a4fddc400bf18de16aebfb68dcbc8fb2cc63557435d9308' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
 
 package() {
   install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"

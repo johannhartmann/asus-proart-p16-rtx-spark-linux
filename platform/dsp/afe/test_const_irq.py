@@ -58,7 +58,7 @@ def main():
         patch=(ROOT/'kernel/p16-afe-const-irq-shutdown.patch').read_text()
         hunk=patch.split('@@',2)[2].splitlines()[1:]
         original=''.join(line[1:]+'\n' for line in hunk if line.startswith((' ', '-')))
-        p.write_text(original)
+        p.write_text('\n' * 200 + original + '\n' * 100)
         subprocess.run(['patch','-p1','--fuzz=0','--batch','-i',str(ROOT/'kernel/p16-afe-const-irq-shutdown.patch')],cwd=tmp,check=True,capture_output=True)
         for label,source,expected in [('old',original,42),('fixed',p.read_text(),0)]:
             code=tmp/(label+'.c');binary=tmp/label;code.write_text(PRELUDE+function(source)+MAIN)

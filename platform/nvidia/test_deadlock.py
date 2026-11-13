@@ -92,10 +92,15 @@ def main():
         root = Path(temporary)
         target = root / 'kernel-open/nvidia-drm/nvidia-drm-drv.c'
         target.parent.mkdir(parents=True)
-        target.write_text(old)
+        # Keep unrelated trailing content: a full-file patch must not rely on
+        # GNU patch's end-of-file heuristics for asymmetric context.
+        target.write_text('\n' * 1200 + old + '\n' * 100)
         subprocess.run(['patch', '-p1', '--fuzz=0', '--batch', '-i', str(PATCH)],
                        cwd=root, capture_output=True, check=True)
-        for label, source, fixed in (('old', old, 0), ('fixed', target.read_text(), 1)):
+        def function(text):
+            start = text.index('static\nint nv_drm_reset_input_colorspace(')
+            return text[start:text.index('\n}\n', start) + 3]
+        for label, source, fixed in (('old', function(old), 0), ('fixed', function(target.read_text()), 1)):
             code, binary = root / (label + '.c'), root / label
             code.write_text(PRELUDE + source + MAIN)
             subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',

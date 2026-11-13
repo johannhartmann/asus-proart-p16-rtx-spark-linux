@@ -24,7 +24,7 @@ For subsequent DKMS builds with the same vendor version:
 ```sh
 cd platform/nvidia
 makepkg --cleanbuild
-pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-1-any.pkg.tar.*
+pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-2-any.pkg.tar.*
 ```
 
 This small package installs the standard DKMS `PATCH[0]` configuration for

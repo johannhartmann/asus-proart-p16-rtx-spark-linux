@@ -8,7 +8,16 @@ IRQ allocation modes. Keep the fixed IRQ reservation intact.
 
 --- a/sound/soc/mediatek/common/mtk-afe-fe-dai.c
 +++ b/sound/soc/mediatek/common/mtk-afe-fe-dai.c
-@@ -98,20 +98,21 @@
+@@ -89,52 +89,53 @@
+ 			dev_err(afe->dev, "%s() error: no more asys irq\n",
+ 				__func__);
+ 			ret = -EBUSY;
+ 		}
+ 	}
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(mtk_afe_fe_startup);
+ 
  void mtk_afe_fe_shutdown(struct snd_pcm_substream *substream,
  			 struct snd_soc_dai *dai)
  {
@@ -26,8 +35,32 @@ IRQ allocation modes. Keep the fixed IRQ reservation intact.
  		mtk_dynamic_irq_release(afe, irq_id);
  		memif->irq_usage = -1;
 -		memif->substream = NULL;
- 	}
+-	}
++	}
 +	/* A fixed IRQ reservation outlives the PCM, its borrower does not. */
 +	memif->substream = NULL;
  }
  EXPORT_SYMBOL_GPL(mtk_afe_fe_shutdown);
+ 
+ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
+ 			 struct snd_pcm_hw_params *params,
+ 			 struct snd_soc_dai *dai)
+ {
+ 	struct snd_soc_pcm_runtime *rtd = snd_soc_substream_to_rtd(substream);
+ 	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+ 	int id = snd_soc_rtd_to_cpu(rtd, 0)->id;
+ 	struct mtk_base_afe_memif *memif = &afe->memif[id];
+ 	int ret;
+ 	unsigned int channels = params_channels(params);
+ 	unsigned int rate = params_rate(params);
+ 	snd_pcm_format_t format = params_format(params);
+ 
+ 	if (afe->request_dram_resource)
+ 		afe->request_dram_resource(afe->dev);
+ 
+ 	dev_dbg(afe->dev, "%s(), %s, ch %d, rate %d, fmt %d, dma_addr %pad, dma_area %p, dma_bytes 0x%zx\n",
+ 		__func__, memif->data->name,
+ 		channels, rate, format,
+ 		&substream->runtime->dma_addr,
+ 		substream->runtime->dma_area,
+ 		substream->runtime->dma_bytes);

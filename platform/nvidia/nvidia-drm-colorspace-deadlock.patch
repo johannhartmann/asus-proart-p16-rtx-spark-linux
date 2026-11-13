@@ -7,7 +7,10 @@ including an interruptible backoff failure. Do not drop a contended context.
 
 --- a/kernel-open/nvidia-drm/nvidia-drm-drv.c
 +++ b/kernel-open/nvidia-drm/nvidia-drm-drv.c
-@@ -1017,49 +1017,57 @@
+@@ -1014,71 +1014,79 @@
+ }
+ #endif
+ 
  static
  int nv_drm_reset_input_colorspace(struct drm_device *dev)
  {
@@ -65,3 +68,22 @@ including an interruptible backoff failure. Do not drop a contended context.
  
      return ret;
  }
+ 
+ static
+ void nv_drm_master_drop(struct drm_device *dev, struct drm_file *file_priv)
+ {
+     struct nv_drm_device *nv_dev = to_nv_device(dev);
+ 
+     nv_drm_revoke_modeset_permission(dev, file_priv, 0);
+     nv_drm_revoke_sub_ownership(dev);
+ 
+     if (!nv_dev->hasFramebufferConsole) {
+         int err;
+ 
+         /*
+          * After dropping nvkms modeset onwership, it is not guaranteed that drm
+          * and nvkms modeset state will remain in sync.  Therefore, disable all
+          * outputs and crtcs before dropping nvkms modeset ownership.
+          *
+          * First disable all active outputs atomically and then disable each
+          * crtc one by one, there is not helper function available to disable
