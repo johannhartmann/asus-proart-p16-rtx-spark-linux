@@ -256,6 +256,48 @@ service (command 6), while `_GCP` advertises wake support; the rejection alone
 does not establish which secure-side condition failed. Real s2idle needs a
 coordinated manual wake or a verified working alarm. It is not reported passed.
 
+## Kernel32 offline qualification
+
+`7.2.8-32-rtx-spark-npu` was subsequently built with KASAN,
+`LOCKDEP_CHAINS_BITS=18`, the permanent fixed-IRQ close patch and matching
+NVIDIA 615.78.08 modules containing the colorspace deadlock backoff fix.
+Its separately named kernel and headers packages are `linux-p16-platform-32`
+and `linux-p16-platform-32-headers`; they do not replace the kernel31 packages.
+The 13 production external modules are grouped in the matching
+`linux-p16-platform-32-drivers` package. Validation-only modules are excluded
+from that installed driver package.
+
+The exact candidate passed split-BTF validation for 8,507 modules: 8,490 native
+modules, 13 production external modules and four qualification modules.
+An isolated EFI/KVM boot with 4 GiB RAM and one virtual CPU passed userspace,
+vDSO clock reads, signal return, fork, loading 30 selected modules, the protocol
+KUnit suite and an actual call to the corrected fixed-IRQ shutdown function.
+The guest completed without a kernel warning, KASAN report or failed KUnit case.
+The harness run took 13.33 seconds; the host remained on its existing boot.
+
+The tested raw kernel Image SHA-256 is
+`545b659c8f5cc5c7788645693249f0d6dae35c867085657db1bafc8699604305`;
+its base BTF SHA-256 is
+`c0cdfcbf418a8711da781d509ad72e24d6678b9f58bdf5187670baad1c35ffa6`.
+These offline results do not qualify native startup or audio/sleep with the
+expanded Lockdep budget. That requires booting the complete verified kernel32
+bundle and checking the real devices and logs. Kernel23 remains the default;
+the successful kernel31 boot image is also retained.
+
+The three kernel32 packages were then installed together. The installed set
+passed a fresh BTF check for all 8,503 production modules. A new UKI was built
+with the successful kernel31 command line and the same reference-SSDT ACPI
+profile. All 430 embedded modules matched their installed counterparts and
+passed BTF validation; DSP/NPU publication remains outside the initramfs.
+
+The installed image is `/boot/EFI/Linux/omarchy_linux-p16-platform-32.efi`,
+SHA-256 `2d4cfeb8a9d25d292c62c9b9f01f9c6b930a8cfcffaacfc7ea28bb1fe8eb4e75`.
+Select **RTX-Spark-Audio-Kernel32** in the five-second Limine menu for the next
+native test. Kernel23 remains the default/recovery; all existing UKIs, protected
+kernel23/kernel31 module files, loaded drivers and the power profile matched
+their pre-installation snapshots. The new native boot and its hardware tests
+are still pending; the installation receipt is not a hardware qualification.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the
