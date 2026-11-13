@@ -113,6 +113,13 @@ def stage(args):
                 continue
             source = Path(directory) / name
             copy_input(source, output / 'nvidia' / source.relative_to(nvidia), inputs, output)
+    nvidia_patch = ROOT / 'platform/nvidia/nvidia-drm-colorspace-deadlock.patch'
+    copy_input(nvidia_patch, output / 'nvidia-fixes' / nvidia_patch.name, inputs, output)
+    # Apply only to the copied candidate, never to installed or running code.
+    subprocess.run(['patch', '-p1', '--fuzz=0', '--batch', '-i', str(nvidia_patch)],
+                   cwd=output / 'nvidia', check=True, capture_output=True)
+    modified = 'nvidia/kernel-open/nvidia-drm/nvidia-drm-drv.c'
+    inputs[modified] = digest(output / modified)
     manifest = {
         'created_at': datetime.now(timezone.utc).isoformat(),
         'kernel_candidate': str(parent), 'kernel_tree': str(kernel),

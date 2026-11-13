@@ -10,7 +10,7 @@ fi
 python3 -m unittest discover -s "$repo/tests" -p test_driver_pm.py -v
 python3 -m unittest discover -s "$repo/tests" -p test_hid_series.py -v
 python3 -m unittest discover -s "$repo/tests" -p test_kernel_candidate.py -v
-for directory in als dsp pluton scp dsp/afe; do
+for directory in als dsp pluton scp dsp/afe nvidia; do
   for test in "$repo/platform/$directory"/test_*.py; do
     python3 "$test"
   done

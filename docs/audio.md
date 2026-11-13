@@ -334,7 +334,7 @@ cuDLA outputs passed. The permanent kernel bundle must include
 closed PCM's substream pointer. The initial kernel31 instance needed the narrowly
 guarded temporary livepatch described in [the boot evidence](audio-boot-diagnostics.md#fixed-irq-lifetime-and-first-native-reload).
 Device-only PM also passed the full twelve-round before/after PCM matrix.
-Repeated reload, real sleep and clean Lockdep checks remain separate gates.
+Two native reload cycles and a further device-only PM cycle have now passed the same PCM/NPU checks. Real sleep and clean Lockdep remain separate gates.
 
 Both maintenance and PM validation issue sysfs commands through a single
 unbuffered write. A control write error stops the operation; buffered close-time

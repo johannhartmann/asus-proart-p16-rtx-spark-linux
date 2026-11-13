@@ -355,3 +355,12 @@ hardened power export before interrupting audio. Hardware qualification must
 cover the complete matching bundle, two reload cycles, the full PCM matrix and
 numerical NPU execution after each cycle. An uncertain platform power or secure
 loader transaction remains a protected failure that can still require reboot.
+
+On 13 November, kernel31 passed two complete native DSP/AFE unload/reload
+cycles, six PCM rounds and eight exact cuDLA outputs after each. Device-only
+PM also passed before/after PCM and numerical NPU checks. The fixed-IRQ close
+bug found during this sequence is corrected in the common MediaTek kernel
+patch; the first running instance used a scoped, KVM-tested livepatch. Real
+s2idle, physical endpoint quality and clean Lockdep remain pending. The RTC
+alarm rejection and separate NVIDIA DRM backoff defect are recorded in the
+[native boot and lifetime evidence](audio-boot-diagnostics.md#fixed-irq-lifetime-and-first-native-reload).

@@ -2,8 +2,9 @@
 
 **Native kernel31 boot succeeded on 13 November 2026 after the split-BTF repair.**
 The first checked DSP/AFE unload/reload and device-only PM tests also succeeded
-later that morning; repeated reload, real s2idle and clean Lockdep qualification
-remain pending. Kernel23 is still the preserved default and recovery baseline.
+later that morning. Two reload cycles passed PCM and numerical NPU checks;
+real s2idle and clean Lockdep qualification remain pending. Kernel23 is still
+the preserved default and recovery baseline.
 
 On 12 November, selecting `RTX-Spark-Audio-Test` produced an immediate black
 screen that remained for ten minutes. The failed attempt did not leave a
@@ -233,6 +234,27 @@ The next separate kernel candidate raises `LOCKDEP_CHAINS_BITS` from 16 to 18,
 increasing chain and held-lock capacity fourfold. Current-boot functional tests
 cannot restore the already-disabled validator; clean Lockdep qualification
 requires that complete matching kernel/module bundle to boot successfully.
+
+The second native reload also passed all six PCM rounds and eight exact cuDLA
+outputs. A subsequent device-only PM cycle using the unbuffered command path
+passed another six PCM rounds and eight exact cuDLA outputs; the SoundWire card
+was ready within 0.019 seconds of PM returning. These remain device-only tests.
+
+Journal review found a separate NVIDIA 615.78.08 display cleanup defect:
+`nv_drm_reset_input_colorspace()` returned `-EDEADLK` without the DRM backoff
+protocol, triggering `drm_modeset_drop_locks()` during logind's master drop.
+The [version-scoped NVIDIA patch](../platform/nvidia/README.md) corrects the
+transaction and is included in the next private module candidate. It has not
+replaced the running desktop driver. An earlier DMA-debug warning arose in the
+USB webcam's `dma_alloc_noncontiguous()`/`uvcvideo` allocation path, separately
+from DSP retirement; it is not a clean global DMA-debug qualification.
+
+The attempted real-sleep qualification stopped **before suspend** because the
+ACPI TAD RTC rejected its wake alarm with `EIO`. Both AC/DC timer readbacks
+remained zero. The captured AML implements `_STV` through the secure FF-A RTC
+service (command 6), while `_GCP` advertises wake support; the rejection alone
+does not establish which secure-side condition failed. Real s2idle needs a
+coordinated manual wake or a verified working alarm. It is not reported passed.
 
 ## Prepare early-console evidence
 

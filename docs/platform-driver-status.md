@@ -1,14 +1,14 @@
 # Platform driver status
 
-This table describes implemented source features, not hardware qualification.
-Check installed module identities and the recorded results separately. Builds,
+This table records implemented features and the bounded hardware results below.
+Check installed module identities and the recorded evidence separately. Builds,
 offline tests and firmware-ready notifications do not qualify audio or sleep.
 
 | Component | Implemented | Remaining work |
 | --- | --- | --- |
 | NPU/SROOT | Serialized secure upload, signed-container bounds checking, numerical task validation and boot service | Fresh-boot qualification of changed sources; upstream accelerator integration |
-| DSP | Secure load, bounded IPC, HiFi1 playback, primary HiFi5 capture, independent duplex owners, REINIT resume and checked native shutdown/reload | First native reload and device-only PM passed PCM/NPU tests; repeated reload, real s2idle, physical endpoints, clean Lockdep and runtime autosuspend remain open |
-| AFE | Firmware-described SRAM owner, PCM/IPC leases, checked ring/IRQ programming, playback/capture frontends and fixed-IRQ close lifetime fix | First checked published-buffer retirement passed; complete endpoint, repeated reload and real PM qualification with matching DSP/provider |
+| DSP | Secure load, bounded IPC, HiFi1 playback, primary HiFi5 capture, independent duplex owners, REINIT resume and checked native shutdown/reload | Two native reloads and device-only PM passed PCM/NPU tests; real s2idle, physical endpoints, clean Lockdep and runtime autosuspend remain open |
+| AFE | Firmware-described SRAM owner, PCM/IPC leases, checked ring/IRQ programming, playback/capture frontends and fixed-IRQ close lifetime fix | Two checked published-buffer retirement/reload cycles passed; complete endpoint and real PM qualification with matching DSP/provider |
 | SCP | Read-only firmware log snapshots and bounded version/descriptor queries | Subsystem/API review and support for additional firmware ABIs |
 | Pluton | ACPI PFI transport and typed PCBI metadata queries | Other services, including firmware control and key operations |
 | SPI HID / ALS | ACPI IRQ/reset fixes, serialized report transactions, stream-only sensor matching and per-channel IIO scales | Maintainer dependency selection, target-tree testing and optical calibration |
