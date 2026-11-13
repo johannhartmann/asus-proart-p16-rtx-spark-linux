@@ -15,6 +15,21 @@ published firmware, accepted upload, readiness and error zero. The power
 profile remained unchanged. These results qualify only that running baseline,
 not the new context/client code.
 
+## Native kernel31 verification, 13 November 2026
+
+The repaired kernel31 bundle booted into Hyprland with zero module-BTF load
+failures. Runtime vmlinux BTF matched the installed bundle. NVIDIA, the NPU,
+all three DSPs and the internal SoundWire card initialized. DSP 0.1.25 / AFE
+0.1.27 then passed all six bounded S16_LE/S24_LE playback, capture and duplex
+tests, with nonzero capture and advancing firmware counters. Details and
+qualification limits are recorded in [audio verification](audio.md#dsp-0125--afe-0127-native-pcm-verification)
+and the [boot repair record](audio-boot-diagnostics.md#successful-native-boot-and-pcm-checks).
+
+The debug kernel exhausted its lockdep chain-entry capacity before these tests.
+This run therefore does not provide a clean lockdep qualification. No physical
+suspend, DSP unload/reload, NPU numerical execution or complete physical audio
+endpoint qualification was performed. The working kernel23 default is retained.
+
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source

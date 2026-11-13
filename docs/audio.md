@@ -8,9 +8,12 @@ No application-specific DSP client is needed for normal audio.
 
 ## Candidate capabilities and limits
 
-**Current boot blocker:** the kernel31 shutdown/reload image failed to boot on
-12 November 2026. Keep the working kernel23 default; see
-[the boot investigation and diagnostic staging procedure](audio-boot-diagnostics.md).
+**Native boot verified on 13 November 2026:** kernel31 starts successfully after
+repairing the split-BTF module mismatch. All three DSPs report accepted firmware,
+readiness and zero errors; the internal SoundWire card is present. Six bounded
+PCM tests passed: playback, capture and duplex in S16_LE and S24_LE. Keep the
+working kernel23 default until the remaining lifecycle tests are qualified; see
+[the boot repair and verification record](audio-boot-diagnostics.md).
 
 
 The [interface matrix](platform-driver-status.md#current-dsp-interface-requirements)
@@ -78,6 +81,25 @@ the playback data path and lifecycle. They do not establish audible output,
 microphone processing, physical suspend or post-wake operation. The debug
 kernel exhausted its lockdep entry budget during container startup before the
 audio tests; this is not a clean lockdep qualification.
+
+
+## DSP 0.1.25 / AFE 0.1.27 native PCM verification
+
+On 13 November 2026, the repaired `7.2.8-31-rtx-spark-npu` boot completed all
+six three-second PCM tests using DL0 playback and UL1 capture at 48 kHz stereo.
+Both S16_LE and S24_LE passed playback, capture and concurrent duplex. DSP
+notification/counter checks advanced, capture byte counts matched the requested
+duration, and all four capture files contained nonzero data. No retained DSP
+fault was reported. Mixer controls, desktop services, modules, boot files and
+the selected power profile were unchanged by the validator. Raw captures remain
+private and are not included in this repository.
+
+This qualifies the tested PCM transport on that boot. Audible speaker/headphone
+output, microphone identity/quality, jack switching, device PM, physical suspend,
+NPU numerical execution and DSP unload/reload were not tested in this run.
+Lockdep had already exhausted `MAX_LOCKDEP_CHAIN_HLOCKS` during a Btrfs
+transaction and disabled its validator; these results are not a clean lockdep
+qualification. No new kernel or reboot was requested to alter that debug limit.
 
 ## Resume correction awaiting hardware qualification
 

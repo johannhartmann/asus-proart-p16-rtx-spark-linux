@@ -1,10 +1,13 @@
-# Diagnosing the current audio test boot failure
+# Audio test boot failure, repair and verification
 
-The kernel31 shutdown/reload candidate is **not hardware-qualified or confirmed
-bootable**. On 12 November 2026, selecting `RTX-Spark-Audio-Test` produced an
-immediate black screen that remained for ten minutes. The failed attempt did
-not leave a persistent kernel31 journal entry. Use the working kernel23 default
-or recovery entry while investigating.
+**Native kernel31 boot succeeded on 13 November 2026 after the split-BTF repair.**
+The full DSP shutdown/reload and suspend paths remain unqualified. Kernel23 is
+still the preserved default and recovery baseline.
+
+On 12 November, selecting `RTX-Spark-Audio-Test` produced an immediate black
+screen that remained for ten minutes. The failed attempt did not leave a
+persistent kernel31 journal entry. The investigation below separates that
+history, the console-output gap and the confirmed module-coherence defect.
 
 The failed ARM64 `Image` has SHA-256
 `ab39c02c03334e5cd665758502cde89f04667572112e34494f7bba3bacc69fd1`.
@@ -12,7 +15,8 @@ The previously working kernel31 image has SHA-256
 `786ba498bd872a33b51b2eccefadb28888f007183bb171866079e90551b1c7b8`.
 Their ARM64/PE headers match. Comparing the saved UKIs also found identical EFI
 stub sections, initramfs and ACPI payload; the kernel changed, along with a
-trailing command-line space. The cause has not been established.
+trailing command-line space. Those initial comparisons did not detect the
+split-BTF mismatch described below.
 
 Both kernel images passed isolated direct and EFI/KVM startup with KASLR and a
 minimal userspace test covering vDSO time reads, signal return and fork. EFI
@@ -166,7 +170,31 @@ hash verification passed. The previous module tree, changed headers, update
 checker and boot files are backed up under
 `/var/lib/p16-platform/audio31-btf-repair-20261113`. Kernel23 remains the default;
 recovery, other boot images, live modules and power profile were unchanged.
-The complete native boot and DSP reload still need physical qualification.
+The subsequent native boot is recorded below; DSP reload still needs physical
+qualification.
+
+## Successful native boot and PCM checks
+
+On 13 November at approximately 08:35 local time, the repaired diagnostic entry
+booted `7.2.8-31-rtx-spark-npu` into the Hyprland desktop. The runtime
+`/sys/kernel/btf/vmlinux` SHA-256 matches the installed bundle's base BTF hash
+above. The boot journal contains zero module-BTF validation failures. NVIDIA
+615.78.08 responds, the NPU firmware initializes and exposes `/dev/accel/accel0`,
+and all three DSPs report `ready=1`, `error=0` and `asoc_ready=1`. DSP 0.1.25 and
+AFE 0.1.27 are loaded; the internal SoundWire ALSA card is present. There are no
+failed system or user systemd units at verification time.
+
+The bounded audio validator then passed all six three-second PCM tests:
+playback, capture and duplex in S16_LE and S24_LE, with matching capture byte
+counts, nonzero recordings and advancing firmware counters. No services were
+stopped and no drivers were unloaded. This verifies the native boot and the
+tested PCM transport; NPU numerical execution, DSP reload, physical endpoints
+and suspend were not exercised.
+
+The debug kernel reported `MAX_LOCKDEP_CHAIN_HLOCKS too low` in a Btrfs
+transaction before PCM testing and disabled lockdep. This is a debug capacity
+failure, so a clean lockdep qualification remains outstanding. The boot entry,
+default selection and power profile were left unchanged during verification.
 
 ## Prepare early-console evidence
 
