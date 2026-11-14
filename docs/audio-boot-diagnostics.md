@@ -553,6 +553,32 @@ controlled device-only PM and post-resume PCM/NPU checks. Physical s2idle
 remains a later gate. Do not reset the current boot's disabled Lockdep or
 unload the active desktop GPU to avoid this necessary activation boot.
 
+### Native NVIDIA ownership verification
+
+The NVPM candidate booted on 14 November at 18:50 local time with the expected
+NVIDIA core srcversion `AC96DECE9DF4E11B1BDC6A9`, matching maintained modules
+and matching runtime vmlinux BTF. A six-case untraced PCM baseline and eight
+independently checked cuDLA outputs passed with Lockdep enabled.
+
+At 18:54, one controlled device-only PM cycle passed with VT handoff before
+user-slice freezing. All three DSPs completed one error-free D3/REINIT/D0 cycle
+with matching retained configuration. The SoundWire readiness check completed
+within 26 ms. The trace shows NVKMS resume in the dedicated `nvidia-pm` worker;
+the former notifier-chain lock cycle did not recur. No new KASAN, Lockdep,
+Oops, call-trace or NVIDIA Xid report appeared in the PM journal window.
+Lockdep remained enabled, VT1 and user.slice were restored, and temporary
+overrides were removed.
+
+Afterward the same six PCM cases and eight cuDLA outputs passed again with
+Lockdep enabled: twelve PCM cases and sixteen numerical outputs across the
+before/after matrix. A separate PipeWire duplex test passed through the
+internal speaker and microphone, recording 327,680 bytes with 278,354 nonzero
+bytes and returning both clients to idle. Raw captures remain private. Desktop
+defaults and the `quiet` power profile were unchanged. The original START
+`EBUSY` was not reproduced; its cause is still open. These checks qualify the
+bounded idle **device-only** cycle, not physical/repeated sleep, active-workload
+sleep or the current helper-based system startup architecture.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the
