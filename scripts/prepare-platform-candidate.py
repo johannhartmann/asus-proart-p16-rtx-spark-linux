@@ -189,7 +189,13 @@ def build(output, manifest):
             directory /= 'driver'
         log = output / (kind + '-build.log')
         if kind == 'nvidia':
-            command = ['make', '-C', str(directory), '-j' + str(manifest['jobs']),
+            # Vendor distributions may include the OS-agnostic core objects.
+            # Those are copied and hash-pinned with the other inputs. Build
+            # only the kernel interface in that case, as with DKMS sources.
+            cores = (directory / 'kernel-open/nvidia/nv-kernel.o_binary',
+                     directory / 'kernel-open/nvidia-modeset/nv-modeset-kernel.o_binary')
+            make_directory = directory / 'kernel-open' if all(p.is_file() for p in cores) else directory
+            command = ['make', '-C', str(make_directory), '-j' + str(manifest['jobs']),
                        'SYSSRC=' + str(kernel), 'SYSOUT=' + str(kernel),
                        'KERNEL_UNAME=' + release, 'IGNORE_PREEMPT_RT_PRESENCE=1',
                        'NV_EXCLUDE_BUILD_MODULES=', 'modules']
