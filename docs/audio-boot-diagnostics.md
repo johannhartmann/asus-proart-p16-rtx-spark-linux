@@ -444,10 +444,24 @@ SoundWire enumeration and ALSA controls showed exactly AMP1 and AMP2; AMP3/AMP4
 controls were absent. `n1x-dsp-ucm` 0.1.0-3 instead includes the installed vendor
 two-amplifier profile and retains output exclusivity. With that candidate in a
 private UCM tree, the actual libasound calls to select HiFi and enable/disable
-Speaker all returned zero. No kernel or driver replacement is needed. Package
-installation and the post-install PipeWire check are pending desktop
-authentication. This UCM defect does not establish the cause of the earlier
-PCM START `EBUSY`.
+Speaker all returned zero. The package was then installed and both packaged
+files matched the maintained sources. After restarting WirePlumber, the internal
+card automatically selected `HiFi (Mic, Speaker)` and exposed its speaker sink
+and microphone source. No manual profile selection was needed. A second
+WirePlumber restart reproduced that automatic profile and both nodes.
+
+A user-session PipeWire duplex check passed: three seconds of digital silence
+were sent to the internal speaker sink, while the internal microphone source
+produced 327,680 captured bytes, including 281,790 nonzero bytes. Both DSP
+clients were active during the check, firmware PCM counters advanced, and the
+clients returned to idle without retained faults. There were no new ASoC,
+KASAN, Lockdep, Oops or NVIDIA Xid warnings in the checked journal window.
+Capture samples remain private and were not published. Silence verifies the
+playback data path, not audible speaker quality or all physical endpoints.
+The USB dock sink, webcam source, other card profiles, boot identity and `quiet`
+power profile were preserved. No kernel/driver replacement or reboot was
+needed. This UCM defect does not establish the cause of the earlier PCM START
+`EBUSY`.
 
 No host suspend was requested in this run. Device-only PM and real s2idle on
 kernel33, complete physical endpoint qualification and the initial intermittent

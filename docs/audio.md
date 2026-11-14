@@ -150,6 +150,15 @@ PipeWire otherwise probes both playback PCMs concurrently, exceeds the single
 playback owner contract and discards the entire HiFi profile. This rule does
 not implement two simultaneous DSP playback streams.
 
+
+Package `n1x-dsp-ucm` 0.1.0-3 corrects the P16 overlay from four amplifiers to
+the two actually enumerated CS35L56 devices. On kernel33, WirePlumber selected
+`HiFi (Mic, Speaker)` automatically on two successive starts. A user-session
+PipeWire playback/capture test exercised both DSP paths without new faults;
+existing USB audio defaults and other card profiles were preserved. This does
+not qualify audible output, jack switching or suspend; see the
+[native evidence](audio-boot-diagnostics.md#native-kernel33-results-on-14-november).
+
 AFE 0.1.26 distinguishes the two hardware START contracts. HiFi1 still needs
 host memif/IRQ activation. HiFi5 capture already enabled its hardware after
 native task START: the AFE verifies the active IRQ's rate/domain/count,
