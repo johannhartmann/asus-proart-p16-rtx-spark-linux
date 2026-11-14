@@ -926,12 +926,30 @@ static int n1x_adsp_link_primary(struct n1x_adsp *dsp)
 {
 	struct device_link *link;
 	struct device *primary;
+	struct n1x_adsp *first;
+	bool ready;
 
 	if (dsp->target->image_id != 0xc0305)
 		return 0;
 	primary = n1x_adsp_find_device(dsp->dev, "NVDA8301");
 	if (!primary)
 		return -EPROBE_DEFER;
+	/* ACPI coldplug order is not a firmware dependency contract. Defer
+	 * before acquiring power or publishing memory if the primary has not
+	 * completed its normal probe yet. No userspace load order is required.
+	 */
+	if (auto_boot) {
+		device_lock(primary);
+		first = primary->driver && !strcmp(primary->driver->name, "n1x-adsp") ?
+			dev_get_drvdata(primary) : NULL;
+		ready = first && READ_ONCE(first->boot_ready) &&
+			READ_ONCE(first->component_registered);
+		device_unlock(primary);
+		if (!ready) {
+			put_device(primary);
+			return -EPROBE_DEFER;
+		}
+	}
 	/* HiFi5-1 shares control hardware with HiFi5-0: secondary suspends first
 	 * and resumes last. No runtime-PM reference is released by this link.
 	 */
@@ -2796,7 +2814,8 @@ EXPORT_SYMBOL_GPL(n1x_adsp_primary_abi);
 module_platform_driver(n1x_adsp_driver);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MT8901 DSP boot, IPC and playback services");
-MODULE_VERSION("0.1.25");
+MODULE_VERSION("0.1.26");
+MODULE_SOFTDEP("pre: n1x_npu_bootstrap");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-0-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi5-1-mt8901-signed.bin");
 MODULE_FIRMWARE("nvidia/n1x/hifi1-0-mt8901-signed.bin");

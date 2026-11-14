@@ -5,6 +5,47 @@ services. They are not collectively ready for mainline submission. A working
 desktop, successful module build, or passing protocol test does not establish
 safe suspend, device removal, firmware recovery, or support on another board.
 
+## Normal module startup
+
+The production drivers are native C `.ko` modules registered with the Linux
+platform/ACPI, HID/IIO, hwmon, ALSA/ASoC and DRM accelerator subsystems. Their
+probe, firmware, IRQ, DMA and PM paths execute in the kernel. The N1X driver
+admission rules use ACPI hardware IDs, revisions, resources, coherency and
+firmware ABI validation, not an ASUS product/BIOS allowlist, `:00` instance
+name or a workstation path. Register offsets and firmware image IDs describe
+the supported IP/ABI; they are not interchangeable with machine-name checks.
+
+The helper-free packaging removes the NPU/DSP startup services and their
+domain-switching/readiness helpers. `n1x-translated-dma.patch` chooses DMA
+domains for NVDA200A, NVDA8600 and NVDA8301/2/3 through SMMUv3's normal
+`def_domain_type` callback, before binding. The other devices retain their
+existing policy, including NVIDIA PCI and HiSilicon exceptions. This is needed
+only because this distribution defaults IOMMU groups to passthrough; drivers
+continue to reject unsuitable/shared DMA domains before publication. They do
+not write their own sysfs controls or rearrange live domains.
+
+DSP 0.1.26 declares its SROOT dependency through normal module softdeps and
+defers the secondary HiFi5 probe until the primary's firmware and ASoC component
+are ready. No userspace module-load order is required. Firmware uses the
+standard in-kernel firmware API. Debugfs is diagnostic only and is not a boot
+prerequisite. No Python program is needed for boot, audio, inference or PM.
+The separately optional `n1x-adsp-tools` package retains the explicit Python
+reload/recovery utility; development tests and application bindings may also
+use Python. They are not kernel initialization paths.
+
+ASUS board-specific ALSA UCM files remain intentional: codec/amp wiring is a
+machine topology description, as in ordinary upstream-supported sound cards.
+They are separate from the SoC drivers and must not be replaced by a guessed
+generic routing profile.
+
+**Migration status:** the running kernel33 NVPM test passed its bounded
+device-only before/after audio/NPU matrix using the previous boot services.
+The new DMA policy and helper-free coldplug path require a matching candidate
+kernel and hardware qualification before global startup configuration is
+replaced. A source/package cleanup is not evidence that this new coldplug path
+has already run. Physical/repeated sleep and the earlier unreproduced START
+`EBUSY` remain open.
+
 ## Subsystem boundaries
 
 | Component | Interface and ownership | Upstream direction and remaining work |

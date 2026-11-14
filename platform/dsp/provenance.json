@@ -491,7 +491,7 @@
   "asoc_audio": {
     "status": "0.1.22_playback_to_AFE_SRAM_verified; 0.1.24_duplex_IRQ_and_resume_unqualified",
     "playback_abi": 3,
-    "automatic_firmware": "auto_boot plus n1x-adsp-audio.service",
+    "automatic_firmware": "ACPI probe with auto_boot; in-kernel firmware API; no startup service",
     "card_components": [
       "NVDA8301",
       "NVDA8302",
@@ -607,7 +607,7 @@
     "cleanup": "Independent AFE memif stop/readback, owned IRQ clear, retired substream/IRQ borrower checks, retention and module/PM/reference balancing",
     "retry_policy": "Only unsubmitted EBUSY power stages or software cleanup after completed native power-off; no timeout replay",
     "restart": "Exclusive image reservation and prior-retirement marker from the same loaded provider; new operating DMA allocation and canonical firmware upload",
-    "maintenance": "n1x-adsp-audio --reload preserves module options and original invoking-user audio-service state",
+    "maintenance": "n1x-adsp-reload --reload preserves module options and original invoking-user audio-service state",
     "tests": [
       "test_power.py",
       "test_shutdown.py",
@@ -626,5 +626,14 @@
     "afe_version": "0.1.27",
     "past_EIO_exact_guard": "Unknown; old 0.1.25 did not log its first mismatch",
     "hardware_qualified": false
+  },
+  "target_is_qualification_reference_not_driver_allowlist": true,
+  "helper_free_probe_candidate": {
+    "version": "0.1.26",
+    "dma_policy": "ACPI-ID-selected SMMUv3 translated default domains before binding",
+    "dependency": "MODULE_SOFTDEP plus secondary-primary EPROBE_DEFER",
+    "boot_service": false,
+    "python_runtime_required": false,
+    "cold_boot_hardware_qualified": false
   }
 }

@@ -21,7 +21,7 @@ import re
 DEVICES = tuple(Path("/sys/bus/platform/devices") / f"NVDA830{i}:00" for i in (1, 2, 3))
 FAULTS = ("error", "power_error", "ipc_error", "primary_error", "primary_task_error",
           "primary_pcm_error", "pcm_period_error")
-VERSION = "0.1.25"
+VERSIONS = ("0.1.25", "0.1.26")
 AFE_VERSION = "0.1.27"
 
 
@@ -76,8 +76,8 @@ def frontend_options():
 
 
 def preflight():
-    if Path("/sys/module/n1x_adsp/version").read_text().strip() != VERSION:
-        raise RuntimeError("Requires the matching DSP 0.1.25 / PCM ABI 3 candidate")
+    if Path("/sys/module/n1x_adsp/version").read_text().strip() not in VERSIONS:
+        raise RuntimeError("Requires the matching DSP 0.1.25/0.1.26 / PCM ABI 3 candidate")
     afe_version = Path("/sys/module/snd_soc_mt8901_afe/version")
     if not afe_version.exists() or afe_version.read_text().strip() != AFE_VERSION:
         raise RuntimeError("Requires AFE 0.1.27 with capture IRQ ownership handoff")

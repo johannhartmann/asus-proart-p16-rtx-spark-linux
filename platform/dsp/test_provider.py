@@ -80,14 +80,21 @@ int main(void)
 #include <string.h>
 #define EPROBE_DEFER 517
 #define DL_FLAG_STATELESS 1
-struct device {int unused;};
+#include <stdbool.h>
+#define READ_ONCE(x) (x)
+struct device_driver {const char *name;};
+struct device {struct device_driver *driver;};
 struct device_link {int unused;};
 struct target {unsigned image_id;};
-struct n1x_adsp {struct device *dev;struct target *target;};
+struct n1x_adsp {struct device *dev;struct target *target;bool boot_ready,component_registered;};
+static bool auto_boot; /* Readiness/defer cases are covered in test_probe_dependency.py. */
 static struct device consumer,primary;
 static struct device_link link;
 static unsigned fault,refs,links;
 static void (*cleanup)(void *);
+static void device_lock(struct device *dev){assert(dev==&primary);}
+static void device_unlock(struct device *dev){assert(dev==&primary);}
+static void *dev_get_drvdata(struct device *dev){assert(dev==&primary);return NULL;}
 static struct device *n1x_adsp_find_device(struct device *dev,const char *hid)
 {assert(dev==&consumer && !strcmp(hid,"NVDA8301"));if(fault==1)return NULL;refs++;return &primary;}
 static struct device_link *device_link_add(struct device *a,struct device *b,unsigned flags)
@@ -101,7 +108,7 @@ static int devm_add_action_or_reset(struct device *dev,void (*fn)(void *),void *
 ''' + link_functions + r'''
 int main(void)
 {
- struct target target={0xc0304};struct n1x_adsp dsp={&consumer,&target};
+ struct target target={0xc0304};struct n1x_adsp dsp={.dev=&consumer,.target=&target};
  assert(!n1x_adsp_link_primary(&dsp) && !refs && !links);
  target.image_id=0xc0305;
  for(fault=1;fault<=3;fault++) {

@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Prepare isolated DSP DMA domains or verify kernel-owned ASoC readiness."""
+"""Optional, explicit DSP/AFE maintenance; never used for boot or normal audio."""
 import argparse
 import errno
 import fcntl
@@ -38,8 +38,7 @@ def endpoints(root=SYS):
     return result
 
 
-def prepare(root=SYS):
-    controls = []
+def check_domains(root=SYS):
     for device in endpoints(root):
         group = (device/'iommu_group').resolve(strict=True)
         if group.parent != root/'kernel/iommu_groups':
@@ -48,19 +47,11 @@ def prepare(root=SYS):
             raise RuntimeError('Shared DSP IOMMU group: '+device.name)
         control = group/'type'
         mode = control.read_text().strip()
-        if mode not in ('identity', 'DMA', 'DMA-FQ'):
+        if mode not in ('DMA', 'DMA-FQ'):
             raise RuntimeError('Unsupported DSP IOMMU domain')
         if (device/'driver').exists():
             if (device/'driver').resolve().name != 'n1x-adsp' or mode == 'identity':
                 raise RuntimeError('Bound DSP prevents domain preparation: '+device.name)
-        controls.append(control)
-    # Validate every endpoint before changing any domain. The IOMMU core
-    # rejects a type change if a driver acquired the domain in the meantime.
-    for control in controls:
-        if control.read_text().strip() == 'identity':
-            write_control(control, 'DMA\n')
-        if control.read_text().strip() not in ('DMA', 'DMA-FQ'):
-            raise RuntimeError('DSP DMA domain selection failed')
 
 
 def verify(root=SYS):
@@ -300,7 +291,7 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
         if phase == 'loading':
             if not (root/'module/snd_soc_mt8901_afe').exists():
                 command(['/usr/bin/modprobe', 'snd_soc_mt8901_afe', *saved['snd_soc_mt8901_afe']])
-            prepare(root)
+            check_domains(root)
             if not (root/'module/n1x_adsp').exists():
                 command(['/usr/bin/modprobe', 'n1x_adsp', *saved['n1x_adsp']])
             for attempt in range(150):
@@ -355,29 +346,20 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
-    mode.add_argument('--prepare', action='store_true')
-    mode.add_argument('--verify', action='store_true')
     mode.add_argument('--reload', action='store_true', help='Explicit maintenance: interrupt caller audio and reload DSP/AFE modules')
     mode.add_argument('--resume', action='store_true', help='Continue interrupted audio maintenance in this boot')
     parser.add_argument('--uid', type=int, default=os.environ.get('PKEXEC_UID', '-1'),
                         help='Desktop user; normally supplied by pkexec')
     args = parser.parse_args()
     try:
-        if args.prepare:
-            if os.geteuid() != 0:
-                parser.error('DMA domain preparation requires root')
-            prepare()
-        elif args.verify:
-            verify()
-        else:
-            if os.geteuid() != 0:
-                parser.error('Reload requires graphical root authentication')
-            with open('/run/lock/n1x-adsp-audio-reload.lock', 'a') as lock:
-                try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError as error:
-                    raise RuntimeError('Another DSP audio maintenance operation is running') from error
-                reload_audio(args.uid, resume=args.resume)
+        if os.geteuid() != 0:
+            parser.error('Reload requires graphical root authentication')
+        with open('/run/lock/n1x-adsp-audio-reload.lock', 'a') as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as error:
+                raise RuntimeError('Another DSP audio maintenance operation is running') from error
+            reload_audio(args.uid, resume=args.resume)
     except (OSError, RuntimeError, ValueError, KeyError, subprocess.SubprocessError) as error:
         hint = '; use --resume after fixing a software error' if (args.reload or args.resume) and STATE.exists() else ''
         parser.exit(1, str(error)+'; maintenance stopped, no forced reset or unload'+hint+'\n')

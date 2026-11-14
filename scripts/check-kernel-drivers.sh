@@ -8,6 +8,7 @@ if (($#)) && [[ $# != 4 || $1 != --build ]]; then
 fi
 
 python3 -m unittest discover -s "$repo/tests" -p test_driver_pm.py -v
+python3 -m unittest discover -s "$repo/tests" -p test_translated_dma.py -v
 python3 -m unittest discover -s "$repo/tests" -p test_hid_series.py -v
 python3 -m unittest discover -s "$repo/tests" -p test_kernel_candidate.py -v
 for directory in als dsp pluton scp dsp/afe nvidia; do

@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-loader = importlib.machinery.SourceFileLoader('audio_reload', str(ROOT / 'platform/dsp/n1x-adsp-audio'))
+loader = importlib.machinery.SourceFileLoader('audio_reload', str(ROOT / 'platform/dsp/n1x-adsp-reload'))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 audio = importlib.util.module_from_spec(spec)
 loader.exec_module(audio)
@@ -124,7 +124,7 @@ class AudioReloadTests(unittest.TestCase):
                     patch.object(audio, 'write_control', side_effect=write), \
                     patch.object(audio, 'replacement_modules', side_effect=RuntimeError('bad module file') if fault == 'preflight' else None), \
                     patch.object(audio, 'save_reload', side_effect=save), \
-                    patch.object(audio, 'prepare'), patch.object(audio, 'verify',
+                    patch.object(audio, 'check_domains'), patch.object(audio, 'verify',
                         side_effect=[RuntimeError('probe deferred'), None, None] if fault == 'deferred' else
                         ready), \
                     patch.object(audio, 'card_bound', return_value=True), patch.object(audio.time, 'sleep'):

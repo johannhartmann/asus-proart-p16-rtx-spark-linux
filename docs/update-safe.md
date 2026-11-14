@@ -69,21 +69,22 @@ Prepare the NPU/SROOT provider source with
 `platform/dsp/provider`. Obtain the signed inputs as described in
 [the local firmware package](../platform/dsp/provider/firmware/README.md).
 
-Enable `n1x-platform-npu.service` for normal boot loading after installing the
-matching provider and firmware packages. Its helper discovers supported ACPI
-devices and checks isolated IOMMU groups before selecting DMA domains. Startup
-failure remains visible in the journal; the helper does not reset or retry
-uncertain firmware state.
+NPU and DSP modules load through ACPI modaliases. Firmware loading and
+readiness belong to the C driver probe paths. There is no startup service or
+Python dependency. Before migrating a passthrough-default kernel, include
+[`n1x-translated-dma.patch`](../kernel/n1x-translated-dma.patch); normal DMA
+translation must be established before binding, not by a userspace sysfs write.
+Keep the working kernel and its startup configuration until that migration is
+qualified. Do not remove a live driver's DMA domain or force an unload.
 
 ```sh
-systemctl status n1x-platform-npu.service
-journalctl -b -u n1x-platform-npu.service
 modinfo -k "$(uname -r)" n1x_npu_bootstrap
+journalctl -b -k
 ```
 
-DSP startup is explicit and disabled by default. Published buffers remain
-retained until reboot. Do not unload or replace a published instance to test a
-new build. NVIDIA display modules must also remain loaded during desktop use.
+DSP firmware publication retains its DMA/provider leases until checked
+shutdown succeeds. Use the optional maintenance tool for an explicit reload;
+never force module removal after a failed or uncertain hardware stop. NVIDIA display modules must also remain loaded during desktop use.
 
 ## Qualify a candidate
 

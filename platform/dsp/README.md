@@ -7,7 +7,8 @@ ACPI provides memory/IRQ resources and routing properties. Firmware uses the
 normal firmware loader, with per-core defaults and a `firmware-name` override.
 See [protocol.md](protocol.md) for wire formats and reference provenance.
 
-Firmware startup is disabled by default. Published DSP operating DRAM, AFE
+Without package options, firmware startup is disabled. The matched package
+selects automatic startup at probe after firmware and DMA-policy installation. Published DSP operating DRAM, AFE
 SRAM and provider/module/runtime-PM leases are retained until an explicit checked shutdown completes. Task
 STOP, CLOSE and IRQ disable do not establish whole-core DMA quiescence.
 Shutdown and reclamation must be verified before default startup is enabled.
@@ -29,11 +30,14 @@ same UL1 capture or an idle DL0/DL1 playback endpoint, a retired ALSA pointer
 and disabled IRQs/memifs. Failed or uncertain
 firmware operations remain terminal; they never free published memory.
 
-The optional `n1x-adsp-audio.service` prepares isolated DMA domains before
-loading `n1x_adsp` with automatic firmware startup. It verifies firmware-backed
-ASoC readiness afterwards and performs no userspace firmware upload, unbind,
-reset or unload. Its kernel-command-line condition keeps it inactive on the
-ordinary boot unless that boot explicitly enables automatic DSP audio.
+The package uses normal ACPI module aliases and in-kernel firmware startup.
+DSP 0.1.26 declares its NPU/SROOT soft dependency and defers secondary HiFi5
+probe until the primary is ready. It requires translated DMA domains before
+binding; the N1X SMMUv3 policy patch supplies this on passthrough-default
+kernels. No boot service, Python process, debugfs verification or userspace
+DMA-domain write is required. The optional `n1x-adsp-tools` package contains
+`n1x-adsp-reload` for explicit maintenance; its Python dependency is not a
+runtime dependency of the driver package.
 
 Microphone capture and headphone/codec controls retain the existing ALSA
 and UCM interfaces. `dsp_capture=1` selects primary HiFi5 tasks 23/21 on UL1.
@@ -41,7 +45,7 @@ This implements the native non-RAW capture transport; beamforming and noise
 suppression are not proven firmware capabilities. This is not a SOF firmware port. See [the audio setup and validation
 guide](../../docs/audio.md) for the complete installation and exact limits.
 
-The complete desktop candidate requires DSP 0.1.25, AFE 0.1.27 and the board UCM package
+The helper-free desktop candidate requires DSP 0.1.26, AFE 0.1.27 and the board UCM package
 in `ucm/`. The UCM package preserves the installed vendor codec controls while
 declaring the single-playback restriction. AFE 0.1.27 validates firmware-owned
 capture START rather than reconfiguring its already-active IRQ. See
@@ -131,7 +135,7 @@ loaded across DSP/AFE reloads so its retirement records remain available.
 The existing audio helper supplies the whole maintenance sequence:
 
 ```sh
-pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --reload
+pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --reload
 ```
 
 This explicitly interrupts the invoking desktop user's audio services, removes

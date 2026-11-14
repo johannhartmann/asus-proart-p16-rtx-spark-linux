@@ -20,7 +20,7 @@ FILES = {
                        'n1x_adsp_task_check.c', 'Kbuild'),
     'dsp': ('n1x_adsp.c', 'n1x_adsp_client.h', 'n1x_adsp_pcm.h', 'n1x_adsp_ipc.h',
             'n1x_sroot_client.h', 'n1x_sroot_firmware.h', 'Kbuild',
-            'n1x-adsp-audio.service', 'n1x-adsp-audio'),
+            ),
     'pluton': ('n1x_pluton.c', 'n1x_pluton_protocol.h', 'n1x_pluton_uapi.h',
                'n1x_pcbi_protocol.h', 'Kbuild'),
     'scp': ('n1x_scp.c', 'Kbuild'),

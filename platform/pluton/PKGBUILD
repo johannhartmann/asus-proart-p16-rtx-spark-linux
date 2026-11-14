@@ -1,11 +1,13 @@
 pkgname=n1x-pluton-dkms
 pkgver=0.3.0
-pkgrel=1
+pkgrel=2
 pkgdesc='NVIDIA N1X ROT1/PFI transport and PCBI firmware queries'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
-depends=('dkms' 'python')
+depends=('dkms')
+optdepends=('python: optional n1x-pluton-info diagnostic utility')
+checkdepends=('python')
 makedepends=('gcc')
 source=('n1x_pluton.c' 'n1x_pluton_protocol.h' 'n1x_pluton_uapi.h' 'Kbuild' 'dkms.conf' 'pluton-info.py' 'provenance.json' 'protocol_test.c' 'n1x-pluton.conf' 'n1x-pluton.modules' 'protocol.md' 'n1x_pcbi_protocol.h' 'test_query.py')
 sha256sums=('4bb25c1e647c8cbf1515139a1c0273d735d74a41ad875dd0d06d3dfa90df1cc1'

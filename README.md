@@ -97,12 +97,12 @@ scale. `iio-sensor-proxy` is the desktop-facing consumer. `n1x_scp` provides
 
 **NPU and DSP secure loading:** `n1x_npu_bootstrap` owns the DLA/SROOT endpoints
 and exposes the DRM accelerator interface at `/dev/accel/accel0`. This
-repository packages its provider and isolated-IOMMU startup service,
-`n1x-platform-npu.service`, for DSP integration. The
+repository packages its provider for DSP integration. ACPI binding, translated
+DMA setup and firmware initialization belong to the kernel drivers. The
 [companion project](https://github.com/johannhartmann/n1x-npu-linux) maintains
 the inference driver, native `t254` compiler, ONNX runtime and cuDLA backend.
-Its standalone `n1x-npu.service` is an alternative package path; do not install
-both service stacks for the same devices.
+Its standalone `n1x-npu-driver` package is an alternative package path; do not install
+both driver packages for the same devices.
 
 **Power and telemetry:** ASUS WMI exposes firmware profiles, charge thresholds
 and fan RPM. The patched `spbm` driver exposes N1X temperature/power channels
@@ -364,12 +364,12 @@ files. The sequence for the pinned package path is:
    image/menu hashes, the reference SSDT, payload and module dependencies. It
    does not check a BIOS label, establish Secure Boot trust or apply to the
    separate Linux 7.3 patch path.
-6. Enable `p16-charge-limit.service` and, if using this provider package,
-   `n1x-platform-npu.service` for subsequent boots. Restart UPower so its
+6. Enable `p16-charge-limit.service`. NPU/DSP startup uses ACPI module aliases,
+   without a boot service. Restart UPower so its
    critical-battery power-off policy is active:
 
    ```sh
-   sudo systemctl enable p16-charge-limit.service n1x-platform-npu.service
+   sudo systemctl enable p16-charge-limit.service
    sudo systemctl restart upower
    ```
 
@@ -392,14 +392,14 @@ cat /sys/firmware/acpi/platform_profile_choices
 cat /sys/power/mem_sleep
 sensors
 cat /proc/asound/cards
-systemctl status n1x-platform-npu.service
+lsmod | grep -E "n1x_(npu_bootstrap|adsp)"
 journalctl -b -p err
 ```
 
 Expected results: DKMS lists the required modules as installed for the new
 release; NVIDIA reports the matching userspace driver; firmware profiles are
 exposed; `[s2idle]` is selected; `spbm_n1x`/ASUS monitoring and the SoundWire
-card appear. The NPU service must report successful startup. These checks
+card appear. The NPU and DSP kernel probes must report successful initialization. These checks
 establish interfaces, not physical audio, inference accuracy or sleep recovery.
 
 For the fully installed pinned platform bundle, the bounded diagnostic audit

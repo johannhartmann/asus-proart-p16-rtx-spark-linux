@@ -53,7 +53,7 @@ def main():
     live.check_target()
     report = {"captured_at": datetime.now(timezone.utc).isoformat(), "kernel": os.uname().release,
               "boot_id": boot_id, "reboot_verified": bool(args.after_boot_id),
-              "dsp_service_integration": False, "pluton_pcbi_query_service_verified": False,
+              "dsp_driver_integration": False, "pluton_pcbi_query_service_verified": False,
               "pluton_pcbi_control_service_integration": False,
               "sensor_calibration_accuracy": "unverified"}
     hashes, messages = late.boot_hashes(), live.kernel_messages()
@@ -66,12 +66,9 @@ def main():
             "/org/freedesktop/UPower", "org.freedesktop.UPower", "GetCriticalAction"]).strip()
         if report["upower_critical_action"] != 's "PowerOff"':
             raise RuntimeError("Running UPower critical action is not PowerOff; restart upower")
-        service = "n1x-platform-npu.service"
-        report["npu_service_name"] = service
-        report["npu_service"] = run(["systemctl", "show", service,
-                                     "-p", "ActiveState", "-p", "Result", "-p", "ConditionResult"])
-        if "ActiveState=active" not in report["npu_service"] or "Result=success" not in report["npu_service"]:
-            raise RuntimeError("NPU boot service did not start successfully")
+        report["startup_model"] = "ACPI platform probe; in-kernel firmware initialization"
+        if not Path("/sys/module/n1x_npu_bootstrap").is_dir():
+            raise RuntimeError("NPU module is not loaded")
         report["npu"] = provider.snapshot()
         if report["npu"]["status"].get("task_verified") != "1" or \
                 report["npu"]["status"].get("queue_poisoned") != "0":
@@ -131,17 +128,8 @@ def main():
                                    "runtime": (device / "power/runtime_status").read_text().strip()}
             if (device / "status").exists():
                 report["dsp"][name]["status"] = (device / "status").read_text().strip()
-        report["dsp_auto_boot_requested"] = "n1x_adsp.auto_boot=1" in Path("/proc/cmdline").read_text().split()
+        report["dsp_auto_boot_requested"] = Path("/sys/module/n1x_adsp/parameters/auto_boot").read_text().strip() in ("Y", "1")
         if report["dsp_auto_boot_requested"]:
-            report["dsp_audio_service"] = run([
-                "systemctl", "show", "n1x-adsp-audio.service",
-                "-p", "ActiveState", "-p", "Result", "-p", "ConditionResult"])
-            if not all(value in report["dsp_audio_service"] for value in (
-                    "ActiveState=active", "Result=success", "ConditionResult=yes")):
-                raise RuntimeError("Automatic DSP audio service did not complete")
-            # This helper only reads domains/readiness with --verify. Never
-            # prepare, upload, reset or reload during an installation audit.
-            run(["/usr/libexec/n1x-adsp-audio", "--verify"])
             for name, state in report["dsp"].items():
                 device = Path("/sys/bus/platform/devices") / name
                 state["asoc_ready"] = (device / "asoc_ready").read_text().strip()
@@ -155,7 +143,7 @@ def main():
                     raise RuntimeError("Loaded/installed audio module differs: " + name)
                 report["module_versions"][name] = {
                     "path": run(["modinfo", "-n", name]).strip(), "srcversion": loaded}
-            report["dsp_service_integration"] = True
+            report["dsp_driver_integration"] = True
             # Firmware/ASoC readiness is distinct from physical audio tests.
             report["physical_audio_qualified"] = False
         report["default_entry"] = next(line for line in Path("/boot/limine.conf").read_text().splitlines()

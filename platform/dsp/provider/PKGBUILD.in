@@ -1,12 +1,11 @@
 pkgname=n1x-sroot-provider-dkms
 pkgver=0.1.0
-pkgrel=12
+pkgrel=13
 pkgdesc='NVIDIA N1X NPU driver with a serialized SROOT secure-loader API for MT8901 DSPs'
 arch=('aarch64')
 license=('GPL-2.0-only')
-depends=('dkms' 'kmod' 'bash' 'systemd' 'n1x-sroot-firmware-local')
-source=('npu-source.tar.gz' 'dkms.conf' 'n1x-sroot-provider.conf'
-        'n1x-platform-npu.service' 'n1x-platform-npu-start')
+depends=('dkms' 'n1x-sroot-firmware-local')
+source=('npu-source.tar.gz' 'dkms.conf')
 sha256sums=(SOURCE_SHA256)
 
 package() {
@@ -14,7 +13,4 @@ package() {
   cp -a "$srcdir/npu-source/driver" "$srcdir/npu-source/include" \
     "$srcdir/npu-source/snapshot.json" "$pkgdir/usr/src/n1x-sroot-provider-$pkgver/"
   install -Dm644 "$srcdir/dkms.conf" "$pkgdir/usr/src/n1x-sroot-provider-$pkgver/dkms.conf"
-  install -Dm644 "$srcdir/n1x-sroot-provider.conf" "$pkgdir/usr/lib/modprobe.d/n1x-sroot-provider.conf"
-  install -Dm644 "$srcdir/n1x-platform-npu.service" "$pkgdir/usr/lib/systemd/system/n1x-platform-npu.service"
-  install -Dm755 "$srcdir/n1x-platform-npu-start" "$pkgdir/usr/libexec/n1x-platform-npu-start"
 }

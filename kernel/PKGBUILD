@@ -1285,6 +1285,11 @@ source+=('p16-afe-const-irq-shutdown.patch')
 sha256sums+=('bb06285e36d6b44f487ab128a2ff40b7726b8d395b95c24ba2784804cd001613')
 b2sums+=('3c5eb068c136a188c3a6fd68a163fa8b1fdc261a634e322e8ee1ba9e7674d40976f96f56f9ed0e44da5c8e820780f71dde730a0fb398a5a20109dce9415adc1a')
 
+# Select the N1X IP's DMA domain before normal ACPI driver binding.
+source+=('n1x-translated-dma.patch')
+sha256sums+=('e5482e66c9fca13d564384ca8fbce9890faafdf188fa9ee0dbcc0bff2d837356')
+b2sums+=('818bbc16573837fb09761f0e2377bc3e2324dc341b79eb380c9390324a6fec1bcd765a9f6b2b126d282d43b8d6948c2f7c5df9ef279cb014585e5245c7c4f288')
+
 # https://www.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc
 
 export KBUILD_BUILD_HOST=omarchy

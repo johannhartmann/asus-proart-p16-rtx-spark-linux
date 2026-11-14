@@ -172,18 +172,22 @@ register/read error and expected value. This correction is built/offline-tested 
 needs fresh-boot capture and duplex qualification.
 
 Install PipeWire, WirePlumber, `alsa-ucm-conf`, ALSA tools, the board's Cirrus
-firmware and the locally prepared signed N1X firmware packages. After hardware qualification, the DSP DKMS
-package also installs `n1x-adsp-audio.service` and its small domain/readiness
-helper. Enable the service for subsequent boots:
+firmware and the locally prepared signed N1X firmware packages. The NPU and DSP
+modules bind through their ACPI aliases. Their C probe paths load firmware and
+register the accelerator/ASoC components. Neither a boot service nor Python is
+required. On kernels defaulting to IOMMU passthrough, include
+[`n1x-translated-dma.patch`](../kernel/n1x-translated-dma.patch) so the five
+N1X endpoints receive translated DMA domains before binding. Other kernels
+must already provide translated DMA domains; do not change live bound domains.
 
-```sh
-sudo systemctl enable n1x-platform-npu.service n1x-adsp-audio.service
-```
+The optional `n1x-adsp-tools` package contains `n1x-adsp-reload`, an explicit
+maintenance/recovery command. Python is required only for that separately
+installed tool and the development tests, never for audio startup or streaming.
 
 For an existing installation, stage modules only in the candidate kernel
 namespace and retain the old kernel’s module files. Do not globally upgrade
 DKMS packages before qualification if that would rebuild the preserved kernel.
-The conditionally activated service/helper can be staged separately. Run
+The helper-free startup migration must be qualified with the new kernel. Run
 `depmod` with a normal installation umask (022); generated module indexes must
 remain readable so ordinary `modinfo` and dependency checks work. Keep capture
 files and test reports private independently of those system metadata files.
@@ -219,7 +223,7 @@ Record the kernel release, module source versions and matching build manifest.
 First check:
 
 ```sh
-systemctl status n1x-platform-npu.service n1x-adsp-audio.service
+lsmod | grep -E "n1x_(adsp|npu_bootstrap)"
 cat /proc/asound/cards
 wpctl status
 for device in /sys/bus/platform/devices/NVDA830{1,2,3}:00; do
@@ -307,7 +311,7 @@ interrupts the caller's PipeWire/WirePlumber services and restores their prior
 state; it does not stop other users or arbitrary ALSA applications:
 
 ```sh
-pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --reload
+pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --reload
 python3 scripts/validate-dsp-audio.py --output /path/to/new-private-reload-results
 ```
 
@@ -331,7 +335,7 @@ If a software operation fails, correct the module file or service problem and
 continue in the same boot:
 
 ```sh
-pkexec --disable-internal-agent /usr/libexec/n1x-adsp-audio --resume
+pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --resume
 ```
 
 Continuation after complete DSP retirement does not send D3/abandon again.

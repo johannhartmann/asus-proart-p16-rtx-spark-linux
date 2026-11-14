@@ -1,12 +1,13 @@
-pkgname=n1x-adsp-dkms
-pkgver=0.1.25
-pkgrel=3
+pkgbase=n1x-adsp-dkms
+pkgname=(n1x-adsp-dkms n1x-adsp-tools)
+pkgver=0.1.26
+pkgrel=1
 pkgdesc='MT8901 DSP secure boot, IPC and duplex audio services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
-depends=('dkms' 'python' 'n1x-sroot-provider-dkms>=0.1.0-12')
-optdepends=('n1x-adsp-firmware-local: original signed images for explicit DSP boot')
+depends=('dkms' 'n1x-sroot-provider-dkms>=0.1.0-13' 'n1x-adsp-firmware-local')
+optdepends=('n1x-adsp-tools: optional explicit reload/recovery utility')
 checkdepends=('python' 'gcc')
 source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.conf'
         'n1x-adsp.conf' 'provenance.json' 'README.md' 'test_driver.py'
@@ -14,15 +15,15 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'test_primary.py' 'test_lifecycle.py' 'n1x_adsp_pcm.h' 'pcm_test.c'
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
-        'n1x-adsp-audio.service' 'n1x-adsp-audio' 'test_shutdown.py')
-sha256sums=('963aee7fa84e142293a253748de2663efdb32ad5a765af78bc5a14c9c002cdf9'
+        'n1x-adsp-reload' 'test_shutdown.py' 'test_probe_dependency.py')
+sha256sums=('546e6eb8eae0a79bdd33405dae8d66225dc0d6667e89daa8f75009ed6bb4c7bc'
             'ad7b6acd792e8cabd4169e93e44f8f5998a5c2ece7f7c2cfbc604e6281a0fae9'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
-            '8914dbdee0b4c064127ec66f6a3ea71164b48b15bc1de9a48a24a1fc17f2e018'
-            '30526b1d0d7132f88db4fa469587cbbb3c23557204878e80b04a5c0694208cfb'
-            '06899c685249d87c14c973f5efb481bf8976ff318b9ef6afd99b80d4b8e295e6'
-            'f2cd48d11c4663930e68fa35bb260ae2345e090104a6f8be3fb075dea7c553e5'
+            '2d470f817e289dde312ef41b2da877a1798c1442b3786a3afc98aac501f8ce0a'
+            'e221697cde96507d22d03fe422ba6b3219a196885e75cd2c4504beaf85400180'
+            '0ed24a26a0dcad36be144c41afc87cb658379226ca181642723bc31493243de5'
+            'c4fd7e3777ab52356aaba736dc5297ab61d8cf56c9084836a352d93682a2b25c'
             '3eb1e912af6465d857b55362ee34b8ca6fb43891fedc073488b68ae1af59a529'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '5ce4f3cfb9c2e7599a4a8759d59fb678bd3a2569028467ff8b2478465a4dbfd3'
@@ -40,15 +41,16 @@ sha256sums=('963aee7fa84e142293a253748de2663efdb32ad5a765af78bc5a14c9c002cdf9'
             '7aa4c05e0ae216a333849481b34c68ae9679447d4f6fa9a3d3ba5a3e640cd249'
             'f8f0afefab222a696f93e15c21f088ba8ebe11a9a5a1975fbca759c7d08e26c2'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
-            '54cd60ed736bd907f5cf2bb0f074cf2b0ccbb5c3255f2ab534a6ef8f0a1d9505'
+            '1e619f6cde8fb4aced44d39ffc3efabd4225a127166e2b8ce6354f5f4870bb2d'
             '60d3c9dc75b35172b3d54292f7f55db4b044999d9dd9e88a491a3d36cb24ce39'
-            '6c288e6d9b3b4ad059d30defb5a808f5483307692dfbe66ce1d9dac185c61df6'
-            '2b27c1d47379018fe6220d1541b138a8d8269f82c061f26db5b55be82f5e591d'
-            '899f22e58594860cd5792fd73cc40b0d5bd1a1efc4e700bb48edbde98609f17f')
+            'f8ed8681efe89e4a6bb9e1bccb9af337aa0a10440f83d2623f3e2bd931f41716'
+            '899f22e58594860cd5792fd73cc40b0d5bd1a1efc4e700bb48edbde98609f17f'
+            'b1dae4461cad9a474090626d148127954a630b481c38b84f19b6a370200e60f5')
 
 check() {
   cd "$srcdir"
   python test_device_lookup.py
+  python test_probe_dependency.py
   python test_card_client.py
   python test_provider.py
   python test_driver.py
@@ -69,9 +71,7 @@ check() {
   ./pcm-test
 }
 
-package() {
-  install -Dm644 "$srcdir/n1x-adsp-audio.service" "$pkgdir/usr/lib/systemd/system/n1x-adsp-audio.service"
-  install -Dm755 "$srcdir/n1x-adsp-audio" "$pkgdir/usr/libexec/n1x-adsp-audio"
+package_n1x-adsp-dkms() {
   local file
   for file in n1x_adsp.c n1x_sroot_client.h n1x_sroot_firmware.h n1x_adsp_ipc.h n1x_adsp_client.h n1x_adsp_pcm.h mt8901-afe-sram.h Kbuild dkms.conf provenance.json; do
     install -Dm644 "$srcdir/$file" "$pkgdir/usr/src/n1x-adsp-$pkgver/$file"
@@ -79,4 +79,11 @@ package() {
   install -Dm644 "$srcdir/n1x-adsp.conf" "$pkgdir/usr/lib/modprobe.d/n1x-adsp.conf"
   install -Dm644 "$srcdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 "$srcdir/protocol.md" "$pkgdir/usr/share/doc/$pkgname/protocol.md"
+}
+
+package_n1x-adsp-tools() {
+  pkgdesc='Optional explicit N1X DSP/AFE reload and recovery utility'
+  depends=("n1x-adsp-dkms=$pkgver-$pkgrel" 'python' 'kmod' 'systemd')
+  optdepends=()
+  install -Dm755 "$srcdir/n1x-adsp-reload" "$pkgdir/usr/bin/n1x-adsp-reload"
 }
