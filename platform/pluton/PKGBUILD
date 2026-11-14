@@ -1,21 +1,19 @@
 pkgname=n1x-pluton-dkms
 pkgver=0.3.0
-pkgrel=2
+pkgrel=3
 pkgdesc='NVIDIA N1X ROT1/PFI transport and PCBI firmware queries'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
 depends=('dkms')
-optdepends=('python: optional n1x-pluton-info diagnostic utility')
 checkdepends=('python')
 makedepends=('gcc')
-source=('n1x_pluton.c' 'n1x_pluton_protocol.h' 'n1x_pluton_uapi.h' 'Kbuild' 'dkms.conf' 'pluton-info.py' 'provenance.json' 'protocol_test.c' 'n1x-pluton.conf' 'n1x-pluton.modules' 'protocol.md' 'n1x_pcbi_protocol.h' 'test_query.py')
+source=('n1x_pluton.c' 'n1x_pluton_protocol.h' 'n1x_pluton_uapi.h' 'Kbuild' 'dkms.conf' 'provenance.json' 'protocol_test.c' 'n1x-pluton.conf' 'n1x-pluton.modules' 'protocol.md' 'n1x_pcbi_protocol.h' 'test_query.py')
 sha256sums=('4bb25c1e647c8cbf1515139a1c0273d735d74a41ad875dd0d06d3dfa90df1cc1'
             '7409eef71d8d4a9d8df65773af3a0754257d4d2635bb09f437cdd7e452fdebb6'
             '23f05a973f30e6dc37b4c85a8f00289eb7801f4005c71c5b046cd651aec8ff77'
             '577546f334739846bf2c86ac9baff1736ace6ea8b8c2a61f1950c8fd1f4e2b54'
             '300173a055acba715cab9b653fc8266823bbdf72cad80dc65181e8bdb9c1ec6f'
-            '032bf6c3cba014ba7ef0473af16fe75b3de2c8ac4a444331d630d9aa134e08bf'
             'b29de341a04e9a86c23fe03aa5d34fc1b77b147b604be6c1ea2cef73cd6ef2be'
             '7c1ed3a41c33e51d26e3f1aa4d5cf9d0f197a43a1ed80287c1ad33f64514cee3'
             '110b492c6e5d7c84d631d11dd5d214fe8c8cf0493bb0c03ec4293b30f6def19d'
@@ -39,7 +37,6 @@ package() {
   done
   install -Dm644 "$srcdir/n1x-pluton.conf" "$pkgdir/usr/lib/modprobe.d/n1x-pluton.conf"
   install -Dm644 "$srcdir/n1x-pluton.modules" "$pkgdir/usr/lib/modules-load.d/n1x-pluton.conf"
-  install -Dm755 "$srcdir/pluton-info.py" "$pkgdir/usr/bin/n1x-pluton-info"
   install -Dm644 "$srcdir/protocol.md" "$pkgdir/usr/share/doc/$pkgname/protocol.md"
   install -Dm644 "$srcdir/provenance.json" "$pkgdir/usr/share/doc/$pkgname/provenance.json"
 }

@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ("n1x-scp-dkms", "n1x-pluton-dkms", "n1x-sensorhub-dkms", "n1x-adsp-dkms",
@@ -83,7 +84,7 @@ def main():
                 raise RuntimeError("Loaded/installed module differs: " + name)
             report["module_versions"][name] = {"path": installed, "srcversion": loaded}
         report["scp_version"] = Path("/sys/kernel/debug/n1x_scp/firmware_version").read_text().strip()
-        report["pluton"] = json.loads(run(["n1x-pluton-info", "--discover", "--versions", "--services", "--device-info"],
+        report["pluton"] = json.loads(run([sys.executable, str(ROOT / "platform/pluton/pluton-info.py"), "--discover", "--versions", "--services", "--device-info"],
                                            timeout=45))
         if 1 not in report['pluton'].get('pcbi_versions', []) or \
                 {'id': 1, 'version': 1} not in report['pluton'].get('pcbi_services', []):

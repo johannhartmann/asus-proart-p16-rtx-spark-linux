@@ -111,7 +111,7 @@ read-only monitor. Firmware retains fan control. The pinned policy package
 requests a 100% charge threshold; the Linux 7.3 patch series imposes no threshold.
 
 **Pluton:** `n1x_pluton` exposes typed PCBI metadata queries through
-`/dev/n1x-pluton` and the packaged `n1x-pluton-info` diagnostic CLI. The
+`/dev/n1x-pluton` and the developer diagnostic CLI in `platform/pluton/pluton-info.py`. The
 [protocol guide](platform/pluton/protocol.md) documents its allowlisted
 commands. Key operations and firmware updates are not implemented.
 

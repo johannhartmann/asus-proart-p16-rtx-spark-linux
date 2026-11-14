@@ -607,7 +607,7 @@
     "cleanup": "Independent AFE memif stop/readback, owned IRQ clear, retired substream/IRQ borrower checks, retention and module/PM/reference balancing",
     "retry_policy": "Only unsubmitted EBUSY power stages or software cleanup after completed native power-off; no timeout replay",
     "restart": "Exclusive image reservation and prior-retirement marker from the same loaded provider; new operating DMA allocation and canonical firmware upload",
-    "maintenance": "n1x-adsp-reload --reload preserves module options and original invoking-user audio-service state",
+    "maintenance": "scripts/qualify-dsp-reload.py --reload preserves module options and original invoking-user audio-service state",
     "tests": [
       "test_power.py",
       "test_shutdown.py",

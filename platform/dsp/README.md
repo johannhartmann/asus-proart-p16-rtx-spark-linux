@@ -35,9 +35,9 @@ DSP 0.1.26 declares its NPU/SROOT soft dependency and defers secondary HiFi5
 probe until the primary is ready. It requires translated DMA domains before
 binding; the N1X SMMUv3 policy patch supplies this on passthrough-default
 kernels. No boot service, Python process, debugfs verification or userspace
-DMA-domain write is required. The optional `n1x-adsp-tools` package contains
-`n1x-adsp-reload` for explicit maintenance; its Python dependency is not a
-runtime dependency of the driver package.
+DMA-domain write is required. The driver package installs no Python helper.
+The source checkout provides `scripts/qualify-dsp-reload.py` for developer
+reload qualification only; boot and normal audio do not call it.
 
 Microphone capture and headphone/codec controls retain the existing ALSA
 and UCM interfaces. `dsp_capture=1` selects primary HiFi5 tasks 23/21 on UL1.
@@ -132,10 +132,11 @@ cleanup after completed native power-off can continue without sending
 D3/abandon again. Keep the provider
 loaded across DSP/AFE reloads so its retirement records remain available.
 
-The existing audio helper supplies the whole maintenance sequence:
+From the repository root, the developer qualification tool supplies the whole
+maintenance sequence without being installed as a driver component:
 
 ```sh
-pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --reload
+pkexec --disable-internal-agent /usr/bin/python3 "$(realpath scripts/qualify-dsp-reload.py)" --reload
 ```
 
 This explicitly interrupts the invoking desktop user's audio services, removes

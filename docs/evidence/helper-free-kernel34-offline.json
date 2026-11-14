@@ -102,12 +102,30 @@
     "linux-p16-platform-34-7.2.8-34-aarch64.pkg.tar.zst": "43995ec51c94e136457b5cf3162be12b8636ea4c27eebafc1a6aaf9ffc33bdfd",
     "linux-p16-platform-34-headers-7.2.8-34-aarch64.pkg.tar.zst": "2d6963b9389211ee11fd701a27d1cc8e6f95d7261d043b0ba84876beca8ce90d",
     "linux-p16-platform-34-drivers-7.2.8-34-aarch64.pkg.tar.xz": "b18641626c325d4c7f20903074053e52aefb8eb6b8bfbaf5013de62ebdc60760",
-    "n1x-adsp-dkms-0.1.26-1-aarch64.pkg.tar.xz": "af8d1d0c5be36333b9425847992a793e363c6d1495dcaa9c2ec7c311b22b51e1",
     "n1x-sroot-provider-dkms-0.1.0-13-aarch64.pkg.tar.xz": "02d3bc80420fc828163acf54a917ff9faee18d2766f93a56f6118f739a7f52c0",
-    "n1x-pluton-dkms-0.3.0-2-aarch64.pkg.tar.xz": "27e6caefb200b74dc72b49893033562cdd445bf1a897ed0f972223430626a5c3",
-    "n1x-scp-dkms-0.2.1-2-aarch64.pkg.tar.xz": "16a1e2c4d973e0a53e19952e8b818b1aed463d66b9da7dcf6985cb3b4a13f33b"
+    "n1x-scp-dkms-0.2.1-2-aarch64.pkg.tar.xz": "16a1e2c4d973e0a53e19952e8b818b1aed463d66b9da7dcf6985cb3b4a13f33b",
+    "n1x-adsp-dkms-0.1.26-2-aarch64.pkg.tar.xz": "00a849e8ffe4efe8cfcb951eda6daa9df7848d69b27fd44af6f1851c622d1140",
+    "n1x-pluton-dkms-0.3.0-3-aarch64.pkg.tar.xz": "d558c730cbdbde28481d372a6fefa0af073c5c485998cb78158fb3be748f1ac6"
   },
   "normal_boot_requires_python": false,
   "native_helper_free_coldplug_qualified": false,
-  "global_startup_configuration_migrated": false
+  "global_startup_configuration_migrated": false,
+  "scope": "Built kernel/module artifacts; not the running installation",
+  "driver_package_payload_audit": {
+    "n1x-adsp-dkms-0.1.26-2-aarch64.pkg.tar.xz": {
+      "python_files": 0,
+      "startup_services": 0,
+      "python_runtime_dependency": false
+    },
+    "n1x-pluton-dkms-0.3.0-3-aarch64.pkg.tar.xz": {
+      "python_files": 0,
+      "startup_services": 0,
+      "python_runtime_dependency": false
+    },
+    "n1x-sroot-provider-dkms-0.1.0-13-aarch64.pkg.tar.xz": {
+      "python_files": 0,
+      "startup_services": 0,
+      "python_runtime_dependency": false
+    }
+  }
 }

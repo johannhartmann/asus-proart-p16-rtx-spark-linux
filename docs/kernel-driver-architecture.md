@@ -29,9 +29,10 @@ defers the secondary HiFi5 probe until the primary's firmware and ASoC component
 are ready. No userspace module-load order is required. Firmware uses the
 standard in-kernel firmware API. Debugfs is diagnostic only and is not a boot
 prerequisite. No Python program is needed for boot, audio, inference or PM.
-The separately optional `n1x-adsp-tools` package retains the explicit Python
-reload/recovery utility; development tests and application bindings may also
-use Python. They are not kernel initialization paths.
+The driver packages install no Python helper. Python reload qualification and
+Pluton diagnostic tools remain in the source tree for developers, alongside
+tests and optional application bindings; they are not installed kernel-runtime
+components.
 
 ASUS board-specific ALSA UCM files remain intentional: codec/amp wiring is a
 machine topology description, as in ordinary upstream-supported sound cards.

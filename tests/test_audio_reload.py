@@ -12,7 +12,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
-loader = importlib.machinery.SourceFileLoader('audio_reload', str(ROOT / 'platform/dsp/n1x-adsp-reload'))
+loader = importlib.machinery.SourceFileLoader('audio_reload', str(ROOT / 'scripts/qualify-dsp-reload.py'))
 spec = importlib.util.spec_from_loader(loader.name, loader)
 audio = importlib.util.module_from_spec(spec)
 loader.exec_module(audio)

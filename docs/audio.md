@@ -180,9 +180,9 @@ required. On kernels defaulting to IOMMU passthrough, include
 N1X endpoints receive translated DMA domains before binding. Other kernels
 must already provide translated DMA domains; do not change live bound domains.
 
-The optional `n1x-adsp-tools` package contains `n1x-adsp-reload`, an explicit
-maintenance/recovery command. Python is required only for that separately
-installed tool and the development tests, never for audio startup or streaming.
+The driver package installs no Python helper. Developer-only reload
+qualification is available as `scripts/qualify-dsp-reload.py` in the checkout;
+it is not a boot, streaming or PM prerequisite.
 
 For an existing installation, stage modules only in the candidate kernel
 namespace and retain the old kernel’s module files. Do not globally upgrade
@@ -311,7 +311,7 @@ interrupts the caller's PipeWire/WirePlumber services and restores their prior
 state; it does not stop other users or arbitrary ALSA applications:
 
 ```sh
-pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --reload
+pkexec --disable-internal-agent /usr/bin/python3 "$(realpath scripts/qualify-dsp-reload.py)" --reload
 python3 scripts/validate-dsp-audio.py --output /path/to/new-private-reload-results
 ```
 
@@ -335,7 +335,7 @@ If a software operation fails, correct the module file or service problem and
 continue in the same boot:
 
 ```sh
-pkexec --disable-internal-agent /usr/bin/n1x-adsp-reload --resume
+pkexec --disable-internal-agent /usr/bin/python3 "$(realpath scripts/qualify-dsp-reload.py)" --resume
 ```
 
 Continuation after complete DSP retirement does not send D3/abandon again.

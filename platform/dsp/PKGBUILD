@@ -1,13 +1,12 @@
 pkgbase=n1x-adsp-dkms
-pkgname=(n1x-adsp-dkms n1x-adsp-tools)
+pkgname=n1x-adsp-dkms
 pkgver=0.1.26
-pkgrel=1
+pkgrel=2
 pkgdesc='MT8901 DSP secure boot, IPC and duplex audio services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
 depends=('dkms' 'n1x-sroot-provider-dkms>=0.1.0-13' 'n1x-adsp-firmware-local')
-optdepends=('n1x-adsp-tools: optional explicit reload/recovery utility')
 checkdepends=('python' 'gcc')
 source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.conf'
         'n1x-adsp.conf' 'provenance.json' 'README.md' 'test_driver.py'
@@ -15,15 +14,15 @@ source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.
         'test_primary.py' 'test_lifecycle.py' 'n1x_adsp_pcm.h' 'pcm_test.c'
         'mt8901-afe-sram.h' 'test_pcm_service.py' 'test_period.py' 'test_producer.py' 'test_trigger.py'
         'test_pm.py' 'test_device_lookup.py' 'test_provider.py' 'test_card_client.py'
-        'n1x-adsp-reload' 'test_shutdown.py' 'test_probe_dependency.py')
+        'test_shutdown.py' 'test_probe_dependency.py')
 sha256sums=('546e6eb8eae0a79bdd33405dae8d66225dc0d6667e89daa8f75009ed6bb4c7bc'
             'ad7b6acd792e8cabd4169e93e44f8f5998a5c2ece7f7c2cfbc604e6281a0fae9'
             'a1c5ae8f548dfb8224106011dc53a41885c9a18733028cac8c56c321e18d0a28'
             '4d55396218d88caa986b4d25628b494fc0ddc746aedd2d1367a7b977bdb43427'
             '2d470f817e289dde312ef41b2da877a1798c1442b3786a3afc98aac501f8ce0a'
             'e221697cde96507d22d03fe422ba6b3219a196885e75cd2c4504beaf85400180'
-            '0ed24a26a0dcad36be144c41afc87cb658379226ca181642723bc31493243de5'
-            'c4fd7e3777ab52356aaba736dc5297ab61d8cf56c9084836a352d93682a2b25c'
+            '86fc2cb3d4dcaad1cd93aca7adc38f14297b323a82e6a080592b256d86be9f29'
+            '4e7f3f8cf1e648c1c14a4979e33a5e7718e21b83933cf847070032ae45af1888'
             '3eb1e912af6465d857b55362ee34b8ca6fb43891fedc073488b68ae1af59a529'
             '5b5b025ab33baafb3d26734d2ba3362635b72e1f860d241237fede2543ee5ed9'
             '5ce4f3cfb9c2e7599a4a8759d59fb678bd3a2569028467ff8b2478465a4dbfd3'
@@ -43,7 +42,6 @@ sha256sums=('546e6eb8eae0a79bdd33405dae8d66225dc0d6667e89daa8f75009ed6bb4c7bc'
             '3151c1dfc7d315b58111ec34f4c49bfff392abab138ac27e286cebfdd8ab622a'
             '1e619f6cde8fb4aced44d39ffc3efabd4225a127166e2b8ce6354f5f4870bb2d'
             '60d3c9dc75b35172b3d54292f7f55db4b044999d9dd9e88a491a3d36cb24ce39'
-            'f8ed8681efe89e4a6bb9e1bccb9af337aa0a10440f83d2623f3e2bd931f41716'
             '899f22e58594860cd5792fd73cc40b0d5bd1a1efc4e700bb48edbde98609f17f'
             'b1dae4461cad9a474090626d148127954a630b481c38b84f19b6a370200e60f5')
 
@@ -71,7 +69,7 @@ check() {
   ./pcm-test
 }
 
-package_n1x-adsp-dkms() {
+package() {
   local file
   for file in n1x_adsp.c n1x_sroot_client.h n1x_sroot_firmware.h n1x_adsp_ipc.h n1x_adsp_client.h n1x_adsp_pcm.h mt8901-afe-sram.h Kbuild dkms.conf provenance.json; do
     install -Dm644 "$srcdir/$file" "$pkgdir/usr/src/n1x-adsp-$pkgver/$file"
@@ -79,11 +77,4 @@ package_n1x-adsp-dkms() {
   install -Dm644 "$srcdir/n1x-adsp.conf" "$pkgdir/usr/lib/modprobe.d/n1x-adsp.conf"
   install -Dm644 "$srcdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 "$srcdir/protocol.md" "$pkgdir/usr/share/doc/$pkgname/protocol.md"
-}
-
-package_n1x-adsp-tools() {
-  pkgdesc='Optional explicit N1X DSP/AFE reload and recovery utility'
-  depends=("n1x-adsp-dkms=$pkgver-$pkgrel" 'python' 'kmod' 'systemd')
-  optdepends=()
-  install -Dm755 "$srcdir/n1x-adsp-reload" "$pkgdir/usr/bin/n1x-adsp-reload"
 }

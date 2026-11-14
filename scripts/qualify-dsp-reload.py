@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Optional, explicit DSP/AFE maintenance; never used for boot or normal audio."""
+"""Developer-only DSP/AFE reload qualification; not installed by driver packages."""
 import argparse
 import errno
 import fcntl
