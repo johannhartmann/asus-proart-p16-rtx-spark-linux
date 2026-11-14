@@ -21,4 +21,7 @@ container, audio and suspend qualification on the physical machine.
 On 14 November 2026, the negative control booted the exact kernel32 Image in
 an EFI/KVM guest and reproduced `MAX_LOCKDEP_ENTRIES too low`; initialization
 returned `ENOSPC` as expected. The host kernel and its Lockdep state were not
-changed. The expanded-budget kernel33 positive control is pending.
+changed. The expanded-budget kernel33 positive control passed all 44,850 pairs
+with `debug_locks=1`, with no kernel warnings. The exact raw Image SHA-256 was
+`935b81297137561ded40567e2c860d45cb014f72de3eb958cc01963d468170e1`.
+This is isolated VM evidence, not native graphics/workload qualification.

@@ -335,6 +335,43 @@ console and the verbose console level forced by the Lockdep capacity failure
 are additional diagnostic conditions to account for; reducing console output
 does not by itself establish a suspend fix.
 
+## Isolated regressions and the exec/freezer race
+
+The QEMU-only module in `platform/tests/lockdep-budget` creates 300 mutex
+classes and 44,850 ordered dependency pairs. EFI/KVM reproduces the kernel32
+entry-budget failure; the exact kernel33 Image
+`935b81297137561ded40567e2c860d45cb014f72de3eb958cc01963d468170e1`
+passes every pair with `debug_locks=1` and no kernel warning. A separate
+four-vCPU EFI/KVM guest boots the same Image, loads 30 matching modules and
+passes the permanent fixed-IRQ lifetime probe. All 8,507 built native and
+external modules pass split-BTF validation against that Image. This does not
+qualify Lockdep under the physical NVIDIA/desktop workload. No native kernel33 boot or installation is implied by these build/VM results.
+
+A separate kernel32 EFI/KVM regression runs 16 owned helpers repeatedly doing
+multithreaded `exec()`. All twelve raw freezer attempts returned `EBUSY`;
+all twelve attempts after freezing the helpers' cgroup succeeded. The controller in `platform/tests/freezer-exec`
+runs only as guest PID 1 on QEMU. It changes neither host PM controls nor host
+process groups. This reproduces the early userspace race, not the full N1X
+suspend failure.
+
+A bounded, read-only BPF trace on the workstation identified the corresponding
+real process path: the Omarchy monitor watcher resolves `jq` through the user's
+Mise shim before `/usr/bin/jq`. At `begin_new_exec()`, the shim's thread group
+contains the leader and sixteen `tokio-rt-worker` threads. The shim is a symlink
+to `/usr/bin/mise`; standalone `/usr/bin/jq` has one thread. This explains how a
+command normally considered single-threaded reaches `de_thread()` during the
+failed freezer test. It does not prove that the later full-sleep hang has the
+same cause. No development tools or session PATH were changed.
+
+Do not blindly enable systemd's early user-session freeze: NVIDIA 615.78.08
+explicitly requests a VT switch in `nvidia-drm-drv.c`, and the kernel's
+`pm_prepare_console()` performs that switch before its own freezer. A frozen
+compositor may be unable to acknowledge it. The installed vendor no-freeze
+drop-in is therefore retained while the VT and freezer ordering is investigated.
+The normal notifier path is active (`UseKernelSuspendNotifiers=1`, no
+`/proc/driver/nvidia/suspend`); legacy procfs sleep scripts are not the active
+GPU PM interface here.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the
