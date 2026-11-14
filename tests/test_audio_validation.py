@@ -53,50 +53,76 @@ class AudioValidationTests(unittest.TestCase):
                 with self.subTest(device=device, field=field), self.assertRaises(RuntimeError):
                     audio.healthy(changed)
 
-    def test_device_pm_restores_none_even_if_suspend_write_fails(self):
+    def pm_mocks(self, after=None):
+        from contextlib import ExitStack
+        stack = ExitStack()
         writes = []
-
+        controls = {'/sys/power/pm_test': '[none] devices',
+                    '/sys/power/mem_sleep': '[s2idle]'}
         class File:
             def __init__(self, name):
                 self.name = str(name)
-
             def read_text(self):
-                return "[s2idle]" if self.name.endswith("mem_sleep") else "[none] devices"
+                return controls[self.name]
+        def write(path, value):
+            writes.append((path.name, value))
+            controls[path.name] = '[' + value.strip() + ']'
+        def unit(name):
+            return {'ActiveState': 'inactive', 'Job': '', 'Type': 'oneshot',
+                    'After': 'systemd-suspend.service'}
+        stack.enter_context(patch.object(audio.os, 'geteuid', return_value=0))
+        stack.enter_context(patch.object(audio, 'preflight', return_value=state()))
+        stack.enter_context(patch.object(audio, 'snapshot', return_value=after or state(1)))
+        stack.enter_context(patch.object(audio, 'Path', side_effect=File))
+        stack.enter_context(patch.object(audio, 'write_control', side_effect=write))
+        stack.enter_context(patch.object(audio, 'sleep_unit', side_effect=unit))
+        return stack, writes, controls
 
-            def write_text(self, value):
-                writes.append((self.name, value))
-                if self.name.endswith("/state"):
-                    raise OSError("injected suspend failure")
+    def test_device_pm_waits_for_oneshot_target_before_clearing_test_mode(self):
+        stack, writes, controls = self.pm_mocks()
+        def start(command, **options):
+            self.assertEqual(command, ['systemctl', 'start', 'suspend.target'])
+            self.assertTrue(options['check'])
+            self.assertEqual(controls['/sys/power/pm_test'], '[devices]')
+        with stack, patch.object(audio.subprocess, 'run', side_effect=start) as run:
+            audio.device_pm()
+        run.assert_called_once()
+        self.assertEqual(writes, [('/sys/power/pm_test', 'devices\n'),
+                                  ('/sys/power/pm_test', 'none\n')])
 
-        with patch.object(audio.os, "geteuid", return_value=0), \
-                patch.object(audio, "preflight", return_value=state()), \
-                patch.object(audio, "Path", side_effect=File), \
-                patch.object(audio, "write_control", side_effect=lambda p,v: p.write_text(v)):
-            with self.assertRaises(OSError):
+    def test_completed_failed_sleep_restores_none_without_retry(self):
+        stack, writes, _ = self.pm_mocks()
+        with stack, patch.object(audio.subprocess, 'run', side_effect=
+                                 subprocess.CalledProcessError(1, 'systemctl')) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
                 audio.device_pm()
-        self.assertEqual([value for _, value in writes], ["devices\n", "mem\n", "none\n"])
+        run.assert_called_once()
+        self.assertEqual([v for _,v in writes], ['devices\n', 'none\n'])
+
+    def test_unresolved_sleep_keeps_device_test_selected_to_prevent_late_real_sleep(self):
+        stack, writes, controls = self.pm_mocks()
+        with stack, patch.object(audio, 'sleep_service_finished', side_effect=[True, False]), \
+                patch.object(audio.subprocess, 'run', side_effect=subprocess.TimeoutExpired('systemctl', 180)):
+            with self.assertRaisesRegex(RuntimeError, 'pm_test remains devices'):
+                audio.device_pm()
+        self.assertEqual([v for _,v in writes], ['devices\n'])
+        self.assertEqual(controls['/sys/power/pm_test'], '[devices]')
+
+    def test_timed_out_bus_request_retains_test_mode_even_if_units_look_idle(self):
+        stack, writes, controls = self.pm_mocks()
+        with stack, patch.object(audio.subprocess, 'run',
+                                 side_effect=subprocess.TimeoutExpired('systemctl', 180)):
+            with self.assertRaisesRegex(RuntimeError, 'pm_test remains devices'):
+                audio.device_pm()
+        self.assertEqual([v for _,v in writes], ['devices\n'])
+        self.assertEqual(controls['/sys/power/pm_test'], '[devices]')
 
     def test_incomplete_resume_is_a_failure_after_pm_test_is_cleared(self):
-        writes = []
-
-        class File:
-            def __init__(self, name):
-                self.name = str(name)
-
-            def read_text(self):
-                return "[s2idle]" if self.name.endswith("mem_sleep") else "[none] devices"
-
-            def write_text(self, value):
-                writes.append(value)
-
-        with patch.object(audio.os, "geteuid", return_value=0), \
-                patch.object(audio, "preflight", return_value=state()), \
-                patch.object(audio, "snapshot", return_value=state()), \
-                patch.object(audio, "Path", side_effect=File), \
-                patch.object(audio, "write_control", side_effect=lambda p,v: p.write_text(v)):
-            with self.assertRaisesRegex(RuntimeError, "no completed"):
+        stack, writes, _ = self.pm_mocks(after=state())
+        with stack, patch.object(audio.subprocess, 'run'):
+            with self.assertRaisesRegex(RuntimeError, 'no completed'):
                 audio.device_pm()
-        self.assertEqual(writes, ["devices\n", "mem\n", "none\n"])
+        self.assertEqual([v for _,v in writes], ['devices\n', 'none\n'])
 
     def test_old_driver_is_rejected_before_pcm_or_pm(self):
         with patch.object(audio, "Path") as path, patch.object(audio, "snapshot") as snapshot:

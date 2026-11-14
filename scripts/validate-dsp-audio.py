@@ -89,6 +89,19 @@ def preflight():
     return state
 
 
+def sleep_unit(unit):
+    result = subprocess.check_output(
+        ['systemctl', 'show', unit, '--property=ActiveState', '--property=Job',
+         '--property=Type', '--property=After'], text=True, timeout=10)
+    return dict(line.split('=', 1) for line in result.splitlines() if '=' in line)
+
+
+def sleep_service_finished():
+    service, target = sleep_unit('systemd-suspend.service'), sleep_unit('suspend.target')
+    return service.get('ActiveState') in ('inactive', 'failed') and \
+        not service.get('Job') and not target.get('Job')
+
+
 def device_pm():
     if os.geteuid() != 0:
         raise RuntimeError("Device PM requires the graphical pkexec operation")
@@ -101,17 +114,38 @@ def device_pm():
     for item in before.values():
         if fields(item["sleep_status"])["enabled"] != "1":
             raise RuntimeError("DSP system-sleep opt-in is disabled")
+    service, target = sleep_unit('systemd-suspend.service'), sleep_unit('suspend.target')
+    if service.get('Type') != 'oneshot' or \
+            'systemd-suspend.service' not in target.get('After', '').split() or \
+            target.get('ActiveState') != 'inactive' or not sleep_service_finished():
+        raise RuntimeError('Requires an idle systemd suspend transaction with oneshot ordering')
+    unresolved_request = False
     try:
         write_control(control, "devices\n")
-        write_control(Path("/sys/power/state"), "mem\n")
+        if '[devices]' not in control.read_text():
+            raise RuntimeError('Device-only PM test was not selected; do not request sleep')
+        # start waits for suspend.target's After=oneshot dependency to finish.
+        # The asynchronous `systemctl suspend` verb cannot safely bracket
+        # pm_test: clearing it after enqueueing could trigger real sleep later.
+        unresolved_request = True
+        try:
+            subprocess.run(['systemctl', 'start', 'suspend.target'], check=True, timeout=180)
+        except subprocess.CalledProcessError:
+            unresolved_request = False
+            raise
+        else:
+            unresolved_request = False
     finally:
+        if unresolved_request or not sleep_service_finished():
+            raise RuntimeError('Sleep transaction unresolved; pm_test remains devices for safety')
         write_control(control, "none\n")
     after = snapshot()
     healthy(after)
     for name, item in after.items():
         if int(fields(item["sleep_status"])["cycles"]) != int(fields(before[name]["sleep_status"])["cycles"]) + 1:
             raise RuntimeError(f"{name}: no completed fresh-ready resume cycle")
-    return {"before": before, "after": after, "pm_test": control.read_text().strip()}
+    return {"before": before, "after": after, "pm_test": control.read_text().strip(),
+            "orchestration": "systemd suspend.target, synchronous oneshot dependency"}
 
 
 def pcm_round(directory, phase, mode, fmt, seconds, playback, capture):

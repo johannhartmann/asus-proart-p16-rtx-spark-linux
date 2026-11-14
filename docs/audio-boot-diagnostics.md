@@ -298,6 +298,43 @@ kernel23/kernel31 module files, loaded drivers and the power profile matched
 their pre-installation snapshots. The new native boot and its hardware tests
 are still pending; the installation receipt is not a hardware qualification.
 
+## Native kernel32 results on 14 November
+
+The machine booted `7.2.8-32-rtx-spark-npu` successfully. Its runtime BTF hash
+matched the tested bundle; NVIDIA 615.78.08, the NPU and all three DSPs were
+ready, the SoundWire playback/capture card was present, and no system or user
+systemd units had failed. Six baseline PCM rounds and eight exact cuDLA outputs
+passed. Two complete DSP/AFE reloads then each passed the same six PCM rounds
+and eight numerical outputs, using the permanent fixed-IRQ fix with no livepatch.
+
+Clean Lockdep qualification **did not pass**. Enlarging chains alone exposed
+the separate, unchanged dependency-entry limit: `MAX_LOCKDEP_ENTRIES too low`
+disabled the validator during an ordinary `nvidia-smi` call. The retained stats
+showed 32,714/32,768 direct dependencies, 56,064/262,144 chains,
+285,277/1,310,720 chain hlocks, 379,477/2,097,152 stack entries, 2,677/8,192
+classes and a maximum BFS queue depth of 683/4,096. `debug_locks` was zero.
+The debug-candidate configuration now sizes entries, chains, trace storage/hash
+and the BFS queue together. The normal, non-debug configuration is unchanged.
+This source correction is not a clean native Lockdep result.
+
+The direct-sysfs device-only PM attempt stopped during userspace freezing:
+`jq` waited in `de_thread()` and the freezer timed out after 20 seconds.
+No DSP sleep cycle completed, and the test selection was restored to `none`.
+The validator now brackets a synchronous `suspend.target` transaction, whose
+oneshot dependency completes before clearing `pm_test`; a timed-out or otherwise
+unresolved submission retains device-test mode rather than permitting a late
+real suspend. This revised orchestration remains hardware-unqualified.
+
+Later, after USB dock removal, a normal logind/systemd suspend request at
+10:05:32 was the last recorded activity of that boot. No subsequent resume,
+persisted panic, NVIDIA Xid or compositor core dump was found in that journal.
+This does not identify the blocking stage or establish working system sleep.
+The subsequent kernel32 boot succeeded again. Further host sleep trials are
+deferred while this incomplete suspend is investigated. The retained EFI boot
+console and the verbose console level forced by the Lockdep capacity failure
+are additional diagnostic conditions to account for; reducing console output
+does not by itself establish a suspend fix.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the

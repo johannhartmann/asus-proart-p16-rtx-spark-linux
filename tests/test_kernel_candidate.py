@@ -42,7 +42,13 @@ class KernelDebugTests(unittest.TestCase):
                 self.assertEqual(settings['PROVE_LOCKING'], 'y')
                 self.assertEqual(settings['DMA_API_DEBUG'], 'y')
                 self.assertEqual(settings['KUNIT'], 'y')
-                self.assertEqual(settings['LOCKDEP_CHAINS_BITS'], '18')
+                for name, value in {
+                    'LOCKDEP_SMALL': 'n', 'LOCKDEP_BITS': '18',
+                    'LOCKDEP_CHAINS_BITS': '19', 'LOCKDEP_STACK_TRACE_BITS': '23',
+                    'LOCKDEP_STACK_TRACE_HASH_BITS': '18',
+                    'LOCKDEP_CIRCULAR_QUEUE_BITS': '14',
+                }.items():
+                    self.assertEqual(settings[name], value)
                 # Model Kconfig dropping an unsupported dependency: packaging must fail.
                 path.write_text(path.read_text().replace('CONFIG_PROVE_LOCKING=y',
                                                          '# CONFIG_PROVE_LOCKING is not set'))

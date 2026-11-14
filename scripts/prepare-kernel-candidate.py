@@ -20,10 +20,13 @@ DEBUG_COMMON = {
     'DEBUG_LOCK_ALLOC': 'y', 'DEBUG_SPINLOCK': 'y', 'DEBUG_MUTEXES': 'y',
     'PROVE_RCU': 'y', 'DMA_API_DEBUG': 'y', 'KUNIT': 'y',
     'KUNIT_ALL_TESTS': 'n',
-    # Container/Btrfs startup exhausts the default 16-bit chain budget before
-    # DSP tests. Keep the validator active with four times as many chains and
-    # held-lock entries. This changes debug capacity, not locking semantics.
-    'LOCKDEP_CHAINS_BITS': '18',
+    # Audit all independent budgets together: kernel31 exhausted chain hlocks;
+    # kernel32 then exhausted the unchanged 15-bit dependency table during
+    # NVIDIA startup. Keep proportional trace/hash capacity and BFS headroom.
+    # These settings affect debug candidates only, not locking semantics.
+    'LOCKDEP_SMALL': 'n', 'LOCKDEP_BITS': '18',
+    'LOCKDEP_CHAINS_BITS': '19', 'LOCKDEP_STACK_TRACE_BITS': '23',
+    'LOCKDEP_STACK_TRACE_HASH_BITS': '18', 'LOCKDEP_CIRCULAR_QUEUE_BITS': '14',
 }
 
 
