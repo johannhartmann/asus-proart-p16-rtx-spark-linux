@@ -46,6 +46,18 @@ replaced. A source/package cleanup is not evidence that this new coldplug path
 has already run. Physical/repeated sleep and the earlier unreproduced START
 `EBUSY` remain open.
 
+Kernel34 (`7.2.8-34-rtx-spark-npu`) and its matching DSP 0.1.26/provider ABI 5
+module set have completed offline qualification. The exact kernel passed an
+EFI/KVM boot, userspace/vDSO signal and fork checks, 30 module loads and the
+AFE IRQ-lifetime regression. A separate VM retained Lockdep across 44,850
+ordered dependency pairs. All 17 external modules passed split-BTF checks
+against the candidate Image. The DSP and provider package payloads contain no
+startup service or libexec helper and have no Python runtime dependency.
+The [artifact record](evidence/helper-free-kernel34-offline.json) pins the
+source revisions, module identities and package hashes. These checks do not
+qualify native ACPI coldplug or physical sleep. Keep the older working boot
+and its startup configuration until the candidate is installed and verified.
+
 ## Subsystem boundaries
 
 | Component | Interface and ownership | Upstream direction and remaining work |
@@ -90,7 +102,7 @@ Publication holds module and runtime-PM references. The NPU releases them only
 after explicit, verified hardware shutdown. Successful startup/resume is not
 permission to drop those references: a later fault may make shutdown impossible,
 and `remove()` cannot veto an unload. Manual bind/unbind attributes are suppressed
-while this recovery limitation remains. The service must request checked
+while this recovery limitation remains. Explicit maintenance must request checked
 shutdown before attempting module removal; it must stop on any error.
 
 These restrictions prevent unsafe cleanup. They are not substitutes for a

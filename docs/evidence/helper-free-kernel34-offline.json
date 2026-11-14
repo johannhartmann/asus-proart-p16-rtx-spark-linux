@@ -1,0 +1,113 @@
+{
+  "kernel": "7.2.8-34-rtx-spark-npu",
+  "source_commit": "cfb0f0a12942ab253956f0f055509d874a5c79a6",
+  "npu_source_commit": "bbdb0da8abed5b68a6a259da602b7e5d9a377d21",
+  "dma_policy_sha256": "e5482e66c9fca13d564384ca8fbce9890faafdf188fa9ee0dbcc0bff2d837356",
+  "kernel_image_sha256": "8a5aad3d6bc315d6bec6edaae2f448f4ae7535ebca369465c71dddadc8ea90f2",
+  "btf": {
+    "modules_checked": 17,
+    "modules_with_btf": 17,
+    "kernel_btf_sha256": "a8c31cc92637e78fafeedf6b266a5e12e9feb1af4b4810eaef6d64638fbace02"
+  },
+  "efi_kvm": {
+    "passed": true,
+    "kernel": "7.2.8-34-rtx-spark-npu",
+    "modules_loaded": 30,
+    "permanent_const_irq_fix": true,
+    "efi_kernel_userspace_vdso_signal_fork": true,
+    "virtual_cpus": 1,
+    "seconds": 11.268297180000445,
+    "max_host_thermal_mC": 54600,
+    "image_sha256": "8a5aad3d6bc315d6bec6edaae2f448f4ae7535ebca369465c71dddadc8ea90f2"
+  },
+  "lockdep_vm": {
+    "passed": true,
+    "kernel": "7.2.8-34-rtx-spark-npu",
+    "ordered_dependency_pairs": 44850,
+    "debug_locks": 1,
+    "efi_kernel_userspace_vdso_signal_fork": true,
+    "seconds": 15.857448968000426,
+    "max_host_thermal_mC": 53200,
+    "image_sha256": "8a5aad3d6bc315d6bec6edaae2f448f4ae7535ebca369465c71dddadc8ea90f2",
+    "host_modules_or_pm_changed": false
+  },
+  "modules": {
+    "n1x_adsp.ko": {
+      "sha256": "da10e2276c7d8e41207c9682bdfa1c01eb538dda6bc859d07444a69dfd19e550",
+      "srcversion": "BC1B19BC64640F189595C42",
+      "version": "0.1.26"
+    },
+    "n1x_npu_bootstrap.ko": {
+      "sha256": "e32d986fa254ec380ba5570ff76ba3b69e4d06fcaa703742a527d00b9d698287",
+      "srcversion": "1AC6AF64BADDDD628B9EF52",
+      "version": ""
+    },
+    "n1x_pluton.ko": {
+      "sha256": "2e826da25a79e90176b461a3fc4d02a424101cf58acac23284598b324fbea3f5",
+      "srcversion": "F0F0307E6BA1738602C22BC",
+      "version": "0.3.0"
+    },
+    "n1x_scp.ko": {
+      "sha256": "89fb3c9e7285a3e7e857ba94de404bd1b0c653a90a183011247a394d3bf99677",
+      "srcversion": "C8F328D887153EC4F8EB497",
+      "version": "0.2.1"
+    },
+    "hid-sensor-als.ko": {
+      "sha256": "86d13364ec81bae1774a9aeab337e3ac1a2aaaf2f54f1420696f48832263c3fc",
+      "srcversion": "C8F5A044842EF0793DB86D3",
+      "version": ""
+    },
+    "spi-hid.ko": {
+      "sha256": "5852a751aa948504a58654e5867cf965800f2beae2571522e01667222a56332c",
+      "srcversion": "565BC642A33043C54515D47",
+      "version": ""
+    },
+    "spi-hid-acpi.ko": {
+      "sha256": "c4287c84f1d24abc3e9fb7c7ce352020c16cb17993a3c9ccd9c77772e8617168",
+      "srcversion": "F802447FFE59683CF23E429",
+      "version": ""
+    },
+    "spbm.ko": {
+      "sha256": "8d56b9fab4c31d08982b13961cca1027eab2b1f5ce820c8c03e402151bedfa12",
+      "srcversion": "59FC7A3EA13B9B890AD07C3",
+      "version": "0.3.0.n1x.7"
+    },
+    "nvidia.ko": {
+      "sha256": "d9d469b9d885ca8cea1d10c2c5bfa78270a92eba17b5682783f90f3f7b995791",
+      "srcversion": "AC96DECE9DF4E11B1BDC6A9",
+      "version": "615.78.08"
+    },
+    "nvidia-drm.ko": {
+      "sha256": "f1fc9e72d13aa270861ee9d8157a1dc01e171129c8a1a90a2bdcf27c990ddcf8",
+      "srcversion": "8BE0BA27C803F555C8D546B",
+      "version": "615.78.08"
+    },
+    "nvidia-modeset.ko": {
+      "sha256": "58cc6d73a14ca28c5347769253d9d6da92785a2d80036291a35f2b85e2284a20",
+      "srcversion": "7BA28538668890946505DA9",
+      "version": "615.78.08"
+    },
+    "nvidia-uvm.ko": {
+      "sha256": "1c32d186197e631360fa9bc565490718dcb1f9033334452ad10f32334eeb63d6",
+      "srcversion": "227990773C08E287A9225CC",
+      "version": "615.78.08"
+    },
+    "nvidia-peermem.ko": {
+      "sha256": "d0c7690b1a195e67baf1bf6b660d92269fe4091a3eb408e968aa0f7682d5998f",
+      "srcversion": "05E8CF2F419E46C7D3D974E",
+      "version": "615.78.08"
+    }
+  },
+  "packages": {
+    "linux-p16-platform-34-7.2.8-34-aarch64.pkg.tar.zst": "43995ec51c94e136457b5cf3162be12b8636ea4c27eebafc1a6aaf9ffc33bdfd",
+    "linux-p16-platform-34-headers-7.2.8-34-aarch64.pkg.tar.zst": "2d6963b9389211ee11fd701a27d1cc8e6f95d7261d043b0ba84876beca8ce90d",
+    "linux-p16-platform-34-drivers-7.2.8-34-aarch64.pkg.tar.xz": "b18641626c325d4c7f20903074053e52aefb8eb6b8bfbaf5013de62ebdc60760",
+    "n1x-adsp-dkms-0.1.26-1-aarch64.pkg.tar.xz": "af8d1d0c5be36333b9425847992a793e363c6d1495dcaa9c2ec7c311b22b51e1",
+    "n1x-sroot-provider-dkms-0.1.0-13-aarch64.pkg.tar.xz": "02d3bc80420fc828163acf54a917ff9faee18d2766f93a56f6118f739a7f52c0",
+    "n1x-pluton-dkms-0.3.0-2-aarch64.pkg.tar.xz": "27e6caefb200b74dc72b49893033562cdd445bf1a897ed0f972223430626a5c3",
+    "n1x-scp-dkms-0.2.1-2-aarch64.pkg.tar.xz": "16a1e2c4d973e0a53e19952e8b818b1aed463d66b9da7dcf6985cb3b4a13f33b"
+  },
+  "normal_boot_requires_python": false,
+  "native_helper_free_coldplug_qualified": false,
+  "global_startup_configuration_migrated": false
+}
