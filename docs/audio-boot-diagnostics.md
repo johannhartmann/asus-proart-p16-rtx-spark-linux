@@ -394,11 +394,67 @@ The running modules, boot ID and power profile were unchanged. The previous
 menu, protected-file hashes and transaction records are backed up under
 `/var/lib/p16-platform/kernel33-20261114`.
 
-A native kernel33 boot, continuous Lockdep validation under the real workload,
-and its post-reload and suspend/resume checks remain pending. VM results and a
+At installation time, native kernel33 boot, continuous Lockdep validation,
+post-reload and suspend/resume checks were pending. The subsequent native
+results are recorded below. VM results and a
 verified installed bundle do not establish these hardware outcomes. No further
 host sleep attempt was made, and temporary build/install sleep inhibitors ended
 with their owned processes.
+
+## Native kernel33 results on 14 November
+
+At 13:38 local time, `7.2.8-33-rtx-spark-npu` booted into the desktop. Runtime
+BTF matched the installed bundle, the loaded maintained module srcversions
+matched the candidate, all three DSPs and the NPU initialized, and the retained
+EFI boot console was absent. The power profile was `quiet` throughout.
+
+Lockdep remained enabled before, during and after the measured functional and
+reload matrix. Its final retained counters included 41,606/262,144 direct
+dependencies, 116,293/524,288 chains, 744,402/2,621,440 chain hlocks,
+490,435/8,388,608 stack entries, 2,962/8,192 lock classes and a maximum BFS
+queue depth of 856/16,384. `debug_locks=1`; there were no new KASAN, Lockdep,
+Oops, call-trace or NVIDIA Xid warnings during the passing matrix. This is
+bounded native workload evidence, not indefinite or KCSAN qualification.
+
+The **first** baseline request did not pass: playback/S16_LE returned an ALSA
+I/O error, with `soc_dai_trigger()` reporting `-EBUSY` on DL0 START. No DSP
+retained error was present afterward; inspected PCM streams were closed. A
+separate instrumented one-second request passed with matching endpoint
+parameters and zero endpoint, DSP START and AFE START return codes. No driver
+source, power profile or boot configuration was changed to obtain that result.
+The original failure was not reproduced, so its precise cause remains open.
+The optional [read-only START trace](../experiments/audio-start-trace/README.md)
+is retained for targeted investigation; tracing itself changes timing.
+
+A separate full **untraced** baseline then passed six three-second playback,
+capture and duplex cases in S16_LE/S24_LE, plus eight independently checked
+cuDLA numerical outputs. Two complete DSP/AFE unload/reload cycles then each
+passed the same six PCM cases and eight cuDLA outputs. That is 18 passing PCM
+rounds and 24 numerical outputs, in addition to the separately recorded failed
+first request and successful traced request. Both reloads used the permanent
+kernel fix, with no livepatch or reboot. The SoundWire card reappeared within
+24 ms at each explicit post-reload readiness check. The boot identity and power
+profile were unchanged, and the maintenance journal was removed after success.
+
+The desktop-level follow-up found a separate UCM configuration defect despite
+those direct ALSA passes. The internal card existed in PipeWire but had only
+`off`/`pro-audio` profiles. WirePlumber logged `Failed to enable UCM device
+Speaker`. The installed board overlay included a four-CS35L56 profile, while
+SoundWire enumeration and ALSA controls showed exactly AMP1 and AMP2; AMP3/AMP4
+controls were absent. `n1x-dsp-ucm` 0.1.0-3 instead includes the installed vendor
+two-amplifier profile and retains output exclusivity. With that candidate in a
+private UCM tree, the actual libasound calls to select HiFi and enable/disable
+Speaker all returned zero. No kernel or driver replacement is needed. Package
+installation and the post-install PipeWire check are pending desktop
+authentication. This UCM defect does not establish the cause of the earlier
+PCM START `EBUSY`.
+
+No host suspend was requested in this run. Device-only PM and real s2idle on
+kernel33, complete physical endpoint qualification and the initial intermittent
+START failure remain open. Test sleep inhibitors ended with their owned jobs.
+The post-run service check also exposed an unrelated `snapper-cleanup` failure:
+`limine-snapper-sync` could not find its inferred target title `Omarchy` in the
+custom menu. That maintenance configuration was not changed by these tests.
 
 ## Prepare early-console evidence
 

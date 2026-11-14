@@ -1,0 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+kprobe:snd_soc_mt8901_afe:mt8901_afe_dsp_trigger /comm=="aplay"/ {
+ $s=(struct snd_pcm_substream *)arg0;
+ printf("FE_TRIGGER cmd=%d state=%d rate=%d channels=%d bits=%d period=%lu periods=%u\n",arg1,$s->runtime->state,$s->runtime->rate,$s->runtime->channels,$s->runtime->sample_bits,$s->runtime->period_size,$s->runtime->periods);
+}
+kprobe:snd_soc_mt8901_afe:mt8901_afe_sram_endpoint /comm=="aplay"/ {
+ $b=(struct mt8901_afe_sram_buffer *)arg0;$r=$b->substream->runtime;
+ printf("ENDPOINT state=%d expected=%d/%d/%d/%d/%d actual=%d/%d/%d/%lu/%u memif=%d irq=%d irq_prepared=%d\n",$r->state,$b->endpoint.rate,$b->endpoint.channels,$b->endpoint.sample_bits,$b->endpoint.period_frames,$b->endpoint.periods,$r->rate,$r->channels,$r->sample_bits,$r->period_size,$r->periods,$b->endpoint.memif,$b->endpoint.irq,$b->irq_prepared);
+}
+kretprobe:snd_soc_mt8901_afe:mt8901_afe_sram_endpoint /comm=="aplay"/ { printf("ENDPOINT_RETURN=%d\n",(int64)retval); }
+kretprobe:n1x_adsp:n1x_adsp_primary_trigger /comm=="aplay"/ { printf("DSP_TRIGGER_RETURN=%d\n",(int64)retval); }
+kretprobe:snd_soc_mt8901_afe:mt8901_afe_sram_start_pcm /comm=="aplay"/ { printf("AFE_START_RETURN=%d\n",(int64)retval); }
+interval:s:30 { exit(); }

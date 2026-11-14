@@ -30,6 +30,22 @@ This run therefore does not provide a clean lockdep qualification. No physical
 suspend, DSP unload/reload, NPU numerical execution or complete physical audio
 endpoint qualification was performed. The working kernel23 default is retained.
 
+## Native kernel33 verification, 14 November 2026
+
+Kernel33 booted with matching runtime BTF and maintained module srcversions.
+An untraced six-case PCM baseline plus two complete DSP/AFE reload cycles each
+passed six PCM cases and eight exact cuDLA outputs: 18 PCM rounds and 24
+numerical outputs. Lockdep stayed enabled throughout, beyond the old dependency
+limit, with no new kernel warnings during that matrix. The power profile was
+unchanged; no livepatch, host suspend or additional reboot was used.
+
+The first baseline playback had failed with `EBUSY` before this passing matrix.
+A targeted traced request and the full subsequent untraced matrix did not
+reproduce it. Its cause remains open; this is not an unconditional audio pass.
+See the [complete native record](audio-boot-diagnostics.md#native-kernel33-results-on-14-november).
+Real sleep, complete physical audio endpoints, KCSAN and sustained fault/recovery
+qualification remain separate gates.
+
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
@@ -71,8 +87,9 @@ the original unchanged candidate.
 
 Install a completed, verified candidate as a separate boot option, preserving
 the working default, recovery entry and menu timeout. A fresh boot is required
-while the installed DSPs retain published memory. Do not test a candidate
-against the old already-loaded modules.
+for a different kernel or an old pinned driver that lacks checked shutdown. The matching kernel33 bundle supports the tested native
+DSP/AFE reload path; module replacement alone never changes already-loaded code.
+Do not test a candidate against old already-loaded modules.
 
 ## Hardware sequence
 

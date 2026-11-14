@@ -134,12 +134,14 @@ Provider ABI v4, its additive REINIT export and PCM client ABI v3 are required; 
 The single-playback DSP client also needs the small board-specific UCM package:
 
 ```sh
-test -r /usr/share/alsa/ucm2/MediaTek/mt8901-soundwir/HiFi-cs42l43-cs35l56x4.conf
+test -r /usr/share/alsa/ucm2/MediaTek/mt8901-soundwir/HiFi-cs42l43-cs35l56x2.conf
 (cd platform/dsp/ucm && makepkg -si)
 ```
 
 It adds a board master and a verb that includes the installed vendor codec
-routes and declares Speaker/Headphones mutually exclusive. It replaces no
+routes for the CS42L43 and **two** CS35L56 amplifiers, and declares
+Speaker/Headphones mutually exclusive. The four-amplifier profile references
+absent AMP3/AMP4 controls and makes WirePlumber discard the HiFi profile. It replaces no
 vendor-owned file, so package updates retain the overlay. Without a DSP ASoC
 supplier the master falls back to the stock topology dispatcher. The existing
 vendor profile is required (provided here by `omarchy-settings-dev`). On an
@@ -324,7 +326,8 @@ needs no firmware shutdown transaction. Kernel provider admission and the
 shared-core barrier still apply. An uncertain loader result or power completion
 is never replayed, and a journal from another boot or user is refused. Success
 removes the journal. This software recovery is implemented and fault-tested;
-failed-boot recovery and repeated reload remain unqualified. Independent physical power-state telemetry remains unavailable.
+failed-boot recovery remains unqualified. Repeated native reload results are
+recorded below. Independent physical power-state telemetry remains unavailable.
 
 On 13 November 2026 the first complete native DSP/AFE unload/reload succeeded
 on kernel31 after correcting a fixed-IRQ borrower lifetime bug in the common
@@ -334,7 +337,12 @@ cuDLA outputs passed. The permanent kernel bundle must include
 closed PCM's substream pointer. The initial kernel31 instance needed the narrowly
 guarded temporary livepatch described in [the boot evidence](audio-boot-diagnostics.md#fixed-irq-lifetime-and-first-native-reload).
 Device-only PM also passed the full twelve-round before/after PCM matrix.
-Two native reload cycles and a further device-only PM cycle have now passed the same PCM/NPU checks. Real sleep and clean Lockdep remain separate gates.
+Those kernel31 runs did not provide clean Lockdep qualification. On 14 November,
+kernel33 passed a six-case PCM/eight-output NPU baseline and two reloads with
+the same checks while Lockdep stayed active. The first playback request had
+failed with `EBUSY` and remains unexplained despite the subsequent passing
+matrix; real sleep is still unqualified. See the
+[complete native kernel33 record](audio-boot-diagnostics.md#native-kernel33-results-on-14-november).
 
 Both maintenance and PM validation issue sysfs commands through a single
 unbuffered write. A control write error stops the operation; buffered close-time

@@ -40,7 +40,9 @@ unsafe or unvoted leases still block sleep. NPU preparation prevents new
 submissions, diagnostic commands and DSP uploads until completion. Completion
 must reopen admission when another device aborts sleep. D0 alone does not
 restore DSP firmware: the candidate requires typed REINIT and fresh readiness.
-Device-only PM passed the before/after PCM matrix on kernel31; real s2idle and clean Lockdep qualification remain pending. Runtime suspend must not
+Device-only PM passed the before/after PCM matrix on kernel31. Kernel33 kept
+Lockdep enabled across the bounded PCM/NPU and two-reload matrix; real s2idle
+and an initial intermittent PCM START failure remain open. Runtime suspend must not
 silently remove power from a published firmware client.
 
 Publication holds module and runtime-PM references. The NPU releases them only
@@ -72,7 +74,8 @@ Only unpublished reservations can be canceled. Lookup uses unique siblings in
 the firmware namespace because the captured AML provides no `_DEP`/`_DSD`
 association; ambiguity is an error. AFE/DSP lookups use the same scoped rule.
 This does not resolve their bidirectional SRAM/audio ownership into an upstream
-ASoC/SOF provider model. Two native shutdown/reload cycles passed PCM and numerical NPU checks; real sleep and clean Lockdep remain pending. Use
+ASoC/SOF provider model. Two native kernel33 shutdown/reload cycles passed PCM
+and numerical NPU checks with Lockdep active; real sleep remains pending. Use
 firmware-described associations where justified; do not fabricate links between
 the first globally matching ACPI devices.
 

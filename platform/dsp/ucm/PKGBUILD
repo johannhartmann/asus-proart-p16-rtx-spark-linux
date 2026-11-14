@@ -1,13 +1,13 @@
 pkgname=n1x-dsp-ucm
 pkgver=0.1.0
-pkgrel=2
-pkgdesc='P16 DSP UCM output exclusivity using the installed vendor codec routes'
+pkgrel=3
+pkgdesc='P16 DSP UCM for two CS35L56 amplifiers and exclusive playback outputs'
 arch=('any')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
 depends=('alsa-ucm-conf')
 source=('ASUSTeKCOMPUTERINC.-ProArtP16H7607BA-1.0-H7607BA.conf' 'HiFi-h7607ba-dsp.conf')
-sha256sums=('baf3f4ad5207eae258f0e6849f84b59610cab11c804a77ec86ba075eb050aaed' '5b73ba8dc81cb44a0bde5155060d6024ee107f7561ceb125b1739df44285a11b')
+sha256sums=('baf3f4ad5207eae258f0e6849f84b59610cab11c804a77ec86ba075eb050aaed' '473192d7d6bb75e7096652e303247dc586511254d01e57dedf48247980ad1653')
 
 package() {
   install -Dm644 "$srcdir/ASUSTeKCOMPUTERINC.-ProArtP16H7607BA-1.0-H7607BA.conf" "$pkgdir/usr/share/alsa/ucm2/conf.d/mt8901-soundwir/ASUSTeKCOMPUTERINC.-ProArtP16H7607BA-1.0-H7607BA.conf"
