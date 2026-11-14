@@ -102,10 +102,30 @@ def sleep_service_finished():
         not service.get('Job') and not target.get('Job')
 
 
+def pm_lockdep_state():
+    try:
+        stats = Path('/proc/lockdep_stats').read_text()
+    except FileNotFoundError:
+        return None  # Non-debug kernel: no Lockdep qualification is implied.
+    match = re.search(r'^\s*debug_locks:\s*(\d+)\s*$', stats, re.M)
+    if not match or match[1] != '1':
+        raise RuntimeError('Lockdep is disabled or unreadable; stop PM qualification without reset')
+    return 1
+
+
+def nvidia_notifier_mode():
+    try:
+        params = Path('/proc/driver/nvidia/params').read_text()
+    except FileNotFoundError:
+        return False
+    return bool(re.search(r'^UseKernelSuspendNotifiers:\s*1$', params, re.M))
+
+
 def device_pm():
     if os.geteuid() != 0:
         raise RuntimeError("Device PM requires the graphical pkexec operation")
     before = preflight()
+    lockdep_before = pm_lockdep_state()
     if "[s2idle]" not in Path("/sys/power/mem_sleep").read_text():
         raise RuntimeError("Only s2idle is admitted")
     control = Path("/sys/power/pm_test")
@@ -139,12 +159,14 @@ def device_pm():
         if unresolved_request or not sleep_service_finished():
             raise RuntimeError('Sleep transaction unresolved; pm_test remains devices for safety')
         write_control(control, "none\n")
+    lockdep_after = pm_lockdep_state()
     after = snapshot()
     healthy(after)
     for name, item in after.items():
         if int(fields(item["sleep_status"])["cycles"]) != int(fields(before[name]["sleep_status"])["cycles"]) + 1:
             raise RuntimeError(f"{name}: no completed fresh-ready resume cycle")
     return {"before": before, "after": after, "pm_test": control.read_text().strip(),
+            "lockdep_before": lockdep_before, "lockdep_after": lockdep_after,
             "orchestration": "systemd suspend.target, synchronous oneshot dependency"}
 
 
@@ -225,6 +247,10 @@ def main():
                         help="after all idle PCM tests, request device-only PM through graphical pkexec, then repeat PCM tests")
     parser.add_argument("--device-pm", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if (args.device_pm or args.device_sleep) and nvidia_notifier_mode():
+        parser.error('Standalone PM is not qualified with NVIDIA kernel notifiers: '
+                     'it requires VT handoff before user-slice freezing. '
+                     'See docs/audio-boot-diagnostics.md; no PM request was sent.')
     if args.device_pm:
         print(json.dumps(device_pm()))
         return

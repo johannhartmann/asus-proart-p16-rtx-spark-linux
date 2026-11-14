@@ -1,4 +1,6 @@
-# NVIDIA DRM master-drop fix
+# NVIDIA kernel fixes
+
+## DRM master-drop recovery
 
 NVIDIA 615.78.08's `nv_drm_reset_input_colorspace()` returns directly after
 `drm_atomic_get_plane_state()` or `drm_atomic_commit()` reports `-EDEADLK`.
@@ -34,3 +36,36 @@ not change a loaded module or by itself rebuild existing modules. Use the
 complete candidate workflow for the next boot; do not unload NVIDIA from a
 running desktop. Review the patch and update its version binding before moving
 to a different NVIDIA source release.
+
+## PM notifier lock ownership candidate
+
+Native kernel33 device-only PM returned successfully on 14 November, but
+Lockdep reported a cycle through `(pm_chain_head).rwsem`, `nv_system_pm_lock`,
+`nvkms_pm_lock` and UVM's global PM semaphore. NVIDIA retains those writers
+between PREPARE and POST; POST reacquires the notifier-chain reader in the
+same task. A QEMU-only one-gate model reproduces that pattern without NVIDIA
+hardware. This identifies a lock-order defect; the native run did not actually
+deadlock, and the model does not prove that it caused earlier physical hangs.
+
+`nvidia-pm-notifier-owner.patch` keeps the suspend and resume operations in one
+dedicated, non-freezable kernel thread. The notifier waits for preparation;
+POST joins the same thread after requesting resume. The gates remain closed
+throughout the cycle and retain their real owner. No Lockdep annotations are
+disabled, locks made untracked or gates released early. A module reference
+spans the cycle; preparation/thread failures release it, and module exit
+unregisters the notifier before tearing down resources.
+
+The [QEMU integration fixture](../tests/pm-notifier-lock/README.md) compiles the
+actual patched notifier with a hardware-free gate. Its normal, prepare-error,
+thread-creation-error, later-notifier-abort and resume-error cases pass with
+Lockdep active and no retained worker, gate or module reference.
+
+The candidate-module builder applies both patches to its private NVIDIA copy
+and pins both modified source files. All five candidate NVIDIA modules built
+against kernel33 and passed split-BTF validation against its exact vmlinux.
+The unchanged vendor core objects were reused only after verifying all 3,535
+core source input hashes against the earlier kernel33 bundle. The installed DKMS patch package above
+still includes **only the previously qualified DRM fix**; it does not deploy
+this PM candidate. Native verification of the new NVIDIA modules, device-only
+PM with clean Lockdep, and then real s2idle remain required. Do not unload the
+active desktop GPU or reset Lockdep to substitute for that qualification.

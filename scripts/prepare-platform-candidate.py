@@ -113,13 +113,16 @@ def stage(args):
                 continue
             source = Path(directory) / name
             copy_input(source, output / 'nvidia' / source.relative_to(nvidia), inputs, output)
-    nvidia_patch = ROOT / 'platform/nvidia/nvidia-drm-colorspace-deadlock.patch'
-    copy_input(nvidia_patch, output / 'nvidia-fixes' / nvidia_patch.name, inputs, output)
     # Apply only to the copied candidate, never to installed or running code.
-    subprocess.run(['patch', '-p1', '--fuzz=0', '--batch', '-i', str(nvidia_patch)],
-                   cwd=output / 'nvidia', check=True, capture_output=True)
-    modified = 'nvidia/kernel-open/nvidia-drm/nvidia-drm-drv.c'
-    inputs[modified] = digest(output / modified)
+    for patch_name, modified in (
+            ('nvidia-drm-colorspace-deadlock.patch', 'nvidia-drm/nvidia-drm-drv.c'),
+            ('nvidia-pm-notifier-owner.patch', 'nvidia/nv.c')):
+        nvidia_patch = ROOT / 'platform/nvidia' / patch_name
+        copy_input(nvidia_patch, output / 'nvidia-fixes' / patch_name, inputs, output)
+        subprocess.run(['patch', '-p1', '--fuzz=0', '--batch', '-i', str(nvidia_patch)],
+                       cwd=output / 'nvidia', check=True, capture_output=True)
+        relative = 'nvidia/kernel-open/' + modified
+        inputs[relative] = digest(output / relative)
     manifest = {
         'created_at': datetime.now(timezone.utc).isoformat(),
         'kernel_candidate': str(parent), 'kernel_tree': str(kernel),

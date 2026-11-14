@@ -21,6 +21,22 @@ def state(cycles=0):
 
 
 class AudioValidationTests(unittest.TestCase):
+    def test_standalone_nvidia_notifier_pm_is_rejected_before_hardware_work(self):
+        import contextlib
+        import io
+        for option in ('--device-sleep', '--device-pm'):
+            with self.subTest(option=option), \
+                    patch.object(audio.sys, 'argv', ['validator', option]), \
+                    patch.object(audio, 'nvidia_notifier_mode', return_value=True), \
+                    patch.object(audio, 'preflight') as preflight, \
+                    patch.object(audio, 'device_pm') as pm, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as exit:
+                    audio.main()
+                self.assertEqual(exit.exception.code, 2)
+                preflight.assert_not_called()
+                pm.assert_not_called()
+
     def test_sysfs_write_error_is_never_replayed_on_close(self):
         import errno
         with patch.object(audio.os, "open", return_value=77), \
@@ -58,7 +74,8 @@ class AudioValidationTests(unittest.TestCase):
         stack = ExitStack()
         writes = []
         controls = {'/sys/power/pm_test': '[none] devices',
-                    '/sys/power/mem_sleep': '[s2idle]'}
+                    '/sys/power/mem_sleep': '[s2idle]',
+                    '/proc/lockdep_stats': ' debug_locks: 1\n'}
         class File:
             def __init__(self, name):
                 self.name = str(name)
@@ -77,6 +94,24 @@ class AudioValidationTests(unittest.TestCase):
         stack.enter_context(patch.object(audio, 'write_control', side_effect=write))
         stack.enter_context(patch.object(audio, 'sleep_unit', side_effect=unit))
         return stack, writes, controls
+
+    def test_disabled_lockdep_stops_before_any_pm_write(self):
+        stack, writes, controls = self.pm_mocks()
+        controls['/proc/lockdep_stats'] = ' debug_locks: 0\n'
+        with stack, patch.object(audio.subprocess, 'run') as run:
+            with self.assertRaisesRegex(RuntimeError, 'Lockdep is disabled'):
+                audio.device_pm()
+        run.assert_not_called()
+        self.assertEqual(writes, [])
+
+    def test_new_lockdep_warning_fails_even_with_healthy_dsp_resume(self):
+        stack, writes, controls = self.pm_mocks()
+        def warning(*args, **kwargs):
+            controls['/proc/lockdep_stats'] = ' debug_locks: 0\n'
+        with stack, patch.object(audio.subprocess, 'run', side_effect=warning):
+            with self.assertRaisesRegex(RuntimeError, 'Lockdep is disabled'):
+                audio.device_pm()
+        self.assertEqual([v for _, v in writes], ['devices\n', 'none\n'])
 
     def test_device_pm_waits_for_oneshot_target_before_clearing_test_mode(self):
         stack, writes, controls = self.pm_mocks()

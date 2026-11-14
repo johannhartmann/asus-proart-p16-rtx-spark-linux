@@ -238,16 +238,17 @@ counters must advance, and real audio must be confirmed.
 
 Use the bounded validator for DSP 0.1.25 with AFE 0.1.27, with a known microphone
 stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
-duplex, then optionally device-only PM and the complete PCM sequence again:
+duplex:
 
 ```sh
-python3 scripts/validate-dsp-audio.py --output /path/to/new-private-audio-results --device-sleep
+python3 scripts/validate-dsp-audio.py --output /path/to/new-private-audio-results
 ```
 
 Playback uses silence and preserves all mixer/desktop settings; this tests the
 transport, not audibility. Capture files and reports are private (0700/0600),
 remain local and may contain microphone audio. The script never stops another
-client. An occupied PCM or a retained fault stops qualification. The PM step
+client. An occupied PCM or a retained fault stops qualification. The optional
+`--device-sleep` mode is available only outside NVIDIA notifier mode; its PM step
 opens the desktop polkit dialog, uses `pm_test=devices` rather than physical
 sleep, and restores `pm_test=none` even on failure. All-zero capture fails rather
 than passing a nonfunctional input. Test headphones separately with
@@ -272,6 +273,12 @@ Before device sleep tests, inspect `/proc/driver/nvidia/params`. The installed
 its kernel PM notifier. Disabled legacy `nvidia-suspend`/`nvidia-resume` units
 alone do not indicate a missing sleep path in that configuration. Older or
 proprietary drivers require checking their own power-management documentation.
+On this configuration the standalone validator rejects its PM options: the
+controlled kernel33 device cycle required VT handoff before freezing users,
+and NVIDIA's original notifier subsequently disabled Lockdep on a lock-order
+warning. The [device-PM evidence and candidate fix](audio-boot-diagnostics.md#kernel33-device-only-pm-and-nvidia-lock-ordering)
+describe the remaining gate. Do not treat the generic command above as an
+approved NVIDIA PM sequence; PCM-only validation remains available.
 The NPU provider retains validated firmware and immutable VBIOS policy in CPU
 memory so its resume does not depend on filesystem or display-locator access.
 

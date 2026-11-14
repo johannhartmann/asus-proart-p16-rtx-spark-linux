@@ -463,12 +463,63 @@ power profile were preserved. No kernel/driver replacement or reboot was
 needed. This UCM defect does not establish the cause of the earlier PCM START
 `EBUSY`.
 
-No host suspend was requested in this run. Device-only PM and real s2idle on
-kernel33, complete physical endpoint qualification and the initial intermittent
-START failure remain open. Test sleep inhibitors ended with their owned jobs.
+No host suspend was requested during that initial matrix. The later device-only
+cycle is recorded below; real s2idle, complete physical endpoint qualification
+and the initial intermittent START failure remain open. Test sleep inhibitors ended with their owned jobs.
 The post-run service check also exposed an unrelated `snapper-cleanup` failure:
 `limine-snapper-sync` could not find its inferred target title `Omarchy` in the
 custom menu. That maintenance configuration was not changed by these tests.
+
+## Kernel33 device-only PM and NVIDIA lock ordering
+
+At 15:52 local time on 14 November, a controlled `pm_test=devices` transaction
+returned through suspend and resume. The controller ran in `system.slice`,
+switched from VT1 to unused VT63 **before** enabling systemd's user-slice freeze,
+and used synchronous `suspend.target` ordering with only `mem`/`s2idle` admitted.
+This avoided the earlier exec/freezer failure. Freezing users took 11 ms;
+device suspend/resume took approximately 873/540 ms, with the device-test's
+five-second wait between them. No physical low-power entry was requested.
+
+All three DSPs retained their D3 resources, accepted REINIT and returned ready
+with `cycles=1`, error zero and matching checked configuration. The NPU's
+checked stop and subsequent HFRP/bootstrap completed. The SoundWire card was
+ready within 19 ms of the explicit post-return check. VT1, `pm_test=none`,
+debug-message settings and the unchanged `quiet` profile were restored; the
+owned runtime systemd overrides and trace instance were removed.
+
+**The overall PM qualification failed.** POST triggered a Lockdep circular
+dependency from the PM notifier rwsem through NVIDIA's system, NVKMS and UVM
+global PM writers back to the notifier rwsem. Lockdep disabled itself; its
+expanded budgets were not exhausted. The transaction actually returned, so
+this warning is not evidence of an observed deadlock. Lockdep was not reset,
+and no further host PM was attempted in this boot.
+
+A subsequent user-session PipeWire duplex check passed through the internal
+speaker and microphone nodes: playback/capture exited zero, capture contained
+327,680 bytes including 280,653 nonzero bytes, both DSP clients progressed and
+returned idle. Desktop defaults and other card profiles were preserved.
+A separate detailed trace covered 18 one-second PCM cases with 72 endpoint,
+36 DSP-trigger and 24 AFE START return values, all zero. Eight independently
+checked cuDLA outputs, including reuse, passed after those cases. These are
+post-resume functional results with **already disabled Lockdep**, not a clean
+Lockdep pass. The original START `EBUSY` was not reproduced or resolved.
+
+The [NVIDIA PM candidate](../platform/nvidia/README.md#pm-notifier-lock-ownership-candidate)
+moves the retained writers into one dedicated kernel thread. The
+[QEMU-only fixture](../platform/tests/pm-notifier-lock/README.md) reproduces
+the original warning and tests the actual patched notifier against normal,
+prepare-error, thread-creation-error, later-notifier-abort and resume-error
+paths. All five final worker cases retained `debug_locks=1` and ended without
+a held gate, worker or module reference. Native NVIDIA verification remains
+pending; the existing DKMS package has not deployed this candidate.
+
+The standalone audio validator now refuses its CLI PM modes with NVIDIA kernel
+notifiers, because they lack the tested VT-before-freezer orchestration. The
+device-PM helper also checks Lockdep before and after the transaction and fails
+if it was disabled, even when the DSP resume counters are healthy. A non-debug
+kernel records unavailable Lockdep rather than claiming that qualification.
+Do not globally enable early user freezing, clear the validator warning or
+retry real sleep in this boot to bypass the remaining gate.
 
 ## Prepare early-console evidence
 

@@ -46,6 +46,15 @@ See the [complete native record](audio-boot-diagnostics.md#native-kernel33-resul
 Real sleep, complete physical audio endpoints, KCSAN and sustained fault/recovery
 qualification remain separate gates.
 
+The later controlled device-only PM transaction returned with all three DSPs
+ready and fresh resume counters, followed by passing PipeWire duplex, 18 traced
+PCM cases and eight cuDLA outputs. It **failed overall qualification** because
+NVIDIA's cross-callback PM writers triggered a circular Lockdep dependency and
+disabled the validator. Those later functional checks therefore do not extend
+the earlier clean Lockdep matrix. The candidate fix passes five hardware-free
+EFI/KVM notifier/error cases; native NVIDIA and physical sleep checks remain
+pending. See the [device-PM record](audio-boot-diagnostics.md#kernel33-device-only-pm-and-nvidia-lock-ordering).
+
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
