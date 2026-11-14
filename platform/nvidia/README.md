@@ -69,3 +69,10 @@ still includes **only the previously qualified DRM fix**; it does not deploy
 this PM candidate. Native verification of the new NVIDIA modules, device-only
 PM with clean Lockdep, and then real s2idle remain required. Do not unload the
 active desktop GPU or reset Lockdep to substitute for that qualification.
+
+On the development P16, package `linux-p16-platform-33-drivers 7.2.8-33.1`
+and the separate **`RTX-Spark-Audio-Kernel33-NVPM`** boot image are staged.
+The default/recovery images and running modules were preserved. This is a
+per-kernel test deployment, not promotion to the default or a global DKMS
+rollout. The [installed-image record](../../docs/audio-boot-diagnostics.md#installed-nvidia-ownership-test-image)
+contains its exact identity and pending hardware checks.

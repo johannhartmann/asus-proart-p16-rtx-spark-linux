@@ -521,6 +521,38 @@ kernel records unavailable Lockdep rather than claiming that qualification.
 Do not globally enable early user freezing, clear the validator warning or
 retry real sleep in this boot to bypass the remaining gate.
 
+### Installed NVIDIA ownership test image
+
+At 17:30 local time on 14 November, driver package
+`linux-p16-platform-33-drivers 7.2.8-33.1` and a separate test UKI were installed
+for kernel33. The package contains the five newly built NVIDIA modules and
+the unchanged eight other maintained modules. Its source revision is
+`de1ff54c174655401ab85e4493d3f051ea0e2703`. This does not change the global
+version-scoped DKMS patch package or the default kernel's drivers.
+
+The entry is **`RTX-Spark-Audio-Kernel33-NVPM`**, pointing to
+`/boot/EFI/Linux/omarchy_linux-p16-platform-33-nvpm.efi` with SHA-256
+`10084d23638f02865d5aca106d0d1fe48628fdfd589a3c92a70f54f919330cf4`.
+All 8,503 installed modules passed split-BTF validation against the exact
+kernel33 vmlinux; all 430 embedded modules matched the installed module bytes
+and passed split-BTF validation. Kernel, command line, release and splash
+sections matched the previous kernel33 UKI, and its legacy ACPI payload was
+unchanged. No early DSP/NPU publication was introduced.
+
+The Limine image hashes and menu were verified after installation. The default,
+recovery and previous image bytes were preserved. The running module
+srcversions, boot identity and `quiet` profile were unchanged. An installation
+journal, previous driver package and original menu are retained under
+`/var/lib/p16-platform/kernel33-nvpm-20261114`.
+
+**The new NVIDIA modules have not yet run on the hardware.** Select the NVPM
+entry explicitly for the next qualification boot; ordinary default selection
+still uses the retained working entry. Verify the newly loaded module
+srcversions and fresh active Lockdep before the bounded functional baseline,
+controlled device-only PM and post-resume PCM/NPU checks. Physical s2idle
+remains a later gate. Do not reset the current boot's disabled Lockdep or
+unload the active desktop GPU to avoid this necessary activation boot.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the
