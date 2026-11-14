@@ -372,6 +372,34 @@ The normal notifier path is active (`UseKernelSuspendNotifiers=1`, no
 `/proc/driver/nvidia/suspend`); legacy procfs sleep scripts are not the active
 GPU PM interface here.
 
+## Kernel33 staged for native qualification
+
+The separately owned `linux-p16-platform-33`, `-headers` and `-drivers` packages
+(version `7.2.8-33`) are installed. All 8,503 installed modules pass split-BTF
+validation. Each of the 430 initramfs modules passes the same check and matches
+its installed counterpart byte for byte. The legacy ACPI payload matches the
+successfully booted kernel32 profile. Limine image/hash verification passed.
+
+Select `RTX-Spark-Audio-Kernel33` for the next native check. The UKI is
+`/boot/EFI/Linux/omarchy_linux-p16-platform-33.efi`, SHA-256
+`81984f07f58736740ca573b231221fa65e854210d0f28fc3ac58e5e6242d2130`.
+The raw Image hash is recorded above; base BTF SHA-256 is
+`a8c31cc92637e78fafeedf6b266a5e12e9feb1af4b4810eaef6d64638fbace02`.
+
+This entry removes the temporary `earlycon=efifb`, `keep_bootcon`, `efi=debug`
+and `initcall_debug` arguments and uses `loglevel=4`. Other boot arguments and
+the ACPI payload are preserved. Kernel23 remains the default; existing images,
+including diagnostic31 and the booted kernel32, were hash-checked unchanged.
+The running modules, boot ID and power profile were unchanged. The previous
+menu, protected-file hashes and transaction records are backed up under
+`/var/lib/p16-platform/kernel33-20261114`.
+
+A native kernel33 boot, continuous Lockdep validation under the real workload,
+and its post-reload and suspend/resume checks remain pending. VM results and a
+verified installed bundle do not establish these hardware outcomes. No further
+host sleep attempt was made, and temporary build/install sleep inhibitors ended
+with their owned processes.
+
 ## Prepare early-console evidence
 
 The staging tool changes only the command line of an unsigned copy of the
