@@ -12,8 +12,16 @@ boot arguments were preserved. At staging, the obsolete kernel32 diagnostic
 image was archived outside `/boot`. The subsequent
 [boot cleanup](evidence/boot-cleanup-20261115.json) removed five more obsolete
 or duplicate images and their obsolete kernel packages, retaining exactly
-kernel34, kernel35 and recovery23. Kernel35 cold boot, continuously enabled native
-Lockdep and physical suspend/resume remain unverified until observed.
+kernel34, kernel35 and recovery23. On 15 November, kernel35 booted through the
+helper-free path with matching BTF and passed six PCM cases and eight numerical
+cuDLA outputs with Lockdep enabled. After the first checked audio reload, the
+first S16_LE playback START returned `EBUSY` (-16). This blocks overall
+qualification: the AFE 0.1.28 correction does not cover every observed START
+failure. A later device-only PM cycle under the installed normal sleep policy
+passed with fresh DSP readiness, six PCM cases, eight cuDLA outputs and Lockdep
+enabled. One physical s2idle cycle returned after about 99 seconds, but PCIe
+hotplug/SDHCI warnings failed overall qualification. Kernel35 is not promoted
+to the normal default, and global NVIDIA DKMS revision 3 is not activated.
 
 ## Audio: a deferred DPCM START is allowed to see a running FE
 
@@ -47,6 +55,15 @@ The fixed AFE 0.1.28 module was then loaded on the running kernel34 without a
 reboot. Six playback/capture/duplex cases and eight independently verified
 cuDLA outputs passed. That confirms bounded functional operation with the fix;
 the current boot's already disabled Lockdep is still not locking qualification.
+
+The kernel35 run reproduced START `EBUSY` after its first checked audio reload.
+A subsequent function-graph diagnostic passed two playbacks around one reload.
+Four further checked reload cycles passed 24 PCM cases and 32 independently
+verified cuDLA outputs with continuously enabled Lockdep and no new kernel
+warning. Read-only error probes observed no failed START in that matrix.
+The tests waited for transient desktop audio clients to release their channels;
+they did not retry a failed PCM START. These passing runs do not explain or
+close the initial intermittent failure.
 
 ## Lockdep: separate unrelated bus notifier classes
 
@@ -86,6 +103,39 @@ device-only qualification sequence. Other systemd fallback sleep states must
 not retry a device/firmware transition after an uncertain failure. This is a
 Linux sleep-policy setting, not a driver admission gate or a power-profile
 change.
+
+## Physical resume: PCIe hotplug and SDHCI remain blockers
+
+The normal VT service completed before `systemd-suspend.service` began and
+before systemd froze `user.slice`. The device-only test used this installed
+ordering, with no manual VT switch or temporary service override. The prior
+VT and unfrozen session were restored automatically.
+
+The subsequent physical cycle spent 98.764 seconds in s2idle. All three DSPs
+returned ready with `cycles=2`, error zero and matching restored configuration;
+NPU firmware REINIT also reported error zero. Qualification stopped before
+new PCM or numerical NPU workloads because the kernel warned during resume.
+These firmware readbacks are not post-resume functional qualification.
+
+PCIe hotplug removed the GL9767 SD reader (`17a0:9767`, revision `04`) during
+the noirq resume phase. `sdhci_suspend_host()` had already freed its IRQ;
+`sdhci_remove_host()` freed it again, producing the already-free IRQ warning.
+`pciehp_unconfigure_device()` then triggered a circular dependency between
+`reset_lock` and `pci_rescan_remove_lock`, disabling Lockdep. The desktop
+returned, but the physical test is **failed**, not a clean suspend/resume pass.
+No validator reset, further suspend request or reboot was used to hide it.
+
+The installed source calls `pciehp_request()` from `pciehp_resume_noirq()`;
+that function wakes the IRQ thread directly. A matching
+[upstream proposal](https://lists.openwall.net/linux-kernel/2026/10/18/921)
+defers replacement handling to regular resume. The
+[follow-up discussion](https://lore-kernel.gnuweeb.org/linux-usb/20261108051829.152803-1-cole%40unwrap.rs/T/)
+confirms that the proposal is not an established mainline fix. A separate
+[locking RFC](https://lists.openwall.net/linux-kernel/2026/08/18/401) changes
+hotplug and PCI reset serialization together. Both require review and offline
+regressions before integration; neither has been installed by this test.
+IRQ ownership across suspend followed by removal also needs its own regression.
+The earlier audio START `EBUSY` remains a separate open issue.
 
 ## Deployment gate
 

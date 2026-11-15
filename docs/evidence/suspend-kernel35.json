@@ -105,7 +105,7 @@
     "locking_qualified": false
   },
   "qualification": {
-    "native_kernel35_cold_boot_verified": false,
+    "native_kernel35_cold_boot_verified": true,
     "continuous_native_lockdep_verified": false,
     "physical_suspend_resume_verified": false,
     "host_reboots_during_this_batch": 0,
@@ -117,5 +117,75 @@
     "fixed_snapshot_return": 0,
     "live_mutations_still_rejected": true,
     "original_native_failure_retrospectively_proven": false
+  },
+  "native_kernel35": {
+    "date": "2026-11-15",
+    "helper_free_cold_boot_verified": true,
+    "runtime_btf_matches": true,
+    "cold_boot_pcm_cases": 6,
+    "cold_boot_npu_numerical_outputs": 8,
+    "cold_boot_lockdep_enabled": true,
+    "checked_audio_reload_completed": 1,
+    "post_reload_pcm_passed": false,
+    "post_reload_failure": "First S16_LE playback START returned EBUSY (-16); firmware ready, no retained DSP error. Cause under investigation.",
+    "device_only_pm_requested": true,
+    "physical_sleep_requested": true,
+    "overall_qualification_passed": false,
+    "repeat_reload_matrix": {
+      "checked_reload_cycles": 4,
+      "pcm_cases": 24,
+      "numerical_npu_outputs": 32,
+      "lockdep_enabled_throughout": true,
+      "new_kernel_warnings": false,
+      "failed_start_probes_observed": 0,
+      "passed": true,
+      "idle_handling": "Bounded wait for transient desktop audio clients; no failed PCM START was retried.",
+      "scope": "Bounded functional and locking checks; do not resolve the earlier START EBUSY or qualify physical sleep."
+    },
+    "function_graph_diagnostic": {
+      "pcm_playbacks": 2,
+      "checked_reloads": 1,
+      "passed": true,
+      "error_reproduced": false
+    },
+    "device_only_pm": {
+      "passed": true,
+      "normal_installed_policy": true,
+      "pcm_cases": 6,
+      "npu_jobs": 8,
+      "all_dsp_fresh_ready_cycles_verified": true,
+      "lockdep_enabled_after": true,
+      "original_vt_restored": true,
+      "pm_test_restored_to_none": true,
+      "power_profile_changed": false,
+      "manual_vt_switch_or_runtime_pm_override": false
+    },
+    "physical_suspend_resume": {
+      "returned": true,
+      "passed": false,
+      "residency_seconds": 98.764,
+      "normal_installed_policy": true,
+      "all_dsp_resume_cycles": 2,
+      "all_dsp_error": 0,
+      "all_dsp_config_restored": true,
+      "npu_firmware_reinit_error": 0,
+      "post_resume_pcm_and_numerical_npu_tested": false,
+      "lockdep_after": 0,
+      "failures": [
+        "free_irq: already-free IRQ 333 during SDHCI removal by PCIe hotplug",
+        "pciehp_unconfigure_device: reset_lock / pci_rescan_remove_lock inversion"
+      ],
+      "affected_endpoint": {
+        "vendor_device": "17a0:9767",
+        "revision": "04",
+        "driver": "sdhci-pci",
+        "description": "Genesys Logic GL9767 SD card reader"
+      },
+      "original_vt_restored": true,
+      "pm_test_none": true,
+      "power_profile_changed": false,
+      "warning_reset_or_repeat_suspend": false
+    },
+    "native_lockdep_continuous_until_physical_resume": true
   }
 }

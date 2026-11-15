@@ -9,8 +9,14 @@ AFE 0.1.28 was loaded on kernel34 without a reboot and passed six PCM cases
 and eight cuDLA outputs. The complete kernel35 candidate is installed as
 `RTX-Spark-Kernel35`, with the normal suspend configuration; its
 [artifact record](evidence/suspend-kernel35.json) separates offline verification
-from the still-pending native cold-boot, continuous-Lockdep and physical-sleep
-checks. Kernel34 remains the normal default and recovery entries are retained.
+from native qualification. Kernel35 now has a verified helper-free cold boot
+and a passing six-case PCM/eight-output NPU baseline with Lockdep enabled. The
+first playback after one checked audio reload returned `EBUSY`, so complete
+reload qualification remains open. Normal device-only PM subsequently passed
+with Lockdep enabled, six PCM cases and eight NPU outputs. Physical s2idle
+returned but exposed SDHCI IRQ ownership and PCIe hotplug locking warnings,
+so physical qualification failed. Kernel34 remains the normal default and
+recovery entries are retained.
 
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working
@@ -66,9 +72,10 @@ Normal-user PipeWire duplex passed afterward. A later `atop` perf read exposed
 a separate circular-locking warning, disabling Lockdep. The final six PCM cases
 and eight NPU outputs are functional results only; they do not establish
 locking correctness. The [native evidence](evidence/helper-free-kernel34-native.json)
-records these separate scopes. Full helper-free system cold boot, physical/
-repeated sleep, the native locking warning and the earlier unreproduced PCM
-START `EBUSY` remain open.
+records these separate scopes. Kernel35 subsequently verified the full
+helper-free cold boot and bounded locking matrix. Physical/repeated sleep qualification remains open after the
+SDHCI/PCIe warnings recorded above; the earlier PCM START `EBUSY` also remains
+open.
 
 Kernel34 (`7.2.8-34-rtx-spark-npu`) and its matching DSP 0.1.26/provider ABI 5
 module set have completed offline qualification. The exact kernel passed an
@@ -82,10 +89,10 @@ source revisions, module identities and package hashes. These checks do not
 qualify native ACPI coldplug or physical sleep. Installed-module BTF checks covered
 8,503 modules; all 430 embedded modules match the installed files. The previous
 ACPI profile and boot arguments were preserved. The normal `Omarchy-P16` entry
-now selects the tested kernel34 image; the old entry is retained as
-`Omarchy-P16-Previous`, and recovery/prior image files are unchanged. The
-separate `RTX-Spark-Kernel34` entry remains available. No power-profile change
-was made. Selection and image validation do not substitute for observing the
+selects kernel34. The subsequent [boot cleanup](update-safe.md) retained this
+entry, `RTX-Spark-Kernel35` and `Omarchy-P16-Recovery` (kernel23), removing the
+old duplicate/previous entries and archiving obsolete images outside `/boot`.
+No power-profile change was made. Selection and image validation do not substitute for observing the
 next complete boot through the new startup configuration.
 
 The native locking trace joins an NVIDIA I2C notifier path with a platform-bus

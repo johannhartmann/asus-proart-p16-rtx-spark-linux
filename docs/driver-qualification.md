@@ -55,6 +55,31 @@ the earlier clean Lockdep matrix. The candidate fix passes five hardware-free
 EFI/KVM notifier/error cases; native NVIDIA and physical sleep checks remain
 pending. See the [device-PM record](audio-boot-diagnostics.md#kernel33-device-only-pm-and-nvidia-lock-ordering).
 
+## Native kernel35 verification, 15 November 2026
+
+Kernel35 completed the helper-free cold boot with matching runtime BTF and
+module identities. Six PCM cases and eight numerical cuDLA outputs passed
+with Lockdep enabled. The first S16_LE playback after the first checked audio
+reload then failed at START with `EBUSY` (-16), without a retained DSP error.
+
+Two later traced playbacks passed around another reload. A separate four-reload
+matrix passed 24 PCM cases and 32 numerical cuDLA outputs, with Lockdep enabled
+throughout and no new kernel warning. Error-only probes recorded no failed
+START in that matrix. A bounded idle wait accommodated transient desktop audio
+clients; failed PCM operations were not retried. The initial `EBUSY` remains
+unexplained. See the [candidate record](evidence/suspend-kernel35.json) for
+artifact identities and the separate PM qualification status.
+
+The normal installed device-only PM path then passed: one fresh resume cycle
+on each DSP, restored VT/session, six PCM cases and eight numerical NPU outputs,
+with Lockdep enabled. One physical s2idle cycle returned after 98.764 seconds
+but failed qualification during SD-reader hotplug removal: SDHCI freed an
+already-freed IRQ and pciehp inverted `reset_lock`/`pci_rescan_remove_lock`.
+Lockdep disabled itself. DSP/NPU firmware readbacks were healthy, but post-resume
+PCM and numerical NPU workloads were deliberately not run after that warning.
+The [physical resume record](suspend-candidate.md#physical-resume-pcie-hotplug-and-sdhci-remain-blockers)
+separates these scopes. No further physical sleep or reboot was requested.
+
 ## Reproducible candidates
 
 The automatic ASoC DSP audio candidate requires NPU provider source
