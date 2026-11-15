@@ -92,6 +92,11 @@ ACPI profile and boot arguments were preserved. The normal `Omarchy-P16` entry
 selects kernel34. The subsequent [boot cleanup](update-safe.md) retained this
 entry, `RTX-Spark-Kernel35` and `Omarchy-P16-Recovery` (kernel23), removing the
 old duplicate/previous entries and archiving obsolete images outside `/boot`.
+The separately packaged [kernel36 corrections](suspend-candidate.md#physical-resume-pcie-hotplug-and-sdhci-remain-blockers)
+have completed their offline build and twelve EFI/KVM regressions. Their
+[artifact record](evidence/resume-kernel36-offline.json) is separate from native
+qualification; kernel36 has not replaced these installed entries, and the
+intermittent audio START failure remains open.
 No power-profile change was made. Selection and image validation do not substitute for observing the
 next complete boot through the new startup configuration.
 

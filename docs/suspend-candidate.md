@@ -149,6 +149,19 @@ control must reproduce both warnings and disable Lockdep. The
 Images and patch hashes. Native qualification remains a separate gate. They have not replaced the running kernel.
 The earlier audio START `EBUSY` remains a separate open issue.
 
+The complete **kernel36** kernel/header/driver bundle is now built separately;
+its [offline artifact record](evidence/resume-kernel36-offline.json) pins all
+three packages and the exact Image. All 8,507 built modules pass split-BTF
+checks. Twelve EFI/KVM cases cover 30 module loads and native protocol KUnit,
+the AFE IRQ lifetime, Lockdep capacity, PCIe hot-removal and noirq resume, real
+bus notifiers, NVIDIA PM-owner error unwinds and the exec/freezer regression.
+The same-bus notifier positive control intentionally requires a warning; clean
+cases require the validator to remain enabled. The 177 repository tests pass.
+This bundle is not installed or selected for boot. Live first-START diagnostics
+on the existing kernel must finish before requesting the next native boot;
+these offline results do not close the intermittent audio failure or qualify
+physical sleep on kernel36.
+
 ## Deployment gate
 
 Keep the working kernel34 and recovery images. Build all changes into one

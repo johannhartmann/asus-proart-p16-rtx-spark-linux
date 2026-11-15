@@ -1,0 +1,253 @@
+{
+  "date": "2026-11-15",
+  "scope": "Complete separately packaged kernel36 and matching modules, offline execution and build checks; no native deployment or hardware qualification",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "kernel_source_commit": "7d74932f2df53ab6c2e87dd5ff06391516d011c1",
+  "module_source_commit": "7d74932f2df53ab6c2e87dd5ff06391516d011c1",
+  "regression_source_commit": "389922ad710c3ae71870c4fac9ec5435cf363249",
+  "image_sha256": "4ba2f2c806d24ba53ee8d896e924b1cebd49140a7733412651778daaab8af2b3",
+  "packages_sha256": {
+    "linux-p16-platform-36-7.2.8-36-aarch64.pkg.tar.zst": "206155ba26b7b44d0177b2d089b756e902d43f7279ae7be07b26658b8c9cdbbc",
+    "linux-p16-platform-36-headers-7.2.8-36-aarch64.pkg.tar.zst": "a55825af4789293775d2c41f9dc632e7c017c39de6c3047dc1a9a4fb6a0d289a",
+    "linux-p16-platform-36-drivers-7.2.8-36-aarch64.pkg.tar.xz": "1ec257d964644f9c91f8afe5fef7081a5d72b79b3f22ae6a89a88727ae936ce5"
+  },
+  "btf": {
+    "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+    "all_modules_checked": 8507,
+    "all_modules_with_btf": 8507,
+    "external_modules_checked": 17,
+    "production_external_modules": 13,
+    "packaged_production_modules_checked": 8503,
+    "packaged_production_modules_with_btf": 8503,
+    "packaged_headers_base_matches_image": true
+  },
+  "tests": {
+    "kernel36-vm": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "modules_loaded": 30,
+      "permanent_const_irq_fix": true,
+      "efi_kernel_userspace_vdso_signal_fork": true,
+      "virtual_cpus": 1,
+      "seconds": 10.769571578999603,
+      "max_host_thermal_mC": 58500,
+      "image_sha256": "4ba2f2c806d24ba53ee8d896e924b1cebd49140a7733412651778daaab8af2b3"
+    },
+    "lockdep-positive36-vm": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "ordered_dependency_pairs": 44850,
+      "debug_locks": 1,
+      "efi_kernel_userspace_vdso_signal_fork": true,
+      "seconds": 16.382908702998975,
+      "max_host_thermal_mC": 57100,
+      "image_sha256": "4ba2f2c806d24ba53ee8d896e924b1cebd49140a7733412651778daaab8af2b3",
+      "host_modules_or_pm_changed": false
+    },
+    "vm36-pm-fixed": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "4ba2f2c806d24ba53ee8d896e924b1cebd49140a7733412651778daaab8af2b3",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": "platform",
+      "removal_after_early_resume": true,
+      "explicit_irq_wake_during_noirq": false,
+      "seconds": 16.875916109998798,
+      "hot_remove_requested": true
+    },
+    "vm36-remove-fixed": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "4ba2f2c806d24ba53ee8d896e924b1cebd49140a7733412651778daaab8af2b3",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": null,
+      "seconds": 16.59094392299994,
+      "hot_remove_requested": true
+    },
+    "bus36-notifier-core-fixed-cross": {
+      "case": "core-fixed-cross",
+      "passed": true,
+      "debug_locks": 1,
+      "intentional_warning_expected": false,
+      "seconds": 9.736653728001329,
+      "max_host_thermal_mC": 58400,
+      "host_sleep_or_driver_state_changed": false,
+      "production_patch_sha256": "12389eff2b9663ec1d61ae51d06745d10612b90e2734672e49a81c1e4052b69d"
+    },
+    "bus36-notifier-core-fixed-same": {
+      "case": "core-fixed-same",
+      "passed": true,
+      "debug_locks": 0,
+      "intentional_warning_expected": true,
+      "seconds": 10.761265135999565,
+      "max_host_thermal_mC": 58000,
+      "host_sleep_or_driver_state_changed": false,
+      "production_patch_sha256": "12389eff2b9663ec1d61ae51d06745d10612b90e2734672e49a81c1e4052b69d"
+    },
+    "pm-owner36-normal": {
+      "case": "normal",
+      "passed": true,
+      "records": [
+        [
+          "3",
+          "1",
+          "1",
+          "0",
+          "1",
+          "1",
+          "1",
+          "1"
+        ],
+        [
+          "4",
+          "1",
+          "1",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1"
+        ]
+      ],
+      "debug_locks": 1,
+      "pm_expected_error": false,
+      "seconds": 10.766240057000687,
+      "max_host_thermal_mC": 58800,
+      "host_sleep_or_driver_state_changed": false
+    },
+    "pm-owner36-prepare": {
+      "case": "prepare",
+      "passed": true,
+      "records": [
+        [
+          "3",
+          "32770",
+          "1",
+          "0",
+          "0",
+          "0",
+          "0",
+          "1"
+        ]
+      ],
+      "debug_locks": 1,
+      "pm_expected_error": true,
+      "seconds": 10.728347394000593,
+      "max_host_thermal_mC": 59000,
+      "host_sleep_or_driver_state_changed": false
+    },
+    "pm-owner36-thread": {
+      "case": "thread",
+      "passed": true,
+      "records": [
+        [
+          "3",
+          "32770",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "1"
+        ]
+      ],
+      "debug_locks": 1,
+      "pm_expected_error": true,
+      "seconds": 10.226815244001045,
+      "max_host_thermal_mC": 59500,
+      "host_sleep_or_driver_state_changed": false
+    },
+    "pm-owner36-late": {
+      "case": "late",
+      "passed": true,
+      "records": [
+        [
+          "3",
+          "1",
+          "1",
+          "0",
+          "1",
+          "1",
+          "1",
+          "1"
+        ],
+        [
+          "4",
+          "1",
+          "1",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1"
+        ]
+      ],
+      "debug_locks": 1,
+      "pm_expected_error": true,
+      "seconds": 10.757141033998778,
+      "max_host_thermal_mC": 59500,
+      "host_sleep_or_driver_state_changed": false
+    },
+    "pm-owner36-resume": {
+      "case": "resume",
+      "passed": true,
+      "records": [
+        [
+          "3",
+          "1",
+          "1",
+          "0",
+          "1",
+          "1",
+          "1",
+          "1"
+        ],
+        [
+          "4",
+          "32770",
+          "1",
+          "1",
+          "0",
+          "0",
+          "0",
+          "1"
+        ]
+      ],
+      "debug_locks": 1,
+      "pm_expected_error": false,
+      "seconds": 11.252515410000342,
+      "max_host_thermal_mC": 59700,
+      "host_sleep_or_driver_state_changed": false
+    },
+    "freezer-exec36-vm": {
+      "passed": true,
+      "raw_success": 1,
+      "raw_busy": 11,
+      "prefrozen_success": 12,
+      "seconds": 48.5890559569998,
+      "max_host_thermal_mC": 64500,
+      "host_sleep_or_driver_state_changed": false
+    }
+  },
+  "native": {
+    "packages_installed": false,
+    "boot_image_staged": false,
+    "default_changed": false,
+    "power_profile_changed": false,
+    "physical_sleep_qualified": false,
+    "audio_start_ebusy_resolved": false,
+    "next_dependency": "Authenticate the existing graphical diagnostic request to trace the intermittent first START on the running kernel without reboot."
+  },
+  "checks": {
+    "repository_tests_passed": 177,
+    "x86_64_llvm_w1_pci_reset_hotplug_vmd_passed": true,
+    "driver_archive_owners_modes_payload_hashes_verified": true,
+    "physical_hardware_not_emulated": true,
+    "packaged_image_and_header_files_match_archive": true,
+    "packaging_warning": "makepkg reported a libfakeroot payload warning while building the driver package. The successful archive was independently verified for exact payload, UID/GID zero, safe modes and all module hashes."
+  }
+}
