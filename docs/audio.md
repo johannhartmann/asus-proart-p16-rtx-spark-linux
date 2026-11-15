@@ -240,7 +240,7 @@ headset microphone capture and ordinary PipeWire client close/open/recovery.
 A successful playback command is insufficient: DSP consumed-data/period
 counters must advance, and real audio must be confirmed.
 
-Use the bounded validator for DSP 0.1.25 with AFE 0.1.27, with a known microphone
+Use the bounded validator for DSP 0.1.25/0.1.26 with AFE 0.1.27–0.1.29, with a known microphone
 stimulus and both raw PCMs idle. It runs S16_LE/S24_LE playback, capture and
 duplex:
 

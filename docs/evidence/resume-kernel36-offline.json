@@ -240,7 +240,7 @@
     "power_profile_changed": false,
     "physical_sleep_qualified": false,
     "audio_start_ebusy_resolved": false,
-    "next_dependency": "Authenticate the existing graphical diagnostic request to trace the intermittent first START on the running kernel without reboot."
+    "next_dependency": "Native initial-START diagnostics and complete audio reload qualification before requesting a native candidate boot."
   },
   "checks": {
     "repository_tests_passed": 177,

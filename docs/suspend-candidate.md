@@ -174,6 +174,17 @@ on the existing kernel must finish before requesting the next native boot;
 these offline results do not close the intermittent audio failure or qualify
 physical sleep on kernel36.
 
+The [AFE 0.1.29 bundle](evidence/resume-kernel36-afe29-offline.json) supersedes
+that initial offline kernel36 build. Its final Image passed four fresh EFI/KVM
+cases: the complete 30-module/protocol/AFE-lifetime test, Lockdep capacity,
+SDHCI hot-removal and traced noirq resume. All 8,507 built modules and 8,503
+packaged production modules pass split-BTF checks. The 12 earlier core cases
+remain recorded against their own Image, with identical core patch inputs,
+configuration and symbol CRCs. Neither bundle has been installed or selected
+for boot. The [later live diagnostic](evidence/audio-open-20261115.json)
+records seven successful playbacks followed by an OPEN refusal; AFE 0.1.29's
+live contention/replacement qualification remains pending.
+
 ## Deployment gate
 
 Keep the working kernel34 and recovery images. Build all changes into one

@@ -1,0 +1,98 @@
+{
+  "date": "2026-11-15",
+  "scope": "AFE 0.1.29 source correction and complete offline kernel36 bundle; live replacement and native boot remain pending",
+  "supersedes_offline_artifact_record": "resume-kernel36-offline.json",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "afe_version": "0.1.29",
+  "kernel_source_commit": "d8333e4880ecb7e89ab6b7d77b63aa4d4456f2f5",
+  "module_source_commit": "d8333e4880ecb7e89ab6b7d77b63aa4d4456f2f5",
+  "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+  "packages_sha256": {
+    "linux-p16-platform-36-7.2.8-36-aarch64.pkg.tar.zst": "f78ee2be5d3978c40a0e13dce527d291d2493f947455406413481c0abb9b0d4f",
+    "linux-p16-platform-36-headers-7.2.8-36-aarch64.pkg.tar.zst": "0dceb897b80de0f417d497de1bfb0d65b95d44f0056bfe1c1cbfb572bdad8dd3",
+    "linux-p16-platform-36-drivers-7.2.8-36-aarch64.pkg.tar.xz": "82080560862a8851d70fe2d159a7192f988e783c26ad254d8ee8bf5ca9ea462a"
+  },
+  "btf": {
+    "modules_checked": 8503,
+    "modules_with_btf": 8503,
+    "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+    "built_modules_checked": 8507,
+    "built_modules_with_btf": 8507,
+    "external_modules_checked": 17,
+    "production_external_modules": 13
+  },
+  "checks": {
+    "repository_tests_passed": 177,
+    "packaged_image_and_headers_match_archives": true,
+    "driver_archive_owners_modes_payload_hashes_verified": true,
+    "actual_c_frontend_contention_test_preserves_owner_and_leases": true
+  },
+  "vm": {
+    "kernel36-afe29-vm": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "modules_loaded": 30,
+      "permanent_const_irq_fix": true,
+      "efi_kernel_userspace_vdso_signal_fork": true,
+      "virtual_cpus": 1,
+      "seconds": 10.75073968599827,
+      "max_host_thermal_mC": 56500,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa"
+    },
+    "lockdep-positive36-afe29-vm": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "ordered_dependency_pairs": 44850,
+      "debug_locks": 1,
+      "efi_kernel_userspace_vdso_signal_fork": true,
+      "seconds": 17.43996125799822,
+      "max_host_thermal_mC": 79700,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "host_modules_or_pm_changed": false
+    },
+    "vm36-afe29-pm-fixed": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": "platform",
+      "removal_after_early_resume": true,
+      "explicit_irq_wake_during_noirq": false,
+      "seconds": 16.876342580999335,
+      "hot_remove_requested": true
+    },
+    "vm36-afe29-remove-fixed": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": null,
+      "seconds": 16.66518613199878,
+      "hot_remove_requested": true
+    }
+  },
+  "baseline_core_regressions": {
+    "record": "resume-kernel36-offline.json",
+    "cases": 12,
+    "core_patch_inputs_unchanged": true,
+    "config_and_symbol_crcs_identical": true,
+    "scope": "The 12 prior cases are not re-labelled as runs of this new Image. The four final-Image cases below were executed again."
+  },
+  "native": {
+    "diagnostic_record": "audio-open-20261115.json",
+    "afe29_installed": false,
+    "afe29_loaded": false,
+    "live_contention_qualified": false,
+    "audio_start_ebusy_resolved": false,
+    "kernel_packages_installed": false,
+    "boot_image_staged": false,
+    "default_changed": false,
+    "power_profile_changed": false,
+    "physical_sleep_qualified": false,
+    "next_dependency": "Native AFE29 contention/reload, first-START and numerical NPU qualification, followed by complete native kernel36 boot and physical-sleep qualification."
+  }
+}

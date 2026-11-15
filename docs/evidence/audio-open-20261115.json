@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-15",
+  "kernel": "7.2.8-35-rtx-spark-npu",
+  "afe_version": "0.1.28",
+  "scope": "Functional diagnostic with this boot already having disabled Lockdep; no PM or validator reset",
+  "completed": false,
+  "checked_reloads": 4,
+  "successful_playbacks": 7,
+  "first_failure": {
+    "samples": 1536,
+    "returncode": 1,
+    "log": "aplay: main:850: audio open error: Operation not supported\n"
+  },
+  "start_error_observed": false,
+  "probes_reattached_before_audio_services_each_generation": true,
+  "probe_counts_each_generation": [
+    {
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "dsp_calls": 2,
+      "endpoint_calls": 51,
+      "fe_calls": 2,
+      "irq_calls": 13
+    }
+  ],
+  "power_profile_changed": false,
+  "scripts_sha256": {
+    "diagnose-audio-start.py": "07a6f1919d80d339477e4d8fe96542ff653326c2857e76bad26bbedff543bdb5",
+    "start-errors-live.bt": "9057d05986b4317865aae5fc764039995549181a86bb3980ebed2d432aac45da"
+  },
+  "interpretation": "The failed request was refused at PCM OPEN with EOPNOTSUPP. The source also incorrectly reports an occupied playback direction as EOPNOTSUPP; AFE 0.1.29 corrects that to EBUSY. This is not proof of the origin of the earlier intermittent START EBUSY. Live contention and replacement tests must be qualified separately."
+}
