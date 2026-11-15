@@ -83,13 +83,16 @@ class AudioReloadTests(unittest.TestCase):
                 events.append(tuple(arguments))
                 if 'is-active' in arguments:
                     return SimpleNamespace(returncode=0 if arguments[-1] == 'pipewire.socket' else 3)
-                if arguments[:2] == ['/usr/bin/modprobe', '-r']:
-                    if fault == 'unload-resume' and arguments[2] == 'n1x_adsp':
+                if arguments[0] == '/usr/bin/rmmod':
+                    module = arguments[1]
+                    if fault == 'unload-resume' and module == 'n1x_adsp':
                         raise subprocess.CalledProcessError(1, arguments)
-                    shutil.rmtree(root/'module'/arguments[2], ignore_errors=True)
-                    if arguments[2] == 'n1x_adsp':
+                    shutil.rmtree(root/'module'/module, ignore_errors=True)
+                    if module == 'n1x_adsp':
                         for device in devices:
                             (device/'shutdown').unlink(missing_ok=True)
+                        if fault == 'removed-resume':
+                            raise subprocess.CalledProcessError(1, arguments)
                 if fault == 'card-resume' and arguments[:2] == ['/usr/bin/modprobe', 'mt8901_acp_sdw_legacy_mach']:
                     raise subprocess.CalledProcessError(1, arguments)
                 if arguments[0] == '/usr/bin/modprobe' and arguments[1] != '-r':
@@ -136,7 +139,7 @@ class AudioReloadTests(unittest.TestCase):
                         audio.reload_audio(1000, root, run, state_path=state_path)
                     state=json.loads(state_path.read_text())
                     expected_phase={'load-resume':'loading', 'firmware-resume':'loading', 'unknown-resume':'loading', 'stale-resume':'loading', 'card-resume':'loading',
-                                    'unload-resume':'released','journal-resume':'released','busy-resume':'stopping',
+                                    'unload-resume':'released','removed-resume':'released','journal-resume':'released','busy-resume':'stopping',
                                     'timeout-resume':'stopping','services-resume':'restoring'}[fault]
                     self.assertEqual(state['phase'], expected_phase)
                     if fault == 'stale-resume':
@@ -168,6 +171,15 @@ class AudioReloadTests(unittest.TestCase):
                 else:
                     audio.reload_audio(1000, root, run, state_path=state_path)
             return events
+
+    def test_resume_after_dsp_was_removed_does_not_replay_removal(self):
+        self.exercise('removed-resume')
+
+    def test_remove_only_named_audio_modules_without_following_softdeps(self):
+        events = self.exercise()
+        removed = {event[1] for event in events if event[0] == '/usr/bin/rmmod'}
+        self.assertEqual(removed, {'mt8901_acp_sdw_legacy_mach', 'n1x_adsp', 'snd_soc_mt8901_afe'})
+        self.assertFalse(any(event[:2] == ('/usr/bin/modprobe', '-r') for event in events))
 
     def test_failed_stage_save_resumes_from_the_last_recorded_phase(self):
         self.exercise('journal-resume')
@@ -225,7 +237,7 @@ class AudioReloadTests(unittest.TestCase):
     def test_unknown_completion_is_not_retried_or_unloaded(self):
         events = self.exercise('timeout')
         self.assertEqual(sum(event[0] in ('stop', 'quiesce') for event in events), 1)
-        self.assertNotIn(('/usr/bin/modprobe', '-r', 'n1x_adsp'), events)
+        self.assertNotIn(('/usr/bin/rmmod', 'n1x_adsp'), events)
         self.assertTrue(any(event[-2:] == ('start', 'pipewire.socket') for event in events))
 
     def test_deferred_probe_gets_time_to_publish_asoc_components(self):

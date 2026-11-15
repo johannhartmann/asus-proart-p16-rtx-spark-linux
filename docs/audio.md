@@ -327,6 +327,11 @@ maintenance; the helper neither compiles nor installs code. It keeps the NPU
 provider loaded so verified per-image retirement survives. System-sleep and
 physical endpoint qualification remain separate gates, even after reload works.
 
+Removal targets the named audio modules with `rmmod`, after checked native
+shutdown. `modprobe -r` would also follow the DSP's NPU pre-softdep and attempt
+to remove the retained provider. An interrupted removal can resume even if
+the DSP module has already gone; completed power transitions are not replayed.
+
 The maintenance helper checks replacement module files, minimum versions,
 kernel vermagic and dependency paths before stopping desktop audio. A private
 root-owned journal in `/run/n1x-adsp-audio-reload.json` saves the invoking user,

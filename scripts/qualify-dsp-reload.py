@@ -246,6 +246,13 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
     def command(arguments, check=True):
         return run(arguments, check=check, timeout=180)
 
+    def remove_module(module):
+        # Remove only this module. modprobe -r also follows pre-softdeps,
+        # which would try to remove the deliberately retained NPU provider.
+        # A previous interrupted removal may already have unloaded the DSP.
+        if (root/'module'/module).exists():
+            command(['/usr/bin/rmmod', module])
+
     current = [unit for unit in UNITS if command(user_systemctl+['is-active', '--quiet', unit], check=False).returncode == 0]
     if not resume:
         state['active'] = current
@@ -256,7 +263,7 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
         if phase != 'restoring' and current:
             command(user_systemctl+['stop', *current])
         if phase == 'stopping':
-            command(['/usr/bin/modprobe', '-r', machine])
+            remove_module(machine)
             machine_removed = True
             # All three cores reach native D3/abandon before any allocation retires.
             for operation in ('quiesce', 'stop'):
@@ -283,9 +290,9 @@ def reload_audio(uid, root=SYS, run=subprocess.run, *, resume=False, state_path=
         if phase == 'released':
             # The durable stage record precedes both unloads. Repeating a normal
             # module removal after a software error is safe; nothing is forced.
-            command(['/usr/bin/modprobe', '-r', machine])
-            command(['/usr/bin/modprobe', '-r', 'n1x_adsp'])
-            command(['/usr/bin/modprobe', '-r', 'snd_soc_mt8901_afe'])
+            remove_module(machine)
+            remove_module('n1x_adsp')
+            remove_module('snd_soc_mt8901_afe')
             state['phase'] = phase = 'loading'
             save_reload(state_path, state)
         if phase == 'loading':
