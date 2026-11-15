@@ -1,11 +1,13 @@
 """Ensure debug candidates cannot silently lose instrumentation or alter defaults."""
 import importlib.util
 import hashlib
+import json
 import re
 import subprocess
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('kernel_candidate', ROOT/'scripts/prepare-kernel-candidate.py')
@@ -14,6 +16,67 @@ spec.loader.exec_module(candidate)
 
 
 class KernelDebugTests(unittest.TestCase):
+    def test_module_builder_waits_for_finalized_package_manifest(self):
+        spec = importlib.util.spec_from_file_location(
+            'module_candidate', ROOT/'scripts/prepare-platform-candidate.py')
+        modules = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(modules)
+        with tempfile.TemporaryDirectory() as tmp:
+            out, parent = Path(tmp)/'modules', Path(tmp)/'kernel'
+            out.mkdir()
+            parent.mkdir()
+            candidate.save(parent/'job.json', {'status': 'complete', 'exit_code': 0})
+            candidate.save(parent/'manifest.json', {})
+            with patch.object(modules.os, 'geteuid', return_value=1000), \
+                    patch.object(modules, 'verify_sources') as verify:
+                with self.assertRaisesRegex(RuntimeError, 'package manifest is not finalized'):
+                    modules.build(out, {'kernel_candidate': str(parent)})
+            verify.assert_not_called()
+            self.assertFalse((out/'job.json').exists())
+
+    def test_complete_status_follows_package_manifest_publication(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            job = {'status': 'running', 'log': 'build.log'}
+            candidate.save(out/'job.json', job)
+            manifest = {'attempts': []}
+
+            def record(output, state, completed):
+                self.assertEqual(json.loads((out/'job.json').read_text())['status'], 'running')
+                self.assertEqual(completed['status'], 'complete')
+                state['packages'] = {'kernel.pkg.tar.zst': 'verified'}
+                candidate.save(output/'manifest.json', state)
+
+            with patch.object(candidate, 'verify_inputs'), \
+                    patch.object(candidate, 'record_packages', side_effect=record):
+                candidate.finish_build(out, manifest, job, 0)
+            self.assertEqual(json.loads((out/'job.json').read_text())['status'], 'complete')
+            self.assertIn('packages', json.loads((out/'manifest.json').read_text()))
+
+    def test_package_validation_failure_cannot_publish_complete(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            job = {'status': 'running', 'log': 'build.log'}
+            candidate.save(out/'job.json', job)
+            with patch.object(candidate, 'verify_inputs'), \
+                    patch.object(candidate, 'record_packages', side_effect=RuntimeError('bad package')):
+                with self.assertRaisesRegex(RuntimeError, 'bad package'):
+                    candidate.finish_build(out, {'attempts': []}, job, 0)
+            saved = json.loads((out/'job.json').read_text())
+            self.assertEqual((saved['status'], saved['exit_code']), ('failed', 1))
+            self.assertEqual(saved['validation_error'], 'bad package')
+
+    def test_failed_build_does_not_record_successful_packages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp)
+            job = {'status': 'running', 'log': 'build.log'}
+            with patch.object(candidate, 'verify_inputs'), \
+                    patch.object(candidate, 'record_packages') as record:
+                candidate.finish_build(out, {'attempts': []}, job, 2)
+            record.assert_not_called()
+            self.assertEqual(json.loads((out/'job.json').read_text())['status'], 'failed')
+            self.assertEqual(json.loads((out/'manifest.json').read_text())['attempts'][0]['exit_code'], 2)
+
     def test_separately_installed_candidate_keeps_kernel_and_headers_together(self):
         raw = (ROOT/'kernel/PKGBUILD').read_bytes()
         self.assertEqual(candidate.package_recipe(raw, 'linux-p16-platform'), raw)

@@ -166,7 +166,10 @@ def build(output, manifest):
     if job.get('status') != 'complete' or job.get('exit_code') != 0:
         raise RuntimeError('Wait for the live kernel build; it must complete before module builds')
     kernel_manifest = json.loads((parent / 'manifest.json').read_text())
-    for name, expected in kernel_manifest['packages'].items():
+    packages = kernel_manifest.get('packages')
+    if not packages:
+        raise RuntimeError('Kernel package manifest is not finalized; wait and resume the module build')
+    for name, expected in packages.items():
         if digest(parent / name) != expected:
             raise RuntimeError('Candidate kernel package changed: ' + name)
     verify_sources(output, manifest)

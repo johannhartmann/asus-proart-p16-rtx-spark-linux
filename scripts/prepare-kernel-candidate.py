@@ -177,6 +177,24 @@ def record_packages(output, manifest, job):
     save(output / 'manifest.json', manifest)
 
 
+def finish_build(output, manifest, job, code):
+    """Publish completion only after the verified package manifest is published."""
+    job.update({'status': 'complete' if code == 0 else 'failed',
+                'exit_code': code, 'finished_at': now()})
+    try:
+        verify_inputs(output, manifest)
+        if code == 0:
+            record_packages(output, manifest, job)
+        else:
+            manifest['attempts'].append(job)
+            save(output / 'manifest.json', manifest)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as error:
+        job.update(status='failed', exit_code=1, validation_error=str(error))
+        save(output / 'job.json', job)
+        raise
+    save(output / 'job.json', job)
+
+
 def build(output, manifest):
     if os.geteuid() == 0:
         raise RuntimeError('Build as the normal workspace owner, not root')
@@ -233,15 +251,7 @@ def build(output, manifest):
         save(job_path, job)
         print(json.dumps(job), flush=True)
         code = process.wait()
-    job.update({'status': 'complete' if code == 0 else 'failed',
-                'exit_code': code, 'finished_at': now()})
-    save(job_path, job)
-    verify_inputs(output, manifest)
-    if code == 0:
-        record_packages(output, manifest, job)
-    else:
-        manifest['attempts'].append(job)
-        save(output / 'manifest.json', manifest)
+    finish_build(output, manifest, job, code)
     print(json.dumps(job), flush=True)
     if code:
         raise RuntimeError('Kernel build failed; inspect ' + str(log))

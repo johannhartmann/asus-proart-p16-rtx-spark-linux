@@ -1,0 +1,121 @@
+{
+  "kernel_release": "7.2.8-35-rtx-spark-npu",
+  "kernel_source_commit": "21e9a500f5be86ecbe028f117c5c91eb6e066d06",
+  "module_source_commit": "21e9a500f5be86ecbe028f117c5c91eb6e066d06",
+  "linux_image_sha256": "dc03d72ac11696c9c1e36b947159fb44aba00a42d506541b794244297279a1f2",
+  "uki_sha256": "f074738077d47d909790a4ff049822169d5d5e8defda5c51fd295ef6aa28a802",
+  "vmlinux_btf_sha256": "c8fc8bbab3a7e53fa193fb8d1e0f7bde73bf6164bf35b69dfcf10dc73a33bcfe",
+  "kernel_package_sha256": {
+    "packages/linux-p16-platform-35-7.2.8-35-aarch64.pkg.tar.zst": "63990c9b58afecac4a462fc7b869dfc803112c59d96f8620aa30a6b91fc774f6",
+    "packages/linux-p16-platform-35-headers-7.2.8-35-aarch64.pkg.tar.zst": "a733121761c053cbff74ab9d4e48f5bcc34209e76daa79bfc52a244efd563a7c"
+  },
+  "driver_package": {
+    "name": "linux-p16-platform-35-drivers-7.2.8-35-aarch64.pkg.tar.xz",
+    "sha256": "cb79218e5e9c617c7e8a5caf11da37f7614545c2dceb0a9562be9a9e9ef6f2d6",
+    "production_modules": 13,
+    "all_modules_btf_checked": 17
+  },
+  "boot_entry": "RTX-Spark-Kernel35",
+  "default_kernel_preserved": "7.2.8-34-rtx-spark-npu",
+  "recovery_preserved": true,
+  "acpi_profile": "legacy",
+  "boot_arguments_preserved": true,
+  "normal_suspend_configuration_installed": true,
+  "archived_diagnostic_kernel": 32,
+  "archived_image_sha256": "2d4cfeb8a9d25d292c62c9b9f01f9c6b930a8cfcffaacfc7ea28bb1fe8eb4e75",
+  "checks": {
+    "repository_tests": 177,
+    "shell_vt_tests": 6,
+    "mocked_systemd_transactions": 3,
+    "boot_publication_and_rollback_cases": 6,
+    "source_module_btf_checks": 8507,
+    "installed_module_btf_checks": 8503,
+    "embedded_module_btf_checks": 430
+  },
+  "vm": {
+    "boot": {
+      "passed": true,
+      "modules_loaded": 30,
+      "permanent_const_irq_fix": true,
+      "efi_kernel_userspace_vdso_signal_fork": true,
+      "image_sha256": "dc03d72ac11696c9c1e36b947159fb44aba00a42d506541b794244297279a1f2"
+    },
+    "lockdep": {
+      "passed": true,
+      "ordered_dependency_pairs": 44850,
+      "debug_locks": 1,
+      "image_sha256": "dc03d72ac11696c9c1e36b947159fb44aba00a42d506541b794244297279a1f2"
+    },
+    "bus_notifier": {
+      "core-fixed-cross": {
+        "passed": true,
+        "debug_locks": 1,
+        "intentional_warning_expected": false,
+        "production_patch_sha256": "12389eff2b9663ec1d61ae51d06745d10612b90e2734672e49a81c1e4052b69d"
+      },
+      "core-fixed-same": {
+        "passed": true,
+        "debug_locks": 0,
+        "intentional_warning_expected": true,
+        "production_patch_sha256": "12389eff2b9663ec1d61ae51d06745d10612b90e2734672e49a81c1e4052b69d"
+      }
+    },
+    "nvidia_pm": {
+      "normal": {
+        "passed": true,
+        "debug_locks": 1,
+        "pm_expected_error": false
+      },
+      "prepare": {
+        "passed": true,
+        "debug_locks": 1,
+        "pm_expected_error": true
+      },
+      "thread": {
+        "passed": true,
+        "debug_locks": 1,
+        "pm_expected_error": true
+      },
+      "late": {
+        "passed": true,
+        "debug_locks": 1,
+        "pm_expected_error": true
+      },
+      "resume": {
+        "passed": true,
+        "debug_locks": 1,
+        "pm_expected_error": false
+      }
+    },
+    "freezer": {
+      "passed": true,
+      "raw_success": 0,
+      "raw_busy": 12,
+      "prefrozen_success": 12
+    }
+  },
+  "native_afe28": {
+    "kind": "functional candidate; current Lockdep disabled, no PM test",
+    "module_sha256": "37ba0bbcb2771873e4f23add7d0fd9a64b4b3b0d3c06a434b387f7e1dba247b3",
+    "pcm_cases": 6,
+    "passed": true,
+    "npu_jobs": 8,
+    "kernel": "7.2.8-34-rtx-spark-npu",
+    "srcversion": "655FDEEFE952DE53B41C8C2",
+    "locking_qualified": false
+  },
+  "qualification": {
+    "native_kernel35_cold_boot_verified": false,
+    "continuous_native_lockdep_verified": false,
+    "physical_suspend_resume_verified": false,
+    "host_reboots_during_this_batch": 0,
+    "power_profile_changed": false
+  },
+  "dpcm_regression": {
+    "asoc_functions": "Linux 7.2.8 sound/soc/soc-pcm.c",
+    "old_snapshot_return": -16,
+    "fixed_snapshot_return": 0,
+    "live_mutations_still_rejected": true,
+    "original_native_failure_retrospectively_proven": false
+  }
+}

@@ -32,4 +32,6 @@ for case in ('normal','prepare-error','sleep-error'):
   run('stop',parent,vt,check=False);run('reset-failed',parent,vt,check=False)
   for f in files:f.unlink()
   run('daemon-reload');t.doCleanups()
+  runtime=Path(os.environ['XDG_RUNTIME_DIR'])/name
+  if runtime.exists():runtime.rmdir()
 print(json.dumps(results,indent=2))

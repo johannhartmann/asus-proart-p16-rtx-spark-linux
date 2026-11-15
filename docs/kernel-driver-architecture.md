@@ -5,6 +5,13 @@ The [suspend candidate](suspend-candidate.md) describes the subsequent AFE
 integration, with their separate verification and deployment gates. These
 source corrections do not imply that physical sleep has passed qualification.
 
+AFE 0.1.28 was loaded on kernel34 without a reboot and passed six PCM cases
+and eight cuDLA outputs. The complete kernel35 candidate is installed as
+`RTX-Spark-Kernel35`, with the normal suspend configuration; its
+[artifact record](evidence/suspend-kernel35.json) separates offline verification
+from the still-pending native cold-boot, continuous-Lockdep and physical-sleep
+checks. Kernel34 remains the normal default and recovery entries are retained.
+
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working
 desktop, successful module build, or passing protocol test does not establish

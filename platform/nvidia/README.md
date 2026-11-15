@@ -61,18 +61,22 @@ thread-creation-error, later-notifier-abort and resume-error cases pass with
 Lockdep active and no retained worker, gate or module reference.
 
 The candidate-module builder applies both patches to its private NVIDIA copy
-and pins both modified source files. All five candidate NVIDIA modules built
-against kernel33 and passed split-BTF validation against its exact vmlinux.
-The unchanged vendor core objects were reused only after verifying all 3,535
-core source input hashes against the earlier kernel33 bundle. The installed DKMS patch package above
-still includes **only the previously qualified DRM fix**; it does not deploy
-this PM candidate. Native verification of the new NVIDIA modules, device-only
-PM with clean Lockdep, and then real s2idle remain required. Do not unload the
-active desktop GPU or reset Lockdep to substitute for that qualification.
+and pins both modified source files. Native kernel34 device-only PM passed
+with the owner correction and Lockdep still enabled at its completion. A later
+NVIDIA/I2C/platform-bus classification warning disabled that boot's validator;
+see the separate per-bus lock-class fix in the
+[suspend candidate](../../docs/suspend-candidate.md).
 
-On the development P16, package `linux-p16-platform-33-drivers 7.2.8-33.1`
-and the separate **`RTX-Spark-Audio-Kernel33-NVPM`** boot image are staged.
-The default/recovery images and running modules were preserved. This is a
-per-kernel test deployment, not promotion to the default or a global DKMS
-rollout. The [installed-image record](../../docs/audio-boot-diagnostics.md#installed-nvidia-ownership-test-image)
-contains its exact identity and pending hardware checks.
+The complete **kernel35** bundle is installed as **`RTX-Spark-Kernel35`**. Its
+NVIDIA modules were rebuilt against the exact candidate vmlinux and passed
+split-BTF checks. The unchanged vendor core objects are reused only after
+checking all 3,535 source hashes. EFI/KVM boot/module, positive Lockdep,
+real-bus notifier and all five PM-owner regressions passed. Native kernel35
+cold boot, continuous Lockdep and physical s2idle remain unverified.
+
+The installed global, version-scoped DKMS patch package still contains only
+the DRM correction. The complete candidate builder includes both patches;
+this is the maintained route for matching new kernels and modules. Global
+DKMS rollout of the PM patch remains a separate deployment gate after physical
+qualification. Do not unload the active desktop GPU, reset Lockdep or replace
+modules from a different kernel/BTF set to substitute for that qualification.

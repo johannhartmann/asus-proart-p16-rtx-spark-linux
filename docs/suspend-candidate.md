@@ -4,6 +4,14 @@ These changes address three independent source/configuration defects. They
 must be qualified together; passing a build or a VM test does not establish
 physical suspend/resume on the workstation.
 
+The installed candidate is **`7.2.8-35-rtx-spark-npu`**, available as
+**`RTX-Spark-Kernel35`** in Limine. Its [qualification record](evidence/suspend-kernel35.json)
+pins the kernel, UKI, package and BTF hashes and the test boundaries. The normal
+kernel34 and recovery entries remain available. The native ACPI profile and
+boot arguments were preserved; only the obsolete kernel32 diagnostic image was
+archived outside `/boot`. Kernel35 cold boot, continuously enabled native
+Lockdep and physical suspend/resume remain unverified until observed.
+
 ## Audio: a deferred DPCM START is allowed to see a running FE
 
 Linux ASoC's `dpcm_fe_dai_trigger()` queues a trigger while a routing update
@@ -31,6 +39,11 @@ retrospectively attributed to this path with certainty. A total of 48 traced
 playbacks and twelve first-start requests across four checked module reloads
 did not reproduce that earlier failure. Those functional diagnostics ran with
 the current boot's already disabled Lockdep; they are not locking qualification.
+
+The fixed AFE 0.1.28 module was then loaded on the running kernel34 without a
+reboot. Six playback/capture/duplex cases and eight independently verified
+cuDLA outputs passed. That confirms bounded functional operation with the fix;
+the current boot's already disabled Lockdep is still not locking qualification.
 
 ## Lockdep: separate unrelated bus notifier classes
 
@@ -63,6 +76,13 @@ The existing NVIDIA PM-owner correction remains required: the same dedicated
 kernel thread owns the NVIDIA PM gates from PREPARE through POST. VT ordering,
 gate ownership and bus Lockdep classes solve different problems; none replaces
 the others.
+
+Install `config/90-rtx-spark-suspend.conf` under `/etc/systemd/sleep.conf.d/`
+for the N1X workstation. It selects only `mem` with `s2idle`, matching the
+device-only qualification sequence. Other systemd fallback sleep states must
+not retry a device/firmware transition after an uncertain failure. This is a
+Linux sleep-policy setting, not a driver admission gate or a power-profile
+change.
 
 ## Deployment gate
 
