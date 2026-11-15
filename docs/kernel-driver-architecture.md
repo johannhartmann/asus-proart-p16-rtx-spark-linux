@@ -1,7 +1,7 @@
 # Kernel driver architecture
 
 The [suspend candidate](suspend-candidate.md) describes the subsequent AFE
-0.1.28 deferred-START fix, per-bus notifier lock classes and VT-before-freezer
+0.1.28 deferred-START and 0.1.29 playback-contention fixes, per-bus notifier lock classes and VT-before-freezer
 integration, with their separate verification and deployment gates. These
 source corrections do not imply that physical sleep has passed qualification.
 

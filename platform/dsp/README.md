@@ -51,6 +51,11 @@ declaring the single-playback restriction. AFE 0.1.27 validates firmware-owned
 capture START rather than reconfiguring its already-active IRQ. See
 [the qualification guide](../../docs/audio.md) for installation and recorded
 hardware results; capture, duplex and resume are still pending qualification.
+The subsequent AFE 0.1.28 fix permits metadata reads during deferred DPCM
+START. AFE 0.1.29 reports competing DL0/DL1 opens as busy instead of unsupported;
+it preserves the existing firmware owner. The
+[suspend candidate](../../docs/suspend-candidate.md) records the bounded native
+results and the separate open START/resume qualification issues.
 
 ## System sleep
 
