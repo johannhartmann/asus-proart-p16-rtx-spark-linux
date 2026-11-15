@@ -137,10 +137,11 @@
       "numerical_npu_outputs": 32,
       "lockdep_enabled_throughout": true,
       "new_kernel_warnings": false,
-      "failed_start_probes_observed": 0,
       "passed": true,
       "idle_handling": "Bounded wait for transient desktop audio clients; no failed PCM START was retried.",
-      "scope": "Bounded functional and locking checks; do not resolve the earlier START EBUSY or qualify physical sleep."
+      "scope": "Bounded functional and locking checks; do not resolve the earlier START EBUSY or qualify physical sleep.",
+      "start_probe_coverage_after_reload_qualified": false,
+      "probe_limit": "Original probes were attached before module unload; those results do not establish probe coverage after reload. A subsequent collector reattaches before restoring audio services and verifies call counts."
     },
     "function_graph_diagnostic": {
       "pcm_playbacks": 2,

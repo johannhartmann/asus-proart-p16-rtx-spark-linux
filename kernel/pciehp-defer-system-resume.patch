@@ -1,0 +1,61 @@
+From: Cole Leavitt <cole@unwrap.rs>
+Subject: [PATCH] PCI: pciehp: defer replacement removal until regular resume
+
+pciehp_request() explicitly wakes the IRQ thread even while device IRQs
+are suspended. Removing a replaced device from resume_noirq can therefore
+race its noirq/early callbacks. Queue the event without waking the thread,
+then dispatch it from the system resume callback, after those phases.
+Keep runtime resume unchanged and retain early disconnected marking.
+
+On the N1X, this path removed the GL9767 SD reader before SDHCI resumed,
+exposing a second free_irq() of the interrupt released during suspend.
+
+Adapted to the maintained 7.2.8 tree from the upstream proposal; not a
+claim of mainline acceptance or completed native qualification.
+Link: https://lists.openwall.net/linux-kernel/2026/10/18/921
+Signed-off-by: Cole Leavitt <cole@unwrap.rs>
+
+diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+--- a/drivers/pci/hotplug/pciehp_core.c
++++ b/drivers/pci/hotplug/pciehp_core.c
+@@ -307,7 +307,8 @@
+ 			ctrl_dbg(ctrl, "device replaced during system sleep\n");
+ 			pci_walk_bus(ctrl->pcie->port->subordinate,
+ 				     pci_dev_set_disconnected, NULL);
+-			pciehp_request(ctrl, PCI_EXP_SLTSTA_PDC);
++			/* Defer IRQ-thread removal until noirq/early resume is done. */
++			atomic_or(PCI_EXP_SLTSTA_PDC, &ctrl->pending_events);
+ 		}
+ 	}
+ 
+@@ -326,6 +327,21 @@
+ 
+ 	return 0;
+ }
++
++#ifdef CONFIG_PM_SLEEP
++static int pciehp_system_resume(struct pcie_device *dev)
++{
++	struct controller *ctrl = get_service_data(dev);
++
++	pciehp_resume(dev);
++
++	/* Handle replacement only after all noirq/early callbacks finish. */
++	if (atomic_read(&ctrl->pending_events))
++		pciehp_request(ctrl, 0);
++
++	return 0;
++}
++#endif
+ 
+ static int pciehp_runtime_suspend(struct pcie_device *dev)
+ {
+@@ -395,7 +411,7 @@
+ #ifdef	CONFIG_PM_SLEEP
+ 	.suspend	= pciehp_suspend,
+ 	.resume_noirq	= pciehp_resume_noirq,
+-	.resume		= pciehp_resume,
++	.resume		= pciehp_system_resume,
+ #endif
+ 	.runtime_suspend = pciehp_runtime_suspend,
+ 	.runtime_resume	= pciehp_runtime_resume,

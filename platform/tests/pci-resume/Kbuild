@@ -1,0 +1,2 @@
+obj-m += n1x_sdhci_remove_test.o
+ccflags-y += -I$(srctree)/drivers/mmc/host

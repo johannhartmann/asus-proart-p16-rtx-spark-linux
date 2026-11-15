@@ -64,8 +64,8 @@ reload then failed at START with `EBUSY` (-16), without a retained DSP error.
 
 Two later traced playbacks passed around another reload. A separate four-reload
 matrix passed 24 PCM cases and 32 numerical cuDLA outputs, with Lockdep enabled
-throughout and no new kernel warning. Error-only probes recorded no failed
-START in that matrix. A bounded idle wait accommodated transient desktop audio
+throughout and no new kernel warning. The original error probes were attached
+before module unload, so they do not qualify probe coverage after reload. A bounded idle wait accommodated transient desktop audio
 clients; failed PCM operations were not retried. The initial `EBUSY` remains
 unexplained. See the [candidate record](evidence/suspend-kernel35.json) for
 artifact identities and the separate PM qualification status.

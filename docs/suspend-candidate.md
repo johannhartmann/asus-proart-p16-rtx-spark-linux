@@ -60,8 +60,10 @@ The kernel35 run reproduced START `EBUSY` after its first checked audio reload.
 A subsequent function-graph diagnostic passed two playbacks around one reload.
 Four further checked reload cycles passed 24 PCM cases and 32 independently
 verified cuDLA outputs with continuously enabled Lockdep and no new kernel
-warning. Read-only error probes observed no failed START in that matrix.
-The tests waited for transient desktop audio clients to release their channels;
+warning. Those probes were attached before unloading the modules, so they
+do not establish error-path coverage after reload. The corrected collector
+reattaches to each loaded module generation before audio services restart and
+requires nonzero probe counters. The tests waited for transient desktop audio clients to release their channels;
 they did not retry a failed PCM START. These passing runs do not explain or
 close the initial intermittent failure.
 
@@ -132,9 +134,13 @@ defers replacement handling to regular resume. The
 [follow-up discussion](https://lore-kernel.gnuweeb.org/linux-usb/20261108051829.152803-1-cole%40unwrap.rs/T/)
 confirms that the proposal is not an established mainline fix. A separate
 [locking RFC](https://lists.openwall.net/linux-kernel/2026/08/18/401) changes
-hotplug and PCI reset serialization together. Both require review and offline
-regressions before integration; neither has been installed by this test.
-IRQ ownership across suspend followed by removal also needs its own regression.
+hotplug and PCI reset serialization together. The subsequent [source corrections and regressions](../platform/tests/pci-resume/README.md)
+implement deferred replacement, explicit SDHCI IRQ ownership and PCI reset/scan
+serialization in the package recipe. Their portable tests and real-kernel old/fixed KVM hot-removal cases pass.
+The fixed guest keeps Lockdep enabled without either warning; the old positive
+control must reproduce both warnings and disable Lockdep. The
+[evidence record](evidence/pci-resume-fixes-20261115.json) pins those separate
+Images and patch hashes. Native qualification remains a separate gate. They have not replaced the running kernel.
 The earlier audio START `EBUSY` remains a separate open issue.
 
 ## Deployment gate

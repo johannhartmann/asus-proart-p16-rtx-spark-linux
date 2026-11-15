@@ -1295,6 +1295,19 @@ source+=('bus-notifier-lock-class.patch')
 sha256sums+=('12389eff2b9663ec1d61ae51d06745d10612b90e2734672e49a81c1e4052b69d')
 b2sums+=('aa9d05b48b3d3dd1bdcd906e2e66a840d9d8cd3a715ae7b8299aead17d349f6e6b6528aafde6c09eeae8b2b095e8a8c6c570cd32daefc094512b6d4f788c9ea6')
 
+# Native resume: defer hotplug removal and preserve IRQ/reset ownership.
+source+=('pciehp-defer-system-resume.patch')
+sha256sums+=('850c344e6548c8a1c346d8a8de2cfb512eeeb8c62378d0ddd6862fdb13b1399c')
+b2sums+=('e53e601060a913b695937a6e4958142c277c3b28a69809ca167b474c2b4b5d5684498ff5acb5eb39ae6dcd01ecec8308652ae84fbcf2e27e4f68d4195b825425')
+
+source+=('sdhci-irq-ownership.patch')
+sha256sums+=('c2dca7035b08701a78ca5db6e6bf24257f2cac7620f678af500156bdc9804f18')
+b2sums+=('df68ee2b7c5e41d6d91284213cd4794ac2b1557b8f909392bb524fe519a4582779c810eabed1b903fec7d6600b4e54c3b5fb0cc4dea2ceecc49a2aefe0ff83c1')
+
+source+=('pciehp-reset-lock-order.patch')
+sha256sums+=('de91e3c4b6ee968c802ce3c71a099f1ddae629b3322fbb1ac807f3f3deeeb09c')
+b2sums+=('fb5665c70a785519b6ed7563cb1dd46ded43245148f97dac39d0c76472fc169eca0c9e3986bb91bcd0235228e101839dbc6ff92ae727b5a556be87fd6c6563d3')
+
 # https://www.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc
 
 export KBUILD_BUILD_HOST=omarchy

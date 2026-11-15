@@ -1,0 +1,65 @@
+{
+  "date": "2026-11-15",
+  "scope": "downstream source corrections and disposable KVM regressions; native qualification pending",
+  "patch_sha256": {
+    "pciehp-defer-system-resume.patch": "850c344e6548c8a1c346d8a8de2cfb512eeeb8c62378d0ddd6862fdb13b1399c",
+    "sdhci-irq-ownership.patch": "c2dca7035b08701a78ca5db6e6bf24257f2cac7620f678af500156bdc9804f18",
+    "pciehp-reset-lock-order.patch": "de91e3c4b6ee968c802ce3c71a099f1ddae629b3322fbb1ac807f3f3deeeb09c"
+  },
+  "portable": {
+    "passed": true,
+    "actual_production_functions": true,
+    "asan_ubsan": true,
+    "sdhci_lifecycle_cases_per_variant": 11,
+    "hotplug_resume_signal_cases_per_variant": 24,
+    "locking_cases": "scan/remove, slot/bus reset, error unwind and real topology-mutex contention",
+    "legacy_lock_graph_cycles": 3,
+    "fixed_lock_graph_cycles": 0,
+    "scope_limit": "Reduced lock-order recorder is not kernel Lockdep; polling-thread and firmware-PME behavior are not qualified."
+  },
+  "vm": {
+    "old": {
+      "passed": true,
+      "kernel": "7.2.8-35-rtx-spark-npu",
+      "legacy_positive_control": true,
+      "image_sha256": "dc03d72ac11696c9c1e36b947159fb44aba00a42d506541b794244297279a1f2",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "seconds": 17.08095231599964,
+      "hot_remove_requested": true,
+      "lockdep_before": 1,
+      "lockdep_after": 0,
+      "duplicate_irq_free": true,
+      "circular_lock_warning": true,
+      "expected_warnings": 2
+    },
+    "fixed": {
+      "passed": true,
+      "kernel": "7.2.8-35-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "0138873384ed0d50a9b169ae75ab53dbeab4c04877facd1eb3e993a001815977",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "seconds": 17.26776828400034,
+      "hot_remove_requested": true,
+      "lockdep_before": 1,
+      "lockdep_after": 1,
+      "duplicate_irq_free": false,
+      "circular_lock_warning": false,
+      "warnings": 0
+    },
+    "scope_limit": "Patched predecessor keeps release 7.2.8-35 only in this disposable guest; distinguish it by Image SHA. No host kernel or module was replaced."
+  },
+  "checks": {
+    "repository_tests": 177,
+    "existing_driver_suites_passed": true,
+    "changed_kernel_objects_w1_passed": true
+  },
+  "native": {
+    "installed": false,
+    "boot_entry_changed": false,
+    "power_profile_changed": false,
+    "physical_sleep_qualified": false,
+    "audio_start_ebusy_resolved": false
+  }
+}

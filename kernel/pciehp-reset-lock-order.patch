@@ -1,0 +1,201 @@
+From: RTX Spark Linux maintainers
+Subject: [PATCH] PCI: serialize hotplug scanning and bus resets without reset_lock nesting
+
+Drop reset_lock across scan/remove, not just driver binding, to avoid the
+observed reset_lock/rescan_remove AB-BA dependency and the related slot mutex
+inversion. Keep the per-controller DSN update under reset_lock after dropping
+the topology lock. Serialize unconditional bus resets against enumeration.
+
+Preserve try-reset semantics: contended topology operations return -EAGAIN
+without issuing a reset. Blocking there can deadlock removal's workqueue
+flush against reset work, e.g. rtl8169. The unpublished VMD domain and FINAL
+GPU fixup retain an explicit unlocked reset for their owning enumeration.
+
+Based on the serialization design discussed by Qiang Yu, adapted to 7.2.8
+and its reset callers; this is downstream code pending native qualification.
+The 7.2.8 tree has no pci_host_reset_root_port() caller to adjust.
+Link: https://lists.openwall.net/linux-kernel/2026/08/18/401
+Link: https://lists.openwall.net/linux-kernel/2024/11/11/1123
+
+diff --git a/drivers/pci/hotplug/pciehp_pci.c b/drivers/pci/hotplug/pciehp_pci.c
+--- a/drivers/pci/hotplug/pciehp_pci.c
++++ b/drivers/pci/hotplug/pciehp_pci.c
+@@ -35,7 +35,11 @@
+ 	struct pci_dev *bridge = ctrl->pcie->port;
+ 	struct pci_bus *parent = bridge->subordinate;
+ 	int num, ret = 0;
++	u64 dsn = 0;
++	bool have_dsn = false;
+ 
++	/* Scanning and removal serialize with SBR via the PCI core lock. */
++	up_read(&ctrl->reset_lock);
+ 	pci_lock_rescan_remove();
+ 
+ 	dev = pci_get_slot(parent, PCI_DEVFN(0, 0));
+@@ -64,20 +68,18 @@
+ 	pci_assign_unassigned_bridge_resources(bridge);
+ 	pcie_bus_configure_settings(parent);
+ 
+-	/*
+-	 * Release reset_lock during driver binding
+-	 * to avoid AB-BA deadlock with device_lock.
+-	 */
+-	up_read(&ctrl->reset_lock);
+ 	pci_bus_add_devices(parent);
+-	down_read_nested(&ctrl->reset_lock, ctrl->depth);
+ 
+ 	dev = pci_get_slot(parent, PCI_DEVFN(0, 0));
+-	ctrl->dsn = pci_get_dsn(dev);
++	dsn = pci_get_dsn(dev);
++	have_dsn = true;
+ 	pci_dev_put(dev);
+ 
+  out:
+ 	pci_unlock_rescan_remove();
++	down_read_nested(&ctrl->reset_lock, ctrl->depth);
++	if (have_dsn)
++		ctrl->dsn = dsn;
+ 	return ret;
+ }
+ 
+@@ -104,6 +106,8 @@
+ 	if (!presence)
+ 		pci_walk_bus(parent, pci_dev_set_disconnected, NULL);
+ 
++	/* Scanning and removal serialize with SBR via the PCI core lock. */
++	up_read(&ctrl->reset_lock);
+ 	pci_lock_rescan_remove();
+ 
+ 	/*
+@@ -116,13 +120,7 @@
+ 					 bus_list) {
+ 		pci_dev_get(dev);
+ 
+-		/*
+-		 * Release reset_lock during driver unbinding
+-		 * to avoid AB-BA deadlock with device_lock.
+-		 */
+-		up_read(&ctrl->reset_lock);
+ 		pci_stop_and_remove_bus_device(dev);
+-		down_read_nested(&ctrl->reset_lock, ctrl->depth);
+ 
+ 		/*
+ 		 * Ensure that no new Requests will be generated from
+@@ -138,4 +136,5 @@
+ 	}
+ 
+ 	pci_unlock_rescan_remove();
++	down_read_nested(&ctrl->reset_lock, ctrl->depth);
+ }
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -5665,6 +5665,10 @@
+ 	if (!bus)
+ 		return -ENOTTY;
+ 
++	/* Never wait behind removal which may be flushing the caller's work. */
++	if (!mutex_trylock(&pci_rescan_remove_lock))
++		return -EAGAIN;
++
+ 	mutex_lock(&pci_slot_mutex);
+ 	if (list_empty(&bus->slots))
+ 		goto bus_reset;
+@@ -5684,13 +5688,17 @@
+ 	}
+ 
+ 	mutex_unlock(&pci_slot_mutex);
++	pci_unlock_rescan_remove();
+ 	return ret;
+ bus_reset:
+ 	mutex_unlock(&pci_slot_mutex);
+ 
+ 	if (restore)
+-		return pci_try_reset_bus(bus);
+-	return pci_bus_reset(bridge->subordinate, PCI_RESET_DO_RESET);
++		ret = pci_try_reset_bus(bus);
++	else
++		ret = pci_bus_reset(bridge->subordinate, PCI_RESET_DO_RESET);
++	pci_unlock_rescan_remove();
++	return ret;
+ }
+ 
+ /**
+@@ -5720,15 +5728,37 @@
+ EXPORT_SYMBOL_GPL(pci_probe_reset_bus);
+ 
+ /**
++ * pci_reset_bus_unlocked - reset a bus inside an owning enumeration transaction
++ * @pdev: top level PCI device to reset via slot/bus
++ *
++ * The caller must serialize enumeration or own a hierarchy not yet published
++ * to concurrent scanners. This is for VMD probe and the FINAL GPU fixup;
++ * normal reset callers must use pci_reset_bus().
++ * Return: 0 on success or a negative error from the slot/bus reset.
++ */
++int pci_reset_bus_unlocked(struct pci_dev *pdev)
++{
++	return (!pci_probe_reset_slot(pdev->slot)) ?
++	    pci_try_reset_slot(pdev->slot) : pci_try_reset_bus(pdev->bus);
++}
++EXPORT_SYMBOL_GPL(pci_reset_bus_unlocked);
++
++/**
+  * pci_reset_bus - Try to reset a PCI bus
+  * @pdev: top level PCI device to reset via slot/bus
+  *
+- * Same as above except return -EAGAIN if the bus cannot be locked
++ * Return -EAGAIN if topology or slot/bus device locks cannot be taken.
++ * Never wait behind removal, which may be flushing this caller's work.
+  */
+ int pci_reset_bus(struct pci_dev *pdev)
+ {
+-	return (!pci_probe_reset_slot(pdev->slot)) ?
+-	    pci_try_reset_slot(pdev->slot) : pci_try_reset_bus(pdev->bus);
++	int ret;
++
++	if (!mutex_trylock(&pci_rescan_remove_lock))
++		return -EAGAIN;
++	ret = pci_reset_bus_unlocked(pdev);
++	pci_unlock_rescan_remove();
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(pci_reset_bus);
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1485,6 +1485,7 @@
+ int pci_probe_reset_slot(struct pci_slot *slot);
+ int pci_probe_reset_bus(struct pci_bus *bus);
+ int pci_reset_bus(struct pci_dev *dev);
++int pci_reset_bus_unlocked(struct pci_dev *dev);
+ void pci_reset_secondary_bus(struct pci_dev *dev);
+ void pcibios_reset_secondary_bus(struct pci_dev *dev);
+ void pci_update_resource(struct pci_dev *dev, int resno);
+diff --git a/drivers/pci/controller/vmd.c b/drivers/pci/controller/vmd.c
+--- a/drivers/pci/controller/vmd.c
++++ b/drivers/pci/controller/vmd.c
+@@ -1100,7 +1100,8 @@
+ 		if (!list_empty(&child->devices)) {
+ 			dev = list_first_entry(&child->devices,
+ 					       struct pci_dev, bus_list);
+-			ret = pci_reset_bus(dev);
++			/* No hotplug services exist below this unpublished VMD domain. */
++			ret = pci_reset_bus_unlocked(dev);
+ 			if (ret)
+ 				pci_warn(dev, "can't reset device: %d\n", ret);
+ 
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -6186,7 +6186,8 @@
+ 	 */
+ 	if (ioread32(map + 0x2240c) & 0x2) {
+ 		pci_info(pdev, FW_BUG "GPU left initialized by EFI, resetting\n");
+-		ret = pci_reset_bus(pdev);
++		/* FINAL fixup runs within the owning enumeration transaction. */
++		ret = pci_reset_bus_unlocked(pdev);
+ 		if (ret < 0)
+ 			pci_err(pdev, "Failed to reset GPU: %d\n", ret);
+ 	}

@@ -1,0 +1,92 @@
+From: RTX Spark Linux maintainers
+Subject: [PATCH] mmc: sdhci: track IRQ ownership across system sleep and removal
+
+System suspend may release the host IRQ. Hot removal before a successful
+resume must not free that IRQ a second time. Track successful requests
+explicitly and release only an owned action in suspend, add-host unwind,
+and remove. A failed resume request leaves ownership clear; a wake-capable
+suspend retains its existing action. No warning or IRQ validation is disabled.
+
+The normal device/driver lifecycle serializes these operations. This does
+not make concurrent driver removal from noirq resume safe; pair it with
+pciehp-defer-system-resume.patch for that independent race.
+
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -3733,6 +3733,21 @@
+  *                                                                           *
+ \*****************************************************************************/
+ 
++/* The core may remove a device after suspend but before successful resume. */
++static void sdhci_free_irq(struct sdhci_host *host)
++{
++	if (!host->irq_requested)
++		return;
++
++	/* Removal can precede resume; drop the IRQ wake vote without device MMIO. */
++	if (host->irq_wake_enabled) {
++		disable_irq_wake(host->irq);
++		host->irq_wake_enabled = false;
++	}
++	free_irq(host->irq, host);
++	host->irq_requested = false;
++}
++
+ #ifdef CONFIG_PM
+ 
+ static bool sdhci_cd_irq_can_wakeup(struct sdhci_host *host)
+@@ -3811,7 +3826,7 @@
+ 		host->ier = 0;
+ 		sdhci_writel(host, 0, SDHCI_INT_ENABLE);
+ 		sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
+-		free_irq(host->irq, host);
++		sdhci_free_irq(host);
+ 	}
+ 
+ 	return 0;
+@@ -3850,6 +3865,7 @@
+ 					   mmc_hostname(mmc), host);
+ 		if (ret)
+ 			return ret;
++		host->irq_requested = true;
+ 	}
+ 
+ 	sdhci_enable_card_detection(host);
+@@ -4910,6 +4926,7 @@
+ 		       mmc_hostname(mmc), host->irq, ret);
+ 		goto unwq;
+ 	}
++	host->irq_requested = true;
+ 
+ 	ret = sdhci_led_register(host);
+ 	if (ret) {
+@@ -4939,7 +4956,7 @@
+ 	sdhci_reset_for_all(host);
+ 	sdhci_writel(host, 0, SDHCI_INT_ENABLE);
+ 	sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
+-	free_irq(host->irq, host);
++	sdhci_free_irq(host);
+ unwq:
+ 	destroy_workqueue(host->complete_wq);
+ 
+@@ -4998,7 +5015,7 @@
+ 
+ 	sdhci_writel(host, 0, SDHCI_INT_ENABLE);
+ 	sdhci_writel(host, 0, SDHCI_SIGNAL_ENABLE);
+-	free_irq(host->irq, host);
++	sdhci_free_irq(host);
+ 
+ 	timer_delete_sync(&host->timer);
+ 	timer_delete_sync(&host->data_timer);
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -589,6 +589,7 @@
+ 	bool bus_on;		/* Bus power prevents runtime suspend */
+ 	bool preset_enabled;	/* Preset is enabled */
+ 	bool pending_reset;	/* Cmd/data reset is pending */
++	bool irq_requested;	/* Owns a successfully requested host IRQ */
+ 	bool irq_wake_enabled;	/* IRQ wakeup is enabled */
+ 	bool v4_mode;		/* Host Version 4 Enable */
+ 	bool use_external_dma;	/* Host selects to use external DMA */
