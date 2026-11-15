@@ -18,7 +18,7 @@
 /* The processing task also needs two independently retained 1 KiB IPC slices. */
 #define MT8901_DSP_IPC_BYTES 2048U
 
-MODULE_VERSION("0.1.28");
+MODULE_VERSION("0.1.29");
 
 static bool dsp_capture;
 module_param(dsp_capture, bool, 0400);
@@ -253,8 +253,13 @@ int mt8901_afe_dsp_startup(struct snd_pcm_substream *substream, struct snd_soc_d
 	} else {
 		return -EINVAL;
 	}
-	if (!substream->pcm->nonatomic || !priv->sram || priv->dsp[substream->stream])
+	if (!substream->pcm->nonatomic || !priv->sram)
 		return -EOPNOTSUPP;
+	/* DL0 and DL1 share one firmware playback owner. A competing PCM is
+	 * temporarily busy, not an unsupported device or configuration.
+	 */
+	if (priv->dsp[substream->stream])
+		return -EBUSY;
 	ring_max = mt8901_afe_sram_size(afe);
 	if (ring_max <= MT8901_DSP_IPC_BYTES)
 		return -ENOSPC;

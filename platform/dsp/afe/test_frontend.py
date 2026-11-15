@@ -234,6 +234,15 @@ int main(void)
  reset();fail=1;assert(mt8901_afe_dsp_startup(&stream,&dai)==-ENODEV && !allocations && !symbol_refs && !device_refs);
  reset();open_error=EIO;assert(mt8901_afe_dsp_startup(&stream,&dai)==-EIO && !allocations && !symbol_refs && !device_refs);
  setup();assert(runtime.hw.channels_max==2 && runtime.hw.buffer_bytes_max==32768 && runtime.hw.period_bytes_max==16384 && !runtime.hw.info);
+ /* Both playback FEs share the same DSP direction. A refused competing
+  * startup must preserve the existing owner, allocation and symbol leases.
+  */
+ struct mt8901_afe_dsp *owner=priv.dsp[stream.stream];
+ assert(mt8901_afe_dsp_startup(&other,&dai)==-EBUSY);
+ dai.id=MT8901_AFE_MEMIF_DL1;
+ assert(mt8901_afe_dsp_startup(&other,&dai)==-EBUSY);
+ dai.id=MT8901_AFE_MEMIF_DL0;
+ assert(priv.dsp[stream.stream]==owner && allocations==1 && symbol_refs==12 && !device_refs);
  assert(!mt8901_afe_dsp_active(&other) && mt8901_afe_dsp_active(&stream));
  assert(!mt8901_afe_dsp_hw_params(&stream) && mt8901_afe_dsp_pointer(NULL,&stream)==0);
  assert(mt8901_afe_dsp_ack(NULL,&stream)==-EBADFD);prepare();assert(!mt8901_afe_dsp_prepare(&stream,&dai) && prepares==1 && listens==1);

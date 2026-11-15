@@ -67,6 +67,18 @@ requires nonzero probe counters. The tests waited for transient desktop audio cl
 they did not retry a failed PCM START. These passing runs do not explain or
 close the initial intermittent failure.
 
+A later collector attached probes after each module load, before restarting
+desktop audio, and verified nonzero FE/DSP/endpoint/IRQ counters. Four reloads
+produced seven successful playbacks; the eighth request failed at PCM OPEN
+with `EOPNOTSUPP`, without a traced START refusal. The sequence stopped there.
+AFE **0.1.29** separately corrects a source defect in this path: DL0 and DL1
+share one firmware playback owner, and an already occupied direction must
+return `EBUSY`, not `EOPNOTSUPP`. The actual-C frontend regression verifies
+that both competing frontends preserve the current owner and its allocation
+and symbol leases. This errno correction does not establish the cause of the
+earlier START failure; live contention and replacement qualification are
+recorded separately.
+
 ## Lockdep: separate unrelated bus notifier classes
 
 The native NVIDIA/IOMMU/perf warning joins I2C and platform bus callbacks via
