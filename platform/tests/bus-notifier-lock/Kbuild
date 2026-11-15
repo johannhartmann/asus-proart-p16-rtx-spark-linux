@@ -1,0 +1,1 @@
+obj-m += n1x_bus_class_model.o

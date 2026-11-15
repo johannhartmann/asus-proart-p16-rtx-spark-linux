@@ -39,13 +39,24 @@ machine topology description, as in ordinary upstream-supported sound cards.
 They are separate from the SoC drivers and must not be replaced by a guessed
 generic routing profile.
 
-**Migration status:** the running kernel33 NVPM test passed its bounded
-device-only before/after audio/NPU matrix using the previous boot services.
-The new DMA policy and helper-free coldplug path require a matching candidate
-kernel and hardware qualification before global startup configuration is
-replaced. A source/package cleanup is not evidence that this new coldplug path
-has already run. Physical/repeated sleep and the earlier unreproduced START
-`EBUSY` remain open.
+**Migration status:** kernel34 booted and passed the initial six PCM cases and
+eight numerical NPU outputs with the previous startup services. The helper-free
+source packages are now installed, the DSP/provider startup services are
+removed and the old SDK startup service is masked. Two subsequent DSP module
+reloads through ordinary udev/ACPI handling passed six PCM cases and eight NPU
+outputs each with Lockdep enabled. The separately versioned SROOT DKMS source
+is 0.1.1; its kernel firmware-provider ABI remains v5.
+
+A bounded device-only suspend/resume cycle passed with fresh DSP readiness
+and Lockdep enabled. This used explicit VT handoff and a temporary user-slice
+freeze; it does not qualify the default sleep policy or physical sleep.
+Normal-user PipeWire duplex passed afterward. A later `atop` perf read exposed
+a separate circular-locking warning, disabling Lockdep. The final six PCM cases
+and eight NPU outputs are functional results only; they do not establish
+locking correctness. The [native evidence](evidence/helper-free-kernel34-native.json)
+records these separate scopes. Full helper-free system cold boot, physical/
+repeated sleep, the native locking warning and the earlier unreproduced PCM
+START `EBUSY` remain open.
 
 Kernel34 (`7.2.8-34-rtx-spark-npu`) and its matching DSP 0.1.26/provider ABI 5
 module set have completed offline qualification. The exact kernel passed an
@@ -56,14 +67,22 @@ against the candidate Image. The DSP and provider package payloads contain no
 startup service or libexec helper and have no Python runtime dependency.
 The [artifact record](evidence/helper-free-kernel34-offline.json) pins the
 source revisions, module identities and package hashes. These checks do not
-qualify native ACPI coldplug or physical sleep. Kernel34 is now staged as the
-separate `RTX-Spark-Kernel34` boot entry. Installed-module BTF checks covered
+qualify native ACPI coldplug or physical sleep. Installed-module BTF checks covered
 8,503 modules; all 430 embedded modules match the installed files. The previous
-ACPI profile, boot arguments, default/recovery images, live modules and power
-profile were preserved. This candidate has not booted on the hardware yet;
-legacy startup services remain enabled until that qualification and the
-subsequent startup-configuration migration. Their execution is not evidence
-that helper-free coldplug has been qualified.
+ACPI profile and boot arguments were preserved. The normal `Omarchy-P16` entry
+now selects the tested kernel34 image; the old entry is retained as
+`Omarchy-P16-Previous`, and recovery/prior image files are unchanged. The
+separate `RTX-Spark-Kernel34` entry remains available. No power-profile change
+was made. Selection and image validation do not substitute for observing the
+next complete boot through the new startup configuration.
+
+The native locking trace joins an NVIDIA I2C notifier path with a platform-bus
+IOMMU notifier path. Those heads share a Lockdep class in this kernel. The
+[QEMU model](../platform/tests/bus-notifier-lock/README.md) reproduces a
+cross-head warning with shared classes, avoids it with per-head classes and
+still detects a same-head positive control. This supports a classification
+explanation; it is not a fix or proof that the complete native graph is safe.
+No Lockdep reset or driver-core annotation patch was applied to the host.
 
 ## Subsystem boundaries
 

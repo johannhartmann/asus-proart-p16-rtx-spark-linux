@@ -1,0 +1,125 @@
+{
+  "kernel": "7.2.8-34-rtx-spark-npu",
+  "date": "2026-11-15",
+  "artifact_record": "helper-free-kernel34-offline.json",
+  "native_kernel_boot_verified": true,
+  "baseline_boot_used_legacy_startup_services": true,
+  "baseline": {
+    "pcm_cases": 6,
+    "numerical_npu_outputs": 8
+  },
+  "global_startup_migration_applied": true,
+  "source_packages": {
+    "n1x-adsp-dkms": "0.1.26-3",
+    "n1x-sroot-provider-dkms": "0.1.1-1",
+    "n1x-pluton-dkms": "0.3.0-3",
+    "n1x-scp-dkms": "0.2.1-2"
+  },
+  "obsolete_dsp_and_provider_startup_services_removed": true,
+  "legacy_sdk_startup_service_masked": true,
+  "recovered_audio": {
+    "pcm_cases": 6,
+    "npu": {
+      "numerical_jobs": 8,
+      "physical_cudla_path_verified": true,
+      "io_reuse_verified": true,
+      "reuse_submissions": 5,
+      "scope": "three pinned graphs, changing inputs, blocking CUDA staging; no recovery/lifetime qualification"
+    }
+  },
+  "dsp_udev_reprobe_cycles": 2,
+  "after_each_reprobe": {
+    "pcm_cases": 6,
+    "numerical_npu_outputs": 8,
+    "lockdep_enabled": true
+  },
+  "device_only_pm": {
+    "passed": true,
+    "mode": "devices",
+    "orchestration": "VT handoff to tty63; temporary early user.slice freeze; synchronous systemd suspend.target",
+    "normal_sleep_policy_changed": false,
+    "all_dsp_cycles": {
+      "NVDA8301:00": 1,
+      "NVDA8302:00": 1,
+      "NVDA8303:00": 1
+    },
+    "lockdep_enabled_at_completion": true,
+    "soundwire_ready_seconds": 0.01702144800037786
+  },
+  "pipewire_duplex": {
+    "passed": true,
+    "capture_bytes": 327680,
+    "capture_nonzero_bytes": 276315,
+    "original_defaults_preserved": true,
+    "raw_capture_published": false
+  },
+  "post_pm_functional_matrix": {
+    "pcm_cases": 6,
+    "npu": {
+      "numerical_jobs": 8,
+      "physical_cudla_path_verified": true,
+      "io_reuse_verified": true,
+      "reuse_submissions": 5,
+      "scope": "three pinned graphs, changing inputs, blocking CUDA staging; no recovery/lifetime qualification"
+    }
+  },
+  "post_pm_functional_matrix_lockdep_qualified": false,
+  "final_functional_checks_passed": true,
+  "total_pcm_cases": 30,
+  "total_verified_npu_outputs": 40,
+  "normal_boot_entry": "Omarchy-P16",
+  "normal_boot_kernel": "7.2.8-34-rtx-spark-npu",
+  "normal_boot_image_sha256": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+  "previous_kernel_entry": "Omarchy-P16-Previous",
+  "recovery_and_prior_images_preserved": true,
+  "power_profile_changed": false,
+  "npu_device_permissions_weakened": false,
+  "native_helper_free_full_cold_boot_verified": false,
+  "physical_sleep_verified": false,
+  "intermittent_pcm_start_ebusy_cause_resolved": false,
+  "locking_qualification": {
+    "passed": false,
+    "trigger": "atop perf_read",
+    "native_path": [
+      "mmap_lock",
+      "NVIDIA UVM VA-space semaphore",
+      "NVIDIA RM rwlock",
+      "I2C bus notifier",
+      "platform bus notifier / IOMMU",
+      "CPU hotplug",
+      "PMU locks",
+      "perf user-copy"
+    ],
+    "interpretation": "Native trace joins distinct notifier heads through a shared class; a reduced VM model supports a class-merging explanation. The native warning remains unresolved.",
+    "lockdep_reset_or_annotation_patch_applied": false,
+    "vm_model_cases": {
+      "cross-shared": {
+        "case": "cross-shared",
+        "passed": true,
+        "debug_locks": 0,
+        "intentional_warning_expected": true,
+        "seconds": 10.746085606000634,
+        "max_host_thermal_mC": 57800,
+        "host_sleep_or_driver_state_changed": false
+      },
+      "cross-unique": {
+        "case": "cross-unique",
+        "passed": true,
+        "debug_locks": 1,
+        "intentional_warning_expected": false,
+        "seconds": 10.23394987499887,
+        "max_host_thermal_mC": 60600,
+        "host_sleep_or_driver_state_changed": false
+      },
+      "same-unique": {
+        "case": "same-unique",
+        "passed": true,
+        "debug_locks": 0,
+        "intentional_warning_expected": true,
+        "seconds": 10.2299366010011,
+        "max_host_thermal_mC": 62000,
+        "host_sleep_or_driver_state_changed": false
+      }
+    }
+  }
+}

@@ -76,6 +76,17 @@ Python dependency. Before migrating a passthrough-default kernel, include
 translation must be established before binding, not by a userspace sysfs write.
 Keep the working kernel and its startup configuration until that migration is
 qualified. Do not remove a live driver's DMA domain or force an unload.
+When adopting normal ACPI loading, select the qualified DMA-capable kernel
+for normal boots as well; older passthrough-default kernels still need their
+original startup configuration.
+
+Use a new DKMS source version when changing the provider source snapshot;
+changing only the package release can reuse old builds under the same DKMS
+cache identity. The helper-free provider package uses source version 0.1.1
+and the existing firmware-provider ABI v5. For a retained older kernel that
+lacks the translated-DMA policy, keep a backup of its startup configuration
+alongside its original module files. A preserved EFI image alone does not
+preserve compatibility with globally changed module-loading configuration.
 
 ```sh
 modinfo -k "$(uname -r)" n1x_npu_bootstrap
