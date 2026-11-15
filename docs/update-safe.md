@@ -83,8 +83,11 @@ journalctl -b -k
 ```
 
 DSP firmware publication retains its DMA/provider leases until checked
-shutdown succeeds. Use the optional maintenance tool for an explicit reload;
-never force module removal after a failed or uncertain hardware stop. NVIDIA display modules must also remain loaded during desktop use.
+shutdown succeeds. The source checkout provides
+`scripts/qualify-dsp-reload.py` for explicit developer reload qualification;
+it is not installed by the driver packages. Never force module removal after
+a failed or uncertain hardware stop. NVIDIA display modules must also remain
+loaded during desktop use.
 
 ## Qualify a candidate
 

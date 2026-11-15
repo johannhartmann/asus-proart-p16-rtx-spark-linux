@@ -56,8 +56,14 @@ against the candidate Image. The DSP and provider package payloads contain no
 startup service or libexec helper and have no Python runtime dependency.
 The [artifact record](evidence/helper-free-kernel34-offline.json) pins the
 source revisions, module identities and package hashes. These checks do not
-qualify native ACPI coldplug or physical sleep. Keep the older working boot
-and its startup configuration until the candidate is installed and verified.
+qualify native ACPI coldplug or physical sleep. Kernel34 is now staged as the
+separate `RTX-Spark-Kernel34` boot entry. Installed-module BTF checks covered
+8,503 modules; all 430 embedded modules match the installed files. The previous
+ACPI profile, boot arguments, default/recovery images, live modules and power
+profile were preserved. This candidate has not booted on the hardware yet;
+legacy startup services remain enabled until that qualification and the
+subsequent startup-configuration migration. Their execution is not evidence
+that helper-free coldplug has been qualified.
 
 ## Subsystem boundaries
 

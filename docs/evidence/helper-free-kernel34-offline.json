@@ -127,5 +127,20 @@
       "startup_services": 0,
       "python_runtime_dependency": false
     }
+  },
+  "staged_installation": {
+    "kernel": "7.2.8-34-rtx-spark-npu",
+    "entry": "RTX-Spark-Kernel34",
+    "hardware_qualified": false,
+    "acpi_mode": "legacy",
+    "boot_arguments_preserved": true,
+    "ready_for_native_boot": true,
+    "embedded_modules_verified": 430,
+    "image_sha256": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "kernel_sha256": "8a5aad3d6bc315d6bec6edaae2f448f4ae7535ebca369465c71dddadc8ea90f2",
+    "default_recovery_prior_kernels_images_live_modules_profile_preserved": true,
+    "date": "2026-11-15",
+    "installed_modules_btf_checked": 8503,
+    "legacy_startup_services_still_enabled": true
   }
 }
