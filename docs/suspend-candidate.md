@@ -100,3 +100,10 @@ cuDLA correctness, checked audio reload, normal suspend/resume and post-resume
 audio/NPU operation, with Lockdep enabled throughout. Physical sleep remains
 unverified until that transaction succeeds. A reboot solely for an incremental
 audio test or to clear a warning is not a deployment gate.
+
+The post-qualification global DKMS configuration is already prepared as
+`n1x-nvidia-drm-fix 615.78.08-3`, carrying both DRM and PM patches. Its package
+contents, source checksums and clean application to the pinned vendor source
+were checked. The installed revision 2 remains unchanged until physical
+qualification succeeds. Activating revision 3 needs no additional kernel build
+or reboot and does not replace the running NVIDIA module.

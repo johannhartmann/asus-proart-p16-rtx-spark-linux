@@ -22,7 +22,7 @@ class DriverPMTests(unittest.TestCase):
                        check=True, timeout=40)
 
     def test_dkms_recipes_pin_the_current_source_bytes(self):
-        for name in ('als', 'dsp', 'pluton', 'scp', 'sensorhub'):
+        for name in ('als', 'dsp', 'pluton', 'scp', 'sensorhub', 'nvidia'):
             with self.subTest(driver=name):
                 directory = ROOT / 'platform' / name
                 records = subprocess.check_output(['bash', '-c',

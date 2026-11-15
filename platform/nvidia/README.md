@@ -21,16 +21,18 @@ records the resulting source hashes. It never reloads the active desktop GPU.
 Hardware qualification requires booting the matching bundle and checking DRM
 master transitions and suspend/resume without the earlier warning.
 
-For subsequent DKMS builds with the same vendor version:
+For subsequent DKMS builds with the same vendor version, the prepared package
+revision 3 carries both corrections. Deploy it after the kernel35 physical
+qualification:
 
 ```sh
 cd platform/nvidia
 makepkg --cleanbuild
-pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-2-any.pkg.tar.*
+pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-3-any.pkg.tar.*
 ```
 
-This small package installs the standard DKMS `PATCH[0]` configuration for
-**615.78.08 only**, with the patch in `/etc/dkms/nvidia/patches/`. It preserves
+This small package installs standard DKMS `PATCH[0]` (DRM) and `PATCH[1]` (PM)
+configuration for **615.78.08 only**, with both files in `/etc/dkms/nvidia/patches/`. It preserves
 the pristine vendor source under `/usr/src`. Installing the configuration does
 not change a loaded module or by itself rebuild existing modules. Use the
 complete candidate workflow for the next boot; do not unload NVIDIA from a
@@ -74,9 +76,11 @@ checking all 3,535 source hashes. EFI/KVM boot/module, positive Lockdep,
 real-bus notifier and all five PM-owner regressions passed. Native kernel35
 cold boot, continuous Lockdep and physical s2idle remain unverified.
 
-The installed global, version-scoped DKMS patch package still contains only
-the DRM correction. The complete candidate builder includes both patches;
-this is the maintained route for matching new kernels and modules. Global
-DKMS rollout of the PM patch remains a separate deployment gate after physical
-qualification. Do not unload the active desktop GPU, reset Lockdep or replace
+The installed global package remains revision 2, containing only the DRM
+correction. Revision 3 is built and ready for deployment with both patches.
+The complete candidate builder already includes both patches; this is the
+maintained route for matching new kernels and modules. Global DKMS activation
+of the PM patch remains a separate deployment gate after physical qualification;
+activating the configuration does not require a reboot or another kernel build.
+Do not unload the active desktop GPU, reset Lockdep or replace
 modules from a different kernel/BTF set to substitute for that qualification.
