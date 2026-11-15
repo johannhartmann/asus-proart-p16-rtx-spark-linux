@@ -68,7 +68,19 @@ bridge. Old code must produce exactly the known IRQ and Lockdep warnings;
 fixed code must produce neither and must retain `debug_locks=1`. KASAN/BUG/Oops failures never count as a pass.
 The static init program refuses to run outside PID 1.
 
+Add `--guest-pm` to either command to exercise the actual kernel suspend/noirq/
+early/regular resume callbacks. The guest selects `pm_test=platform`; QMP and
+QTest emulate surprise unplug during its five-second suspended window. QTest
+writes only the virtual root port's PCI configuration, restoring powered-on
+slot semantics before the guest resumes. The test records a function/event
+trace: old code must explicitly wake the IRQ thread inside noirq resume;
+fixed code must not, and removal must follow early-resume completion. The same
+IRQ, warning and Lockdep checks apply. This is guest-only device PM, not a
+physical platform-sleep qualification.
+
 The runner uses one vCPU, 4 GiB RAM, a private EFI image and a bounded timeout.
 It never loads a host module, requests host sleep, changes the power profile,
 or writes boot files. Its generated kernel retains its own artifact identity;
 a passing VM result does not qualify native s2idle or physical SD-card use.
+Use optional `--cpus N ...` to limit the runner's host affinity; no machine's
+CPU numbering is assumed by default.

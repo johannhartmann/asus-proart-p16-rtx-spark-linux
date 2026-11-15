@@ -137,6 +137,12 @@ confirms that the proposal is not an established mainline fix. A separate
 hotplug and PCI reset serialization together. The subsequent [source corrections and regressions](../platform/tests/pci-resume/README.md)
 implement deferred replacement, explicit SDHCI IRQ ownership and PCI reset/scan
 serialization in the package recipe. Their portable tests and real-kernel old/fixed KVM hot-removal cases pass.
+A second KVM case unplugs the virtual reader while the guest is suspended at
+`pm_test=platform`. Function/event traces show the old IRQ-thread wake and
+removal inside noirq resume; fixed code removes it only after early resume.
+Both cases enforce the same warning and continuously enabled Lockdep checks
+for the fixed kernel. The PCI/reset/hotplug/VMD changes also pass an x86-64
+LLVM `W=1` compile check.
 The fixed guest keeps Lockdep enabled without either warning; the old positive
 control must reproduce both warnings and disable Lockdep. The
 [evidence record](evidence/pci-resume-fixes-20261115.json) pins those separate

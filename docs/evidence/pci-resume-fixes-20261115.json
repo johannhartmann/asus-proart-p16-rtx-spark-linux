@@ -53,7 +53,8 @@
   "checks": {
     "repository_tests": 177,
     "existing_driver_suites_passed": true,
-    "changed_kernel_objects_w1_passed": true
+    "changed_kernel_objects_w1_passed": true,
+    "x86_64_llvm_w1_pci_hotplug_reset_vmd_compile_passed": true
   },
   "native": {
     "installed": false,
@@ -61,5 +62,40 @@
     "power_profile_changed": false,
     "physical_sleep_qualified": false,
     "audio_start_ebusy_resolved": false
+  },
+  "guest_pm": {
+    "old": {
+      "passed": true,
+      "kernel": "7.2.8-35-rtx-spark-npu",
+      "legacy_positive_control": true,
+      "image_sha256": "dc03d72ac11696c9c1e36b947159fb44aba00a42d506541b794244297279a1f2",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": "platform",
+      "seconds": 17.326765796999098,
+      "hot_remove_requested": true,
+      "explicit_irq_wake_during_noirq": true,
+      "removal_after_early_resume": false,
+      "lockdep_before": 1,
+      "lockdep_after": 0,
+      "expected_warnings": 2
+    },
+    "scope_limit": "Actual guest pm_test=platform callbacks and virtual surprise unplug; no host sleep, module replacement or physical power-cycle qualification.",
+    "fixed": {
+      "passed": true,
+      "kernel": "7.2.8-35-rtx-spark-npu",
+      "legacy_positive_control": false,
+      "image_sha256": "0138873384ed0d50a9b169ae75ab53dbeab4c04877facd1eb3e993a001815977",
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "guest_pm_test": "platform",
+      "removal_after_early_resume": true,
+      "explicit_irq_wake_during_noirq": false,
+      "seconds": 16.853660049999235,
+      "hot_remove_requested": true,
+      "lockdep_before": 1,
+      "lockdep_after": 1,
+      "expected_warnings": 0
+    }
   }
 }
