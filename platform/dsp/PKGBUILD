@@ -1,12 +1,12 @@
 pkgbase=n1x-adsp-dkms
 pkgname=n1x-adsp-dkms
 pkgver=0.1.26
-pkgrel=2
+pkgrel=3
 pkgdesc='MT8901 DSP secure boot, IPC and duplex audio services'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only')
-depends=('dkms' 'n1x-sroot-provider-dkms>=0.1.0-13' 'n1x-adsp-firmware-local')
+depends=('dkms' 'n1x-sroot-provider-dkms>=0.1.1' 'n1x-adsp-firmware-local')
 checkdepends=('python' 'gcc')
 source=('n1x_adsp.c' 'n1x_sroot_client.h' 'n1x_sroot_firmware.h' 'Kbuild' 'dkms.conf'
         'n1x-adsp.conf' 'provenance.json' 'README.md' 'test_driver.py'

@@ -45,3 +45,11 @@ class DriverPMTests(unittest.TestCase):
                          (directory/'dkms.conf').read_text(), re.M).group(1)
         self.assertEqual(module, package)
         self.assertEqual(dkms, package)
+
+    def test_provider_package_and_dkms_source_versions_agree(self):
+        directory = ROOT/'platform/dsp/provider'
+        package = re.search(r'^pkgver=(.+)$',
+                            (directory/'PKGBUILD.in').read_text(), re.M).group(1)
+        dkms = re.search(r'^PACKAGE_VERSION="([^"\n]+)"$',
+                         (directory/'dkms.conf').read_text(), re.M).group(1)
+        self.assertEqual(dkms, package)
