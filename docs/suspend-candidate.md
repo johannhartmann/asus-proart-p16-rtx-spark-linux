@@ -8,8 +8,11 @@ The installed candidate is **`7.2.8-35-rtx-spark-npu`**, available as
 **`RTX-Spark-Kernel35`** in Limine. Its [qualification record](evidence/suspend-kernel35.json)
 pins the kernel, UKI, package and BTF hashes and the test boundaries. The normal
 kernel34 and recovery entries remain available. The native ACPI profile and
-boot arguments were preserved; only the obsolete kernel32 diagnostic image was
-archived outside `/boot`. Kernel35 cold boot, continuously enabled native
+boot arguments were preserved. At staging, the obsolete kernel32 diagnostic
+image was archived outside `/boot`. The subsequent
+[boot cleanup](evidence/boot-cleanup-20261115.json) removed five more obsolete
+or duplicate images and their obsolete kernel packages, retaining exactly
+kernel34, kernel35 and recovery23. Kernel35 cold boot, continuously enabled native
 Lockdep and physical suspend/resume remain unverified until observed.
 
 ## Audio: a deferred DPCM START is allowed to see a running FE

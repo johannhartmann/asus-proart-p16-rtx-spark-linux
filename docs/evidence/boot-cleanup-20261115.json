@@ -1,0 +1,62 @@
+{
+  "passed": true,
+  "removed_packages": [
+    "linux-p16-platform",
+    "linux-p16-platform-headers",
+    "linux-p16-platform-32",
+    "linux-p16-platform-32-headers",
+    "linux-p16-platform-32-drivers",
+    "linux-p16-platform-33",
+    "linux-p16-platform-33-headers",
+    "linux-p16-platform-33-drivers",
+    "linux-p16-asus-23",
+    "linux-p16-asus-23-headers",
+    "linux-p16-asus-23-npu2",
+    "linux-p16-asus-23-npu2-headers",
+    "n1x-npu-bootstrap-p16-asus-23-npu2"
+  ],
+  "archived_images": {
+    "omarchy_linux-p16-platform-33-nvpm.efi": "10084d23638f02865d5aca106d0d1fe48628fdfd589a3c92a70f54f919330cf4",
+    "omarchy_linux-p16-platform-33.efi": "81984f07f58736740ca573b231221fa65e854210d0f28fc3ac58e5e6242d2130",
+    "omarchy_linux-p16-platform.efi": "ba7c8e1a74e77fe07c86ca1b3aa104a20773e473fa7cf144a9e7996c68c27d72",
+    "omarchy_p16.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "p16-native-acpi-test.efi": "7376fd8312c3255964841b9e3479ed489720c244f6dbe3afaef4ba80c6ce12bd"
+  },
+  "leftover_module_directories": [
+    "7.2.8-31-rtx-spark-npu",
+    "7.2.8-23-omarchy-p16-asus",
+    "7.2.8-23-omarchy-p16-asus-npu2",
+    "7.2.8-24-omarchy-p16-asus-npu"
+  ],
+  "future_rebuild_set": [
+    "linux-p16-platform-34",
+    "linux-p16-platform-35"
+  ],
+  "before_free": 172388352,
+  "after_free": 1389027328,
+  "freed_bytes": 1216638976,
+  "retained_images": [
+    "omarchy_linux-p16-platform-34.efi",
+    "omarchy_linux-p16-platform-35.efi",
+    "omarchy_p16-recovery.efi"
+  ],
+  "protected_files_verified": 25548,
+  "kept_boot_entries": [
+    "Omarchy-P16",
+    "Omarchy-P16-Recovery",
+    "RTX-Spark-Kernel35"
+  ],
+  "retained_image_sha256": {
+    "omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "omarchy_linux-p16-platform-35.efi": "f074738077d47d909790a4ff049822169d5d5e8defda5c51fd295ef6aa28a802",
+    "omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714"
+  },
+  "default_entry": "Omarchy-P16",
+  "running_kernel": "7.2.8-34-rtx-spark-npu",
+  "candidate_kernel": "7.2.8-35-rtx-spark-npu",
+  "recovery_kernel": "7.2.8-23-rtx-spark-npu",
+  "reboot_performed": false,
+  "loaded_drivers_changed": false,
+  "power_profile_changed": false,
+  "obsolete_image_archive": "/var/lib/p16-platform/boot-cleanup-20261115/images"
+}

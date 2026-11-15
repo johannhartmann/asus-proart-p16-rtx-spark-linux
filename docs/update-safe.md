@@ -4,6 +4,28 @@ Use the kernel/header and DKMS packages together. Keep a tested recovery UKI
 and its BLAKE2b-pinned Limine entry before updating a candidate. Existing
 recovery images are not rebuilt by the managed-kernel wrapper.
 
+## Boot-partition retention
+
+Keep the running/default kernel, the next candidate and one tested recovery
+image, together with their matching installed kernels, headers and modules.
+After a replacement is qualified, remove obsolete kernel, header and per-kernel
+driver packages explicitly through pacman. Review dependencies first; preserve
+the shared SDK, firmware and current DKMS source packages.
+
+Deleting only an old EFI image is insufficient: the managed updater also
+discovers installed `linux-p16-platform*` packages through their `pkgbase`
+files and can rebuild those images. Remove obsolete package registrations and
+menu entries too. Verify a proposed menu and all retained image hashes before
+unlinking old images. Keep any diagnostic archives outside `/boot` and allow
+space for another complete UKI while an update is being written.
+
+The [15 November cleanup record](evidence/boot-cleanup-20261115.json) retains
+kernel34 as default, kernel35 as the candidate and kernel23 as recovery. Five
+obsolete/duplicate EFI images were archived and thirteen old kernel-related
+packages removed. Only kernel34 and kernel35 remain in the managed rebuild
+set. `/boot` has about 1.3 GiB free; the three retained image hashes, 25,548
+protected files and loaded driver identities were checked without a reboot.
+
 ## Package ownership
 
 `packages/Makefile` stages explicit source manifests and runs the three
