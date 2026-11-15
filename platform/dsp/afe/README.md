@@ -153,3 +153,19 @@ registers remain cacheable for normal power restoration. Regression fixtures
 keep the cached capture enable clear while firmware has enabled hardware, and
 exercise both directions' retirement, shared IRQ refusal and I/O failures over
 32 cycles. Actual module reload remains unqualified.
+
+## Deferred DPCM START (AFE 0.1.28)
+
+ASoC can defer an FE trigger during a routing update, return success to ALSA,
+and execute START after ALSA has already selected RUNNING. The read-only
+`mt8901_afe_sram_endpoint()` snapshot now accepts that state while retaining
+ownership, unchanged-format and retirement checks. Prepare, publication and
+rebinding still reject a live stream. No firmware operation is retried.
+
+`test_sram.py` uses the real Linux 7.2.8 pending-trigger functions retained in
+`dpcm-trigger-fixture.h`: the old snapshot gate returns `EBUSY`, the fixed gate
+succeeds, and attempted live mutations still fail. Both variants run the full
+sanitizer matrix. This deterministic defect matches a possible cause of the
+initial native START failure; that old failure did not log its runtime state,
+so its exact path cannot be proven retrospectively. See the combined
+[suspend candidate](../../../docs/suspend-candidate.md) for qualification scope.

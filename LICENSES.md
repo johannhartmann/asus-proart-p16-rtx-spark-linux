@@ -6,6 +6,7 @@
 - Installation helpers, `scripts/p16-temperatures`, `cuda/vector-add.cu`, configuration files, tests and documentation in this repository: MIT; see `licenses/MIT.txt`.
 - `experiments/gpu-syspl3/`: MIT; see `licenses/MIT.txt`.
 - Platform kernel drivers and internal headers under `platform/`, including Kconfig/Kbuild files and KUnit tests,: GPL-2.0-only, except the Pluton userspace ABI header marked `GPL-2.0 WITH Linux-syscall-note`. The DSP power-management attribution is retained in its source header.
+- `platform/dsp/afe/dpcm-trigger-fixture.h`: GPL-2.0-only, unmodified functions from Linux 7.2.8 `sound/soc/soc-pcm.c`; the surrounding userspace test harness is MIT. `platform/nvidia/sleep/` integration and tests: MIT, with the package license in that directory.
 - `platform/sensorhub/`: GPL-2.0-only, with the SPI HID authors' copyright notices retained in each source file.
 - `platform/als/`: upstream HID ALS source and private trigger header under their existing GPL-2.0-only notices. The pinned commit and standalone-build adaptation are recorded in `platform/als/provenance.json`.
 

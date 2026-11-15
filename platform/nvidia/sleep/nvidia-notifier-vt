@@ -1,0 +1,35 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# VT handoff for NVIDIA's kernel-notifier PM path; no procfs PM commands.
+set -euo pipefail
+export PATH=/usr/bin:/bin
+readonly state=/run/nvidia-notifier-vt/console
+
+[[ $EUID == 0 ]] || { echo 'VT handoff requires root' >&2; exit 1; }
+
+case "${1:-}" in
+  prepare)
+    grep -qx 'UseKernelSuspendNotifiers: 1' /proc/driver/nvidia/params || {
+      echo 'NVIDIA kernel suspend notifiers are required' >&2; exit 1;
+    }
+    [[ ! -e $state ]] || { echo 'Previous VT handoff has not completed' >&2; exit 1; }
+    console=$(fgconsole)
+    [[ $console =~ ^[1-9][0-9]*$ && $console -le 63 ]] || exit 1
+    # Persist before switching so ExecStopPost can unwind a failed handoff.
+    (umask 077; set -o noclobber; printf '%s\n' "$console" > "$state")
+    chvt 63
+    [[ $(fgconsole) == 63 ]]
+    ;;
+  restore)
+    [[ -e $state ]] || exit 0
+    read -r console < "$state"
+    [[ $console =~ ^[1-9][0-9]*$ && $console -le 63 ]] || exit 1
+    # Respect a deliberate VT change made while the transaction was running.
+    if [[ $(fgconsole) == 63 ]]; then
+      chvt "$console"
+      [[ $(fgconsole) == "$console" ]]
+    fi
+    rm -- "$state"
+    ;;
+  *) echo 'Usage: nvidia-notifier-vt prepare|restore' >&2; exit 2 ;;
+esac

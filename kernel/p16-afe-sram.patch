@@ -16,7 +16,7 @@ streaming qualification.
 ---
 --- /dev/null
 +++ b/include/sound/mt8901-afe-sram.h
-@@ -0,0 +1,154 @@
+@@ -0,0 +1,156 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +#ifndef MT8901_AFE_SRAM_H
 +#define MT8901_AFE_SRAM_H
@@ -96,7 +96,9 @@ streaming qualification.
 +
 +/* Return a bound endpoint only while its original AFE substream still owns
 + * the memif and its format is unchanged. bytes must equal sizeof(*endpoint).
-+ * The output is unchanged on error. This call sleeps.
++ * This read-only snapshot is valid during a running stream too: ASoC may
++ * deliver a deferred START after ALSA changes state. It grants no permission
++ * to mutate the endpoint. The output is unchanged on error. This call sleeps.
 + */
 +int mt8901_afe_sram_endpoint(struct mt8901_afe_sram_buffer *buffer,
 +			    struct mt8901_afe_sram_endpoint *endpoint, size_t bytes);
@@ -913,7 +915,7 @@ streaming qualification.
 +/* The processing task also needs two independently retained 1 KiB IPC slices. */
 +#define MT8901_DSP_IPC_BYTES 2048U
 +
-+MODULE_VERSION("0.1.27");
++MODULE_VERSION("0.1.28");
 +
 +static bool dsp_capture;
 +module_param(dsp_capture, bool, 0400);
@@ -1746,7 +1748,7 @@ streaming qualification.
 +#endif
 --- /dev/null
 +++ b/sound/soc/mediatek/mt8901/mt8901-afe-sram.c
-@@ -0,0 +1,1191 @@
+@@ -0,0 +1,1195 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +#include <linux/atomic.h>
 +#include <linux/err.h>
@@ -2276,7 +2278,11 @@ streaming qualification.
 +		goto unlock;
 +	}
 +	afe = dev_get_drvdata(buffer->dev);
-+	if (!mt8901_afe_sram_endpoint_valid(buffer, afe, false)) {
++	/* DPCM can defer START until after ALSA marks the FE running. This is
++	 * a read-only snapshot, not permission to reconfigure a live endpoint.
++	 * The mutating prepare/publish paths retain their non-running checks.
++	 */
++	if (!mt8901_afe_sram_endpoint_valid(buffer, afe, true)) {
 +		ret = -EBUSY;
 +		goto unlock;
 +	}

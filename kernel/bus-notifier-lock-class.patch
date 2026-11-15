@@ -1,0 +1,64 @@
+From: RTX Spark Linux maintainers
+Subject: [PATCH] driver core: give each bus notifier its own lock class
+
+bus_register() initializes every notifier head at a single macro expansion.
+The implicit static rwsem key merges callback lock ordering across unrelated
+buses, including NVIDIA I2C registration and platform IOMMU probing. Match
+subsys_private's existing per-subsystem mutex policy for its notifier too.
+Keep same-bus dependencies checked, and retire the dynamic key on both early
+registration failure and final kobject release. No locking is disabled.
+
+diff --git a/drivers/base/base.h b/drivers/base/base.h
+--- a/drivers/base/base.h
++++ b/drivers/base/base.h
+@@ -34,7 +34,8 @@
+  *	       avoid namespace conflicts
+  * @class: pointer back to the struct class that this structure is associated
+  *	   with.
+- * @lock_key: Lock class key for use by the lock validator
++ * @lock_key: Lock class key for the subsystem mutex
++ * @notifier_key: Lock class key for this bus's notifier rwsem
+  *
+  * This structure is the one that is the actual kobject allowing struct
+  * bus_type/class to be statically allocated safely.  Nothing outside of the
+@@ -58,6 +59,7 @@
+ 	const struct class *class;
+ 
+ 	struct lock_class_key lock_key;
++	struct lock_class_key notifier_key;
+ };
+ #define to_subsys_private(obj) container_of_const(obj, struct subsys_private, subsys.kobj)
+ 
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -209,6 +209,7 @@
+ {
+ 	struct subsys_private *priv = to_subsys_private(kobj);
+ 
++	lockdep_unregister_key(&priv->notifier_key);
+ 	lockdep_unregister_key(&priv->lock_key);
+ 	kfree(priv);
+ }
+@@ -952,6 +953,12 @@
+ 	priv->bus = bus;
+ 
+ 	BLOCKING_INIT_NOTIFIER_HEAD(&priv->bus_notifier);
++	/* Callbacks and their lock ordering belong to this bus. Sharing the
++	 * macro's static class would join unrelated buses' dependency graphs.
++	 */
++	lockdep_register_key(&priv->notifier_key);
++	lockdep_set_class_and_name(&priv->bus_notifier.rwsem,
++				  &priv->notifier_key, "bus notifier rwsem");
+ 
+ 	bus_kobj = &priv->subsys.kobj;
+ 	retval = kobject_set_name(bus_kobj, "%s", bus->name);
+@@ -1013,6 +1020,8 @@
+ 	/* Above kset_unregister() will kfree @priv */
+ 	priv = NULL;
+ out:
++	if (priv)
++		lockdep_unregister_key(&priv->notifier_key);
+ 	kfree(priv);
+ 	return retval;
+ }

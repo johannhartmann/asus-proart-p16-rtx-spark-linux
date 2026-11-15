@@ -38,6 +38,7 @@ def main():
                   pcm.index('static int mt8901_afe_runtime_resume(')]
     domain = pcm[pcm.index('int mt8901_afe_sram_domain('):pcm.index('static int mt8901_afe_fe_trigger(')]
     header = re.sub(r'^#include.*\n', '', (HERE / 'mt8901-afe-sram.h').read_text(), flags=re.M)
+    dpcm = (HERE / 'dpcm-trigger-fixture.h').read_text()
     owner = re.sub(r'^#include.*\n', '', (HERE / 'mt8901-afe-sram.c').read_text(), flags=re.M)
     code = r'''
 #define _DEFAULT_SOURCE
@@ -109,7 +110,9 @@ struct mtk_base_afe {struct device *dev;struct mt8901_afe_private *platform_priv
 struct snd_soc_dai {struct device *dev;int id;void *data;};
 struct snd_soc_card {struct device *dev;void *snd_card;bool instantiated;};
 struct snd_pcm {void *card;};
-struct snd_soc_pcm_runtime {struct snd_soc_dai *cpu;struct snd_soc_card *card;};
+enum snd_soc_dpcm_update {SND_SOC_DPCM_UPDATE_NO,SND_SOC_DPCM_UPDATE_FE};
+struct snd_soc_pcm_runtime {struct snd_soc_dai *cpu;struct snd_soc_card *card;
+ struct {enum snd_soc_dpcm_update runtime_update;int trigger_pending;} dpcm[2];};
 struct snd_pcm_runtime {u32 rate,channels,sample_bits,periods;u64 period_size;bool running;};
 struct snd_pcm_substream {struct snd_pcm *pcm;int stream;struct snd_pcm_runtime *runtime;struct snd_soc_pcm_runtime *rtd;};
 #define MT8901_AFE_MEMIF_NUM 16
@@ -329,6 +332,20 @@ static bool mt8901_afe_dsp_enabled(void){return dsp_enabled;}
 #define MT8901_AFE_MEMIF_DL1 1
 #define MT8901_AFE_MEMIF_UL1 8
 ''' + domain + owner + suspend + r'''
+static struct mt8901_afe_sram_buffer *deferred_buffer;
+static int deferred_result,deferred_calls;
+static struct snd_pcm_substream *snd_soc_dpcm_get_substream(struct snd_soc_pcm_runtime *fe,int direction)
+{assert(fe==&rtd && direction==stream.stream);return &stream;}
+static void snd_pcm_stream_lock_irq(struct snd_pcm_substream *s){assert(s==&stream && !locked);}
+static void snd_pcm_stream_unlock_irq(struct snd_pcm_substream *s){assert(s==&stream && !locked);}
+static int dpcm_fe_dai_do_trigger(struct snd_pcm_substream *s,int command)
+{
+ struct mt8901_afe_sram_endpoint endpoint;
+ assert(s==&stream && command==1);deferred_calls++;
+ deferred_result=mt8901_afe_sram_endpoint(deferred_buffer,&endpoint,sizeof(endpoint));
+ return deferred_result;
+}
+''' + dpcm + r'''
 static void reset(void)
 {
  assert(!locked && !allocations && !module_refs && !device_refs && !pm_refs && !node_refs);
@@ -915,11 +932,34 @@ int main(void)
  assert(mt8901_afe_sram_startup(&stream,&dai)==-EBUSY);
  runtime.rate=44100;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-EBUSY);
  assert(mt8901_afe_sram_publish(b)==-EBUSY && !barriers);runtime.rate=48000;
- runtime.running=true;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-EBUSY);
+ runtime.running=true;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==(LEGACY_ENDPOINT?-EBUSY:0));
  assert(mt8901_afe_sram_publish(b)==-EBUSY && !barriers);runtime.running=false;
  afe.memif[0].substream=NULL;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-EBUSY);
  assert(mt8901_afe_sram_publish(b)==-EBUSY && !barriers);
  assert(!mt8901_afe_sram_release(b));empty();
+ /* Real ASoC pending-trigger functions, with the driver's actual snapshot. */
+ reset();child=fork();assert(child>=0);if(!child){init();b=mt8901_afe_sram_reserve(&device,3840);assert(!IS_ERR(b));
+ assert(!mt8901_afe_sram_bind(b,&stream) && !mt8901_afe_sram_publish(b));
+ assert(!mt8901_afe_sram_prepare(b) && !mt8901_afe_sram_prepare_irq(b));
+ deferred_buffer=b;deferred_calls=0;deferred_result=-999;
+ rtd.dpcm[0].runtime_update=SND_SOC_DPCM_UPDATE_FE;
+ assert(!dpcm_fe_dai_trigger(&stream,1) && !deferred_calls && rtd.dpcm[0].trigger_pending==2);
+ runtime.running=true; /* ALSA post_start, before the deferred FE trigger. */
+ unsigned writes_before=program_calls+irq_updates;
+ dpcm_set_fe_update_state(&rtd,0,SND_SOC_DPCM_UPDATE_NO);
+ assert(deferred_calls==1 && deferred_result==(LEGACY_ENDPOINT?-EBUSY:0));
+ assert(!rtd.dpcm[0].trigger_pending && runtime.running);
+ assert(program_calls+irq_updates==writes_before);
+ /* Readability must never grant configuration/publication on a live stream. */
+ assert(mt8901_afe_sram_publish(b)==-EBUSY && mt8901_afe_sram_prepare(b)==-EBUSY);
+ assert(program_calls+irq_updates==writes_before);
+ runtime.rate++;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-EBUSY);runtime.rate--;
+ afe.memif[0].substream=NULL;assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-EBUSY);
+ afe.memif[0].substream=&stream;
+ runtime.running=false;mt8901_afe_sram_retire(b);assert(mt8901_afe_sram_endpoint(b,&endpoint,sizeof(endpoint))==-ENODEV);
+ printf("DPCM deferred START: legacy=%d result=%d, mutations still refused: PASS\n",LEGACY_ENDPOINT,deferred_result);
+ fflush(stdout);_exit(0);}
+ assert(waitpid(child,&status,0)==child && WIFEXITED(status) && !WEXITSTATUS(status));empty();init();
  assert(!mt8901_afe_sram_startup(&stream,&dai));
  assert(!pthread_barrier_init(&rendezvous,NULL,8));pthread_t threads[8];
  for(unsigned i=0;i<8;i++)assert(!pthread_create(&threads[i],NULL,reserve_thread,(void *)(uintptr_t)i));
@@ -1033,11 +1073,19 @@ int main(void)
         directory = Path(directory)
         source = directory / 'sram.c'
         binary = directory / 'sram'
-        source.write_text(code)
-        subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
-                        '-Wno-misleading-indentation', '-fsanitize=address,undefined',
-                        '-pthread', '-g', str(source), '-o', str(binary)], check=True)
-        subprocess.run([str(binary)], check=True)
+        # Compare the old snapshot gate and fixed source with identical OS edges.
+        gate = 'mt8901_afe_sram_endpoint_valid(buffer, afe, true)'
+        begin = code.index('int mt8901_afe_sram_endpoint(')
+        end = code.index('EXPORT_SYMBOL_GPL(mt8901_afe_sram_endpoint);', begin)
+        assert code[begin:end].count(gate) == 1
+        old = code[:begin] + code[begin:end].replace(gate, gate.replace('true', 'false')) + code[end:]
+        for legacy, text in ((1, old), (0, code)):
+            source.write_text(text)
+            subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
+                            '-Wno-misleading-indentation', '-fsanitize=address,undefined',
+                            '-DLEGACY_ENDPOINT=' + str(legacy),
+                            '-pthread', '-g', str(source), '-o', str(binary)], check=True)
+            subprocess.run([str(binary)], check=True)
 
 
 if __name__ == '__main__':

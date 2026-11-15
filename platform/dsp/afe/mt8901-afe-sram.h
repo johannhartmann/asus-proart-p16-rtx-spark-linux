@@ -77,7 +77,9 @@ int mt8901_afe_sram_rebind(struct mt8901_afe_sram_buffer *buffer,
 
 /* Return a bound endpoint only while its original AFE substream still owns
  * the memif and its format is unchanged. bytes must equal sizeof(*endpoint).
- * The output is unchanged on error. This call sleeps.
+ * This read-only snapshot is valid during a running stream too: ASoC may
+ * deliver a deferred START after ALSA changes state. It grants no permission
+ * to mutate the endpoint. The output is unchanged on error. This call sleeps.
  */
 int mt8901_afe_sram_endpoint(struct mt8901_afe_sram_buffer *buffer,
 			    struct mt8901_afe_sram_endpoint *endpoint, size_t bytes);

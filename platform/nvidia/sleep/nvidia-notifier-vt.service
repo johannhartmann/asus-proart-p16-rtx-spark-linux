@@ -1,0 +1,14 @@
+[Unit]
+Description=Hand off the graphical VT before freezing NVIDIA sessions
+DefaultDependencies=no
+Before=systemd-suspend.service
+StopWhenUnneeded=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+RuntimeDirectory=nvidia-notifier-vt
+RuntimeDirectoryMode=0700
+RuntimeDirectoryPreserve=yes
+ExecStart=/usr/libexec/nvidia-notifier-vt prepare
+ExecStopPost=/usr/libexec/nvidia-notifier-vt restore

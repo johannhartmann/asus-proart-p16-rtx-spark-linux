@@ -41,3 +41,21 @@ annotation change or Lockdep reset was applied to the running workstation.
 
 Related upstream discussion: [bus notifier and CPU hotplug dependencies](https://lkml.rescloud.iu.edu/2209.2/05998.html),
 [perf user-copy and mmap locking](https://lkml.iu.edu/2011.2/06036.html).
+
+## Real driver-core regression
+
+`n1x_bus_core_test.c` uses actual `bus_register()`, `bus_register_notifier()`
+and `device_add()` calls instead of local notifier heads. It requires QEMU,
+`run_test=1` and an initially active Lockdep validator. It never touches real
+hardware. Use the same init program, placing this module at `/model.ko`.
+
+| Kernel / parameters after `run_test=1` | Expected result |
+| --- | --- |
+| Original kernel34; `expect_clean=0 same_bus=0` | Cross-bus class merging warns; `debug_locks=0`. |
+| Kernel with `bus-notifier-lock-class.patch`; `expect_clean=1 same_bus=0` | Independent buses stay clean; `debug_locks=1`. |
+| Patched kernel; `expect_clean=0 same_bus=1` | A genuine same-bus inversion still warns; `debug_locks=0`. |
+
+All three cases passed in fresh EFI/KVM guests. The patched Image was built in
+an isolated test tree; neither the running kernel nor its Lockdep state was
+modified. This verifies the production driver-core change and its positive
+control, not the complete native NVIDIA workload.

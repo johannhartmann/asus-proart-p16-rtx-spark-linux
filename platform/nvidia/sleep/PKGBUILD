@@ -1,0 +1,21 @@
+pkgname=nvidia-notifier-sleep
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='VT handoff before systemd user-session freezing for NVIDIA kernel PM notifiers'
+arch=('any')
+url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
+license=('MIT')
+depends=('bash' 'kbd' 'systemd' 'grep' 'coreutils')
+source=('nvidia-notifier-vt' 'nvidia-notifier-vt.service' '90-nvidia-vt-before-freeze.conf' 'LICENSE')
+sha256sums=('217e96843e0ac8db477541a25995052871031513bb1302288747ada3d7d0dd0a'
+            '10c25ffad23004e90ccaa389830273ba7c18e3f5f5da1ec5f57002f7338c4415'
+            '6c47802165131c2667e35ac5654b84a2ac0fa5e38e7b1934046920440fc6e05e'
+            'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
+
+package() {
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm755 "$srcdir/nvidia-notifier-vt" "$pkgdir/usr/libexec/nvidia-notifier-vt"
+  install -Dm644 "$srcdir/nvidia-notifier-vt.service" "$pkgdir/usr/lib/systemd/system/nvidia-notifier-vt.service"
+  install -Dm644 "$srcdir/90-nvidia-vt-before-freeze.conf" \
+    "$pkgdir/usr/lib/systemd/system/systemd-suspend.service.d/90-nvidia-vt-before-freeze.conf"
+}

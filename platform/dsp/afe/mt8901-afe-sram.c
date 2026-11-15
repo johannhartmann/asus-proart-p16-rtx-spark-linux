@@ -527,7 +527,11 @@ int mt8901_afe_sram_endpoint(struct mt8901_afe_sram_buffer *buffer,
 		goto unlock;
 	}
 	afe = dev_get_drvdata(buffer->dev);
-	if (!mt8901_afe_sram_endpoint_valid(buffer, afe, false)) {
+	/* DPCM can defer START until after ALSA marks the FE running. This is
+	 * a read-only snapshot, not permission to reconfigure a live endpoint.
+	 * The mutating prepare/publish paths retain their non-running checks.
+	 */
+	if (!mt8901_afe_sram_endpoint_valid(buffer, afe, true)) {
 		ret = -EBUSY;
 		goto unlock;
 	}
