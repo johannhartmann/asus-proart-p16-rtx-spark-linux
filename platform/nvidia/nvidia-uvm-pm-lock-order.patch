@@ -1,0 +1,67 @@
+Subject: [PATCH] UVM: keep PM VA-list traversal in the existing lock hierarchy
+
+The global PM write lock already excludes every VA-list add/remove and pins
+VA lifetimes until resume. Do not reacquire the list mutex under retained VA
+locks. Describe the same-class VA collection under that real outer PM lock
+with Linux nesting primitives. Keep VMA exclusion and Linux Lockdep enabled.
+
+The existing same-task suspend/resume ownership contract remains required;
+the maintained NVIDIA PM worker correction provides it for kernel notifiers.
+Audit: creation is inside uvm_unlocked_ioctl()'s PM read grant; destruction is
+inside uvm_release_va_space()/uvm_release_deferred()'s PM read grant. The test
+VA-list traversal in uvm_va_space_mm.c is read-only.
+
+--- a/kernel-open/nvidia-uvm/uvm_global.c
++++ b/kernel-open/nvidia-uvm/uvm_global.c
+@@ -351,7 +351,7 @@
+     uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
+ 
+     list_for_each_entry(va_space, &g_uvm_global.va_spaces.list, list_node)
+-        uvm_va_space_down_write(va_space);
++        uvm_va_space_down_write_pm(va_space, &g_uvm_global.pm.lock);
+ 
+     uvm_mutex_unlock(&g_uvm_global.va_spaces.lock);
+ 
+@@ -380,13 +380,13 @@
+     // expectations, so lock tracking is disabled.
+     uvm_thread_context_lock_disable_tracking();
+ 
+-    // Release each VA space's lock.
+-    uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
+-
++    // All list additions and removals require pm.lock in read mode, so its
++    // retained write ownership freezes list membership and VA lifetimes.
++    // Reacquiring the list mutex while the VA locks are held inverts the
++    // normal list -> VA hierarchy. The PM write lock is sufficient here.
++    uvm_assert_rwsem_locked_write(&g_uvm_global.pm.lock);
+     list_for_each_entry(va_space, &g_uvm_global.va_spaces.list, list_node)
+         uvm_va_space_up_write(va_space);
+-
+-    uvm_mutex_unlock(&g_uvm_global.va_spaces.lock);
+ 
+     // pm.lock is held in lieu of global_lock to prevent GPU addition/removal
+     for_each_gpu_id_in_mask(gpu_id, &g_uvm_global.retained_gpus) {
+--- a/kernel-open/nvidia-uvm/uvm_va_space.h
++++ b/kernel-open/nvidia-uvm/uvm_va_space.h
+@@ -447,6 +447,21 @@
+         uvm_down_write(&(__va_space)->lock);                            \
+     } while (0)
+ 
++// System PM freezes VA list membership with the global PM write lock, then
++// acquires the whole collection of same-class VA locks. That write lock is
++// retained until resume has released all inner locks, and is the nesting
++// lock for this collection. UVM cross-callback tracking is already disabled.
++#define uvm_va_space_down_write_pm(__va_space, __pm_lock)                          \
++    do {                                                                          \
++        uvm_assert_mutex_interrupts();                                            \
++        uvm_assert_rwsem_locked_write(__pm_lock);                                  \
++        mutex_lock_nest_lock(&(__va_space)->serialize_writers_lock.m,              \
++                             &(__pm_lock)->sem);                                   \
++        mutex_lock_nest_lock(&(__va_space)->read_acquire_write_release_lock.m,     \
++                             &(__pm_lock)->sem);                                   \
++        down_write_nest_lock(&(__va_space)->lock.sem, &(__pm_lock)->sem);           \
++    } while (0)
++
+ #define uvm_va_space_up_write(__va_space)                                   \
+     do {                                                                    \
+         uvm_up_write(&(__va_space)->lock);                                  \

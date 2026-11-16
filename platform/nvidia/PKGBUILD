@@ -1,14 +1,14 @@
 pkgname=n1x-nvidia-drm-fix
 pkgver=615.78.08
-pkgrel=3
-pkgdesc='NVIDIA DRM and PM notifier corrections for RTX Spark'
+pkgrel=4
+pkgdesc='NVIDIA DRM, PM notifier and UVM corrections for RTX Spark'
 arch=('any')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('MIT')
 depends=('dkms' 'nvidia-open-dkms=615.78.08')
 backup=('etc/dkms/nvidia-615.78.08.conf')
-source=('nvidia-615.78.08.conf' 'nvidia-drm-colorspace-deadlock.patch' 'nvidia-pm-notifier-owner.patch' 'LICENSE')
-sha256sums=('37c6c445d4f75531cb3fd59b12cf684f2f350c8b80af519effaa457d3b378ede' '25c4ac9d1bfbb4047a4fddc400bf18de16aebfb68dcbc8fb2cc63557435d9308' '97f56fa1500c9926cfb815d73476ede5b81ec653837da716c7259a1ec748800d' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
+source=('nvidia-615.78.08.conf' 'nvidia-drm-colorspace-deadlock.patch' 'nvidia-pm-notifier-owner.patch' 'nvidia-uvm-pm-lock-order.patch' 'LICENSE')
+sha256sums=('001aa8ff44d7a3b621a464a7551d05d04f02c341d66856aad24b4f8ebc36a296' '25c4ac9d1bfbb4047a4fddc400bf18de16aebfb68dcbc8fb2cc63557435d9308' '97f56fa1500c9926cfb815d73476ede5b81ec653837da716c7259a1ec748800d' 'd7f38f390c1ee867d83638e6919eb22218efb5163efb6eb71dc0c1b727646cda' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
 
 package() {
   install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
@@ -17,4 +17,6 @@ package() {
     "$pkgdir/etc/dkms/nvidia/patches/nvidia-drm-colorspace-deadlock.patch"
   install -Dm644 "$srcdir/nvidia-pm-notifier-owner.patch" \
     "$pkgdir/etc/dkms/nvidia/patches/nvidia-pm-notifier-owner.patch"
+  install -Dm644 "$srcdir/nvidia-uvm-pm-lock-order.patch" \
+    "$pkgdir/etc/dkms/nvidia/patches/nvidia-uvm-pm-lock-order.patch"
 }

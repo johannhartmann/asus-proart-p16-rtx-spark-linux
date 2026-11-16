@@ -4,36 +4,39 @@ These changes address independent source/configuration defects. They
 must be qualified together; passing a build or a VM test does not establish
 physical suspend/resume on the workstation.
 
-The running validation kernel is **`7.2.8-35-rtx-spark-npu`**, available as
-**`RTX-Spark-Kernel35`** in Limine. Its [qualification record](evidence/suspend-kernel35.json)
-pins the kernel, UKI, package and BTF hashes and the test boundaries. The normal
-kernel34 and recovery entries remain available. The existing ACPI profile (`legacy`) and
-boot arguments were preserved. At staging, the obsolete kernel32 diagnostic
-image was archived outside `/boot`. The subsequent
-[boot cleanup](evidence/boot-cleanup-20261115.json) removed five more obsolete
-or duplicate images and their obsolete kernel packages, retaining exactly
-kernel34, kernel35 and recovery23. On 15 November, kernel35 booted through the
-helper-free path with matching BTF and passed six PCM cases and eight numerical
-cuDLA outputs with Lockdep enabled. After the first checked audio reload, the
-first S16_LE playback START returned `EBUSY` (-16). This blocks overall
-qualification: the AFE 0.1.28 correction does not cover every observed START
-failure. A later device-only PM cycle under the installed normal sleep policy
-passed with fresh DSP readiness, six PCM cases, eight cuDLA outputs and Lockdep
-enabled. One physical s2idle cycle returned after about 99 seconds, but PCIe
-hotplug/SDHCI warnings failed overall qualification. Kernel35 is not promoted
-to the normal default, and global NVIDIA DKMS revision 3 is not activated.
+The running validation kernel is **`7.2.8-36-rtx-spark-npu`**, selected through
+**`RTX-Spark-Kernel36`**. Its [initial staging record](evidence/resume-kernel36-staged-20261116.json)
+pins the original EFI and kernel hashes. The complete bundle includes AFE
+0.1.29 and the PCIe/SDHCI corrections below. Its native cold boot, two checked
+audio reloads, 18 PCM cases, four desktop playbacks and 24 numerical cuDLA
+outputs passed with Lockdep active through those phases.
 
-The current staged candidate is **`7.2.8-36-rtx-spark-npu`**, selected manually
-as **`RTX-Spark-Kernel36`** for the next native qualification. Its
-[staging record](evidence/resume-kernel36-staged-20261116.json) pins the EFI and
-kernel hashes. The complete bundle includes AFE 0.1.29 and the PCIe/SDHCI
-corrections below. All 8,503 installed production modules and 430 embedded
-modules passed BTF checks; embedded module bytes match the installed files.
-The existing ACPI payload was preserved byte for byte, and the kernel
-arguments were preserved.
-Kernel34 remains the normal default; kernel35 and recovery23 remain available.
-The four purposeful entries use 49% of `/boot`. Native kernel36 boot and
-physical sleep are pending; the already-running kernel35 was not replaced.
+The following device-only PM transaction returned, with all three DSPs freshly
+ready and their configuration restored, but **failed qualification** on a new
+NVIDIA UVM lock inversion. Lockdep disabled itself on that warning; it was not
+reset. Physical sleep was not attempted. The
+[native record](evidence/kernel36-native-20261116.json) separates these results
+from the earlier collector-only failures, which exercised no PCM or PM.
+
+The [UVM correction](../platform/nvidia/README.md#uvm-pm-collection-and-resume-lock-order)
+avoids reacquiring the global VA-list mutex under retained VA locks and uses
+proper nested locking for the VA collection. Its nine fresh kernel-VM tests
+passed, including original and deliberate-inversion controls. The corrected
+UVM module targets the unchanged kernel36 Image and BTF; no new Linux kernel
+build is needed. See the [regression record](evidence/uvm-pm-lock-20261116.json).
+The new UVM module still needs native cold-boot and physical-sleep qualification.
+
+Kernel34 remains the normal default. Kernel35 and recovery23 remain available;
+the existing `legacy` ACPI profile, boot arguments and selected `quiet` power
+profile are preserved. The initial kernel36 staging verified all 8,503 installed
+production modules and all 430 embedded modules against the exact BTF and
+installed bytes. No candidate is promoted on an offline test alone.
+
+Kernel35 previously passed its helper-free cold boot and device-only PM but
+reproduced an intermittent first-START `EBUSY` after reload; physical sleep
+returned with PCIe/SDHCI warnings. Those results remain historical evidence in
+the [kernel35 record](evidence/suspend-kernel35.json). Kernel36's passing audio
+runs do not retrospectively identify the cause of that START failure.
 
 ## Audio: a deferred DPCM START is allowed to see a running FE
 
@@ -61,12 +64,12 @@ single native failure did not record its ALSA runtime state, so it cannot be
 retrospectively attributed to this path with certainty. A total of 48 traced
 playbacks and twelve first-start requests across four checked module reloads
 did not reproduce that earlier failure. Those functional diagnostics ran with
-the current boot's already disabled Lockdep; they are not locking qualification.
+that diagnostic boot's already disabled Lockdep; they are not locking qualification.
 
 The fixed AFE 0.1.28 module was then loaded on the running kernel34 without a
 reboot. Six playback/capture/duplex cases and eight independently verified
 cuDLA outputs passed. That confirms bounded functional operation with the fix;
-the current boot's already disabled Lockdep is still not locking qualification.
+that diagnostic boot's already disabled Lockdep is still not locking qualification.
 
 The kernel35 run reproduced START `EBUSY` after its first checked audio reload.
 A subsequent function-graph diagnostic passed two playbacks around one reload.
@@ -210,8 +213,9 @@ configuration and symbol CRCs. The AFE 0.1.29 bundle has since been installed
 as an additional [validated boot entry](evidence/resume-kernel36-staged-20261116.json);
 the initial bundle was not deployed. The [later live diagnostic](evidence/audio-open-20261115.json)
 records seven successful playbacks followed by an OPEN refusal. AFE 0.1.29's
-subsequent live contention/replacement results are recorded above; kernel36
-still requires its own native boot and physical-sleep qualification.
+subsequent live contention/replacement results are recorded above. Kernel36
+has since passed native cold boot and the pre-PM audio/NPU phases; the UVM
+warning described above blocks overall PM qualification.
 
 ## Deployment gate
 
@@ -228,8 +232,8 @@ unverified until that transaction succeeds. A reboot solely for an incremental
 audio test or to clear a warning is not a deployment gate.
 
 The post-qualification global DKMS configuration is already prepared as
-`n1x-nvidia-drm-fix 615.78.08-3`, carrying both DRM and PM patches. Its package
+`n1x-nvidia-drm-fix 615.78.08-4`, carrying DRM, PM-owner and UVM patches. Its package
 contents, source checksums and clean application to the pinned vendor source
 were checked. The installed revision 2 remains unchanged until physical
-qualification succeeds. Activating revision 3 needs no additional kernel build
+qualification succeeds. Activating revision 4 needs no additional kernel build
 or reboot and does not replace the running NVIDIA module.

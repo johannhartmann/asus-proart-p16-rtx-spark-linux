@@ -22,17 +22,17 @@ Hardware qualification requires booting the matching bundle and checking DRM
 master transitions and suspend/resume without the earlier warning.
 
 For subsequent DKMS builds with the same vendor version, the prepared package
-revision 3 carries both corrections. Deploy it after the kernel35 physical
-qualification:
+revision 4 carries all three corrections. Deploy it after the patched kernel36
+physical qualification:
 
 ```sh
 cd platform/nvidia
 makepkg --cleanbuild
-pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-3-any.pkg.tar.*
+pkexec --disable-internal-agent /usr/bin/pacman -U ./n1x-nvidia-drm-fix-615.78.08-4-any.pkg.tar.*
 ```
 
-This small package installs standard DKMS `PATCH[0]` (DRM) and `PATCH[1]` (PM)
-configuration for **615.78.08 only**, with both files in `/etc/dkms/nvidia/patches/`. It preserves
+This small package installs standard DKMS `PATCH[0]` (DRM), `PATCH[1]` (PM owner)
+and `PATCH[2]` (UVM lock order) configuration for **615.78.08 only**, with the patch files in `/etc/dkms/nvidia/patches/`. It preserves
 the pristine vendor source under `/usr/src`. Installing the configuration does
 not change a loaded module or by itself rebuild existing modules. Use the
 complete candidate workflow for the next boot; do not unload NVIDIA from a
@@ -62,25 +62,44 @@ actual patched notifier with a hardware-free gate. Its normal, prepare-error,
 thread-creation-error, later-notifier-abort and resume-error cases pass with
 Lockdep active and no retained worker, gate or module reference.
 
-The candidate-module builder applies both patches to its private NVIDIA copy
-and pins both modified source files. Native kernel34 device-only PM passed
+The candidate-module builder applies all three patches to its private NVIDIA copy
+and pins all four modified source files. Native kernel34 device-only PM passed
 with the owner correction and Lockdep still enabled at its completion. A later
 NVIDIA/I2C/platform-bus classification warning disabled that boot's validator;
 see the separate per-bus lock-class fix in the
 [suspend candidate](../../docs/suspend-candidate.md).
 
-The complete **kernel35** bundle is installed as **`RTX-Spark-Kernel35`**. Its
-NVIDIA modules were rebuilt against the exact candidate vmlinux and passed
-split-BTF checks. The unchanged vendor core objects are reused only after
-checking all 3,535 source hashes. EFI/KVM boot/module, positive Lockdep,
-real-bus notifier and all five PM-owner regressions passed. Native kernel35
-cold boot, continuous Lockdep and physical s2idle remain unverified.
+The current candidate is **kernel36**, retaining the existing PM-owner and DRM
+corrections. Its native cold boot and audio/NPU workloads passed, but device-only
+PM exposed a further UVM inversion. Physical sleep qualification stopped there.
+See the [native qualification record](../../docs/evidence/kernel36-native-20261116.json).
 
-The installed global package remains revision 2, containing only the DRM
-correction. Revision 3 is built and ready for deployment with both patches.
-The complete candidate builder already includes both patches; this is the
-maintained route for matching new kernels and modules. Global DKMS activation
-of the PM patch remains a separate deployment gate after physical qualification;
-activating the configuration does not require a reboot or another kernel build.
-Do not unload the active desktop GPU, reset Lockdep or replace
-modules from a different kernel/BTF set to substitute for that qualification.
+The installed global package remains revision 2 (DRM only). Revision 4 is
+prepared with all three fixes; global activation remains pending physical PM
+qualification. The candidate builder includes all three fixes independently
+of that global deployment. Do not unload an active desktop GPU, reset Lockdep
+or mix modules from different kernel/BTF sets to substitute for qualification.
+
+## UVM PM collection and resume lock order
+
+NVIDIA 615.78.08 retains each VA-space writer across suspend/resume. Resume
+then reacquires the global VA-list mutex while those inner locks remain held,
+reversing the normal list-to-VA order. Kernel36's native device-only test
+reported that exact cycle with the existing same-task PM worker.
+
+`nvidia-uvm-pm-lock-order.patch` uses the already-held global PM writer to
+stabilize resume's VA-list traversal, avoiding that second list-mutex
+acquisition. Every VA creation/destruction path takes a PM reader, so the writer
+also pins their lifetimes. The PM-specific VA lock helper uses Linux nesting
+primitives under that real outer writer for multiple same-class VA objects.
+It retains all VA locks through sleep and leaves Linux Lockdep enabled.
+NVIDIA's own cross-callback tracking was already disabled by the vendor code;
+this patch does not expand that disabled interval.
+
+The [UVM regression](../tests/uvm-pm-lock/README.md) extracts the real pinned
+callbacks and lock helpers. Nine fresh EFI/KVM cases cover zero, one, two and
+eight VA spaces, a blocked PM-reader/list mutator, four fixed suspend/resume
+cycles, GPU callback state and deferred-release ordering. The original code
+warns; the fixed code stays clean; a deliberate VA-to-list inversion still
+warns. These are hardware-free lock regressions, not physical suspend proof.
+The rebuilt UVM module targets the unchanged kernel36 Image and BTF.

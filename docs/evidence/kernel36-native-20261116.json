@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-16",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "power_profile": "quiet",
+  "cold_boot_verified": true,
+  "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+  "module_srcversions": {
+    "n1x_adsp": "BC1B19BC64640F189595C42",
+    "n1x_npu_bootstrap": "1AC6AF64BADDDD628B9EF52",
+    "snd_soc_mt8901_afe": "924D1370D9C00BDA2C693BC",
+    "nvidia": "AC96DECE9DF4E11B1BDC6A9"
+  },
+  "pcm_cases_passed": 18,
+  "desktop_playback_starts_passed": 4,
+  "npu_numerical_outputs_passed": 24,
+  "checked_audio_reloads": 2,
+  "lockdep_active_through_cold_boot_and_reloads": true,
+  "device_only_pm_returned": true,
+  "device_only_pm_passed": false,
+  "new_warning": {
+    "driver": "NVIDIA UVM 615.78.08",
+    "lock_path": "VA_SPACE -> VA_SPACES_LIST at uvm_resume; normal order VA_SPACES_LIST -> VA_SPACE",
+    "pm_worker": "nvidia-pm",
+    "lockdep_disabled_by_warning": true
+  },
+  "dsp_after_device_pm": {
+    "NVDA8301:00": {
+      "ready": true,
+      "error": 0,
+      "sleep_cycles": 1,
+      "config_checked_and_restored": true
+    },
+    "NVDA8302:00": {
+      "ready": true,
+      "error": 0,
+      "sleep_cycles": 1,
+      "config_checked_and_restored": true
+    },
+    "NVDA8303:00": {
+      "ready": true,
+      "error": 0,
+      "sleep_cycles": 1,
+      "config_checked_and_restored": true
+    }
+  },
+  "earlier_pcie_sdhci_warning_seen_in_this_test": false,
+  "physical_sleep_attempted": false,
+  "physical_sleep_qualified": false,
+  "qualification_stopped_on_new_warning": true,
+  "lockdep_reset": false,
+  "boot_default_promoted": false,
+  "collection_attempts_before_final_run": {
+    "count": 3,
+    "pcm_cases": 0,
+    "host_pm_transactions": 0,
+    "reason": "BPF BTF-field and precompile collector failures; replaced with scalar kernel kretprobe events"
+  },
+  "scope": "Native return from device-only PM, not physical sleep qualification. Intermittent audio START EBUSY is not proven resolved."
+}

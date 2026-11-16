@@ -24,7 +24,13 @@ followed by eight numerical NPU outputs. Lockdep was already disabled in that
 boot, and the original intermittent START refusal was not reproduced. The
 complete [kernel36 bundle](evidence/resume-kernel36-staged-20261116.json) is now
 installed as `RTX-Spark-Kernel36`, preserving the existing default and recovery.
-Its native boot and physical-sleep qualification remain pending.
+Its native cold boot, two checked audio reloads, 18 PCM cases, four desktop
+playbacks and 24 numerical NPU outputs passed with Lockdep enabled. Device-only
+PM returned but exposed a UVM VA-list inversion, stopping qualification before
+physical sleep. The [native record](evidence/kernel36-native-20261116.json) and
+[UVM correction](../platform/nvidia/README.md#uvm-pm-collection-and-resume-lock-order)
+record the remaining gate. The UVM fix needs no new Linux kernel build, but its
+module has not yet been qualified on native hardware.
 
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working

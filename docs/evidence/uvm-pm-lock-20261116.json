@@ -1,0 +1,232 @@
+{
+  "date": "2026-11-16",
+  "vendor": "615.78.08",
+  "patch_sha256": "d7f38f390c1ee867d83638e6919eb22218efb5163efb6eb71dc0c1b727646cda",
+  "audited_source_sha256": {
+    "uvm_global.c": "90b576b20b6110056c8970d9b611be3658763a22f9e80ee36212978bbc766b7e",
+    "uvm_va_space.h": "27d792888f96f126e9c94d53d4b37eec8463cce78ae6710cbe9db40c2842aee2",
+    "uvm_va_space.c": "d3afb05ecd5a051312c5bad2f3406c01c9c75fda46a6323381551b96b1572dbf",
+    "uvm.c": "81870dad066249991b39e2f1e70ddf0a48e4803eb48f487d0de7708c835a621a"
+  },
+  "kernel_image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+  "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+  "cases": [
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": true,
+      "positive": false,
+      "va_spaces": 0,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "0ed8c785848f4ebcbd9bc5157d0488c42c87164363edd36eaa97fb2016c3ef73",
+      "seconds": 9.944521511999938,
+      "checks": {
+        "fixed": "0",
+        "va_spaces": "0",
+        "positive": "0",
+        "cycles": "1",
+        "mutations": "1",
+        "debug_locks": "1",
+        "expected": "1",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": true,
+      "positive": false,
+      "va_spaces": 1,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "0ed8c785848f4ebcbd9bc5157d0488c42c87164363edd36eaa97fb2016c3ef73",
+      "seconds": 10.369470567000008,
+      "checks": {
+        "fixed": "0",
+        "va_spaces": "1",
+        "positive": "0",
+        "cycles": "1",
+        "mutations": "1",
+        "debug_locks": "0",
+        "expected": "0",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": true,
+      "positive": false,
+      "va_spaces": 2,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "0ed8c785848f4ebcbd9bc5157d0488c42c87164363edd36eaa97fb2016c3ef73",
+      "seconds": 9.94676490000029,
+      "checks": {
+        "fixed": "0",
+        "va_spaces": "2",
+        "positive": "0",
+        "cycles": "1",
+        "mutations": "1",
+        "debug_locks": "0",
+        "expected": "0",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": true,
+      "positive": false,
+      "va_spaces": 8,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "0ed8c785848f4ebcbd9bc5157d0488c42c87164363edd36eaa97fb2016c3ef73",
+      "seconds": 9.944074197000191,
+      "checks": {
+        "fixed": "0",
+        "va_spaces": "8",
+        "positive": "0",
+        "cycles": "1",
+        "mutations": "1",
+        "debug_locks": "0",
+        "expected": "0",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": false,
+      "positive": false,
+      "va_spaces": 0,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "e3b01f45f5544936de3c83c9d826892acff3e5d442e7963e3d4b22f51f49d4bf",
+      "seconds": 9.95173842200029,
+      "checks": {
+        "fixed": "1",
+        "va_spaces": "0",
+        "positive": "0",
+        "cycles": "4",
+        "mutations": "4",
+        "debug_locks": "1",
+        "expected": "1",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": false,
+      "positive": false,
+      "va_spaces": 1,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "e3b01f45f5544936de3c83c9d826892acff3e5d442e7963e3d4b22f51f49d4bf",
+      "seconds": 10.193691190999743,
+      "checks": {
+        "fixed": "1",
+        "va_spaces": "1",
+        "positive": "0",
+        "cycles": "4",
+        "mutations": "4",
+        "debug_locks": "1",
+        "expected": "1",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": false,
+      "positive": false,
+      "va_spaces": 2,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "e3b01f45f5544936de3c83c9d826892acff3e5d442e7963e3d4b22f51f49d4bf",
+      "seconds": 9.952834929000346,
+      "checks": {
+        "fixed": "1",
+        "va_spaces": "2",
+        "positive": "0",
+        "cycles": "4",
+        "mutations": "4",
+        "debug_locks": "1",
+        "expected": "1",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": false,
+      "positive": false,
+      "va_spaces": 8,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "e3b01f45f5544936de3c83c9d826892acff3e5d442e7963e3d4b22f51f49d4bf",
+      "seconds": 9.741961513000206,
+      "checks": {
+        "fixed": "1",
+        "va_spaces": "8",
+        "positive": "0",
+        "cycles": "4",
+        "mutations": "4",
+        "debug_locks": "1",
+        "expected": "1",
+        "failures": "0"
+      }
+    },
+    {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "legacy": false,
+      "positive": true,
+      "va_spaces": 1,
+      "host_pm_requested": false,
+      "host_modules_loaded": false,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "e3b01f45f5544936de3c83c9d826892acff3e5d442e7963e3d4b22f51f49d4bf",
+      "seconds": 10.572725735999938,
+      "checks": {
+        "fixed": "1",
+        "va_spaces": "1",
+        "positive": "1",
+        "cycles": "4",
+        "mutations": "4",
+        "debug_locks": "0",
+        "expected": "0",
+        "failures": "0"
+      }
+    }
+  ],
+  "driver_package": {
+    "package": "linux-p16-platform-36-drivers-7.2.8-36.1-aarch64.pkg.tar.xz",
+    "sha256": "80658396f17ce25ecf487d38f5e544a9b2781b88aaa977efb056e6f431d995c9",
+    "modules": 13,
+    "hardware_qualified": false,
+    "uvm_srcversion": "3B1A4FA6C3DBFBA394AF27A"
+  },
+  "production_driver_module_btf_checks": 13,
+  "all_cases_passed": true,
+  "linux_kernel_rebuilt": false,
+  "new_uvm_loaded_on_host": false,
+  "host_pm_during_regression": false,
+  "physical_sleep_qualified": false,
+  "scope": "Actual vendor PM callbacks and VA lock macros; mocked GPU operations; real Linux locks and concurrent PM reader. Original and deliberate inverse controls still warn.",
+  "production_vendor_source_inputs_checked": 4007,
+  "production_sources_match_pristine_plus_patches": true,
+  "repository_tests_passed": 177,
+  "production_imported_symbol_crcs_checked": 361,
+  "production_symbol_crcs_match_exact_kernel_and_nvidia": true
+}
