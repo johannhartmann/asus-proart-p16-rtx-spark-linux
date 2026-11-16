@@ -1,0 +1,175 @@
+{
+  "date": "2026-11-16",
+  "kernel": "7.2.8-35-rtx-spark-npu",
+  "scope": "functional diagnostics; current Lockdep already disabled by the recorded PCIe warning, never reset",
+  "afe_version": "0.1.29",
+  "module_sha256": "5c8116e71aa02fa163e5a11e3bf5d27bdcf8eca64d4390f29a655f13f3ff3af9",
+  "old_contention": {
+    "version": "0.1.28",
+    "nonatomic": true,
+    "sram_present": true,
+    "existing_playback_owner": true,
+    "competing_dl1_open_errno": 95
+  },
+  "fixed_contention": {
+    "version": "0.1.29",
+    "repetitions": 2,
+    "existing_playback_owner": true,
+    "competing_dl1_open_errno": 16
+  },
+  "checked_reloads": 11,
+  "fixed_afe_checked_reloads": 10,
+  "pcm_matrix_cases": 12,
+  "first_start_cycles": 8,
+  "first_start_playbacks": 16,
+  "all_first_start_playbacks_passed": true,
+  "probes_reattached_before_desktop_audio_each_generation": true,
+  "probe_counts_by_generation": [
+    {
+      "phase": "old-contention",
+      "dsp_calls": 2,
+      "endpoint_calls": 7,
+      "fe_calls": 2,
+      "irq_calls": 2
+    },
+    {
+      "phase": "fixed-0",
+      "dsp_calls": 18,
+      "endpoint_calls": 63,
+      "fe_calls": 18,
+      "irq_calls": 14
+    },
+    {
+      "phase": "fixed-1",
+      "dsp_calls": 18,
+      "endpoint_calls": 63,
+      "fe_calls": 18,
+      "irq_calls": 14
+    },
+    {
+      "phase": "first-start-0",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-1",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-2",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-3",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-4",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-5",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-6",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    },
+    {
+      "phase": "first-start-7",
+      "dsp_calls": 4,
+      "endpoint_calls": 18,
+      "fe_calls": 4,
+      "irq_calls": 5
+    }
+  ],
+  "traced_start_refusals": 0,
+  "captures": [
+    {
+      "case": "fixed-0-capture-S16_LE.raw",
+      "bytes": 576000,
+      "sha256": "0b11b72010e2f6a24034e88da0ed4e7e93c869c96c3a298f023448f2562788f4",
+      "nonzero_bytes": 526478
+    },
+    {
+      "case": "fixed-0-duplex-S16_LE.raw",
+      "bytes": 576000,
+      "sha256": "eee5279b99050235b53feadc96f00ed295f200623016db34f05f41a4712777c4",
+      "nonzero_bytes": 540031
+    },
+    {
+      "case": "fixed-0-capture-S24_LE.raw",
+      "bytes": 1152000,
+      "sha256": "0629d88ea95628b93c57f1aaa99bdd86acade3b0816b2ed879720096854ab056",
+      "nonzero_bytes": 913097
+    },
+    {
+      "case": "fixed-0-duplex-S24_LE.raw",
+      "bytes": 1152000,
+      "sha256": "f617e2285e2744780cedaf3e1ca417d41c00a3e10f52ace2b9bd824c50485ec7",
+      "nonzero_bytes": 915150
+    },
+    {
+      "case": "fixed-1-capture-S16_LE.raw",
+      "bytes": 576000,
+      "sha256": "1f08584cb550516c10e7cedf6ff609fc284d4d7292ae6e0991470d3dabe94d40",
+      "nonzero_bytes": 517110
+    },
+    {
+      "case": "fixed-1-duplex-S16_LE.raw",
+      "bytes": 576000,
+      "sha256": "7091b797d7b30375ed50b3f1ddbd8d9ceef6cc866d4c073f432de29ddd806f31",
+      "nonzero_bytes": 510095
+    },
+    {
+      "case": "fixed-1-capture-S24_LE.raw",
+      "bytes": 1152000,
+      "sha256": "12785849631524b6d64140341ee81deb23895e07d4a7f67efab2d0274420e21f",
+      "nonzero_bytes": 909581
+    },
+    {
+      "case": "fixed-1-duplex-S24_LE.raw",
+      "bytes": 1152000,
+      "sha256": "9b4da4fea96b199800614ab54ad6c1a11698853ef74de0ba4dfaa5af023ce625",
+      "nonzero_bytes": 915920
+    }
+  ],
+  "npu": {
+    "numerical_jobs": 8,
+    "physical_cudla_path_verified": true,
+    "io_reuse_verified": true,
+    "reuse_submissions": 5,
+    "scope": "three pinned graphs, changing inputs, blocking CUDA staging; no recovery/lifetime qualification"
+  },
+  "boot_menu_readonly_verified": true,
+  "host_power_profile_changed": false,
+  "host_pm_requested": false,
+  "new_kernel_warnings": 0,
+  "qualification": {
+    "live_afe_replacement_and_contention_passed": true,
+    "original_start_ebusy_cause_established": false,
+    "physical_sleep_qualified": false,
+    "clean_lockdep_qualified": false,
+    "limit": "Lockdep was already disabled by the previously recorded PCIe/SDHCI resume warning. These runs establish bounded functionality only; do not reset the validator or count them as physical-sleep or locking qualification."
+  }
+}

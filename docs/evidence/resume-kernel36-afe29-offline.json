@@ -84,15 +84,18 @@
   },
   "native": {
     "diagnostic_record": "audio-open-20261115.json",
-    "afe29_installed": false,
-    "afe29_loaded": false,
-    "live_contention_qualified": false,
+    "afe29_installed": true,
+    "afe29_loaded": true,
+    "live_contention_qualified": true,
     "audio_start_ebusy_resolved": false,
-    "kernel_packages_installed": false,
-    "boot_image_staged": false,
+    "kernel_packages_installed": true,
+    "boot_image_staged": true,
     "default_changed": false,
     "power_profile_changed": false,
     "physical_sleep_qualified": false,
-    "next_dependency": "Native AFE29 contention/reload, first-START and numerical NPU qualification, followed by complete native kernel36 boot and physical-sleep qualification."
+    "next_dependency": "Native kernel36 boot and physical-sleep qualification with continuously enabled Lockdep, followed by PCM and numerical NPU checks.",
+    "live_afe_kernel": "7.2.8-35-rtx-spark-npu",
+    "live_afe_record": "afe29-live-20261116.json",
+    "staging_record": "resume-kernel36-staged-20261116.json"
   }
 }

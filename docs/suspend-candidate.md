@@ -1,13 +1,13 @@
 # Suspend and deferred audio START corrections
 
-These changes address three independent source/configuration defects. They
+These changes address independent source/configuration defects. They
 must be qualified together; passing a build or a VM test does not establish
 physical suspend/resume on the workstation.
 
-The installed candidate is **`7.2.8-35-rtx-spark-npu`**, available as
+The running validation kernel is **`7.2.8-35-rtx-spark-npu`**, available as
 **`RTX-Spark-Kernel35`** in Limine. Its [qualification record](evidence/suspend-kernel35.json)
 pins the kernel, UKI, package and BTF hashes and the test boundaries. The normal
-kernel34 and recovery entries remain available. The native ACPI profile and
+kernel34 and recovery entries remain available. The existing ACPI profile (`legacy`) and
 boot arguments were preserved. At staging, the obsolete kernel32 diagnostic
 image was archived outside `/boot`. The subsequent
 [boot cleanup](evidence/boot-cleanup-20261115.json) removed five more obsolete
@@ -22,6 +22,18 @@ passed with fresh DSP readiness, six PCM cases, eight cuDLA outputs and Lockdep
 enabled. One physical s2idle cycle returned after about 99 seconds, but PCIe
 hotplug/SDHCI warnings failed overall qualification. Kernel35 is not promoted
 to the normal default, and global NVIDIA DKMS revision 3 is not activated.
+
+The current staged candidate is **`7.2.8-36-rtx-spark-npu`**, selected manually
+as **`RTX-Spark-Kernel36`** for the next native qualification. Its
+[staging record](evidence/resume-kernel36-staged-20261116.json) pins the EFI and
+kernel hashes. The complete bundle includes AFE 0.1.29 and the PCIe/SDHCI
+corrections below. All 8,503 installed production modules and 430 embedded
+modules passed BTF checks; embedded module bytes match the installed files.
+The existing ACPI payload was preserved byte for byte, and the kernel
+arguments were preserved.
+Kernel34 remains the normal default; kernel35 and recovery23 remain available.
+The four purposeful entries use 49% of `/boot`. Native kernel36 boot and
+physical sleep are pending; the already-running kernel35 was not replaced.
 
 ## Audio: a deferred DPCM START is allowed to see a running FE
 
@@ -78,6 +90,20 @@ that both competing frontends preserve the current owner and its allocation
 and symbol leases. This errno correction does not establish the cause of the
 earlier START failure; live contention and replacement qualification are
 recorded separately.
+
+On 16 November, [native AFE 0.1.29 qualification](evidence/afe29-live-20261116.json)
+reproduced the occupied-direction refusal with AFE 0.1.28 (`-95`) and the
+correct `EBUSY` response with 0.1.29 (`-16`). The module was replaced on the
+running kernel35 without rebooting. Two checked reloads passed twelve PCM
+cases, including nonzero capture and duplex in both formats. Eight further
+reloads passed sixteen immediate first-start playbacks with desktop audio
+running. Probes were attached to each new module generation before desktop
+audio restarted, with nonzero FE/DSP/endpoint/IRQ counters. All eight numerical
+cuDLA outputs and buffer reuse passed afterward. There was no new kernel
+warning or power-profile change. The earlier START `EBUSY` was not reproduced;
+its cause remains unproven. Lockdep was already disabled by the recorded
+PCIe/SDHCI warning, so this is bounded functional qualification, not clean
+locking or physical-sleep qualification.
 
 ## Lockdep: separate unrelated bus notifier classes
 
@@ -169,8 +195,8 @@ the AFE IRQ lifetime, Lockdep capacity, PCIe hot-removal and noirq resume, real
 bus notifiers, NVIDIA PM-owner error unwinds and the exec/freezer regression.
 The same-bus notifier positive control intentionally requires a warning; clean
 cases require the validator to remain enabled. The 177 repository tests pass.
-This bundle is not installed or selected for boot. Live first-START diagnostics
-on the existing kernel must finish before requesting the next native boot;
+That initial offline bundle was not installed or selected for boot. Live first-START diagnostics
+on the existing kernel had to finish before requesting the next native boot;
 these offline results do not close the intermittent audio failure or qualify
 physical sleep on kernel36.
 
@@ -180,10 +206,12 @@ cases: the complete 30-module/protocol/AFE-lifetime test, Lockdep capacity,
 SDHCI hot-removal and traced noirq resume. All 8,507 built modules and 8,503
 packaged production modules pass split-BTF checks. The 12 earlier core cases
 remain recorded against their own Image, with identical core patch inputs,
-configuration and symbol CRCs. Neither bundle has been installed or selected
-for boot. The [later live diagnostic](evidence/audio-open-20261115.json)
-records seven successful playbacks followed by an OPEN refusal; AFE 0.1.29's
-live contention/replacement qualification remains pending.
+configuration and symbol CRCs. The AFE 0.1.29 bundle has since been installed
+as an additional [validated boot entry](evidence/resume-kernel36-staged-20261116.json);
+the initial bundle was not deployed. The [later live diagnostic](evidence/audio-open-20261115.json)
+records seven successful playbacks followed by an OPEN refusal. AFE 0.1.29's
+subsequent live contention/replacement results are recorded above; kernel36
+still requires its own native boot and physical-sleep qualification.
 
 ## Deployment gate
 

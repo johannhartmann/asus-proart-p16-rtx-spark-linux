@@ -18,6 +18,14 @@ returned but exposed SDHCI IRQ ownership and PCIe hotplug locking warnings,
 so physical qualification failed. Kernel34 remains the normal default and
 recovery entries are retained.
 
+AFE 0.1.29 subsequently passed live contention/replacement qualification,
+twelve PCM cases and sixteen first-start playbacks across checked reloads,
+followed by eight numerical NPU outputs. Lockdep was already disabled in that
+boot, and the original intermittent START refusal was not reproduced. The
+complete [kernel36 bundle](evidence/resume-kernel36-staged-20261116.json) is now
+installed as `RTX-Spark-Kernel36`, preserving the existing default and recovery.
+Its native boot and physical-sleep qualification remain pending.
+
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working
 desktop, successful module build, or passing protocol test does not establish
