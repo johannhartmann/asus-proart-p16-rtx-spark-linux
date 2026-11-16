@@ -30,7 +30,10 @@ PM returned but exposed a UVM VA-list inversion, stopping qualification before
 physical sleep. The [native record](evidence/kernel36-native-20261116.json) and
 [UVM correction](../platform/nvidia/README.md#uvm-pm-collection-and-resume-lock-order)
 record the remaining gate. The UVM fix needs no new Linux kernel build, but its
-module has not yet been qualified on native hardware.
+module has not yet been qualified on native hardware. It is now
+[staged in the existing kernel36 entry](evidence/resume-kernel36-uvm1-staged-20261116.json),
+with matching module bytes/BTF and verified menu pins. The normal default and
+recovery remain unchanged.
 
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working

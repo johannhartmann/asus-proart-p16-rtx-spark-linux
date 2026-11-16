@@ -24,7 +24,15 @@ proper nested locking for the VA collection. Its nine fresh kernel-VM tests
 passed, including original and deliberate-inversion controls. The corrected
 UVM module targets the unchanged kernel36 Image and BTF; no new Linux kernel
 build is needed. See the [regression record](evidence/uvm-pm-lock-20261116.json).
-The new UVM module still needs native cold-boot and physical-sleep qualification.
+The corrected UVM module is now installed in driver package **7.2.8-36.1** and
+in the updated **`RTX-Spark-Kernel36`** boot entry. The
+[UVM staging record](evidence/resume-kernel36-uvm1-staged-20261116.json) pins the
+new EFI hash and UVM srcversion. All 13 external modules and 430 embedded
+modules passed BTF checks; embedded bytes match the installed files. The old
+kernel36 EFI was archived outside `/boot`; no duplicate entry was added.
+The running UVM was left loaded. Native cold-boot and physical-sleep
+qualification of the corrected module remain pending; the next test must
+verify its loaded srcversion before any PM request.
 
 Kernel34 remains the normal default. Kernel35 and recovery23 remain available;
 the existing `legacy` ACPI profile, boot arguments and selected `quiet` power
