@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Check normal SSPM against the booted baseline and checked DSP retirement."""
+"""Check packaged baseline SSPM behavior and checked DSP retirement offline."""
+import hashlib
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -10,6 +12,51 @@ PATHS = ('drivers/soc/mediatek/sspm_ci/sspm_ci.c',
          'drivers/soc/mediatek/power_wrap/power_wrap.c',
          'include/linux/soc/mediatek/mtk-pwrap.h',
          'drivers/soc/mediatek/power_wrap/inc/pwrap_scmi.h')
+
+# Replay only the relevant file deltas, in the production PKGBUILD order.
+PREREQUISITES = (
+    '1000-n1x-mediatek-platform.patch',
+    '1072-soc-mediatek-power_wrap-make-the-USB4-resource-release-optional.patch',
+    '1076-soc-mediatek-power_wrap-report-whether-the-USB4-resources-are-released.patch',
+    '1090-sspm_ci-distinguish-not-submitted-from-completion-unknown.patch',
+    '1091-PCI-harden-MediaTek-Power-Wrap-system-sleep.patch',
+    '1098-soc-mediatek-gate-SSPM-dependent-ACPI-paths.patch',
+    '1099-soc-mediatek-power_wrap-keep-DGX-Spark-DVFSRC-policy.patch',
+)
+BASE_SHA256 = {
+    'drivers/soc/mediatek/sspm_ci/sspm_ci.c':
+        '8e9ee5982b7ab2054c409b8160ffea77b0694d5cf2461d2768b669838a36ddc6',
+    'drivers/soc/mediatek/sspm_ci/sspm_ci.h':
+        'cefa781620bb33d24f72f9181cf6e46217496e05f6993d0c2bf74eca1202e8bb',
+    'drivers/soc/mediatek/power_wrap/power_wrap.c':
+        'd393912fa3fb2f75f9421c5a4a0b0cf0db6c3e39aa469bc6c5aed1f799ab89f2',
+    'include/linux/soc/mediatek/mtk-pwrap.h':
+        '9299dcb399cde045833c3fd070788f6f48926cee5a095a251be0444bbbf29e43',
+    'drivers/soc/mediatek/power_wrap/inc/pwrap_scmi.h':
+        '8888ca5437cb1a04283685b15eee95b680c56dd7cf3ae570446ccf4faf8403b1',
+}
+
+
+def prepare_baseline(directory):
+    """Reconstruct the exact tested pre-shutdown source without build caches."""
+    for name in PREREQUISITES:
+        text = (ROOT/'kernel'/name).read_text()
+        if re.search(r'^diff --git ', text, re.M):
+            sections = re.split(r'(?=^diff --git )', text, flags=re.M)
+            headings = tuple(f'diff --git a/{path} b/{path}\n' for path in PATHS)
+        else:
+            sections = re.split(r'(?=^--- a/)', text, flags=re.M)
+            headings = tuple(f'--- a/{path}\n+++ b/{path}\n' for path in PATHS)
+        delta = ''.join(section for section in sections if section.startswith(headings))
+        if not delta:
+            raise ValueError('Missing SSPM/power-wrap prerequisite delta: '+name)
+        subprocess.run(['patch', '-p1', '--fuzz=0', '--batch'], input=delta,
+                       text=True, cwd=directory, check=True, capture_output=True)
+    for name, expected in BASE_SHA256.items():
+        if hashlib.sha256((directory/name).read_bytes()).hexdigest() != expected:
+            raise ValueError('Reconstructed power baseline differs from pinned source: '+name)
+
+
 PRELUDE = r'''
 #include <assert.h>
 #include <stdbool.h>
@@ -173,12 +220,10 @@ def compile_run(directory, name, code):
 
 
 def main():
-    baseline = (ROOT/'kernel/src/linux-7.2.8'/PATHS[0]).read_text()
     with tempfile.TemporaryDirectory(prefix='n1x-dsp-power-') as temporary:
         directory = Path(temporary)
-        for name in PATHS:
-            target=directory/name;target.parent.mkdir(parents=True,exist_ok=True)
-            target.write_bytes((ROOT/'kernel/src/linux-7.2.8'/name).read_bytes())
+        prepare_baseline(directory)
+        baseline = (directory/PATHS[0]).read_text()
         subprocess.run(['patch','-p1','--fuzz=0','--batch','-i',str(ROOT/'kernel/p16-dsp-shutdown-power.patch')],
                        cwd=directory,check=True,capture_output=True)
         source=(directory/PATHS[0]).read_text()
