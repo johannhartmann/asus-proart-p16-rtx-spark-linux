@@ -21,9 +21,9 @@ records the resulting source hashes. It never reloads the active desktop GPU.
 Hardware qualification requires booting the matching bundle and checking DRM
 master transitions and suspend/resume without the earlier warning.
 
-For subsequent DKMS builds with the same vendor version, the prepared package
-revision 4 carries all three corrections. Deploy it after the patched kernel36
-physical qualification:
+For subsequent DKMS builds with the same vendor version, package revision 4 carries all three corrections. It is activated on the
+qualified kernel36 workstation. Install it after the matching native
+qualification on a new system:
 
 ```sh
 cd platform/nvidia
@@ -69,16 +69,19 @@ NVIDIA/I2C/platform-bus classification warning disabled that boot's validator;
 see the separate per-bus lock-class fix in the
 [suspend candidate](../../docs/suspend-candidate.md).
 
-The current candidate is **kernel36**, retaining the existing PM-owner and DRM
-corrections. Its native cold boot and audio/NPU workloads passed, but device-only
-PM exposed a further UVM inversion. Physical sleep qualification stopped there.
-See the [native qualification record](../../docs/evidence/kernel36-native-20261116.json).
+Kernel36 initially stopped on a further UVM inversion; the
+[16 November record](../../docs/evidence/kernel36-native-20261116.json) preserves
+that failure. With the UVM correction, the
+[17 November native sequence](../../docs/evidence/kernel36-native-20261117.json)
+passed physical sleep, audio/NPU operation after resume and two device-only
+cycles with retained CUDA allocations. Four UVM callback returns were successful
+and Lockdep remained enabled. The normal default now selects kernel36.
 
-The installed global package remains revision 2 (DRM only). Revision 4 is
-prepared with all three fixes; global activation remains pending physical PM
-qualification. The candidate builder includes all three fixes independently
-of that global deployment. Do not unload an active desktop GPU, reset Lockdep
-or mix modules from different kernel/BTF sets to substitute for qualification.
+The installed global package is **revision 4**, carrying all three fixes. The
+candidate builder includes those same patches. Installing their configuration
+preserves loaded modules; future DKMS builds use the version-scoped corrections.
+Do not unload an active desktop GPU, reset Lockdep or mix different kernel/BTF
+sets to substitute for qualification.
 
 ## UVM PM collection and resume lock order
 
@@ -103,3 +106,9 @@ cycles, GPU callback state and deferred-release ordering. The original code
 warns; the fixed code stays clean; a deliberate VA-to-list inversion still
 warns. These are hardware-free lock regressions, not physical suspend proof.
 The rebuilt UVM module targets the unchanged kernel36 Image and BTF.
+
+The [native retained-context test](../tests/cuda-pm/README.md) verifies managed
+buffer contents around device-only PM. Its completion collector initially
+rejected a legitimate active desktop audio client; the follow-up final-state
+check retained all fault and Lockdep checks while allowing that client. See
+the native record for the exact test boundaries and collector outcomes.

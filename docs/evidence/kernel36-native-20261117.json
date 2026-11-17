@@ -1,0 +1,210 @@
+{
+  "date": "2026-11-17",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "power_profile": "quiet",
+  "cold_boot_verified": true,
+  "module_srcversions": {
+    "n1x_adsp": "BC1B19BC64640F189595C42",
+    "n1x_npu_bootstrap": "1AC6AF64BADDDD628B9EF52",
+    "snd_soc_mt8901_afe": "924D1370D9C00BDA2C693BC",
+    "nvidia": "AC96DECE9DF4E11B1BDC6A9",
+    "nvidia_uvm": "3B1A4FA6C3DBFBA394AF27A"
+  },
+  "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+  "kernel_image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+  "booted_uki_sha256": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+  "checked_audio_reloads": 2,
+  "pcm_cases_passed": 30,
+  "desktop_playback_starts_passed": 4,
+  "npu_numerical_outputs_passed": 40,
+  "phases": [
+    {
+      "phase": "cold-boot",
+      "passed": true,
+      "pcm_cases": 6,
+      "npu_numerical_outputs": 8,
+      "probe_counts": {
+        "fe_calls": 16,
+        "dsp_calls": 16,
+        "endpoint_calls": 24,
+        "irq_calls": 12
+      },
+      "trace_failure": false
+    },
+    {
+      "phase": "reload-0",
+      "passed": true,
+      "pcm_cases": 6,
+      "npu_numerical_outputs": 8,
+      "probe_counts": {
+        "fe_calls": 20,
+        "dsp_calls": 20,
+        "endpoint_calls": 32,
+        "irq_calls": 17
+      },
+      "trace_failure": false
+    },
+    {
+      "phase": "reload-1",
+      "passed": true,
+      "pcm_cases": 6,
+      "npu_numerical_outputs": 8,
+      "probe_counts": {
+        "fe_calls": 20,
+        "dsp_calls": 20,
+        "endpoint_calls": 32,
+        "irq_calls": 17
+      },
+      "trace_failure": false
+    },
+    {
+      "phase": "after-devices",
+      "passed": true,
+      "pcm_cases": 6,
+      "npu_numerical_outputs": 8,
+      "probe_counts": {
+        "fe_calls": 16,
+        "dsp_calls": 16,
+        "endpoint_calls": 24,
+        "irq_calls": 12
+      },
+      "trace_failure": false
+    },
+    {
+      "phase": "after-physical",
+      "passed": true,
+      "pcm_cases": 6,
+      "npu_numerical_outputs": 8,
+      "probe_counts": {
+        "fe_calls": 16,
+        "dsp_calls": 16,
+        "endpoint_calls": 24,
+        "irq_calls": 12
+      },
+      "trace_failure": false
+    }
+  ],
+  "base_device_pm_passed": true,
+  "physical_sleep_passed": true,
+  "physical_transaction_elapsed_seconds": 18.45264738200001,
+  "physical_elapsed_scope": "CLOCK_BOOTTIME around the complete systemd suspend transaction, including device suspend/resume; not isolated low-power residency",
+  "physical_sleep_mode": "s2idle",
+  "full_native_sequence_completed": true,
+  "base_lockdep_final": 1,
+  "retained_cuda_extension": {
+    "hardware_stages_passed": true,
+    "device_pm_cycles": 2,
+    "clients": [
+      {
+        "pattern": 17,
+        "bytes": 4096,
+        "ready": "CUDA_RETAIN_READY pattern=17 bytes=4096"
+      },
+      {
+        "pattern": 93,
+        "bytes": 4096,
+        "ready": "CUDA_RETAIN_READY pattern=93 bytes=4096"
+      }
+    ],
+    "uvm_reference_count": 8,
+    "callback_counts": {
+      "suspend": 2,
+      "resume": 2
+    },
+    "all_four_callback_returns": 0,
+    "cycles": [
+      {
+        "cycle": 0,
+        "lockdep_before": 1,
+        "lockdep_after": 1,
+        "buffer_checks": [
+          "CUDA_RETAIN_CHECK_PASS pattern=17 bytes=4096",
+          "CUDA_RETAIN_CHECK_PASS pattern=93 bytes=4096"
+        ]
+      },
+      {
+        "cycle": 1,
+        "lockdep_before": 1,
+        "lockdep_after": 1,
+        "buffer_checks": [
+          "CUDA_RETAIN_CHECK_PASS pattern=17 bytes=4096",
+          "CUDA_RETAIN_CHECK_PASS pattern=93 bytes=4096"
+        ]
+      }
+    ],
+    "physical_sleep_requested": false,
+    "collector_completion_passed": false,
+    "collector_completion_error": "RuntimeError('NVDA8301:00: audio client active; leave it running and retry later')",
+    "completion_recheck_pending": false,
+    "trace_sha256": "7afff37de90f81375c1561a3910eec7c0219f4c9d4b4af7153ed4c46b1805ff8",
+    "source": "platform/tests/cuda-pm/retain.c",
+    "completion_rechecked_passed": true,
+    "completion_recheck": {
+      "lockdep": 1,
+      "kernel_warning": false,
+      "dsp_ready_and_fault_free": true,
+      "normal_desktop_audio_allowed": true,
+      "receipt": "kernel36-default-20261117.json"
+    }
+  },
+  "dsp_after_all_device_pm": {
+    "NVDA8301:00": {
+      "ready": true,
+      "asoc_ready": true,
+      "sleep_cycles": 4,
+      "sleep_error": 0,
+      "config_checked": true,
+      "status_faults": {
+        "error": 0,
+        "power_error": 0,
+        "ipc_error": 0,
+        "primary_error": 0,
+        "primary_task_error": 0,
+        "primary_pcm_error": 0,
+        "pcm_period_error": 0
+      }
+    },
+    "NVDA8302:00": {
+      "ready": true,
+      "asoc_ready": true,
+      "sleep_cycles": 4,
+      "sleep_error": 0,
+      "config_checked": true,
+      "status_faults": {
+        "error": 0,
+        "power_error": 0,
+        "ipc_error": 0,
+        "primary_error": 0,
+        "primary_task_error": 0,
+        "primary_pcm_error": 0,
+        "pcm_period_error": 0
+      }
+    },
+    "NVDA8303:00": {
+      "ready": true,
+      "asoc_ready": true,
+      "sleep_cycles": 4,
+      "sleep_error": 0,
+      "config_checked": true,
+      "status_faults": {
+        "error": 0,
+        "power_error": 0,
+        "ipc_error": 0,
+        "primary_error": 0,
+        "primary_task_error": 0,
+        "primary_pcm_error": 0,
+        "pcm_period_error": 0
+      }
+    }
+  },
+  "lockdep_reset": false,
+  "earlier_pcie_sdhci_uvm_warnings_seen": false,
+  "intermittent_start_ebusy_reproduced": false,
+  "intermittent_start_ebusy_cause_proven": false,
+  "scope": "One physical sleep cycle and three device-only cycles, with audio/NPU correctness before and after the physical cycle. The two CUDA contexts were retained across the final two device-only cycles, not physical sleep. Original intermittent START EBUSY remains unattributed.",
+  "lockdep_final": 1,
+  "kernel_warning_seen": false,
+  "default_promoted": true,
+  "finalization_record": "kernel36-default-20261117.json",
+  "repository_tests_passed": 177
+}

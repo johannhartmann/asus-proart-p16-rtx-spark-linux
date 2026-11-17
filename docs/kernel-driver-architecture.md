@@ -1,39 +1,18 @@
 # Kernel driver architecture
 
-The [suspend candidate](suspend-candidate.md) describes the subsequent AFE
-0.1.28 deferred-START and 0.1.29 playback-contention fixes, per-bus notifier lock classes and VT-before-freezer
-integration, with their separate verification and deployment gates. These
-source corrections do not imply that physical sleep has passed qualification.
+The [suspend and audio corrections](suspend-candidate.md) are installed in the
+normal kernel36 default: AFE 0.1.29, per-bus notifier classes, PCIe/SDHCI lifetime
+and lock ordering, VT-before-freezer orchestration and NVIDIA DRM/PM/UVM fixes.
+The [native qualification](evidence/kernel36-native-20261117.json) passed a
+helper-free cold boot, two audio reloads, 30 PCM cases, 40 numerical NPU outputs,
+one physical s2idle transaction and three device-only cycles with Lockdep active.
+Two device-only cycles retained live CUDA allocations. The original intermittent
+START `EBUSY` was not reproduced and remains historically unattributed.
 
-AFE 0.1.28 was loaded on kernel34 without a reboot and passed six PCM cases
-and eight cuDLA outputs. The complete kernel35 candidate is installed as
-`RTX-Spark-Kernel35`, with the normal suspend configuration; its
-[artifact record](evidence/suspend-kernel35.json) separates offline verification
-from native qualification. Kernel35 now has a verified helper-free cold boot
-and a passing six-case PCM/eight-output NPU baseline with Lockdep enabled. The
-first playback after one checked audio reload returned `EBUSY`, so complete
-reload qualification remains open. Normal device-only PM subsequently passed
-with Lockdep enabled, six PCM cases and eight NPU outputs. Physical s2idle
-returned but exposed SDHCI IRQ ownership and PCIe hotplug locking warnings,
-so physical qualification failed. Kernel34 remains the normal default and
-recovery entries are retained.
-
-AFE 0.1.29 subsequently passed live contention/replacement qualification,
-twelve PCM cases and sixteen first-start playbacks across checked reloads,
-followed by eight numerical NPU outputs. Lockdep was already disabled in that
-boot, and the original intermittent START refusal was not reproduced. The
-complete [kernel36 bundle](evidence/resume-kernel36-staged-20261116.json) is now
-installed as `RTX-Spark-Kernel36`, preserving the existing default and recovery.
-Its native cold boot, two checked audio reloads, 18 PCM cases, four desktop
-playbacks and 24 numerical NPU outputs passed with Lockdep enabled. Device-only
-PM returned but exposed a UVM VA-list inversion, stopping qualification before
-physical sleep. The [native record](evidence/kernel36-native-20261116.json) and
-[UVM correction](../platform/nvidia/README.md#uvm-pm-collection-and-resume-lock-order)
-record the remaining gate. The UVM fix needs no new Linux kernel build, but its
-module has not yet been qualified on native hardware. It is now
-[staged in the existing kernel36 entry](evidence/resume-kernel36-uvm1-staged-20261116.json),
-with matching module bytes/BTF and verified menu pins. The normal default and
-recovery remain unchanged.
+The [deployment record](evidence/kernel36-default-20261117.json) pins the
+canonical default image, global DKMS revision 4, updater guards and retained
+kernel34/recovery23. Longer and repeated physical sleep remains a separate
+qualification scope.
 
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working
@@ -74,48 +53,19 @@ machine topology description, as in ordinary upstream-supported sound cards.
 They are separate from the SoC drivers and must not be replaced by a guessed
 generic routing profile.
 
-**Migration status:** kernel34 booted and passed the initial six PCM cases and
-eight numerical NPU outputs with the previous startup services. The helper-free
-source packages are now installed, the DSP/provider startup services are
-removed and the old SDK startup service is masked. Two subsequent DSP module
-reloads through ordinary udev/ACPI handling passed six PCM cases and eight NPU
-outputs each with Lockdep enabled. The separately versioned SROOT DKMS source
-is 0.1.1; its kernel firmware-provider ABI remains v5.
+**Migration status:** kernel36 has passed native helper-free startup and the
+combined audio/NPU/reload/PM sequence above. SROOT DKMS source is 0.1.1 with
+firmware-provider ABI v5; DSP is 0.1.26 and AFE is 0.1.29. The installed kernel
+and all 8,503 production modules, plus the 430 embedded modules, pass exact
+split-BTF checks. The normal default uses kernel36, previous kernel34 and
+recovery23 remain available, and kernel35 has been retired. Power policy and
+the legacy ACPI bytes are preserved.
 
-A bounded device-only suspend/resume cycle passed with fresh DSP readiness
-and Lockdep enabled. This used explicit VT handoff and a temporary user-slice
-freeze; it does not qualify the default sleep policy or physical sleep.
-Normal-user PipeWire duplex passed afterward. A later `atop` perf read exposed
-a separate circular-locking warning, disabling Lockdep. The final six PCM cases
-and eight NPU outputs are functional results only; they do not establish
-locking correctness. The [native evidence](evidence/helper-free-kernel34-native.json)
-records these separate scopes. Kernel35 subsequently verified the full
-helper-free cold boot and bounded locking matrix. Physical/repeated sleep qualification remains open after the
-SDHCI/PCIe warnings recorded above; the earlier PCM START `EBUSY` also remains
-open.
-
-Kernel34 (`7.2.8-34-rtx-spark-npu`) and its matching DSP 0.1.26/provider ABI 5
-module set have completed offline qualification. The exact kernel passed an
-EFI/KVM boot, userspace/vDSO signal and fork checks, 30 module loads and the
-AFE IRQ-lifetime regression. A separate VM retained Lockdep across 44,850
-ordered dependency pairs. All 17 external modules passed split-BTF checks
-against the candidate Image. The DSP and provider package payloads contain no
-startup service or libexec helper and have no Python runtime dependency.
-The [artifact record](evidence/helper-free-kernel34-offline.json) pins the
-source revisions, module identities and package hashes. These checks do not
-qualify native ACPI coldplug or physical sleep. Installed-module BTF checks covered
-8,503 modules; all 430 embedded modules match the installed files. The previous
-ACPI profile and boot arguments were preserved. The normal `Omarchy-P16` entry
-selects kernel34. The subsequent [boot cleanup](update-safe.md) retained this
-entry, `RTX-Spark-Kernel35` and `Omarchy-P16-Recovery` (kernel23), removing the
-old duplicate/previous entries and archiving obsolete images outside `/boot`.
-The separately packaged [kernel36 corrections](suspend-candidate.md#physical-resume-pcie-hotplug-and-sdhci-remain-blockers)
-have completed their offline build and twelve EFI/KVM regressions. Their
-[artifact record](evidence/resume-kernel36-offline.json) is separate from native
-qualification; kernel36 has not replaced these installed entries, and the
-intermittent audio START failure remains open.
-No power-profile change was made. Selection and image validation do not substitute for observing the
-next complete boot through the new startup configuration.
+Earlier [kernel34 native evidence](evidence/helper-free-kernel34-native.json)
+and [offline evidence](evidence/helper-free-kernel34-offline.json) describe the
+preceding migration, including its narrower test scopes. The separate
+[kernel36 offline record](evidence/resume-kernel36-offline.json) pins the initial
+kernel-VM work; later AFE/UVM records identify the deployed module revisions.
 
 The native locking trace joins an NVIDIA I2C notifier path with a platform-bus
 IOMMU notifier path. Those heads share a Lockdep class in this kernel. The
@@ -195,7 +145,8 @@ the firmware namespace because the captured AML provides no `_DEP`/`_DSD`
 association; ambiguity is an error. AFE/DSP lookups use the same scoped rule.
 This does not resolve their bidirectional SRAM/audio ownership into an upstream
 ASoC/SOF provider model. Two native kernel33 shutdown/reload cycles passed PCM
-and numerical NPU checks with Lockdep active; real sleep remains pending. Use
+and numerical NPU checks with Lockdep active. Kernel36 subsequently passed the
+physical sleep sequence recorded above. Use
 firmware-described associations where justified; do not fabricate links between
 the first globally matching ACPI devices.
 

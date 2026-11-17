@@ -77,8 +77,34 @@ but failed qualification during SD-reader hotplug removal: SDHCI freed an
 already-freed IRQ and pciehp inverted `reset_lock`/`pci_rescan_remove_lock`.
 Lockdep disabled itself. DSP/NPU firmware readbacks were healthy, but post-resume
 PCM and numerical NPU workloads were deliberately not run after that warning.
-The [physical resume record](suspend-candidate.md#physical-resume-pcie-hotplug-and-sdhci-remain-blockers)
+The [physical resume record](suspend-candidate.md#historical-pcie-hotplug-and-sdhci-resume-blockers)
 separates these scopes. No further physical sleep or reboot was requested.
+
+## Native kernel36 verification, 17 November 2026
+
+The corrected UVM module booted in the exact kernel36 Image/BTF set. The
+combined sequence passed two checked audio reloads, 30 PCM cases, four immediate
+desktop playbacks and 40 independently checked numerical NPU outputs. Device-only
+PM and one physical s2idle transaction returned with fresh readiness, restored
+configuration and passing audio/NPU workloads. Lockdep stayed enabled without
+new kernel warnings. The physical transaction took 18.45 seconds including
+device suspend/resume; isolated low-power residency was not measured.
+
+Two additional device-only cycles retained two CUDA contexts and 4 KiB managed
+buffers with distinct patterns. Both buffers verified after both cycles, and
+four traced UVM callbacks returned success. The completion collector then
+incorrectly rejected a normal active audio client. Final-state verification
+allowed that client while retaining readiness, fault and Lockdep checks. The
+[native record](evidence/kernel36-native-20261117.json) preserves the original
+collector result and its verified follow-up. Those allocations were not held
+through physical sleep. Longer/repeated physical sleep, KCSAN, fault/recovery
+and every physical audio endpoint remain separate scopes. The earlier START
+`EBUSY` was not reproduced and remains historically unattributed.
+
+The [deployment record](evidence/kernel36-default-20261117.json) promotes this
+kernel to the normal default and activates global NVIDIA DKMS revision 4.
+Kernel34 and recovery23 remain available; kernel35 and its three packages are
+retired. The existing ACPI bytes and power profile are preserved.
 
 ## Reproducible candidates
 

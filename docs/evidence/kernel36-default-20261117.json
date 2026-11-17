@@ -1,0 +1,46 @@
+{
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "started_at": 1794899143.5108023,
+  "live_uvm_hardware_stages_verified": true,
+  "live_uvm_collector_completion_false_negative": "RuntimeError('NVDA8301:00: audio client active; leave it running and retry later')",
+  "lockdep_final": 1,
+  "power_profile": "quiet",
+  "physical_sleep_passed": true,
+  "legacy_layout_guard_backport_sha256": {
+    "/usr/local/sbin/p16-mkinitcpio-managed": "39e99d06a2fa17ce85cb70147c52e108097e5ebd8bff6919cf8d9b4be2476871",
+    "/usr/local/sbin/p16-guard-preflight": "0b06ddbebd35146dff1cf8516709bbaaeb29e9c16587b223b2f9738ccd8c22bc",
+    "/usr/local/sbin/p16-boot-menu-policy": "39b7bd1855dcd669061ebf4dfb5cfebd7425acb70600971c7919be120f241ad8",
+    "/usr/local/sbin/p16-platform-update-check": "b0e19efe380d99f40d95d25f76d57547e661d29961a48731985d31eba29a2690"
+  },
+  "dkms_revision4_activated": true,
+  "default_promoted": true,
+  "kernel35_image_archived": true,
+  "managed_rebuild_plan": "Rebuilding managed Limine kernels: linux-p16-platform-34 linux-p16-platform-36",
+  "completed": true,
+  "removed_packages": [
+    "linux-p16-platform-35-drivers",
+    "linux-p16-platform-35-headers",
+    "linux-p16-platform-35"
+  ],
+  "default_entry": "Omarchy-P16",
+  "default_image": "/boot/EFI/Linux/omarchy_linux-p16-platform-36.efi",
+  "default_image_sha256": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+  "previous_entry": "RTX-Spark-Kernel34",
+  "recovery_entry": "Omarchy-P16-Recovery",
+  "protected_files_verified": 55,
+  "menu_timeout_seconds": 5,
+  "boot_images": 3,
+  "boot_free_bytes": 1389023232,
+  "finished_at": 1794899272.476355,
+  "date": "2026-11-17",
+  "installed_module_btf_checks": 8503,
+  "embedded_module_btf_checks": 430,
+  "canonical_image_bytes_identical_to_booted_image": true,
+  "guard_backport_source": "scripts/p16-{mkinitcpio-managed,guard-preflight,boot-menu-policy,platform-update-check}",
+  "guard_backport_layout": "Legacy p16-platform-policy 1.1.5 uses /usr/local/sbin. Current maintained scripts are installed there with command references mapped to that layout. Existing firmware/startup/power policy is preserved.",
+  "guard_backport_helpers": [
+    "scripts/verify-module-btf.py -> /usr/lib/p16-platform/verify-module-btf",
+    "scripts/acpi_policy.py -> /usr/lib/p16-platform/acpi-policy"
+  ],
+  "record_scope": "Native qualification, existing kernel promoted by menu change, updater guards and global DKMS configuration activated; no kernel build or additional reboot."
+}

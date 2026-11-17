@@ -19,12 +19,23 @@ menu entries too. Verify a proposed menu and all retained image hashes before
 unlinking old images. Keep any diagnostic archives outside `/boot` and allow
 space for another complete UKI while an update is being written.
 
-The [15 November cleanup record](evidence/boot-cleanup-20261115.json) retains
-kernel34 as default, kernel35 as the candidate and kernel23 as recovery. Five
-obsolete/duplicate EFI images were archived and thirteen old kernel-related
-packages removed. Only kernel34 and kernel35 remain in the managed rebuild
-set. `/boot` has about 1.3 GiB free; the three retained image hashes, 25,548
-protected files and loaded driver identities were checked without a reboot.
+The [current deployment record](evidence/kernel36-default-20261117.json)
+retains kernel36 as the normal default, kernel34 as previous and kernel23 as
+recovery. Kernel35's image was archived and its kernel/header/driver packages
+removed. The managed rebuild plan contains only kernel34 and kernel36. Three
+images remain, with about 1.3 GiB free on `/boot`; all retained image pins and
+55 protected files were verified. The default uses the canonical
+`omarchy_linux-p16-platform-36.efi` path and the same bytes tested natively.
+
+On the existing policy 1.1.5 installation, the four boot/update guards use the
+maintained `scripts/p16-*` sources in their legacy `/usr/local/sbin` locations.
+Their references to the updater and mkinitcpio wrapper are mapped to that
+layout; BTF and ACPI validation helpers use `/usr/lib/p16-platform`. The
+installed firmware, startup and power policy is preserved. Current policy
+packages provide those guards in their standard package layout. The receipt
+records the backported hashes. Future DKMS builds use NVIDIA patch revision 4.
+The earlier [15 November cleanup record](evidence/boot-cleanup-20261115.json)
+remains historical evidence of the preceding retention set.
 
 ## Package ownership
 

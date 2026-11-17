@@ -4,47 +4,45 @@ These changes address independent source/configuration defects. They
 must be qualified together; passing a build or a VM test does not establish
 physical suspend/resume on the workstation.
 
-The running validation kernel is **`7.2.8-36-rtx-spark-npu`**, selected through
-**`RTX-Spark-Kernel36`**. Its [initial staging record](evidence/resume-kernel36-staged-20261116.json)
-pins the original EFI and kernel hashes. The complete bundle includes AFE
-0.1.29 and the PCIe/SDHCI corrections below. Its native cold boot, two checked
-audio reloads, 18 PCM cases, four desktop playbacks and 24 numerical cuDLA
-outputs passed with Lockdep active through those phases.
+The qualified running kernel is **`7.2.8-36-rtx-spark-npu`**, now selected by
+the normal **`Omarchy-P16`** default. Driver package **7.2.8-36.1** includes
+AFE 0.1.29, the PCIe/SDHCI corrections and the NVIDIA UVM lock-order fix.
+The [17 November native record](evidence/kernel36-native-20261117.json) covers:
 
-The following device-only PM transaction returned, with all three DSPs freshly
-ready and their configuration restored, but **failed qualification** on a new
-NVIDIA UVM lock inversion. Lockdep disabled itself on that warning; it was not
-reset. Physical sleep was not attempted. The
-[native record](evidence/kernel36-native-20261116.json) separates these results
-from the earlier collector-only failures, which exercised no PCM or PM.
+- Helper-free cold boot and two checked audio module reloads.
+- 30 PCM playback/capture/duplex cases, four desktop playbacks and 40 independently
+  checked numerical cuDLA outputs, including audio/NPU operation after resume.
+- One physical s2idle transaction, plus one device-only cycle in that sequence.
+- Two further device-only cycles with two live CUDA contexts and managed buffers;
+  all four buffer checks and four traced UVM callbacks passed.
+- Lockdep remained enabled throughout, with no kernel warnings or validator reset.
 
-The [UVM correction](../platform/nvidia/README.md#uvm-pm-collection-and-resume-lock-order)
-avoids reacquiring the global VA-list mutex under retained VA locks and uses
-proper nested locking for the VA collection. Its nine fresh kernel-VM tests
-passed, including original and deliberate-inversion controls. The corrected
-UVM module targets the unchanged kernel36 Image and BTF; no new Linux kernel
-build is needed. See the [regression record](evidence/uvm-pm-lock-20261116.json).
-The corrected UVM module is now installed in driver package **7.2.8-36.1** and
-in the updated **`RTX-Spark-Kernel36`** boot entry. The
-[UVM staging record](evidence/resume-kernel36-uvm1-staged-20261116.json) pins the
-new EFI hash and UVM srcversion. All 13 external modules and 430 embedded
-modules passed BTF checks; embedded bytes match the installed files. The old
-kernel36 EFI was archived outside `/boot`; no duplicate entry was added.
-The running UVM was left loaded. Native cold-boot and physical-sleep
-qualification of the corrected module remain pending; the next test must
-verify its loaded srcversion before any PM request.
+The physical transaction took 18.45 seconds including device suspend/resume;
+this is not a measurement of isolated low-power residency. The retained CUDA
+contexts were tested across device-only PM. Longer/repeated physical sleep and
+physical retention with those allocations alive are separate qualification
+scopes. The old intermittent first-START `EBUSY` was not reproduced; its precise
+historical cause remains unproven.
 
-Kernel34 remains the normal default. Kernel35 and recovery23 remain available;
-the existing `legacy` ACPI profile, boot arguments and selected `quiet` power
-profile are preserved. The initial kernel36 staging verified all 8,503 installed
-production modules and all 430 embedded modules against the exact BTF and
-installed bytes. No candidate is promoted on an offline test alone.
+The retained-context collector initially targeted compiler-renamed symbols and
+stopped before hardware activity. Its corrected run completed both hardware
+cycles, then incorrectly required idle audio during final cleanup. A separate
+final state check accepted normal desktop audio while still requiring DSP
+readiness, zero retained faults, no kernel warnings and active Lockdep. The
+native record preserves both collector outcomes and this explicit recheck.
 
-Kernel35 previously passed its helper-free cold boot and device-only PM but
-reproduced an intermittent first-START `EBUSY` after reload; physical sleep
-returned with PCIe/SDHCI warnings. Those results remain historical evidence in
-the [kernel35 record](evidence/suspend-kernel35.json). Kernel36's passing audio
-runs do not retrospectively identify the cause of that START failure.
+The [deployment record](evidence/kernel36-default-20261117.json) pins the
+canonical EFI hash, active DKMS revision 4 and the three retained images:
+`Omarchy-P16` (kernel36), `RTX-Spark-Kernel34` (previous) and
+`Omarchy-P16-Recovery` (kernel23). Kernel35's image is archived outside `/boot`
+and its three packages are removed. The existing `legacy` ACPI payload, boot
+arguments and selected `quiet` power profile remain unchanged.
+
+Earlier failed physical/locking attempts remain in the
+[kernel35 record](evidence/suspend-kernel35.json) and the
+[16 November kernel36 record](evidence/kernel36-native-20261116.json). The
+[UVM kernel-VM regression record](evidence/uvm-pm-lock-20261116.json) contains
+original and deliberate-inversion controls alongside the fixed cases.
 
 ## Audio: a deferred DPCM START is allowed to see a running FE
 
@@ -155,7 +153,7 @@ not retry a device/firmware transition after an uncertain failure. This is a
 Linux sleep-policy setting, not a driver admission gate or a power-profile
 change.
 
-## Physical resume: PCIe hotplug and SDHCI remain blockers
+## Historical PCIe hotplug and SDHCI resume blockers
 
 The normal VT service completed before `systemd-suspend.service` began and
 before systemd froze `user.slice`. The device-only test used this installed
@@ -195,7 +193,7 @@ LLVM `W=1` compile check.
 The fixed guest keeps Lockdep enabled without either warning; the old positive
 control must reproduce both warnings and disable Lockdep. The
 [evidence record](evidence/pci-resume-fixes-20261115.json) pins those separate
-Images and patch hashes. Native qualification remains a separate gate. They have not replaced the running kernel.
+Images and patch hashes. Those isolated guest results preceded the native qualification recorded above.
 The earlier audio START `EBUSY` remains a separate open issue.
 
 The complete **kernel36** kernel/header/driver bundle is now built separately;
@@ -222,8 +220,8 @@ as an additional [validated boot entry](evidence/resume-kernel36-staged-20261116
 the initial bundle was not deployed. The [later live diagnostic](evidence/audio-open-20261115.json)
 records seven successful playbacks followed by an OPEN refusal. AFE 0.1.29's
 subsequent live contention/replacement results are recorded above. Kernel36
-has since passed native cold boot and the pre-PM audio/NPU phases; the UVM
-warning described above blocks overall PM qualification.
+initially passed native cold boot and the pre-PM audio/NPU phases, then stopped
+on the UVM warning. The corrected UVM later passed the native sequence above.
 
 ## Deployment gate
 
@@ -239,9 +237,8 @@ audio/NPU operation, with Lockdep enabled throughout. Physical sleep remains
 unverified until that transaction succeeds. A reboot solely for an incremental
 audio test or to clear a warning is not a deployment gate.
 
-The post-qualification global DKMS configuration is already prepared as
-`n1x-nvidia-drm-fix 615.78.08-4`, carrying DRM, PM-owner and UVM patches. Its package
-contents, source checksums and clean application to the pinned vendor source
-were checked. The installed revision 2 remains unchanged until physical
-qualification succeeds. Activating revision 4 needs no additional kernel build
-or reboot and does not replace the running NVIDIA module.
+The global DKMS configuration **`n1x-nvidia-drm-fix 615.78.08-4`** is now
+installed with DRM, PM-owner and UVM patches. Its package contents, source
+checksums and clean application to the pinned vendor source were checked.
+Configuration activation changed future DKMS builds and preserved the loaded
+NVIDIA modules. The complete candidate builder also applies all three patches.
