@@ -1,0 +1,112 @@
+{
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "power_profile": "quiet",
+  "image_hashes": {
+    "omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714"
+  },
+  "adopted_identical_helpers": [
+    "/usr/lib/p16-platform/acpi-policy",
+    "/usr/lib/p16-platform/verify-module-btf"
+  ],
+  "policy_files_match_git": true,
+  "legacy_guards_removed": true,
+  "future_cmdline_preview_passed": true,
+  "policy_package": {
+    "version": "1.3.2-1",
+    "sha256": "7fb042d5efc6300541bc247a009f2a04ae8ea1d569b1ba3b17547be9f21cae01"
+  },
+  "package_checks": {
+    "p16-platform-policy": {
+      "summary": "p16-platform-policy: 57 total files, 0 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 0
+    },
+    "p16-acpi-firmware": {
+      "summary": "p16-acpi-firmware: 6 total files, 0 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 0
+    },
+    "n1x-nvidia-drm-fix": {
+      "summary": "n1x-nvidia-drm-fix: 13 total files, 0 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 0
+    },
+    "linux-p16-platform-36-drivers": {
+      "summary": "linux-p16-platform-36-drivers: 26 total files, 0 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 0
+    },
+    "linux-p16-platform-36": {
+      "summary": "linux-p16-platform-36: 10004 total files, 36 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 68,
+      "fat_metadata_kinds": [
+        "Modification time",
+        "Permissions"
+      ],
+      "fat_metadata_paths": "/boot and /boot/dtbs/linux-p16-platform-36/"
+    },
+    "linux-p16-platform-36-headers": {
+      "summary": "linux-p16-platform-36-headers: 24546 total files, 0 altered files",
+      "content_mismatch": false,
+      "fat_metadata_warning_count": 0
+    }
+  },
+  "boot_mount": "vfat rw,relatime,fmask=0177,dmask=0077,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro",
+  "managed_rebuild_plan": "Rebuilding managed Limine kernels: linux-p16-platform-34 linux-p16-platform-36",
+  "module_srcversions": {
+    "n1x_adsp": "BC1B19BC64640F189595C42",
+    "n1x_npu_bootstrap": "1AC6AF64BADDDD628B9EF52",
+    "snd_soc_mt8901_afe": "924D1370D9C00BDA2C693BC",
+    "nvidia": "AC96DECE9DF4E11B1BDC6A9",
+    "nvidia_uvm": "3B1A4FA6C3DBFBA394AF27A"
+  },
+  "lockdep_final": 1,
+  "completed": true,
+  "kernel_images_and_modules_unchanged": true,
+  "acpi_payload_unchanged": true,
+  "policy_package_integrity_clean": true,
+  "installed_module_btf_checked": 8503,
+  "embedded_modules_btf_checked": 430,
+  "menu_timeout_seconds": 5,
+  "boot_images": 3,
+  "default_entry": "Omarchy/linux-p16-platform-36",
+  "previous_entry": "Omarchy/linux-p16-platform-34",
+  "recovery_entry": "Omarchy-P16-Recovery",
+  "managed_os_group": "Omarchy",
+  "manual_aliases_removed": true,
+  "snapper_menu_sync_passed": true,
+  "root_snapshot_cleanup_executed": false,
+  "qualified_image_hashes_preserved": true,
+  "date": "2026-11-17",
+  "source_commit_before_cleanup": "9025dbf69036bed087fe98fcea3cfbba0e3e220b",
+  "policy_version": "1.3.2-1",
+  "acpi_firmware_version": "1.0.0-1",
+  "acpi_firmware_package_sha256": "99d546baf064a22f276e9172e1c7d3390d1574fc4c9efac0193200de1de9d3d5",
+  "nvidia_patch_version": "615.78.08-4",
+  "native_qualification_record": "kernel36-native-20261117.json",
+  "fat_metadata_scope": "Package file contents match. Root-only vfat fmask=0177/dmask=0077 and FAT timestamp granularity differ from DTB/directory package metadata. These mode/time-only differences do not justify weakening boot permissions.",
+  "cmdline_regression": {
+    "tool": "installed limine-entry-tool 1.40.0",
+    "original_single_quoted_append_reproduced_bad_argument": true,
+    "fixed_value_is_one_argument": "acpi_osi=!Windows 2022",
+    "host_configs_unchanged_by_test": true,
+    "isolation": "unprivileged user/mount namespace with private configuration files"
+  },
+  "policy_sources": {
+    "config/limine-p16-keyboard.conf": "e55a61203b7ac750b571f133397bec9aee2e53b67a149af5a1c7f18b83ec7d7f",
+    "packages/p16-platform-policy/PKGBUILD": "0a940672c79c0d60a46c4d59eb8ff37ddbc4194d1bb628de66bd5aecf63e2a31"
+  },
+  "source_accounting": {
+    "platform_repo_branch": "main",
+    "npu_repo_branch": "master",
+    "npu_source_commit": "bbdb0da8abed5b68a6a259da602b7e5d9a377d21",
+    "hwmon_build_copy_diff_matches_committed_platform_patch": true,
+    "hwmon_platform_patch_sha256": "25c584311ad7cbeffe6d4f18f0ed9a6a5e385cfc75d51ccd769e9838191b6be4"
+  },
+  "new_kernel_or_module_build": false,
+  "new_boot_or_sleep_requested": false,
+  "repository_tests_passed": 179
+}

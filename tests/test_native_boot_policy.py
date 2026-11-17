@@ -50,6 +50,23 @@ class BootPolicyTests(unittest.TestCase):
             BOOT.verify_menu(self.config, self.boot)
             self.assertEqual([x.args for x in verify.call_args_list], [(self.primary,), (self.recovery,)])
 
+    def test_official_indented_os_group_and_snapshot_menu_are_preserved(self):
+        selected = self.entry('/linux-p16-platform-36', self.primary)
+        self.config.write_text(
+            'default_entry: Omarchy/linux-p16-platform-36\ntimeout: 5\nquiet: no\n'
+            '/+Omarchy\n comment: machine-id=test-machine\n' +
+            '\n'.join('  '+line for line in selected.split('\n') if line) +
+            '\n  //Snapshots\n' + self.entry('Omarchy-P16-Recovery', self.recovery))
+        self.script = self.script.replace('/usr/bin/p16-platform-update-check', '/usr/bin/true')
+        before = self.config.read_bytes()
+        result = self.run_policy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.config.read_bytes(), before)
+        with patch.object(BOOT, 'verify_image') as verify:
+            BOOT.verify_menu(self.config, self.boot)
+            self.assertEqual([call.args for call in verify.call_args_list],
+                             [(self.primary,), (self.recovery,)])
+
     def test_corrupt_primary_selects_recovery_and_reports_failure(self):
         self.primary.write_bytes(b'damaged')
         result = self.run_policy()

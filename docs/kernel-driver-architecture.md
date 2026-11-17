@@ -11,8 +11,11 @@ START `EBUSY` was not reproduced and remains historically unattributed.
 
 The [deployment record](evidence/kernel36-default-20261117.json) pins the
 canonical default image, global DKMS revision 4, updater guards and retained
-kernel34/recovery23. Longer and repeated physical sleep remains a separate
-qualification scope.
+kernel34/recovery23. The subsequent
+[clean-boot audit](evidence/kernel36-clean-boot-20261117.json) moves the policy
+into its current package-owned layout and restores the standard Limine OS group;
+all qualified kernel, module and EFI bytes are preserved. Longer and repeated
+physical sleep remains a separate qualification scope.
 
 The local drivers provide hardware enablement and experimental firmware
 services. They are not collectively ready for mainline submission. A working

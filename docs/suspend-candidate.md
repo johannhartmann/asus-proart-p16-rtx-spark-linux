@@ -5,7 +5,7 @@ must be qualified together; passing a build or a VM test does not establish
 physical suspend/resume on the workstation.
 
 The qualified running kernel is **`7.2.8-36-rtx-spark-npu`**, now selected by
-the normal **`Omarchy-P16`** default. Driver package **7.2.8-36.1** includes
+the normal **`Omarchy/linux-p16-platform-36`** default. Driver package **7.2.8-36.1** includes
 AFE 0.1.29, the PCIe/SDHCI corrections and the NVIDIA UVM lock-order fix.
 The [17 November native record](evidence/kernel36-native-20261117.json) covers:
 
@@ -34,7 +34,11 @@ native record preserves both collector outcomes and this explicit recheck.
 The [deployment record](evidence/kernel36-default-20261117.json) pins the
 canonical EFI hash, active DKMS revision 4 and the three retained images:
 `Omarchy-P16` (kernel36), `RTX-Spark-Kernel34` (previous) and
-`Omarchy-P16-Recovery` (kernel23). Kernel35's image is archived outside `/boot`
+`Omarchy-P16-Recovery` (kernel23). The later
+[clean-boot audit](evidence/kernel36-clean-boot-20261117.json) replaces the two
+manual aliases with the official `Omarchy/linux-p16-platform-36` and
+`Omarchy/linux-p16-platform-34` entries, restores Snapper menu synchronization
+and installs policy 1.3.2 with the parser-tested OSI fix. Kernel35's image is archived outside `/boot`
 and its three packages are removed. The existing `legacy` ACPI payload, boot
 arguments and selected `quiet` power profile remain unchanged.
 

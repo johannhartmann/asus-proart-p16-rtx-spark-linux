@@ -1,5 +1,5 @@
 pkgname=p16-platform-policy
-pkgver=1.3.1
+pkgver=1.3.2
 pkgrel=1
 pkgdesc='ASUS P16 platform configuration and managed kernel update checks'
 arch=('aarch64')
@@ -46,7 +46,7 @@ sha256sums=('8ec062e0a9367a54b987c63822b40d1bc07406c23364420e811a28826b205bb5'
             '90f23727f7c0e057fc1fb7b76f6dac5ad7ffd59a25a3f2486c47b717c000b304'
             'd2ae26037d9d8407e12cb2432bc4c655231884c38a5fccd1cd1d7390502cdfad'
             '12f73c2cba15be03e6d201aef7a47eea74a4f13025f8898337e1dca6cad43e19'
-            '497c10607eee04ee9a8835da1110856d2ea77fc2129c50884d1016fb7e15084d'
+            'e55a61203b7ac750b571f133397bec9aee2e53b67a149af5a1c7f18b83ec7d7f'
             'f3f9ad24682cb2f31a03a7a1e264246a2904abbc19e5e36f63adbe3e25724d3f'
             '6b3079679643fae1947490299e85a0a1b160e7f134ff2906fb24fdb9956f834c'
             'c73c8a0a516a3fcdb251b25dbb57c59ea9b57d830b5eb81e93291c782eb01b77'

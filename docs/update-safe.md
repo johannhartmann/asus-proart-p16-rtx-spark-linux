@@ -19,23 +19,37 @@ menu entries too. Verify a proposed menu and all retained image hashes before
 unlinking old images. Keep any diagnostic archives outside `/boot` and allow
 space for another complete UKI while an update is being written.
 
-The [current deployment record](evidence/kernel36-default-20261117.json)
+The [current clean-boot audit](evidence/kernel36-clean-boot-20261117.json)
 retains kernel36 as the normal default, kernel34 as previous and kernel23 as
-recovery. Kernel35's image was archived and its kernel/header/driver packages
-removed. The managed rebuild plan contains only kernel34 and kernel36. Three
-images remain, with about 1.3 GiB free on `/boot`; all retained image pins and
-55 protected files were verified. The default uses the canonical
-`omarchy_linux-p16-platform-36.efi` path and the same bytes tested natively.
+recovery. The normal managed paths are **`Omarchy/linux-p16-platform-36`** and
+**`Omarchy/linux-p16-platform-34`**, with **`Omarchy-P16-Recovery`** separate.
+The official Limine tools provide the OS-group and kernel metadata. This keeps
+entry regeneration and Snapper synchronization working; standalone aliases
+must not replace the managed OS group. Snapshot menu sync passed, without
+running root-snapshot deletion cleanup. All three qualified EFI hashes are
+unchanged, with about 1.3 GiB free on `/boot`.
 
-On the existing policy 1.1.5 installation, the four boot/update guards use the
-maintained `scripts/p16-*` sources in their legacy `/usr/local/sbin` locations.
-Their references to the updater and mkinitcpio wrapper are mapped to that
-layout; BTF and ACPI validation helpers use `/usr/lib/p16-platform`. The
-installed firmware, startup and power policy is preserved. Current policy
-packages provide those guards in their standard package layout. The receipt
-records the backported hashes. Future DKMS builds use NVIDIA patch revision 4.
-The earlier [15 November cleanup record](evidence/boot-cleanup-20261115.json)
-remains historical evidence of the preceding retention set.
+Policy **1.3.2-1** and ACPI firmware **1.0.0-1** now own the current update
+guards, hooks and SSDT in their standard package locations. The legacy 1.1.5
+package and its `/usr/local/sbin` compatibility copies have been replaced.
+NVIDIA DKMS patch revision **615.78.08-4** remains installed. The policy,
+firmware, NVIDIA patch, matched driver and header packages pass integrity
+checks with zero altered files. The kernel package has mode/time-only FAT
+metadata differences for its DTBs/directories; their content checks pass.
+Root-only boot mount permissions are retained.
+
+Limine parses its configuration itself. The OSI append must use
+`KERNEL_CMDLINE[default]+=acpi_osi="!Windows 2022"`;
+single-quoting the whole append produces a malformed argument. The actual
+installed parser is exercised in isolated mount namespaces by
+`tests/test_limine_cmdline.py`, with the earlier spelling as a failing control.
+The installed command-line preview also contains the correct OSI, root and
+console arguments. Existing EFI images already contain the correct arguments
+and were preserved.
+
+The [earlier promotion](evidence/kernel36-default-20261117.json) and
+[15 November cleanup](evidence/boot-cleanup-20261115.json) remain historical
+records of the preceding manual menu and retention sets.
 
 ## Package ownership
 
