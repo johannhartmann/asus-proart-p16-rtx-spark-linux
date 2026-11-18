@@ -4,6 +4,14 @@ On 18 November 2026, Google Chrome 156.0.8078.79 on the P16 decoded the
 generated H.264 1280×720/24 fps fixture through `VaapiVideoDecoder` with
 `kIsPlatformVideoDecoder=true`. CDP Media reported all 96 frames over four
 seconds and zero dropped frames in the [minimal-flag run](browser-decode-chrome-simple-720p.json).
+The same installed launcher subsequently passed
+[VP9](browser-decode-p16-vp9-720p.json) and
+[AV1](browser-decode-p16-av1-720p.json) at 1280×720/24 fps, each with 96
+frames, zero drops and the same platform decoder. The VP9 fixture used WebM;
+the AV1 fixture used `aomenc` and MP4. Each fixture passed independent FFmpeg
+software decoding before browser playback. A [repeat of AV1](browser-decode-p16-av1-repeat-720p.json)
+also passed, but a [contemporaneous NVRM allocation warning](browser-av1-nvrm-warning.md)
+keeps longer browser stability open.
 The [P16 launcher source run](browser-decode-p16-wrapper-720p.json) and
 [installed package run](browser-decode-p16-installed-720p.json) also selected
 `VaapiVideoDecoder` for all 96 frames. The launcher sets
@@ -46,7 +54,7 @@ installed run records one VA context, 96 successful `vaBeginPicture` and
 surface exports, with no libva error returns. The raw trace was deleted after
 counting. This independently confirms that Chrome invoked the VA-API driver;
 the 95 completions do not establish a one-to-one match with the 96 DOM frames.
-Qualification covers only this H.264 fixture in a test Chrome profile.
-Different codecs, web sites, resolutions, continuous use and resume need
-separate application tests. No independent GPU engine counter was recorded
-during this four-second run.
+Qualification covers three short 8-bit fixtures in test Chrome profiles.
+HEVC, 10/12-bit profiles, real web sites, other resolutions, continuous use
+and resume need separate application tests. No independent GPU engine counter
+was recorded during these four-second runs.

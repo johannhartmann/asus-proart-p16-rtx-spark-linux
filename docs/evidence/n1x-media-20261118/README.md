@@ -22,6 +22,7 @@ retained.
 | Timed Vulkan HEVC 4:2:2 plus AAC | Pass with installed FFplay | [`installed-ffplay-vulkan/timed/hevc422-av-ffplay.json`](installed-ffplay-vulkan/timed/hevc422-av-ffplay.json) and its raw log show a six-second 144-frame HEVC RExt 4:2:2/AAC clip through CUVID and libplacebo on the N1X. It reached EOF; 184 sampled A/V offsets were at most 27 ms. No 4:2:0 filter conversion was logged. |
 | Kernel allocation warning during installed matrix | Open stability finding | Two NVRM `NV_ERR_NO_MEMORY` lines occurred during the 4:4:4 10-bit application playback. The [incident record](nvrm-memory-warning.md) includes the kernel lines and a targeted clean repeat. The matrix's successful exit does not erase this warning. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
+| AV1 Vulkan Video explicit rate control | Fails at 1280×720 on this stack | The [bounded comparison](av1-vulkan-ratecontrol.md) uses FFmpeg 9.0.2-2 and NVIDIA 615.78.08. Default `av1_vulkan` settings encode and decode 24 frames; `-b:v 2M`, explicit CBR/VBR and CQP 30 all return encode success but fail independent software decoding. These modes are not qualified for recording. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
 | Live RGB camera → GStreamer Vulkan H.264 | Pass for 60 frames | The installed `p16-record-camera-gstreamer` sends real P16 MJPEG camera frames through FFmpeg decode, GStreamer `rawvideoparse`/`vulkanupload` and `vulkanh264enc`. [`gstreamer-camera-vulkan.json`](gstreamer-camera-vulkan.json) and the [pipeline log](gstreamer-camera-vulkan.log) show 60 independently decoded H.264 1280×720 frames and 60 distinct downscaled frame hashes. Footage was deleted. This is Vulkan Video, not NVENC or OBS. |
 | Dedicated nvJPEG hardware engine | Unavailable in current N1X runtime | [`nvjpeg-capability.json`](nvjpeg-capability.json) from the [direct CUDA API probe](../../../scripts/probe-nvjpeg-capability.c) records zero hardware JPEG decode/encode engines. Explicit hardware decoder and encoder backends return `NVJPEG_STATUS_ARCH_MISMATCH` (7). GPU-hybrid handle creation succeeds but its actual JPEG workload remains untested. |
@@ -44,7 +45,7 @@ retained.
 | Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless browser run does not qualify its normal graphical permission flow; the GTK portal capture is recorded separately above. |
 | Graphical Chromium WebRTC permission and RGB preview | Pass for 30 frames | [`browser-camera-graphical.json`](browser-camera-graphical.json) records a real browser window, user-approved permission UI, internal ASUS RGB camera at 1280×720/30, and 30 varying preview frame means. The test used a fresh profile and no fake UI or fake camera; no pixels were retained. This is distinct from the GTK camera portal run. |
 | Arch ARM Chromium H.264 decode | Software fallback | [`browser-decode.json`](browser-decode.json) and [`browser-decode-nvidia-flags.json`](browser-decode-nvidia-flags.json) record complete 320×180 playback but `FFmpegVideoDecoder`. The [1280×720 core and advanced runs](browser-vaapi.md) also selected software. [`check-browser-decode.mjs`](../../../scripts/check-browser-decode.mjs) exits nonzero without an explicit VA-API decoder. |
-| Google Chrome H.264 VA-API decode | Installed path passes at 1280×720; software at 320×180 | [Browser record](browser-vaapi.md) shows the installed `p16-video-chrome` from media-tools 0.1.0-4 selecting `VaapiVideoDecoder` and `kIsPlatformVideoDecoder=true` for a 96-frame 1280×720 fixture with zero drops. The [libva trace summary](browser-decode-p16-libva-trace.json) confirms picture submission and surface export without errors. The earlier [`320×180 result`](browser-decode-google-chrome.json) selected software. Other formats, sites and post-resume use remain open. |
+| Google Chrome H.264, VP9 and AV1 VA-API decode | Installed path passes short 1280×720 cases; H.264 uses software at 320×180 | [Browser record](browser-vaapi.md) shows the installed `p16-video-chrome` selecting `VaapiVideoDecoder` and `kIsPlatformVideoDecoder=true` for 96 frames per codec with zero drops. The H.264 [libva trace summary](browser-decode-p16-libva-trace.json) confirms picture submission and surface export without errors. The earlier [`320×180 result`](browser-decode-google-chrome.json) selected software. An [NVRM allocation warning](browser-av1-nvrm-warning.md) occurred during initial AV1 playback; the repeat passed without a new warning. Real sites, sustained playback and post-resume use remain open. |
 
 The command-line corpus was run with:
 
@@ -76,6 +77,9 @@ node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-d
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-google-chrome.json --nvidia-vaapi --browser=google-chrome-stable
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-chrome-simple-720p.json --nvidia-vaapi --browser=google-chrome-stable --size=1280x720
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-p16-installed-720p.json --browser=p16-video-chrome --no-test-flags --size=1280x720
+node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-p16-vp9-720p.json --browser=p16-video-chrome --no-test-flags --size=1280x720 --codec=vp9
+node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-p16-av1-720p.json --browser=p16-video-chrome --no-test-flags --size=1280x720 --codec=av1
+python3 scripts/check-av1-vulkan-ratecontrol.py --output docs/evidence/n1x-media-20261118/av1-vulkan-ratecontrol.json
 ```
 
 Repeat the interactive installed-player A/V test with:
@@ -225,8 +229,9 @@ Still open: NVENC API session on a supported driver; full codec/profile and
 advanced encode matrix, including 12-bit hardware encoding (the installed
 Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log));
 OBS hardware encode or another desktop recording app
-using the validated Vulkan encoder; browser hardware decode, graphical browser
-permission; electronic camera privacy/LED behavior; perceived A/V sync and longer playback;
+using the validated Vulkan encoder; browser HEVC and deep-profile decode,
+longer browser stability, explicit AV1 Vulkan rate-control modes; camera LED
+behavior and privacy state across reboot; perceived A/V sync and longer playback;
 fresh boot and physical s2idle/resume; measured 4:2:2 display precision and
 proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a

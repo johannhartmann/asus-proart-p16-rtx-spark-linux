@@ -1,0 +1,53 @@
+{
+  "source": "testsrc2 1280x720 24 fps, 24 frames",
+  "encoder": "distribution FFmpeg av1_vulkan on RTX Spark N1X",
+  "cases": {
+    "default": {
+      "encode_exit_code": 0,
+      "decode_exit_code": 0,
+      "decode_errors": []
+    },
+    "bitrate_2m": {
+      "encode_exit_code": 0,
+      "decode_exit_code": 69,
+      "decode_errors": [
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Decoding error: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Cannot allocate memory"
+      ]
+    },
+    "bitrate_2m_cbr": {
+      "encode_exit_code": 0,
+      "decode_exit_code": 69,
+      "decode_errors": [
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Decoding error: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input"
+      ]
+    },
+    "bitrate_2m_vbr": {
+      "encode_exit_code": 0,
+      "decode_exit_code": 69,
+      "decode_errors": [
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Decoding error: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input"
+      ]
+    },
+    "cqp_30": {
+      "encode_exit_code": 0,
+      "decode_exit_code": 69,
+      "decode_errors": [
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Cannot allocate memory",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Error submitting packet to decoder: Invalid data found when processing input",
+        "[vist#0:0/av1 @ $PTR] [dec:libdav1d @ $PTR] Decoding error: Invalid data found when processing input"
+      ]
+    }
+  },
+  "fixture_pixels_retained": false,
+  "pass": false
+}

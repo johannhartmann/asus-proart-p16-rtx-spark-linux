@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Check actual Chromium H.264 playback and the decoder reported by CDP Media.
+// Check actual Chromium-family playback and the decoder reported by CDP Media.
 import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 const output = process.argv[2];
 if (!output) {
-  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi|--nvidia-vaapi-advanced|--no-test-flags] [--browser=COMMAND] [--size=WIDTHxHEIGHT]');
+  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi|--nvidia-vaapi-advanced|--no-test-flags] [--browser=COMMAND] [--size=WIDTHxHEIGHT] [--codec=h264|vp9|av1]');
   process.exit(2);
 }
 const nvidiaVaapi = process.argv.includes('--nvidia-vaapi');
@@ -16,6 +16,8 @@ const advancedVaapi = process.argv.includes('--nvidia-vaapi-advanced');
 const browser = process.argv.find(arg => arg.startsWith('--browser='))?.split('=', 2)[1] ?? 'chromium';
 const size = process.argv.find(arg => arg.startsWith('--size='))?.slice(7) ?? '320x180';
 if (!/^[1-9]\d{1,3}x[1-9]\d{1,3}$/.test(size)) throw Error(`Invalid size ${size}`);
+const codec = process.argv.find(arg => arg.startsWith('--codec='))?.slice(8) ?? 'h264';
+if (!['h264', 'vp9', 'av1'].includes(codec)) throw Error(`Invalid codec ${codec}`);
 const browserVersion = spawnSync(browser, ['--version'], {encoding:'utf8', timeout:5000});
 if (browserVersion.status !== 0) throw Error(`${browser} --version failed`);
 const advancedFeatures = ['AcceleratedVideoDecodeLinuxGL',
@@ -36,18 +38,42 @@ const decodeFlags = advancedVaapi ? [
 const launchFlags = process.argv.includes('--no-test-flags') ? [] : decodeFlags;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const temp = await mkdtemp(join(tmpdir(), 'n1x-browser-decode-'));
-const video = join(temp, 'h264.mp4');
-const fixture = spawnSync('ffmpeg', [
-  '-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
-  '-i', `testsrc2=size=${size}:rate=24`, '-t', '4',
-  '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
-  '-y', video,
-], {encoding:'utf8', timeout:20000});
-if (fixture.status !== 0) {
-  throw Error(`H.264 fixture failed: ${fixture.stderr}`);
+const extension = codec === 'vp9' ? 'webm' : 'mp4';
+const video = join(temp, `fixture.${extension}`);
+const fixtureCodecArgs = codec === 'h264' ?
+  ['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'] :
+  codec === 'vp9' ?
+    ['-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-b:v', '2M'] : [];
+const fixtureInput = ['-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
+  '-i', `testsrc2=size=${size}:rate=24`, '-t', '4'];
+try {
+  if (codec === 'av1') {
+    const y4m = join(temp, 'fixture.y4m');
+    const ivf = join(temp, 'fixture.ivf');
+    const raw = spawnSync('ffmpeg', [...fixtureInput, '-pix_fmt', 'yuv420p',
+      '-f', 'yuv4mpegpipe', '-y', y4m], {encoding:'utf8', timeout:60000});
+    if (raw.status !== 0) throw Error(`AV1 input fixture failed: ${raw.stderr}`);
+    const encoded = spawnSync('aomenc', ['--rt', '--cpu-used=10', '--threads=8',
+      '--ivf', '--passes=1', '--end-usage=q', '--cq-level=40', '-o', ivf, y4m],
+    {encoding:'utf8', timeout:60000});
+    if (encoded.status !== 0) throw Error(`AV1 encode failed: ${encoded.stderr}`);
+    const mux = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error',
+      '-i', ivf, '-c:v', 'copy', '-y', video], {encoding:'utf8', timeout:20000});
+    if (mux.status !== 0) throw Error(`AV1 mux failed: ${mux.stderr}`);
+  } else {
+    const fixture = spawnSync('ffmpeg', [...fixtureInput, ...fixtureCodecArgs, '-y', video],
+      {encoding:'utf8', timeout:60000});
+    if (fixture.status !== 0) throw Error(`${codec} fixture failed: ${fixture.stderr}`);
+  }
+  const decoded = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-i', video,
+    '-f', 'null', '-'], {encoding:'utf8', timeout:30000});
+  if (decoded.status !== 0) throw Error(`Fixture fails independent decode: ${decoded.stderr}`);
+} catch (error) {
+  await rm(temp, {recursive:true,force:true});
+  throw error;
 }
 
-const html = `<!doctype html><video id="player" muted autoplay playsinline src="/h264.mp4"></video><script>
+const html = `<!doctype html><video id="player" muted autoplay playsinline src="/fixture.${extension}"></video><script>
 window.playResult = new Promise((resolve, reject) => {
   const video = document.getElementById('player');
   const timeout = setTimeout(() => reject(Error('playback timeout')), 15000);
@@ -63,9 +89,10 @@ window.playResult = new Promise((resolve, reject) => {
 });
 </script>`;
 const server = createServer(async (request, response) => {
-  if (request.url === '/h264.mp4') {
+  if (request.url === `/fixture.${extension}`) {
     const body = await readFile(video);
-    response.writeHead(200, {'content-type':'video/mp4','content-length':body.length,
+    response.writeHead(200, {'content-type':codec === 'vp9' ? 'video/webm' : 'video/mp4',
+      'content-length':body.length,
       'accept-ranges':'none'});
     response.end(body);
   } else {
@@ -136,13 +163,14 @@ try {
       event.method === 'Media.playerPropertiesChanged' ? event.params.properties : []);
     const decoder = properties.filter(property =>
       /decoder|hardware|gpu|rendering/i.test(property.name));
-    const vaapi = decoder.some(property => /VaapiVideoDecoder/i.test(property.value));
+    const vaapi = decoder.some(property => /VaapiVideoDecoder/i.test(property.value)) &&
+      decoder.some(property => property.name === 'kIsPlatformVideoDecoder' && property.value === 'true');
     const report = {status:vaapi ? 'pass' : 'unqualified',
       browser, browser_version:browserVersion.stdout.trim(),
       mode:process.argv.includes('--no-test-flags') ? 'launcher-flags-only' :
         advancedVaapi ? 'nvidia-vaapi-advanced-flags' :
         nvidiaVaapi ? 'nvidia-vaapi-flags' : 'default-vaapi-flag',
-      flags:launchFlags, fixture:`generated H.264 ${size} 24 fps`,
+      flags:launchFlags, fixture:`generated ${codec} ${size} 24 fps`,
       playback, decoder_properties:decoder,
       note:vaapi ? 'CDP Media explicitly identified VaapiVideoDecoder' :
         'Playback succeeded, but CDP Media did not establish VA-API hardware decoding'};

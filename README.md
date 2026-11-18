@@ -122,11 +122,13 @@ version checks. `cuda/vector-add.cu` and `scripts/check-cuda.sh` provide the
 project's arithmetic smoke test (`sm_121`); compiler/device compatibility is
 checked by CUDA rather than a BIOS-version restriction.
 Hardware video encode/decode remains only partly qualified. Bounded H.264,
-HEVC and AV1 VA-API and CUVID/NVDEC decode, Vulkan Video encode including a live P16
+HEVC and AV1 VA-API and CUVID/NVDEC decode, short H.264/VP9/AV1 hardware
+playback in the installed Chrome launcher, Vulkan Video encode including a live P16
 RGB camera recording, mpv playback and camera use in Chromium WebRTC and OBS
 are recorded in the [media evidence](docs/evidence/n1x-media-20261118/README.md).
 The isolated NVENC FFmpeg candidate fails to open an encoder session on the
-current driver; Vulkan Video encode is a separate API.
+current driver; Vulkan Video encode is a separate API. Explicit AV1 Vulkan
+rate-control settings produced invalid output in a bounded 720p test.
 Optional [P16 media commands](platform/video/tools/README.md) expose the tested
 mpv playback and Vulkan camera-recording paths without replacing FFmpeg.
 The [media support plan](missing_parts.md) defines the codec, video-effects and
