@@ -1,0 +1,9 @@
+{
+  "base_commit": "ef94faace8a44380e8ba8c8bd8cffd185c82af67",
+  "patch_sha256": "25c584311ad7cbeffe6d4f18f0ed9a6a5e385cfc75d51ccd769e9838191b6be4",
+  "files": {
+    "spbm.c": "a62552e93b5d8f781d7ae5f8518d186b08dca091fe6a7ea51bc3421e8af606ac",
+    "n1x-mmio.h": "1c560b90db51d461c26a948ac71819fadac69b9fb946a20361d26f052c602ba4",
+    "n1x-acpi.h": "0919484ed0c269fcb15d08397657b24a9fa978c900e1bbe422cd68d19cee410d"
+  }
+}

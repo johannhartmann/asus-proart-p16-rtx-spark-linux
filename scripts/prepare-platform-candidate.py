@@ -7,12 +7,14 @@ import argparse
 from datetime import datetime, timezone
 import fcntl
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
 import tarfile
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {
@@ -104,6 +106,38 @@ def copy_provider_snapshot(output, inputs):
     return receipt['snapshot']['base_commit'], expected_archive
 
 
+def copy_hwmon_snapshot(source, output, inputs):
+    """Recreate the pinned P16 hwmon patch on its recorded Git base."""
+    receipt = json.loads((ROOT / 'platform/hwmon/receipt.json').read_text())
+    patch = ROOT / 'platform/hwmon/n1x-platform.patch'
+    if digest(patch) != receipt['patch_sha256']:
+        raise RuntimeError('Hwmon patch differs from its source receipt')
+    commit = receipt['base_commit']
+    archive = subprocess.check_output(['git', 'archive', '--format=tar', commit], cwd=source)
+    with tempfile.TemporaryDirectory(prefix='n1x-hwmon-') as directory:
+        base = Path(directory)
+        with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as bundle:
+            for member in bundle.getmembers():
+                path = Path(member.name)
+                if path.is_absolute() or '..' in path.parts:
+                    raise RuntimeError('Invalid path in hwmon Git archive')
+                if member.isdir():
+                    continue
+                if not member.isfile():
+                    raise RuntimeError('Hwmon Git archive has a non-file member: ' + member.name)
+                target = base / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(bundle.extractfile(member).read())
+        subprocess.run(['patch', '-p1', '--fuzz=0', '--batch', '-i', str(patch)],
+                       cwd=base, check=True, capture_output=True)
+        for name, expected in receipt['files'].items():
+            file = base / name
+            if digest(file) != expected:
+                raise RuntimeError('Hwmon source differs from its receipt: ' + name)
+            copy_input(file, output / 'hwmon' / name, inputs, output)
+    return commit, receipt['patch_sha256']
+
+
 def stage(args):
     parent = args.kernel_candidate.resolve(strict=True)
     kernel_manifest = json.loads((parent / 'manifest.json').read_text())
@@ -123,15 +157,7 @@ def stage(args):
                output / 'dsp/mt8901-afe-sram.h', inputs, output)
     provider_commit, provider_archive_sha256 = copy_provider_snapshot(output, inputs)
     hwmon = args.hwmon_source.resolve(strict=True)
-    hwmon_patch = ROOT / 'platform/hwmon/n1x-platform.patch'
-    actual_patch = subprocess.check_output(['git', 'diff', '--binary', 'HEAD'], cwd=hwmon)
-    if actual_patch != hwmon_patch.read_bytes():
-        raise RuntimeError('The hwmon source differs from its maintained platform patch')
-    if subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'], cwd=hwmon).strip():
-        raise RuntimeError('The hwmon source contains untracked files')
-    hwmon_head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=hwmon, text=True).strip()
-    for name in ('spbm.c', 'n1x-mmio.h', 'n1x-acpi.h'):
-        copy_input(hwmon / name, output / 'hwmon' / name, inputs, output)
+    hwmon_head, hwmon_patch_sha256 = copy_hwmon_snapshot(hwmon, output, inputs)
     (output / 'hwmon/Kbuild').write_text('obj-m += spbm.o\n')
     inputs['hwmon/Kbuild'] = digest(output / 'hwmon/Kbuild')
     nvidia = args.nvidia_source.resolve(strict=True)
@@ -164,7 +190,7 @@ def stage(args):
         'kernel_release': release,
         'source_boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
         'loader_abi': 5, 'playback_abi': 3, 'jobs': args.jobs, 'inputs': inputs,
-        'hwmon_source_commit': hwmon_head, 'hwmon_patch_sha256': digest(hwmon_patch),
+        'hwmon_source_commit': hwmon_head, 'hwmon_patch_sha256': hwmon_patch_sha256,
         'nvidia_version': loaded_version,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'npu_source_commit': provider_commit,

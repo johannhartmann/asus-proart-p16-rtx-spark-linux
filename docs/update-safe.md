@@ -8,8 +8,11 @@ The platform candidate builder stages its NPU provider from the hash-pinned
 `platform/dsp/provider/npu-source.tar.gz` receipt, checking every member and
 the client header. The companion NPU repository can advance independently;
 new provider code enters a candidate only after refreshing and reviewing that
-package snapshot. This keeps a kernel-only candidate on the previously
-qualified provider source.
+package snapshot. Hwmon is likewise reconstructed from its recorded Git base
+commit plus `platform/hwmon/n1x-platform.patch`, with the three resulting
+module sources checked against `platform/hwmon/receipt.json`. This keeps a
+kernel-only candidate on the previously qualified provider and hwmon sources
+even if their separate working trees have advanced.
 
 ## Boot-partition retention
 
