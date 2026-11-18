@@ -479,8 +479,13 @@ The [N1X nvJPEG capability probe](docs/evidence/n1x-media-20261118/nvjpeg-capabi
 uses CUDA 13.4.2 on this P16. The default and GPU-hybrid handles report zero
 dedicated JPEG decoder and encoder engines; the explicit hardware decoder and
 encoder backends return `NVJPEG_STATUS_ARCH_MISMATCH` (7). This rules out a
-dedicated nvJPEG hardware engine in the current runtime. It does not test
-nvJPEG's GPU-compute JPEG path or optical flow.
+dedicated nvJPEG hardware engine in the current runtime. The separate
+[64-image GPU-hybrid batch test](docs/evidence/n1x-media-20261118/nvjpeg-gpu-batch-kernel38.md)
+decodes real baseline JPEG pixels into CUDA memory and observes nvJPEG's GPU
+Huffman kernel in Nsight; its RGB output has 62.15 dB PSNR and maximum channel
+error 2 against software. This establishes GPU-compute JPEG decode on the
+native kernel38/615 stack, not a dedicated JPEG engine, encoder, application
+integration or post-resume result.
 
 ## 3. Cameras: P16 USB path and N1X MIPI/CSI path
 

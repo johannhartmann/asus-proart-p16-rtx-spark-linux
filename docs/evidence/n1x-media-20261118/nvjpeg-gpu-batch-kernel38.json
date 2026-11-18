@@ -1,0 +1,57 @@
+{
+  "captured_at": "2026-11-18T17:58:24.632047+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "cuda_package": "cuda 13.4.2-1",
+  "source_sha256": "170a98bb86202f296fcb9f3f56e0f0e49407777c6ffdce9224bb81f092c63217",
+  "executable_sha256": "9af464dd67c21ba3575953b3b3e19203fe10bb1514765124f0b6958a48047791",
+  "input_jpeg_sha256": "81b1336c1a3c35466aec4f5eb735df910a499550523a5b46e49cee1e138e6572",
+  "jpeg_stream": {
+    "profile": "Baseline",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuvj420p"
+  },
+  "nvjpeg": {
+    "backend": "NVJPEG_BACKEND_GPU_HYBRID",
+    "batch": 64,
+    "width": 320,
+    "height": 180,
+    "subsampling": 2,
+    "rgb_bytes": 172800,
+    "batch_output_identical": true,
+    "rgb_fnv1a64": "9cda73bb2a76b85d"
+  },
+  "software_rgb_sha256": "c690a74f03a9e8996942fba4885ebbc8a59b3883f59da08847545625aeab15d0",
+  "nvjpeg_rgb_sha256": "1a5ded06151f018642e5836d64d6ee935f775ecf1b6b9b0b1ca976ce8addf6d5",
+  "mean_absolute_error": 0.03226273148148148,
+  "max_absolute_error": 2,
+  "mse": 0.03964699074074074,
+  "psnr_db": 62.148701314914014,
+  "cuda_gpu_kernels": [
+    {
+      "name": "void nvjpeg::DecodeBatchedCujpeg::decodeDcHuffman<(int)2, (int)2>(unsigned char *restrict *, const int *, const unsigned short *, const unsigned short *, unsigned int *, const unsigned long *, unsigned int *, const unsigned long *, const nvjpeg::DecodeBatchedCujpeg::scan_cpars_t *, const nvjpeg::DecodeBatchedCujpeg::frame_header_t *, unsigned int *, int, int)",
+      "instances": 1,
+      "total_time_ns": 2580893
+    },
+    {
+      "name": "void nvjpeg::DecodeBatchedCujpeg::parseBatched_k<(int)64, (int)4, (int)2, (int)2>(int, unsigned char *, const unsigned long *, unsigned char *restrict *, int *, unsigned short *, unsigned short *, nvjpeg::DecodeBatchedCujpeg::scan_cpars_t *, unsigned short *, nvjpeg::DecodeBatchedCujpeg::frame_header_t *, int *, int *, int *, int *)",
+      "instances": 1,
+      "total_time_ns": 995339
+    },
+    {
+      "name": "nvjpeg::DecodeBatchedCujpeg::jpegdec_vld(const unsigned int *, const unsigned long *, const unsigned int *, const unsigned long *, unsigned char *restrict *, const int *, const nvjpeg::DecodeBatchedCujpeg::frame_header_t *, const unsigned short *, const unsigned short *, int, int)",
+      "instances": 1,
+      "total_time_ns": 171714
+    },
+    {
+      "name": "void nvjpeg::batchedYCbCr2RGB_kernelv2<(nvjpegOutputFormat_t)5, nvjpeg::ConvertToFormatBatchedV2::LaunchParams<(int)32, (int)8, (int)16>>(nvjpeg::conversionBatchedParam *, NppiSize, unsigned int, unsigned int, bool)",
+      "instances": 1,
+      "total_time_ns": 60321
+    }
+  ],
+  "gpu_huffman_kernel_observed": true,
+  "camera_or_test_pixels_retained": false,
+  "pass": true
+}
