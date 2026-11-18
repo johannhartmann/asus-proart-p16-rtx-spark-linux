@@ -1,0 +1,38 @@
+From: P16 RTX Spark Linux <noreply@localhost>
+Subject: [PATCH] vaapi: map Q416 surfaces to planar 16-bit 4:4:4
+
+The NVIDIA VA-API bridge exports 10/12-bit 4:4:4 NVDEC surfaces as
+VA_FOURCC_Q416. Without this mapping FFmpeg chooses 8-bit 444P and
+hwdownload interprets 16-bit plane bytes as 8-bit pixels. The mapping
+follows the approach in nvidia-vaapi-driver PR #225.
+
+---
+ libavcodec/vaapi_decode.c   | 3 +++
+ libavutil/hwcontext_vaapi.c | 4 ++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/libavcodec/vaapi_decode.c b/libavcodec/vaapi_decode.c
+--- a/libavcodec/vaapi_decode.c
++++ b/libavcodec/vaapi_decode.c
+@@ -302,5 +302,8 @@ static const struct {
+     MAP(Y412,    XV36),
+ #endif
++#ifdef VA_FOURCC_Q416
++    MAP(Q416, YUV444P16),
++#endif
+     // 4:2:0 10-bit
+ #ifdef VA_FOURCC_P010
+     MAP(P010, P010),
+diff --git a/libavutil/hwcontext_vaapi.c b/libavutil/hwcontext_vaapi.c
+--- a/libavutil/hwcontext_vaapi.c
++++ b/libavutil/hwcontext_vaapi.c
+@@ -181,5 +181,9 @@ static const VAAPIFormatDescriptor vaapi_format_map[] = {
+     // support for Y412, so we must fudge the mapping here.
+     MAP(Y412, YUV444_12,  XV36, 0),
+ #endif
++#ifdef VA_FOURCC_Q416
++    MAP(Q416, YUV444_10, YUV444P16, 0),
++    MAP(Q416, YUV444_12, YUV444P16, 0),
++#endif
+ };
+ #undef MAP

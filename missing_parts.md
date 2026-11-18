@@ -62,9 +62,15 @@ now downloads 30 `p012le` hardware frames with `-threads 1` and finds every
 output byte equal to software decode. Default-thread readback stalled after
 seven frames; that path remains open.
 The same test now covers HEVC 4:4:4 12-bit: CUVID again matches all software
-frame hashes, VA-API decodes 30 frames, and installed mpv reaches EOF with
-explicit Vulkan Video decode and a `p412` renderer surface. Default VA-API
-playback reports `yuv444p`, so 12-bit preservation on that path is not claimed.
+frame hashes, and installed mpv reaches EOF with explicit Vulkan Video decode
+and a `p412` renderer surface. The distribution FFmpeg's VA-API bridge decodes
+the stream but offers no usable 16-bit readback. Forced `yuv444p` completes
+30 frames with incorrect pixel bytes; it must not be used for this profile.
+An isolated [Q416-mapped FFmpeg candidate](docs/evidence/n1x-media-20261118/hevc44412-vaapi-readback.md)
+downloads 30 `yuv444p16le` hardware frames with `-threads 1`; all 10,368,000
+bytes equal software output. Its [patch](platform/video/0001-vaapi-map-q416-planar-16bit-444.patch)
+is in the reproducible package recipe. Package installation and normal
+application use of this corrected VA-API path remain pending.
 The [VA-API capability query](docs/evidence/n1x-media-20261118/vainfo-nvidia.log)
 lists Main12 and Main444 8/10/12-bit decode entrypoints; other advertised
 profiles still need their own output tests.

@@ -1,6 +1,6 @@
 pkgname=ffmpeg-n1x-video
 pkgver=9.0.2
-pkgrel=5
+pkgrel=6
 pkgdesc='Isolated ARM64 FFmpeg with NVIDIA video codecs and Vulkan playback'
 arch=('aarch64')
 url='https://ffmpeg.org/'
@@ -10,10 +10,17 @@ makedepends=('gcc' 'make' 'pkgconf' 'clang' 'vulkan-headers')
 _nvcodec_ver=13.1.15.0
 source=("https://ffmpeg.org/releases/ffmpeg-${pkgver}.tar.xz"
         "https://github.com/FFmpeg/nv-codec-headers/archive/refs/tags/n${_nvcodec_ver}.tar.gz"
+        '0001-vaapi-map-q416-planar-16bit-444.patch'
         'README.md')
 sha256sums=('8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e'
             '2255bc74d038b95aa4be30f5f66322c2176acbdb90ada1851db6993536fbeaf7'
-            'c5fd98e5dbcd3ae6d66b4289e1d8bf2d017e39728eb47e86c5321e8d2cfdf97b')
+            'bc66ccf3a29b9f6880bfa00a745d59a1e28ff7e89fff409ec71d94d3b2e40533'
+            'f0fada445fb348f76c7c5a7a7b1b8622ce94b1a0ae9a71aff414858ec2b7fc14')
+
+prepare() {
+  cd "$srcdir/ffmpeg-$pkgver"
+  patch -p1 -i "$srcdir/0001-vaapi-map-q416-planar-16bit-444.patch"
+}
 
 build() {
   make -C "$srcdir/nv-codec-headers-n$_nvcodec_ver" \

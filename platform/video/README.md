@@ -13,6 +13,16 @@ shows 8/10/12-bit 4:2:2 frames reaching libplacebo as `nv16`, `p210le` and
 [timed A/V test](../../docs/evidence/n1x-media-20261118/ffplay-vulkan-candidate/timed/hevc422-av-ffplay.json)
 also passes with Vulkan enabled. This proves the renderer input path, not
 the final display's bit depth or color accuracy.
+
+Package release 6 maps the NVIDIA VA-API bridge's planar `Q416` surface to
+FFmpeg `yuv444p16le` for HEVC 10/12-bit 4:4:4 decode. The isolated patched
+binary returned 30 frames of a genuine 12-bit HEVC RExt 4:4:4 fixture with
+pixels byte-identical to software readback. Use `hwdownload,format=yuv444p16le`
+for this path; forcing `yuv444p` yields incorrect bytes. The
+[readback evidence](../../docs/evidence/n1x-media-20261118/hevc44412-vaapi-q416-candidate-kernel38.json)
+was obtained with the local candidate before package installation. Normal
+`ffmpeg` remains the distribution binary; package installation and application
+use require separate qualification.
 The installed matrix also produced two NVIDIA memory-allocation warnings
 during a separate mpv 4:4:4 playback case; see the [incident record](../../docs/evidence/n1x-media-20261118/nvrm-memory-warning.md)
 before treating the package as qualified for longer or concurrent workloads.
