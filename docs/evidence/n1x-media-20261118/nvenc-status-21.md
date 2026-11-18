@@ -15,3 +15,13 @@ working NVENC with 610.57.04 and status 21 with 615.71.09. That report and
 the enum name do not establish whether the N1X failure is a license policy,
 driver regression, firmware mismatch or another platform gate. Testing a
 fully matched newer driver stack remains the next discriminating experiment.
+
+The repository's [CUDA session probe](../../../scripts/probe-nvenc-session.c)
+now prints the symbolic name alongside the unchanged numeric status. It built
+with `-Wall -Wextra -Werror` against both pinned header sets and ran on the
+native `7.2.8-37-rtx-spark-npu` boot with NVIDIA 615.78.08. API 12.2 reported
+`header_api_version=0x200000c`; API 13.1 reported `0x100000d`. Both queried
+`driver_max_api_version=0xd1`, created the function list successfully, then
+printed `open_session_status=21` and
+`open_session_status_name=NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY` before exiting
+5 as expected. No new kernel warning appeared in this probe window.

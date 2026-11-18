@@ -58,6 +58,8 @@ int main(void)
     params.apiVersion = NVENCAPI_VERSION;
     status = functions.nvEncOpenEncodeSessionEx(&params, &encoder);
     printf("open_session_status=%d\n", status);
+    if (status == NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY)
+        puts("open_session_status_name=NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY");
     if (encoder != NULL)
         functions.nvEncDestroyEncoder(encoder);
     cuCtxDestroy(context);
