@@ -74,7 +74,8 @@ reached the end of a three-second 12-bit 4:4:4 clip using both CUVID and
 VA-API decode with the Vulkan renderer. The renderer received `vaapi` frames
 in both the installed 9.0.2-5 player and the extracted 9.0.2-6 package
 player. This playback path already works on 9.0.2-5; the Q416 patch
-specifically enables correct FFmpeg 16-bit VA-API readback. Package 9.0.2-6
+specifically enables correct FFmpeg 16-bit VA-API readback. Extracted package
+9.0.2-7 repeats both 10- and 12-bit readback and timed playback successfully;
 installation and installed-package readback remain pending. Physical display
 precision, color accuracy and zero-copy behavior remain unmeasured.
 The [VA-API capability query](docs/evidence/n1x-media-20261118/vainfo-nvidia.log)
@@ -425,11 +426,14 @@ found that its `libplacebo` Vulkan filter fails at initialization with the
 installed API 360 library: FFmpeg's adapter rejects the N1X Vulkan queue flag
 before a frame is processed. `scale_vulkan` processes a bounded frame on
 the N1X. A [private API 387 candidate](docs/evidence/n1x-media-20261118/libplacebo-upscale-private.md)
-processes 60 GPU frames, but its tagged EWA Lanczos and Spline36 outputs score
-below CPU bicubic on one synthetic reference; untagged raw input is markedly
-worse. The installed mpv/libplacebo playback result stands separately.
-FFmpeg/libplacebo export still needs explicit color tags, visual review,
-steady latency and an installed application before acceptance.
+processes 60 GPU frames. A [scoped API 360 queue-import patch and package 9.0.2-7](docs/evidence/n1x-media-20261118/libplacebo-api360-compat.md)
+now process the same 60-frame tagged Spline36 test against the installed
+libplacebo library; extracted-package Q416 readback and timed FFplay playback
+also pass. Tagged GPU Spline36 still scores below CPU bicubic on this one
+synthetic reference, and untagged raw input is markedly worse. The installed
+mpv/libplacebo playback result stands separately. Package 9.0.2-7 installation,
+explicit color tags in a normal export application, visual review and steady
+latency remain open.
 
 The [NVIDIA Optical Flow SDK](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK)
 CUDA API is usable on this N1X, independent of the NVENC session failure. The

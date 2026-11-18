@@ -1,0 +1,27 @@
+From: P16 N1X Linux integration <n1x@localhost>
+Subject: [PATCH] avfilter/libplacebo: allow Vulkan queues with libplacebo API 360
+
+libplacebo versions before API 365 have no queue flags field in
+pl_vulkan_queue. FFmpeg 9.0.2 rejects every nonzero Vulkan queue flag even
+though it can still pass the queue family index and count to libplacebo.
+The N1X Vulkan device reports VK_QUEUE_TRANSFER_BIT, so that check aborts
+filter initialization before a frame is processed. Omit only the unavailable
+field on older libplacebo APIs. The API 365+ path remains unchanged.
+
+---
+ libavfilter/vf_libplacebo.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/libavfilter/vf_libplacebo.c b/libavfilter/vf_libplacebo.c
+--- a/libavfilter/vf_libplacebo.c
++++ b/libavfilter/vf_libplacebo.c
+@@ -659,8 +659,7 @@
+ #if PL_API_VER >= 365
+     pl_qf->flags = hwctx->queue_flags;
+ #else
+-    if (hwctx->queue_flags != 0)
+-        return AVERROR(EINVAL); // prevent undefined behavior
++    /* Older libplacebo accepts only the queue family index and count. */
+ #endif
+     return 0;
+ }

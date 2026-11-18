@@ -74,6 +74,8 @@ def main():
                         help="tag the raw input and output as limited-range BT.709")
     parser.add_argument("--upscaler", choices=("ewa_lanczos", "spline36", "bilinear"),
                         default="ewa_lanczos")
+    parser.add_argument("--minimum-libplacebo-api", type=int, default=365,
+                        help="minimum API version accepted for this candidate")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     if not 10 <= args.frames <= 300:
@@ -146,6 +148,7 @@ def main():
             "output_bytes": sizes,
             "gpu_device_logged": "NVIDIA RTX Spark N1X" in gpu_stderr,
             "libplacebo_api_logged": int(api_match.group(1)) if api_match else None,
+            "minimum_libplacebo_api_required": args.minimum_libplacebo_api,
             "gpu_sample_frame_hashes": gpu_frames,
             "cpu_sample_frame_hashes": cpu_frames,
             "gpu_sample_frames_distinct": len(set(gpu_frames)) == 3,
@@ -163,7 +166,7 @@ def main():
         result["functional_pass"] = (
             result["gpu_device_logged"] and
             result["libplacebo_api_logged"] is not None and
-            result["libplacebo_api_logged"] >= 365 and
+            result["libplacebo_api_logged"] >= args.minimum_libplacebo_api and
             result["gpu_sample_frames_distinct"] and
             all(math.isfinite(value) for value in result["gpu_psnr_db"].values()) and
             0 < result["gpu_ssim"]["all"] <= 1)

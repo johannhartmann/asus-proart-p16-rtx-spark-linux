@@ -21,8 +21,14 @@ pixels byte-identical to software readback. Use `hwdownload,format=yuv444p16le`
 for this path; forcing `yuv444p` yields incorrect bytes. The
 [readback evidence](../../docs/evidence/n1x-media-20261118/hevc44412-vaapi-q416-candidate-kernel38.json)
 was obtained with the local candidate before package installation. Normal
-`ffmpeg` remains the distribution binary; package installation and application
-use require separate qualification.
+`ffmpeg` remains the distribution binary. Release 7 also lets FFmpeg's
+`libplacebo` filter import the N1X Vulkan queues with the installed
+libplacebo API 360; FFmpeg 9.0.2 otherwise rejects their transfer flag before
+processing a frame. The queue import change was tested in an isolated build
+with 60 1280×720 output frames. Its synthetic Spline36 result scores below
+CPU bicubic, so functional filter operation does not establish visual
+quality or a preferred default. Package installation and application use
+require separate qualification.
 The installed matrix also produced two NVIDIA memory-allocation warnings
 during a separate mpv 4:4:4 playback case; see the [incident record](../../docs/evidence/n1x-media-20261118/nvrm-memory-warning.md)
 before treating the package as qualified for longer or concurrent workloads.

@@ -28,11 +28,20 @@ def play(binary, fixture, work, evidence, label, decoder):
                 ["-hwaccel", "vaapi"])
     command.append(str(fixture))
     started = time.monotonic()
-    result = run(command, timeout=18, env={**os.environ,
-                 "SDL_VIDEODRIVER": "wayland", "LIBVA_DRIVER_NAME": "nvidia",
-                 "NVD_BACKEND": "direct"})
+    try:
+        result = subprocess.run(command, capture_output=True, text=True,
+                                check=False, timeout=18, env={**os.environ,
+                                "SDL_VIDEODRIVER": "wayland",
+                                "LIBVA_DRIVER_NAME": "nvidia",
+                                "NVD_BACKEND": "direct"})
+        log = result.stdout + "\n" + result.stderr
+        exit_code = result.returncode
+    except subprocess.TimeoutExpired as error:
+        def decoded(value):
+            return value.decode(errors="replace") if isinstance(value, bytes) else value or ""
+        log = decoded(error.stdout) + "\n" + decoded(error.stderr)
+        exit_code = 124
     elapsed = time.monotonic() - started
-    log = result.stdout + "\n" + result.stderr
     cleaned = log.replace(str(work), "$WORKDIR").replace(str(Path.home()), "$HOME")
     cleaned = re.sub(r"Device UUID:\s*[0-9A-Fa-f:]+", "Device UUID: [redacted]", cleaned)
     (evidence / f"{label}-{decoder}.log").write_text(
@@ -40,6 +49,7 @@ def play(binary, fixture, work, evidence, label, decoder):
     surface = re.search(r"\[ffplay_buffer[^\n]*pixfmt:(\w+)", log)
     clocks = [float(value) for value in re.findall(r"(\d+\.\d+) M-V:", log)]
     checks = {
+        "exited_cleanly": exit_code == 0,
         "vulkan_renderer": "Initialized libplacebo" in log and
                            "Device 0 selected: NVIDIA RTX Spark N1X" in log,
         "hardware_decoder": ("VA-API NVDEC driver [direct backend]" in log
@@ -56,7 +66,8 @@ def play(binary, fixture, work, evidence, label, decoder):
     return {"status": "pass" if all(checks.values()) else "fail",
             "binary": str(binary).replace(str(Path.home()), "$HOME"),
             "sha256": sha256(binary), "decoder": decoder,
-            "elapsed_s": round(elapsed, 3), "last_video_clock_s": max(clocks, default=None),
+            "exit_code": exit_code, "elapsed_s": round(elapsed, 3),
+            "last_video_clock_s": max(clocks, default=None),
             "renderer_input": surface.group(1) if surface else None, "checks": checks}
 
 
@@ -67,6 +78,9 @@ def main():
     parser.add_argument("--candidate-ffplay", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
+    monitors = json.loads(run(["hyprctl", "monitors", "-j"]).stdout)
+    if not monitors or not all(monitor.get("dpmsStatus") for monitor in monitors):
+        parser.error("all active displays must have DPMS on for timed FFplay playback")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="n1x-hevc44412-play-") as temporary:
         work = Path(temporary)

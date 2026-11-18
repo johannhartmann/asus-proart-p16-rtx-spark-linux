@@ -43,3 +43,8 @@ qualifies application playback through VA-API and libplacebo for both the
 installed 9.0.2-5 player and the extracted 9.0.2-6 player. This does not
 exercise FFmpeg's CPU readback conversion; package installation and its
 installed readback regression are separate gates.
+The later [9.0.2-7 package](libplacebo-api360-compat.md) retains this Q416
+patch. Its extracted binary again matches all 30 software frames for
+[10-bit](hevc44410-vaapi-q416-package7-kernel38.json) and
+[12-bit](hevc44412-vaapi-q416-package7-kernel38.json) input. The installed
+package is still 9.0.2-5 while graphical authentication is pending.

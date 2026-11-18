@@ -1,0 +1,63 @@
+{
+  "captured_at": "2026-11-18T19:32:30.583994+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "ffmpeg_path": "/home/johann/p16/video-build/ffmpeg-libplacebo-360-compat/ffmpeg-n1x",
+  "ffmpeg_sha256": "a219e75e9fb8c9bb524c8480bf4fe5e641b6039dd8237ac3c83b1c9da9cb10ff",
+  "frames": 60,
+  "source": "testsrc2 1280x720/30 NV12",
+  "downsample": "software Lanczos 640x360",
+  "control": "software bicubic 1280x720",
+  "candidate": "Vulkan/libplacebo spline36 1280x720",
+  "gpu_filter": "setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709,format=nv12,hwupload,libplacebo=w=1280:h=720:upscaler=spline36:range=limited:colorspace=bt709:color_primaries=bt709:color_trc=bt709,hwdownload,format=nv12",
+  "explicit_bt709_limited_tags": true,
+  "expected_bytes_per_full_resolution_output": 82944000,
+  "output_bytes": {
+    "reference": 82944000,
+    "cpu": 82944000,
+    "gpu": 82944000
+  },
+  "gpu_device_logged": true,
+  "libplacebo_api_logged": 360,
+  "minimum_libplacebo_api_required": 360,
+  "gpu_sample_frame_hashes": [
+    "cece5425be33d5a5bc28ebfbf00f15cdd6dc9ef5b2a48d2316a3b5bfb8e4e2e1",
+    "e9870c6a0ab5eb9e3c49622b85627b29df42a5a593d223aae7095c939a7ce809",
+    "2b983f857a63870e3b6e024bf8c3d9a68b691db39bb2a97005d10afe19a58267"
+  ],
+  "cpu_sample_frame_hashes": [
+    "ef75e9bee06361b8443b32945bd8941e9d44d647779e0505665d6d62803d4d07",
+    "6939e5864ceb780da39234876522ab37a58c0a4c26e74c044bdf10c914b2046c",
+    "3f865a7b4a9efe1d7bd705b251468f00de8b128421db89d0d3a6329af90e0630"
+  ],
+  "gpu_sample_frames_distinct": true,
+  "cpu_sample_frames_distinct": true,
+  "gpu_output_sha256": "1b3d6a12f83b483778ce61a018e5b0927e6c2ce571581d3b955cb9db4935eb07",
+  "cpu_output_sha256": "323bb7ea6a4467caaa8ea6695ef5c002a3b7dfa1d1581a5b309fe1089fae654b",
+  "gpu_psnr_db": {
+    "y": 33.777739,
+    "u": 31.220356,
+    "v": 26.94543,
+    "average": 31.296382
+  },
+  "cpu_psnr_db": {
+    "y": 35.684154,
+    "u": 33.077971,
+    "v": 29.142284,
+    "average": 33.323653
+  },
+  "gpu_ssim": {
+    "all": 0.960233,
+    "db": 14.004721
+  },
+  "cpu_ssim": {
+    "all": 0.968873,
+    "db": 15.068577
+  },
+  "gpu_wall_seconds_including_startup_and_file_io": 1.889,
+  "cpu_wall_seconds_including_startup_and_file_io": 0.147,
+  "temporary_pixels_retained": false,
+  "functional_pass": true,
+  "quality_vs_bicubic_on_this_fixture": false
+}

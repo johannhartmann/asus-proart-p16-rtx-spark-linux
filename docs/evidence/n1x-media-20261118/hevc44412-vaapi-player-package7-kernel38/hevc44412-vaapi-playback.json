@@ -1,0 +1,88 @@
+{
+  "status": "pass",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "fixture": {
+    "sha256": "6f705ce1cf071da6a124bb33004f6450607519c314e4418ca15296c14b66d0ec",
+    "frames": 30,
+    "format": "HEVC RExt yuv444p12le",
+    "fps": 10,
+    "duration_s": 3,
+    "timestamp_filter": "setts=pts=N:dts=N:duration=1:time_base=1/10"
+  },
+  "results": [
+    {
+      "status": "pass",
+      "binary": "/usr/bin/ffplay-n1x",
+      "sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+      "decoder": "cuvid",
+      "exit_code": 0,
+      "elapsed_s": 5.704,
+      "last_video_clock_s": 2.89,
+      "renderer_input": "yuv444p12msble",
+      "checks": {
+        "exited_cleanly": true,
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "/usr/bin/ffplay-n1x",
+      "sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+      "decoder": "vaapi",
+      "exit_code": 0,
+      "elapsed_s": 6.361,
+      "last_video_clock_s": 2.91,
+      "renderer_input": "vaapi",
+      "checks": {
+        "exited_cleanly": true,
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x",
+      "sha256": "ec0ac9067baa2692340b089cf28cbaa9d70f67ca5c51b399c25a9cafef3a40ac",
+      "decoder": "cuvid",
+      "exit_code": 0,
+      "elapsed_s": 5.529,
+      "last_video_clock_s": 2.91,
+      "renderer_input": "yuv444p12msble",
+      "checks": {
+        "exited_cleanly": true,
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x",
+      "sha256": "ec0ac9067baa2692340b089cf28cbaa9d70f67ca5c51b399c25a9cafef3a40ac",
+      "decoder": "vaapi",
+      "exit_code": 0,
+      "elapsed_s": 6.213,
+      "last_video_clock_s": 2.9,
+      "renderer_input": "vaapi",
+      "checks": {
+        "exited_cleanly": true,
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    }
+  ],
+  "limit": "Player input and EOF are verified; display color accuracy, actual output bit depth and zero-copy are not measured."
+}

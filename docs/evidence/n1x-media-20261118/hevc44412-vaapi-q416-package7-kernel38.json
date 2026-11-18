@@ -1,0 +1,100 @@
+{
+  "captured_at": "2026-11-18T19:37:26.966292+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "libva_package": "libva-nvidia-driver 0.0.18-1",
+  "ffmpeg_package": "ffmpeg 2:9.0.2-2",
+  "ffmpeg_path": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffmpeg-n1x",
+  "ffmpeg_sha256": "9e0a2fe0939faac9cfbc440a179d7deb5bafd3c1c781411f77092cb81f171314",
+  "bit_depth": 12,
+  "x265_12_sha256": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
+  "fixture": {
+    "codec_name": "hevc",
+    "profile": "Rext",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuv444p12le"
+  },
+  "fixture_sha256": "d0a3df84d394e5f110cfaf5e49be690f1a6b6fb35a58cc5506a96977aa9d6e4b",
+  "checks": {
+    "yuv444p16le": {
+      "frames_requested": 30,
+      "exit_code": 0,
+      "timed_out": false,
+      "vaapi_direct_backend_logged": true,
+      "vaapi_surface_logged": true,
+      "vaapi_error": null,
+      "vaapi_output_bytes": 10368000,
+      "software_output_bytes": 10368000,
+      "vaapi_sha256": "92685f3a6f0025a199d391d89b7c14de6ae16043c95d139c8043f8f534bc7e40",
+      "software_sha256": "92685f3a6f0025a199d391d89b7c14de6ae16043c95d139c8043f8f534bc7e40",
+      "pixels_equal": true
+    },
+    "yuv444p12le": {
+      "frames_requested": 1,
+      "exit_code": 234,
+      "timed_out": false,
+      "vaapi_direct_backend_logged": true,
+      "vaapi_surface_logged": true,
+      "vaapi_error": "[hwdownload @ 0xfbbdbc003a00] Invalid output format yuv444p12le for hwframe download.",
+      "vaapi_output_bytes": 0,
+      "software_output_bytes": null,
+      "vaapi_sha256": null,
+      "software_sha256": null,
+      "pixels_equal": null
+    },
+    "p412le": {
+      "frames_requested": 1,
+      "exit_code": 234,
+      "timed_out": false,
+      "vaapi_direct_backend_logged": true,
+      "vaapi_surface_logged": true,
+      "vaapi_error": "[hwdownload @ 0xfe6f44003a00] Invalid output format p412le for hwframe download.",
+      "vaapi_output_bytes": 0,
+      "software_output_bytes": null,
+      "vaapi_sha256": null,
+      "software_sha256": null,
+      "pixels_equal": null
+    },
+    "yuv444p": {
+      "frames_requested": 30,
+      "exit_code": 0,
+      "timed_out": false,
+      "vaapi_direct_backend_logged": true,
+      "vaapi_surface_logged": true,
+      "vaapi_error": null,
+      "vaapi_output_bytes": 5184000,
+      "software_output_bytes": 5184000,
+      "vaapi_sha256": "d4a7fb815a55663a5634afabcdeb3308f1ddac33013f6305729c0ce425ff3a48",
+      "software_sha256": "78bcffcac58bee367492ccbe2ead21769846ef2b9f58a6341b54b42505af2828",
+      "pixels_equal": false,
+      "mean_absolute_error_8bit_by_plane_yuv": [
+        84.252,
+        83.875,
+        84.417
+      ],
+      "first_8_y_bytes_software": [
+        73,
+        76,
+        71,
+        76,
+        77,
+        79,
+        75,
+        78
+      ],
+      "first_8_y_bytes_vaapi": [
+        0,
+        73,
+        160,
+        75,
+        192,
+        70,
+        208,
+        75
+      ]
+    }
+  },
+  "high_bit_depth_vaapi_readback_pass": true,
+  "camera_or_fixture_pixels_retained": false
+}
