@@ -6,11 +6,13 @@ the distribution's `ffmpeg` and shared `libav*` libraries. This candidate
 does not replace the default codecs or claim that an advertised N1X profile
 works on this Linux driver. `ffplay-n1x` is an isolated SDL player that can
 select the compiled `hevc_cuvid` decoder explicitly for HEVC 4:2:2 material.
-Version 9.0.2-4 is installed on the reference P16. The installed binary passed
-the [8/10/12-bit HEVC 4:2:2 matrix](../../docs/evidence/n1x-media-20261118/installed-ffplay/hevc-pro-matrix.json)
-and a [timed HEVC 4:2:2/AAC playback](../../docs/evidence/n1x-media-20261118/installed-ffplay/hevc422-av-ffplay.json).
-It uses CUVID for decode, but FFplay's SDL renderer converts the output to
-8-bit 4:2:0 `IYUV`, so display fidelity remains unqualified.
+Use `ffplay-n1x -enable_vulkan -vcodec hevc_cuvid FILE` to render with
+libplacebo/Vulkan. The [candidate matrix](../../docs/evidence/n1x-media-20261118/ffplay-vulkan-candidate/hevc-pro-matrix.json)
+shows 8/10/12-bit 4:2:2 frames reaching libplacebo as `nv16`, `p210le` and
+`p212le`, respectively, without the SDL renderer's 4:2:0 conversion. The
+[timed A/V test](../../docs/evidence/n1x-media-20261118/ffplay-vulkan-candidate/timed/hevc422-av-ffplay.json)
+also passes with Vulkan enabled. This proves the renderer input path, not
+the final display's bit depth or color accuracy.
 The installed matrix also produced two NVIDIA memory-allocation warnings
 during a separate mpv 4:4:4 playback case; see the [incident record](../../docs/evidence/n1x-media-20261118/nvrm-memory-warning.md)
 before treating the package as qualified for longer or concurrent workloads.

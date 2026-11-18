@@ -1,0 +1,262 @@
+$ $HOME/p16/video-build/ffmpeg-vulkan/package-extracted/usr/bin/ffplay-n1x -hide_banner -autoexit -an -loglevel verbose -enable_vulkan -vcodec hevc_cuvid -framerate 10 -f hevc $WORKDIR/stream.hevc
+exit_code=0
+
+stdout:
+
+
+stderr:
+[Vulkan Renderer @ 0xbaa724b47230] Initialized libplacebo v7.360.1 (API v360)
+[Vulkan @ 0xbaa724b8a490] Supported layers:
+[Vulkan @ 0xbaa724b8a490] 	VK_LAYER_NV_optimus
+[Vulkan @ 0xbaa724b8a490] 	VK_LAYER_NV_present
+[Vulkan @ 0xbaa724b8a490] Using instance extension "VK_KHR_surface"
+[Vulkan @ 0xbaa724b8a490] Using instance extension "VK_KHR_wayland_surface"
+[Vulkan @ 0xbaa724b8a490] GPU listing:
+[Vulkan @ 0xbaa724b8a490]     0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xbaa724b8a490] Device 0 selected: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_push_descriptor
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_physical_device_drm
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_shader_atomic_float
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_cooperative_matrix
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_shader_object
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_shader_subgroup_rotate
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_host_image_copy
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_workgroup_memory_explicit_layout
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_shader_relaxed_extended_instruction
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_shader_long_vector
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_shader_replicated_composites
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_shader_expect_assume
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_maintenance1
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_maintenance2
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_internally_synchronized_queues
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_external_memory_fd
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_external_memory_dma_buf
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_image_drm_format_modifier
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_external_semaphore_fd
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_EXT_external_memory_host
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_queue
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_encode_queue
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_decode_queue
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_encode_h264
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_decode_h264
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_encode_h265
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_decode_h265
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_decode_vp9
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_encode_av1
+[Vulkan @ 0xbaa724b8a490] Using device extension VK_KHR_video_decode_av1
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_swapchain"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_push_descriptor"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_external_memory_fd"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_external_memory_host"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_external_memory_dma_buf"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_external_semaphore_fd"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_pci_bus_info"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_hdr_metadata"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_image_drm_format_modifier"
+[Vulkan @ 0xbaa724b8a490] device extension "VK_KHR_portability_subset" not found, excluding.
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_synchronization2"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_format_feature_flags2"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_host_image_copy"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_KHR_swapchain_maintenance1"
+[Vulkan @ 0xbaa724b8a490] Using device extension "VK_EXT_swapchain_maintenance1"
+[Vulkan @ 0xbaa724b8a490] Queue families:
+[Vulkan @ 0xbaa724b8a490]     0: graphics compute transfer sparse (queues: 16)
+[Vulkan @ 0xbaa724b8a490]     1: transfer sparse (queues: 1)
+[Vulkan @ 0xbaa724b8a490]     2: compute transfer sparse (queues: 8)
+[Vulkan @ 0xbaa724b8a490]     3: transfer decode sparse (queues: 1)
+[Vulkan @ 0xbaa724b8a490]     4: transfer encode sparse (queues: 1)
+[Vulkan @ 0xbaa724b8a490] Using device: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
+[Vulkan @ 0xbaa724b8a490] Alignments:
+[Vulkan @ 0xbaa724b8a490]     optimalBufferCopyRowPitchAlignment: 1
+[Vulkan @ 0xbaa724b8a490]     minMemoryMapAlignment:              64
+[Vulkan @ 0xbaa724b8a490]     nonCoherentAtomSize:                64
+[Vulkan @ 0xbaa724b8a490]     minImportedHostPointerAlignment:    4096
+[Vulkan Renderer @ 0xbaa724b47230] Imported vulkan device properties:
+[Vulkan Renderer @ 0xbaa724b47230]     Device Name: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
+[Vulkan Renderer @ 0xbaa724b47230]     Device ID: 10de:2e03
+[Vulkan Renderer @ 0xbaa724b47230]     Device UUID: [redacted]
+[Vulkan Renderer @ 0xbaa724b47230]     Driver version: 99d38200
+[Vulkan Renderer @ 0xbaa724b47230]     API version: 1.4.351
+[Vulkan Renderer @ 0xbaa724b47230] Memory heaps supported by device:
+[Vulkan Renderer @ 0xbaa724b47230]     0: flags 0x1 size   78G
+[Vulkan Renderer @ 0xbaa724b47230] Memory summary:     0 used     0 res     0 alloc, efficiency 100.00%, utilization 100.00%, max page: 5015M
+[Vulkan Renderer @ 0xbaa724b47230] shaderc SPIR-V version 1.6 rev 1
+[Vulkan Renderer @ 0xbaa724b47230] Initialized SPIR-V compiler 'shaderc'
+[Vulkan Renderer @ 0xbaa724b47230] GPU information:
+[Vulkan Renderer @ 0xbaa724b47230]     GLSL version: 450 (vulkan)
+[Vulkan Renderer @ 0xbaa724b47230]       max_shmem_size:            49152
+[Vulkan Renderer @ 0xbaa724b47230]       max_group_threads:         1024
+[Vulkan Renderer @ 0xbaa724b47230]       max_group_size[0]:         1024
+[Vulkan Renderer @ 0xbaa724b47230]       max_group_size[1]:         1024
+[Vulkan Renderer @ 0xbaa724b47230]       max_group_size[2]:         64
+[Vulkan Renderer @ 0xbaa724b47230]       subgroup_size:             32
+[Vulkan Renderer @ 0xbaa724b47230]       min_gather_offset:         -32
+[Vulkan Renderer @ 0xbaa724b47230]       max_gather_offset:         31
+[Vulkan Renderer @ 0xbaa724b47230]     Limits:
+[Vulkan Renderer @ 0xbaa724b47230]       thread_safe:               1
+[Vulkan Renderer @ 0xbaa724b47230]       callbacks:                 1
+[Vulkan Renderer @ 0xbaa724b47230]       max_buf_size:              84143548416
+[Vulkan Renderer @ 0xbaa724b47230]       max_ubo_size:              65536
+[Vulkan Renderer @ 0xbaa724b47230]       max_ssbo_size:             4294967295
+[Vulkan Renderer @ 0xbaa724b47230]       max_vbo_size:              84143548416
+[Vulkan Renderer @ 0xbaa724b47230]       max_mapped_size:           84143548416
+[Vulkan Renderer @ 0xbaa724b47230]       max_buffer_texels:         268435456
+[Vulkan Renderer @ 0xbaa724b47230]       align_host_ptr:            4096
+[Vulkan Renderer @ 0xbaa724b47230]       host_cached:               1
+[Vulkan Renderer @ 0xbaa724b47230]       max_tex_1d_dim:            32768
+[Vulkan Renderer @ 0xbaa724b47230]       max_tex_2d_dim:            32768
+[Vulkan Renderer @ 0xbaa724b47230]       max_tex_3d_dim:            16384
+[Vulkan Renderer @ 0xbaa724b47230]       blittable_1d_3d:           1
+[Vulkan Renderer @ 0xbaa724b47230]       buf_transfer:              1
+[Vulkan Renderer @ 0xbaa724b47230]       align_tex_xfer_pitch:      1
+[Vulkan Renderer @ 0xbaa724b47230]       align_tex_xfer_offset:     4
+[Vulkan Renderer @ 0xbaa724b47230]       max_variable_comps:        0
+[Vulkan Renderer @ 0xbaa724b47230]       max_constants:             18446744073709551615
+[Vulkan Renderer @ 0xbaa724b47230]       max_pushc_size:            256
+[Vulkan Renderer @ 0xbaa724b47230]       align_vertex_stride:       1
+[Vulkan Renderer @ 0xbaa724b47230]       max_dispatch[0]:           2147483647
+[Vulkan Renderer @ 0xbaa724b47230]       max_dispatch[1]:           65535
+[Vulkan Renderer @ 0xbaa724b47230]       max_dispatch[2]:           65535
+[Vulkan Renderer @ 0xbaa724b47230]       fragment_queues:           1
+[Vulkan Renderer @ 0xbaa724b47230]       compute_queues:            8
+[Vulkan Renderer @ 0xbaa724b47230]     External API interop:
+[Vulkan Renderer @ 0xbaa724b47230]       UUID: 22:5E:EC:40:23:6C:E9:84:90:D4:63:EB:98:3F:39:60
+[Vulkan Renderer @ 0xbaa724b47230]       PCI: 000f:01:00:0
+[Vulkan Renderer @ 0xbaa724b47230]       buf export caps: 0x19
+[Vulkan Renderer @ 0xbaa724b47230]       buf import caps: 0x19
+[Vulkan Renderer @ 0xbaa724b47230]       tex export caps: 0x19
+[Vulkan Renderer @ 0xbaa724b47230]       tex import caps: 0x19
+[Vulkan Renderer @ 0xbaa724b47230]       sync export caps: 0x1
+[Vulkan Renderer @ 0xbaa724b47230]       sync import caps: 0x0
+[Vulkan Renderer @ 0xbaa724b47230] Available surface configurations:
+[Vulkan Renderer @ 0xbaa724b47230]     0: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     1: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     2: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     3: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     4: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     5: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     6: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     7: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     8: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     9: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     10: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     11: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     12: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     13: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT709_LINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     14: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     15: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT2020_LINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     16: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     17: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     18: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     19: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     20: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     21: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     22: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     23: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     24: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     25: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     26: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xbaa724b47230]     27: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     28: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     29: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     30: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_HDR10_ST2084_EXT
+[Vulkan Renderer @ 0xbaa724b47230]     31: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_HDR10_HLG_EXT
+[Vulkan Renderer @ 0xbaa724b47230] Picked surface configuration 26: VK_FORMAT_A2B10G10R10_UNORM_PACK32 + VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+    nan    :  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[2K
+Input #0, hevc, from '$WORKDIR/stream.hevc':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv422p(tv), 320x180, 10 fps, 10 tbr, 1200k tbn
+[hevc_mp4toannexb @ 0xf1516c00ecf0] The input looks like it is Annex B already
+[hevc_cuvid @ 0xf1516c009c40] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xf1516c009c40] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xf1516c009c40] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xf1516c009c40] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+    nan M-V:    nan fd=   0 aq=    0KB vq=  103KB sq=    0B
+[hevc_cuvid @ 0xf1516c009c40] Formats: Original: nv16 | HW: nv16 | SW: nv16
+    nan M-V:    nan fd=   0 aq=    0KB vq=   91KB sq=    0B
+[ffplay_buffer @ 0xf14f4997dcf0] w:320 h:180 pixfmt:nv16 tb:1/1200000 fr:10/1 sar:0/1 csp:unknown range:tv alpha:unspecified
+[ffplay_buffer @ 0xf14f4997dcf0] video frame properties congruent with link at pts_time: 0
+[Vulkan Renderer @ 0xbaa724b47230] Picked surface configuration 29: VK_FORMAT_A2B10G10R10_UNORM_PACK32 + VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xbaa724b47230] Spent 28.572 ms generating shader LUT
+[Vulkan Renderer @ 0xbaa724b47230] Dithering to 10 bit depth
+[Vulkan Renderer @ 0xbaa724b47230] Spent 190.946 ms translating SPIR-V (slow!)
+[Vulkan Renderer @ 0xbaa724b47230] Spent 103.861 ms creating pipeline (slow!)
+   0.44 M-V:  0.000 fd=   0 aq=    0KB vq=   68KB sq=    0B
+[Vulkan Renderer @ 0xbaa724b47230] Spent 14.213 ms creating pipeline
+[Vulkan Renderer @ 0xbaa724b47230] Spent 11.628 ms creating pipeline
+[Vulkan Renderer @ 0xbaa724b47230] Spent 11.583 ms creating pipeline
+   0.51 M-V:  0.355 fd=   1 aq=    0KB vq=   63KB sq=    0B
+   0.55 M-V:  0.035 fd=   1 aq=    0KB vq=   51KB sq=    0B
+   0.58 M-V: -0.045 fd=   1 aq=    0KB vq=   49KB sq=    0B
+   0.61 M-V: -0.045 fd=   1 aq=    0KB vq=   49KB sq=    0B
+   0.64 M-V: -0.045 fd=   1 aq=    0KB vq=   49KB sq=    0B
+   0.67 M-V: -0.045 fd=   1 aq=    0KB vq=   47KB sq=    0B
+   0.70 M-V: -0.045 fd=   1 aq=    0KB vq=   47KB sq=    0B
+   0.73 M-V: -0.045 fd=   1 aq=    0KB vq=   47KB sq=    0B
+   0.77 M-V: -0.045 fd=   1 aq=    0KB vq=   40KB sq=    0B
+   0.80 M-V: -0.045 fd=   1 aq=    0KB vq=   40KB sq=    0B
+   0.83 M-V: -0.045 fd=   1 aq=    0KB vq=   40KB sq=    0B
+   0.87 M-V: -0.045 fd=   1 aq=    0KB vq=   38KB sq=    0B
+   0.90 M-V: -0.045 fd=   1 aq=    0KB vq=   38KB sq=    0B
+   0.93 M-V: -0.045 fd=   1 aq=    0KB vq=   38KB sq=    0B
+   0.97 M-V: -0.044 fd=   1 aq=    0KB vq=   35KB sq=    0B
+   1.00 M-V: -0.044 fd=   1 aq=    0KB vq=   35KB sq=    0B
+   1.03 M-V: -0.044 fd=   1 aq=    0KB vq=   35KB sq=    0B
+   1.07 M-V: -0.045 fd=   1 aq=    0KB vq=   33KB sq=    0B
+   1.10 M-V: -0.045 fd=   1 aq=    0KB vq=   33KB sq=    0B
+   1.13 M-V: -0.045 fd=   1 aq=    0KB vq=   33KB sq=    0B
+   1.17 M-V: -0.045 fd=   1 aq=    0KB vq=   26KB sq=    0B
+   1.20 M-V: -0.045 fd=   1 aq=    0KB vq=   26KB sq=    0B
+   1.23 M-V: -0.045 fd=   1 aq=    0KB vq=   26KB sq=    0B
+   1.27 M-V: -0.045 fd=   1 aq=    0KB vq=   23KB sq=    0B
+   1.30 M-V: -0.045 fd=   1 aq=    0KB vq=   23KB sq=    0B
+   1.33 M-V: -0.045 fd=   1 aq=    0KB vq=   23KB sq=    0B
+   1.37 M-V: -0.045 fd=   1 aq=    0KB vq=   21KB sq=    0B
+   1.40 M-V: -0.045 fd=   1 aq=    0KB vq=   21KB sq=    0B
+   1.43 M-V: -0.045 fd=   1 aq=    0KB vq=   21KB sq=    0B
+   1.47 M-V: -0.045 fd=   1 aq=    0KB vq=   18KB sq=    0B
+   1.50 M-V: -0.045 fd=   1 aq=    0KB vq=   18KB sq=    0B
+   1.53 M-V: -0.045 fd=   1 aq=    0KB vq=   18KB sq=    0B
+   1.57 M-V: -0.045 fd=   1 aq=    0KB vq=   11KB sq=    0B
+   1.60 M-V: -0.045 fd=   1 aq=    0KB vq=   11KB sq=    0B
+   1.63 M-V: -0.045 fd=   1 aq=    0KB vq=   11KB sq=    0B
+   1.66 M-V: -0.045 fd=   1 aq=    0KB vq=    7KB sq=    0B
+   1.69 M-V: -0.045 fd=   1 aq=    0KB vq=    7KB sq=    0B
+   1.72 M-V: -0.045 fd=   1 aq=    0KB vq=    7KB sq=    0B
+   1.75 M-V: -0.045 fd=   1 aq=    0KB vq=    7KB sq=    0B
+   1.79 M-V: -0.045 fd=   1 aq=    0KB vq=    5KB sq=    0B
+   1.82 M-V: -0.045 fd=   1 aq=    0KB vq=    5KB sq=    0B
+   1.85 M-V: -0.045 fd=   1 aq=    0KB vq=    5KB sq=    0B
+   1.89 M-V: -0.045 fd=   1 aq=    0KB vq=    3KB sq=    0B
+   1.92 M-V: -0.045 fd=   1 aq=    0KB vq=    3KB sq=    0B
+   1.95 M-V: -0.045 fd=   1 aq=    0KB vq=    3KB sq=    0B
+   1.98 M-V: -0.044 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.01 M-V: -0.044 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.04 M-V: -0.044 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.08 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.11 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.14 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.18 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.21 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.24 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.28 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.31 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.34 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.38 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.41 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.44 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.47 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.50 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.53 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.57 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.60 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.63 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.67 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.70 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.73 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.77 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.80 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.83 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+   2.87 M-V: -0.045 fd=   1 aq=    0KB vq=    0KB sq=    0B
+[AVIOContext @ 0xf1516c009410] Statistics: 117273 bytes read, 0 seeks

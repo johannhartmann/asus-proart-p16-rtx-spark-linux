@@ -1,0 +1,25 @@
+{
+  "ffmpeg": "/usr/bin/ffmpeg-n1x",
+  "ffmpeg_sha256": "b5d63d453fe2d776e84b0c3aaba27310113148d3dd40864508f320b244b57b7b",
+  "package": "ffmpeg-n1x-video 9.0.2-5",
+  "driver": "615.78.08",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "codecs": {
+    "h264": {
+      "status": "fail",
+      "exit_code": 187,
+      "open_encode_session_error_21": true
+    },
+    "hevc": {
+      "status": "fail",
+      "exit_code": 187,
+      "open_encode_session_error_21": true
+    },
+    "av1": {
+      "status": "fail",
+      "exit_code": 187,
+      "open_encode_session_error_21": true
+    }
+  },
+  "status": "fail"
+}

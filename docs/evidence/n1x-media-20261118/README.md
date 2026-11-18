@@ -17,8 +17,9 @@ retained.
 | HEVC RExt 12-bit decode | Pass for bounded CUVID pixel comparison, VA-API decode and installed player | [`hevc12-result.json`](hevc12-result.json) records a 30-frame x265 12-bit fixture, CUVID output with all frame hashes equal to software decode, and 30 frames on the NVIDIA VA-API direct backend. [`hevc12-player.log`](hevc12-player.log) shows the installed `p16-video-play` selected VA-API `p012`, rendered with `gpu-next` and reached EOF. The raw bitstream has no timestamps, so playback timing and audio sync are not qualified. |
 | HEVC RExt 4:4:4 12-bit decode | Pass for CUVID pixel comparison and installed Vulkan Video playback | [`hevc44412-result.json`](hevc44412-result.json) records 30 frames with CUVID pixels matching software decode and 30 VA-API hardware frames. The installed player with `--hwdec=hevc-vulkan` reports `vulkan[p412]` and EOF in [`hevc44412-player-vulkan.log`](hevc44412-player-vulkan.log). Its default VA-API path reports `vaapi[yuv444p]`; preservation of 12-bit precision there is not established. The raw fixture has no PTS. |
 | HEVC pro-format matrix | 4:4:4 8/10-bit Vulkan playback passes; 4:2:2 mpv hardware path open | [`hevc-pro-matrix.json`](hevc-pro-matrix.json) records 30-frame software/CUVID pixel-hash equality for all five cases. Mpv with explicit Vulkan Video decoding selects `nv24` for 4:4:4 8-bit and `p410` for 4:4:4 10-bit. VA-API advertises neither 4:2:2 profile; FFmpeg logs a failed VA-API setup then finishes through software. Mpv likewise plays all three 4:2:2 cases through software despite the requested Vulkan backend. Process exit 0 alone is therefore not a hardware pass. |
-| Installed HEVC 4:2:2 CUVID player | Pass for 8/10/12-bit hardware decode in FFplay | The [installed player matrix](installed-ffplay/hevc-pro-matrix.json) and `installed-ffplay/hevc-422-*bit-ffplay-cuvid.log` show `/usr/bin/ffplay-n1x` opening all three 4:2:2 fixtures through `hevc_cuvid`; direct decoded pixels match software in every case. Its output texture is `SDL_PIXELFORMAT_IYUV`, which does not preserve 4:2:2/10–12-bit display precision. Package `ffmpeg-n1x-video 9.0.2-4` is installed; archive SHA256 is `44167e245744659c472a6927a96c6a6fd45c72588a90d98f1a94079ce07a7fd9`. Installed FFplay SHA256 `50ddc21fbb6e3e7f952c39f61dcd908c90ec9510a5884a69f9eb3dbf1fe40768` matches the extracted candidate. |
-| Timed HEVC 4:2:2 plus AAC player | Pass with installed FFplay | [`installed-ffplay/hevc422-av-ffplay.json`](installed-ffplay/hevc422-av-ffplay.json) and its [raw log](installed-ffplay/hevc422-av-ffplay.log) show a six-second Matroska fixture containing 144 HEVC RExt 4:2:2 frames and AAC audio. `/usr/bin/ffplay-n1x` selected CUVID `nv16`, processed audio, played 189 sampled A/V statuses with at most 13 ms offset, and exited after 6.9 seconds. SDL converted video to `IYUV`; 4:2:2 display fidelity remains open. |
+| Older FFplay SDL 4:2:2 path | Decoder passes; renderer converts to 4:2:0 | The [9.0.2-4 installed matrix](installed-ffplay/hevc-pro-matrix.json) shows CUVID pixel equality for 8/10/12-bit 4:2:2, but FFplay creates an `IYUV` texture. The [timed AAC test](installed-ffplay/hevc422-av-ffplay.json) reached EOF with audio. Its display conversion is the negative control for the new Vulkan renderer. |
+| Installed FFplay Vulkan 4:2:2 path | Pass for 8/10/12-bit hardware decode and renderer input | The [9.0.2-5 installed matrix](installed-ffplay-vulkan/hevc-pro-matrix.json) shows `/usr/bin/ffplay-n1x -enable_vulkan -vcodec hevc_cuvid` decoding 8/10/12-bit 4:2:2 with pixels matching software. Libplacebo receives `nv16`, `p210le` and `p212le`, respectively, without a logged `auto_scale` or SDL `IYUV` texture. The [build and qualification record](ffplay-vulkan.md) pins the package archive and binary hashes. Final physical display precision remains unmeasured. |
+| Timed Vulkan HEVC 4:2:2 plus AAC | Pass with installed FFplay | [`installed-ffplay-vulkan/timed/hevc422-av-ffplay.json`](installed-ffplay-vulkan/timed/hevc422-av-ffplay.json) and its raw log show a six-second 144-frame HEVC RExt 4:2:2/AAC clip through CUVID and libplacebo on the N1X. It reached EOF; 184 sampled A/V offsets were at most 27 ms. No 4:2:0 filter conversion was logged. |
 | Kernel allocation warning during installed matrix | Open stability finding | Two NVRM `NV_ERR_NO_MEMORY` lines occurred during the 4:4:4 10-bit application playback. The [incident record](nvrm-memory-warning.md) includes the kernel lines and a targeted clean repeat. The matrix's successful exit does not erase this warning. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
@@ -26,6 +27,7 @@ retained.
 | Interactive A/V playback | Pass for a bounded H.264/AAC fixture | [`av-playback.json`](av-playback.json) and `av-playback-mpv.log.gz` show the installed player selecting VA-API decode, Vulkan `gpu-next` output and PipeWire audio. IPC drove forward and backward seek, pause, resume and EOF. The sampled audio/video clock difference during playback was at most 22 ms. This does not establish perceived lip sync or a long-duration stability result. |
 | NVENC API | Blocked for H.264, HEVC and AV1 | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but each `nvenc-*.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. The [API-version comparison](nvenc-api-version-compare.json) repeats all three probes with codec headers 12.2 and 13.1; both fail at session creation. The independent [direct C probe](nvenc-direct-session.json) creates the API function table but also gets status 21 opening a CUDA/NVENC session with either header. No NVENC output was produced. |
 | Installed NVENC check | Blocked for H.264, HEVC and AV1 | [`installed-nvenc/installed-nvenc.json`](installed-nvenc/installed-nvenc.json) and its three codec logs repeat the session probe with `/usr/bin/ffmpeg-n1x` from the installed 9.0.2-4 package. Every codec exits 187 at `OpenEncodeSessionEx` error 21. The probe exits nonzero by design when the hardware encoder is unavailable. |
+| Latest installed NVENC check | Blocked for H.264, HEVC and AV1 | [`installed-nvenc-vulkan/installed-nvenc.json`](installed-nvenc-vulkan/installed-nvenc.json) repeats the same probe with package 9.0.2-5. All three codecs still fail opening the NVENC session with error 21. |
 | Desktop playback | Pass for one H.264 sample | `mpv-vaapi.log.gz` records hardware decode, libplacebo `gpu-next` output and EOF; `mpv-software-control.log` records intentional software decode. Key lines from the full mpv logs are in `mpv-summary.log`. |
 | Vulkan scaling and frame mixing | Application path exercised | `mpv-effects.log.gz` records NVIDIA Vulkan/libplacebo, `ewa_lanczos`, interpolation, 320×180 source scaled to a 1190×718 and then 1400×960 Wayland window, and EOF. It does not establish AI super-resolution, generated motion frames, HDR or image-quality acceptance. |
 | Desktop HDR output | Open | [`hdr-display-state.log`](hdr-display-state.log) records both connected outputs in Hyprland's `srgb` preset, default DRM Colorspace and no active HDR metadata. This session cannot qualify an SDR-to-HDR playback path or NVIDIA TrueHDR. |
@@ -91,7 +93,7 @@ Repeat the installed package encoder check with:
 
 ```sh
 python3 scripts/check-installed-nvenc.py \
-  --output-dir docs/evidence/n1x-media-20261118/installed-nvenc
+  --output-dir docs/evidence/n1x-media-20261118/installed-nvenc-vulkan
 ```
 
 [`vainfo-nvidia.log`](vainfo-nvidia.log) records the VA-API profile inventory.
@@ -150,15 +152,31 @@ python3 scripts/check-hevc-pro-matrix.py \
 Each `hevc-{422,444}-*bit-*.log` retains the source, decoder and application
 output with temporary paths redacted. The test expects mpv's software fallback
 for 4:2:2 and separately verifies the isolated FFplay CUVID path.
-The installed package was tested with the same matrix, using
+The earlier 9.0.2-4 package was tested with the same matrix, using
 `--ffmpeg-cuvid /usr/bin/ffmpeg-n1x --ffplay-cuvid /usr/bin/ffplay-n1x`
 and `--output-dir docs/evidence/n1x-media-20261118/installed-ffplay`.
-The timed 4:2:2/AAC application test is repeated with:
+Repeat the current 9.0.2-5 installed 4:2:2 renderer matrix with:
+
+```sh
+python3 scripts/check-hevc-pro-matrix.py \
+  --x265-8 /usr/bin/x265 \
+  --x265-10 /path/to/isolated/build10/x265 \
+  --x265-12 /path/to/isolated/build/x265 \
+  --ffmpeg-cuvid /usr/bin/ffmpeg-n1x \
+  --player /usr/bin/p16-video-play \
+  --ffplay-cuvid /usr/bin/ffplay-n1x \
+  --ffplay-vulkan /usr/bin/ffplay-n1x \
+  --chroma-only 422 \
+  --output-dir docs/evidence/n1x-media-20261118/installed-ffplay-vulkan
+```
+
+Repeat the timed 4:2:2/AAC application test with:
 
 ```sh
 python3 scripts/check-hevc422-av-playback.py \
   --ffplay /usr/bin/ffplay-n1x \
-  --output-dir docs/evidence/n1x-media-20261118/installed-ffplay
+  --vulkan \
+  --output-dir docs/evidence/n1x-media-20261118/installed-ffplay-vulkan/timed
 ```
 
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
@@ -181,7 +199,8 @@ OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; browser hardware decode, graphical browser
 permission and PipeWire
 camera portal; physical device privacy; perceived A/V sync and longer playback;
-fresh boot and physical s2idle/resume; HDR display output; proprietary NVIDIA
+fresh boot and physical s2idle/resume; measured 4:2:2 display precision and
+HDR display output; proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a
 separate N1X MIPI/CSI machine. No MIPI/CSI devices are present on this P16.
 The [resume preflight](../n1x-media-resume-20261118/README.md) did not start

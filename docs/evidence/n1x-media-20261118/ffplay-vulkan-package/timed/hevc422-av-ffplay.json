@@ -1,0 +1,44 @@
+{
+  "status": "pass",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "driver": "615.78.08",
+  "ffplay": "$HOME/p16/video-build/ffmpeg-vulkan/package-extracted/usr/bin/ffplay-n1x",
+  "ffplay_sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+  "renderer_requested": "vulkan",
+  "fixture_sha256": "a18ab1796900741568850e3c20142c9d1fa80e15fb8f0dc010adfc4e05755f90",
+  "fixture": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p",
+        "nb_read_frames": "144"
+      },
+      {
+        "codec_name": "aac",
+        "profile": "LC",
+        "nb_read_frames": "282"
+      }
+    ],
+    "format": {
+      "duration": "6.021000"
+    }
+  },
+  "elapsed_s": 7.964,
+  "av_sample_count": 185,
+  "av_max_abs_delta_s": 0.044,
+  "checks": {
+    "cuvid_opened": true,
+    "audio_opened": true,
+    "timed_playback": true,
+    "reached_eof": true,
+    "display_chroma_downsampled": false,
+    "vulkan_renderer": true
+  },
+  "limit": "Libplacebo receives nv16 without an observed format conversion; final display precision needs separate measurement."
+}

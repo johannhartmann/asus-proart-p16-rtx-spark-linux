@@ -1,0 +1,378 @@
+exit_code=0
+
+
+[Vulkan Renderer @ 0xc487319107e0] Initialized libplacebo v7.360.1 (API v360)
+[Vulkan @ 0xc487319ab9b0] Supported layers:
+[Vulkan @ 0xc487319ab9b0] 	VK_LAYER_NV_optimus
+[Vulkan @ 0xc487319ab9b0] 	VK_LAYER_NV_present
+[Vulkan @ 0xc487319ab9b0] Using instance extension "VK_KHR_surface"
+[Vulkan @ 0xc487319ab9b0] Using instance extension "VK_KHR_wayland_surface"
+[Vulkan @ 0xc487319ab9b0] GPU listing:
+[Vulkan @ 0xc487319ab9b0]     0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xc487319ab9b0] Device 0 selected: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_push_descriptor
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_physical_device_drm
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_shader_atomic_float
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_cooperative_matrix
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_shader_object
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_shader_subgroup_rotate
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_host_image_copy
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_workgroup_memory_explicit_layout
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_shader_relaxed_extended_instruction
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_shader_long_vector
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_shader_replicated_composites
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_shader_expect_assume
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_maintenance1
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_maintenance2
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_internally_synchronized_queues
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_external_memory_fd
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_external_memory_dma_buf
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_image_drm_format_modifier
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_external_semaphore_fd
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_EXT_external_memory_host
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_queue
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_encode_queue
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_decode_queue
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_encode_h264
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_decode_h264
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_encode_h265
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_decode_h265
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_decode_vp9
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_encode_av1
+[Vulkan @ 0xc487319ab9b0] Using device extension VK_KHR_video_decode_av1
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_swapchain"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_push_descriptor"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_external_memory_fd"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_external_memory_host"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_external_memory_dma_buf"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_external_semaphore_fd"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_pci_bus_info"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_hdr_metadata"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_image_drm_format_modifier"
+[Vulkan @ 0xc487319ab9b0] device extension "VK_KHR_portability_subset" not found, excluding.
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_synchronization2"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_format_feature_flags2"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_host_image_copy"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_KHR_swapchain_maintenance1"
+[Vulkan @ 0xc487319ab9b0] Using device extension "VK_EXT_swapchain_maintenance1"
+[Vulkan @ 0xc487319ab9b0] Queue families:
+[Vulkan @ 0xc487319ab9b0]     0: graphics compute transfer sparse (queues: 16)
+[Vulkan @ 0xc487319ab9b0]     1: transfer sparse (queues: 1)
+[Vulkan @ 0xc487319ab9b0]     2: compute transfer sparse (queues: 8)
+[Vulkan @ 0xc487319ab9b0]     3: transfer decode sparse (queues: 1)
+[Vulkan @ 0xc487319ab9b0]     4: transfer encode sparse (queues: 1)
+[Vulkan @ 0xc487319ab9b0] Using device: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
+[Vulkan @ 0xc487319ab9b0] Alignments:
+[Vulkan @ 0xc487319ab9b0]     optimalBufferCopyRowPitchAlignment: 1
+[Vulkan @ 0xc487319ab9b0]     minMemoryMapAlignment:              64
+[Vulkan @ 0xc487319ab9b0]     nonCoherentAtomSize:                64
+[Vulkan @ 0xc487319ab9b0]     minImportedHostPointerAlignment:    4096
+[Vulkan Renderer @ 0xc487319107e0] Imported vulkan device properties:
+[Vulkan Renderer @ 0xc487319107e0]     Device Name: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
+[Vulkan Renderer @ 0xc487319107e0]     Device ID: 10de:2e03
+[Vulkan Renderer @ 0xc487319107e0]     Device UUID: [redacted]
+[Vulkan Renderer @ 0xc487319107e0]     Driver version: 99d38200
+[Vulkan Renderer @ 0xc487319107e0]     API version: 1.4.351
+[Vulkan Renderer @ 0xc487319107e0] Memory heaps supported by device:
+[Vulkan Renderer @ 0xc487319107e0]     0: flags 0x1 size   78G
+[Vulkan Renderer @ 0xc487319107e0] Memory summary:     0 used     0 res     0 alloc, efficiency 100.00%, utilization 100.00%, max page: 5015M
+[Vulkan Renderer @ 0xc487319107e0] shaderc SPIR-V version 1.6 rev 1
+[Vulkan Renderer @ 0xc487319107e0] Initialized SPIR-V compiler 'shaderc'
+[Vulkan Renderer @ 0xc487319107e0] GPU information:
+[Vulkan Renderer @ 0xc487319107e0]     GLSL version: 450 (vulkan)
+[Vulkan Renderer @ 0xc487319107e0]       max_shmem_size:            49152
+[Vulkan Renderer @ 0xc487319107e0]       max_group_threads:         1024
+[Vulkan Renderer @ 0xc487319107e0]       max_group_size[0]:         1024
+[Vulkan Renderer @ 0xc487319107e0]       max_group_size[1]:         1024
+[Vulkan Renderer @ 0xc487319107e0]       max_group_size[2]:         64
+[Vulkan Renderer @ 0xc487319107e0]       subgroup_size:             32
+[Vulkan Renderer @ 0xc487319107e0]       min_gather_offset:         -32
+[Vulkan Renderer @ 0xc487319107e0]       max_gather_offset:         31
+[Vulkan Renderer @ 0xc487319107e0]     Limits:
+[Vulkan Renderer @ 0xc487319107e0]       thread_safe:               1
+[Vulkan Renderer @ 0xc487319107e0]       callbacks:                 1
+[Vulkan Renderer @ 0xc487319107e0]       max_buf_size:              84143548416
+[Vulkan Renderer @ 0xc487319107e0]       max_ubo_size:              65536
+[Vulkan Renderer @ 0xc487319107e0]       max_ssbo_size:             4294967295
+[Vulkan Renderer @ 0xc487319107e0]       max_vbo_size:              84143548416
+[Vulkan Renderer @ 0xc487319107e0]       max_mapped_size:           84143548416
+[Vulkan Renderer @ 0xc487319107e0]       max_buffer_texels:         268435456
+[Vulkan Renderer @ 0xc487319107e0]       align_host_ptr:            4096
+[Vulkan Renderer @ 0xc487319107e0]       host_cached:               1
+[Vulkan Renderer @ 0xc487319107e0]       max_tex_1d_dim:            32768
+[Vulkan Renderer @ 0xc487319107e0]       max_tex_2d_dim:            32768
+[Vulkan Renderer @ 0xc487319107e0]       max_tex_3d_dim:            16384
+[Vulkan Renderer @ 0xc487319107e0]       blittable_1d_3d:           1
+[Vulkan Renderer @ 0xc487319107e0]       buf_transfer:              1
+[Vulkan Renderer @ 0xc487319107e0]       align_tex_xfer_pitch:      1
+[Vulkan Renderer @ 0xc487319107e0]       align_tex_xfer_offset:     4
+[Vulkan Renderer @ 0xc487319107e0]       max_variable_comps:        0
+[Vulkan Renderer @ 0xc487319107e0]       max_constants:             18446744073709551615
+[Vulkan Renderer @ 0xc487319107e0]       max_pushc_size:            256
+[Vulkan Renderer @ 0xc487319107e0]       align_vertex_stride:       1
+[Vulkan Renderer @ 0xc487319107e0]       max_dispatch[0]:           2147483647
+[Vulkan Renderer @ 0xc487319107e0]       max_dispatch[1]:           65535
+[Vulkan Renderer @ 0xc487319107e0]       max_dispatch[2]:           65535
+[Vulkan Renderer @ 0xc487319107e0]       fragment_queues:           1
+[Vulkan Renderer @ 0xc487319107e0]       compute_queues:            8
+[Vulkan Renderer @ 0xc487319107e0]     External API interop:
+[Vulkan Renderer @ 0xc487319107e0]       UUID: 22:5E:EC:40:23:6C:E9:84:90:D4:63:EB:98:3F:39:60
+[Vulkan Renderer @ 0xc487319107e0]       PCI: 000f:01:00:0
+[Vulkan Renderer @ 0xc487319107e0]       buf export caps: 0x19
+[Vulkan Renderer @ 0xc487319107e0]       buf import caps: 0x19
+[Vulkan Renderer @ 0xc487319107e0]       tex export caps: 0x19
+[Vulkan Renderer @ 0xc487319107e0]       tex import caps: 0x19
+[Vulkan Renderer @ 0xc487319107e0]       sync export caps: 0x1
+[Vulkan Renderer @ 0xc487319107e0]       sync import caps: 0x0
+[Vulkan Renderer @ 0xc487319107e0] Available surface configurations:
+[Vulkan Renderer @ 0xc487319107e0]     0: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     1: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     2: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     3: VK_FORMAT_R8G8B8A8_SRGB                  VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     4: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     5: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     6: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     7: VK_FORMAT_R8G8B8A8_UNORM                 VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     8: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     9: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     10: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     11: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     12: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     13: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT709_LINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     14: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     15: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_BT2020_LINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     16: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     17: VK_FORMAT_R16G16B16A16_SFLOAT            VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     18: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     19: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     20: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     21: VK_FORMAT_B8G8R8A8_SRGB                  VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     22: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     23: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     24: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     25: VK_FORMAT_B8G8R8A8_UNORM                 VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     26: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+[Vulkan Renderer @ 0xc487319107e0]     27: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_PASS_THROUGH_EXT
+[Vulkan Renderer @ 0xc487319107e0]     28: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     29: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0]     30: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_HDR10_ST2084_EXT
+[Vulkan Renderer @ 0xc487319107e0]     31: VK_FORMAT_A2B10G10R10_UNORM_PACK32       VK_COLOR_SPACE_HDR10_HLG_EXT
+[Vulkan Renderer @ 0xc487319107e0] Picked surface configuration 26: VK_FORMAT_A2B10G10R10_UNORM_PACK32 + VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+    nan    :  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[2K
+Input #0, matroska,webm, from '$WORKDIR/hevc422-av.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:06.02, start: 0.000000, bitrate: 335 kb/s
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv422p(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], 24 fps, 24 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx265
+      DURATION        : 00:00:06.000000000
+  Stream #0:1: Audio: aac (LC), 48000 Hz, mono, fltp, delay 1024
+    Metadata:
+      ENCODER         : Lavc63.1.102 aac
+      DURATION        : 00:00:06.021000000
+[ffplay_abuffer @ 0xf10208008650] tb:1/48000 samplefmt:fltp samplerate:48000 chlayout:mono
+[ffplay_abuffersink @ 0xf102080c1c70] auto-inserting filter 'auto_aresample_0' between the filter 'ffplay_abuffer' and the filter 'ffplay_abuffersink'
+[auto_aresample_0 @ 0xf10208006b40] ch:1 chl:mono fmt:fltp r:48000Hz -> ch:1 chl:mono fmt:s16 r:48000Hz
+[hevc_cuvid @ 0xf10208183690] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xf10208183690] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xf10208183690] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xf10208183690] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xf10208183690] Formats: Original: nv16 | HW: nv16 | SW: nv16
+[ffplay_abuffer @ 0xf102080c1c70] tb:1/48000 samplefmt:fltp samplerate:48000 chlayout:mono
+[ffplay_abuffersink @ 0xf10208008650] auto-inserting filter 'auto_aresample_0' between the filter 'ffplay_abuffer' and the filter 'ffplay_abuffersink'
+[auto_aresample_0 @ 0xf102080267b0] ch:1 chl:mono fmt:fltp r:48000Hz -> ch:1 chl:mono fmt:s16 r:48000Hz
+   0.29 A-V:    nan fd=   0 aq=    9KB vq=   25KB sq=    0B
+   0.00 A-V:    nan fd=   0 aq=   12KB vq=   27KB sq=    0B
+[ffplay_buffer @ 0xf0ffcd97e0c0] w:320 h:180 pixfmt:nv16 tb:1/1000 fr:24/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[ffplay_buffer @ 0xf0ffcd97e0c0] video frame properties congruent with link at pts_time: 0
+[Vulkan Renderer @ 0xc487319107e0] Picked surface configuration 29: VK_FORMAT_A2B10G10R10_UNORM_PACK32 + VK_COLOR_SPACE_BT709_NONLINEAR_EXT
+[Vulkan Renderer @ 0xc487319107e0] Spent 23.404 ms generating shader LUT
+[Vulkan Renderer @ 0xc487319107e0] Dithering to 10 bit depth
+[Vulkan Renderer @ 0xc487319107e0] Spent 63.559 ms translating SPIR-V
+   0.11 A-V:  0.014 fd=   0 aq=   12KB vq=   25KB sq=    0B
+   0.15 A-V: -0.026 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.18 A-V: -0.026 fd=   2 aq=   13KB vq=   25KB sq=    0B
+   0.21 A-V: -0.026 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.24 A-V: -0.027 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.28 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   0.31 A-V: -0.026 fd=   2 aq=   13KB vq=   25KB sq=    0B
+   0.34 A-V: -0.026 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.37 A-V: -0.027 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.40 A-V: -0.026 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.43 A-V: -0.026 fd=   2 aq=   13KB vq=   27KB sq=    0B
+   0.46 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   0.49 A-V: -0.027 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.53 A-V: -0.026 fd=   2 aq=   14KB vq=   26KB sq=    0B
+   0.57 A-V: -0.026 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.60 A-V: -0.027 fd=   2 aq=   13KB vq=   27KB sq=    0B
+   0.63 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   0.66 A-V: -0.026 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.70 A-V: -0.026 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.74 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   0.77 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   0.80 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   0.83 A-V: -0.026 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.86 A-V: -0.027 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.89 A-V: -0.027 fd=   2 aq=   14KB vq=   27KB sq=    0B
+   0.92 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   0.96 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   1.00 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   1.03 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   1.07 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   1.10 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   1.13 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   1.16 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   1.19 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   1.22 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   1.25 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   1.29 A-V: -0.026 fd=   2 aq=   13KB vq=   30KB sq=    0B
+   1.32 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   1.35 A-V: -0.026 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   1.38 A-V: -0.027 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   1.41 A-V: -0.027 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   1.44 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   1.48 A-V: -0.026 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   1.51 A-V: -0.027 fd=   2 aq=   13KB vq=   30KB sq=    0B
+   1.54 A-V: -0.026 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   1.57 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   1.60 A-V: -0.026 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   1.63 A-V: -0.027 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   1.66 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   1.69 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   1.72 A-V: -0.026 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   1.75 A-V: -0.027 fd=   2 aq=   13KB vq=   32KB sq=    0B
+   1.79 A-V: -0.027 fd=   2 aq=   14KB vq=   32KB sq=    0B
+   1.82 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   1.85 A-V: -0.026 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   1.88 A-V: -0.027 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   1.91 A-V: -0.027 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   1.94 A-V: -0.026 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   1.97 A-V: -0.026 fd=   2 aq=   13KB vq=   33KB sq=    0B
+   2.01 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   2.04 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   2.08 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.11 A-V: -0.026 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.14 A-V: -0.027 fd=   2 aq=   13KB vq=   35KB sq=    0B
+   2.17 A-V: -0.027 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   2.20 A-V: -0.026 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   2.23 A-V: -0.026 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.27 A-V: -0.027 fd=   2 aq=   13KB vq=   35KB sq=    0B
+   2.30 A-V: -0.027 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.33 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.36 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.39 A-V: -0.027 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.42 A-V: -0.027 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.45 A-V: -0.027 fd=   2 aq=   14KB vq=   37KB sq=    0B
+   2.48 A-V: -0.026 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.52 A-V: -0.026 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.55 A-V: -0.027 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.58 A-V: -0.026 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.61 A-V: -0.026 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.64 A-V: -0.026 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.67 A-V: -0.027 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.70 A-V: -0.027 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.73 A-V: -0.026 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.77 A-V: -0.026 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.80 A-V: -0.027 fd=   2 aq=   14KB vq=   37KB sq=    0B
+   2.83 A-V: -0.026 fd=   2 aq=   14KB vq=   35KB sq=    0B
+   2.86 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.89 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   2.92 A-V: -0.027 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.95 A-V: -0.027 fd=   2 aq=   14KB vq=   36KB sq=    0B
+   2.98 A-V: -0.027 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   3.02 A-V: -0.026 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   3.05 A-V: -0.027 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   3.08 A-V: -0.027 fd=   2 aq=   13KB vq=   34KB sq=    0B
+   3.11 A-V: -0.027 fd=   2 aq=   14KB vq=   34KB sq=    0B
+   3.14 A-V: -0.026 fd=   2 aq=   13KB vq=   34KB sq=    0B
+   3.17 A-V: -0.027 fd=   2 aq=   13KB vq=   32KB sq=    0B
+   3.21 A-V: -0.026 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   3.24 A-V: -0.026 fd=   2 aq=   14KB vq=   33KB sq=    0B
+   3.27 A-V: -0.025 fd=   2 aq=   13KB vq=   32KB sq=    0B
+   3.30 A-V: -0.026 fd=   2 aq=   13KB vq=   33KB sq=    0B
+   3.33 A-V: -0.026 fd=   2 aq=   13KB vq=   30KB sq=    0B
+   3.37 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   3.40 A-V: -0.026 fd=   2 aq=   14KB vq=   32KB sq=    0B
+   3.43 A-V: -0.027 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   3.46 A-V: -0.027 fd=   2 aq=   13KB vq=   32KB sq=    0B
+   3.50 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   3.54 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.57 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   3.60 A-V: -0.027 fd=   2 aq=   13KB vq=   30KB sq=    0B
+   3.63 A-V: -0.026 fd=   2 aq=   13KB vq=   31KB sq=    0B
+   3.66 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.69 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.72 A-V: -0.027 fd=   2 aq=   13KB vq=   29KB sq=    0B
+   3.75 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   3.79 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   3.82 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.85 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.88 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   3.91 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   3.95 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   3.99 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   4.02 A-V: -0.026 fd=   2 aq=   13KB vq=   28KB sq=    0B
+   4.05 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   4.09 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   4.12 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   4.15 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   4.18 A-V: -0.027 fd=   2 aq=   13KB vq=   28KB sq=    0B
+   4.21 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   4.24 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   4.28 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   4.31 A-V: -0.026 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   4.34 A-V: -0.027 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   4.37 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   4.40 A-V: -0.026 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   4.43 A-V: -0.026 fd=   2 aq=   14KB vq=   30KB sq=    0B
+   4.46 A-V: -0.027 fd=   2 aq=   14KB vq=   31KB sq=    0B
+   4.49 A-V: -0.027 fd=   2 aq=   14KB vq=   29KB sq=    0B
+   4.53 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   4.56 A-V: -0.026 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   4.59 A-V: -0.027 fd=   2 aq=   14KB vq=   28KB sq=    0B
+   4.62 A-V: -0.027 fd=   2 aq=   13KB vq=   27KB sq=    0B
+   4.65 A-V: -0.026 fd=   2 aq=   13KB vq=   25KB sq=    0B
+   4.68 A-V: -0.026 fd=   2 aq=   13KB vq=   24KB sq=    0B
+   4.71 A-V: -0.027 fd=   2 aq=   12KB vq=   24KB sq=    0B
+   4.74 A-V: -0.027 fd=   2 aq=   12KB vq=   23KB sq=    0B
+   4.78 A-V: -0.027 fd=   2 aq=   12KB vq=   23KB sq=    0B
+   4.81 A-V: -0.026 fd=   2 aq=   11KB vq=   20KB sq=    0B
+   4.84 A-V: -0.027 fd=   2 aq=   11KB vq=   20KB sq=    0B
+   4.87 A-V: -0.027 fd=   2 aq=   10KB vq=   19KB sq=    0B
+   4.90 A-V: -0.027 fd=   2 aq=   10KB vq=   18KB sq=    0B
+   4.93 A-V: -0.027 fd=   2 aq=   10KB vq=   17KB sq=    0B
+   4.96 A-V: -0.027 fd=   2 aq=    9KB vq=   17KB sq=    0B
+   4.99 A-V: -0.027 fd=   2 aq=    9KB vq=   15KB sq=    0B
+   5.03 A-V: -0.027 fd=   2 aq=    9KB vq=   14KB sq=    0B
+   5.06 A-V: -0.026 fd=   2 aq=    8KB vq=   13KB sq=    0B
+   5.09 A-V: -0.027 fd=   2 aq=    8KB vq=   13KB sq=    0B
+   5.12 A-V: -0.027 fd=   2 aq=    7KB vq=   13KB sq=    0B
+   5.15 A-V: -0.026 fd=   2 aq=    7KB vq=   11KB sq=    0B
+   5.18 A-V: -0.026 fd=   2 aq=    7KB vq=    9KB sq=    0B
+   5.21 A-V: -0.027 fd=   2 aq=    6KB vq=    9KB sq=    0B
+   5.24 A-V: -0.027 fd=   2 aq=    6KB vq=    9KB sq=    0B
+   5.28 A-V: -0.027 fd=   2 aq=    5KB vq=    8KB sq=    0B
+   5.31 A-V: -0.026 fd=   2 aq=    5KB vq=    5KB sq=    0B
+   5.34 A-V: -0.027 fd=   2 aq=    4KB vq=    5KB sq=    0B
+   5.37 A-V: -0.027 fd=   2 aq=    4KB vq=    4KB sq=    0B
+   5.40 A-V: -0.027 fd=   2 aq=    4KB vq=    4KB sq=    0B
+   5.43 A-V: -0.026 fd=   2 aq=    3KB vq=    3KB sq=    0B
+   5.46 A-V: -0.027 fd=   2 aq=    3KB vq=    3KB sq=    0B
+   5.49 A-V: -0.027 fd=   2 aq=    3KB vq=    1KB sq=    0B
+   5.53 A-V: -0.027 fd=   2 aq=    2KB vq=    0KB sq=    0B
+   5.56 A-V: -0.026 fd=   2 aq=    2KB vq=    0KB sq=    0B
+   5.59 A-V: -0.026 fd=   2 aq=    2KB vq=    0KB sq=    0B
+   5.62 A-V: -0.027 fd=   2 aq=    1KB vq=    0KB sq=    0B
+   5.65 A-V: -0.027 fd=   2 aq=    1KB vq=    0KB sq=    0B
+   5.68 A-V: -0.026 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.71 A-V: -0.026 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.74 A-V: -0.027 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.78 A-V: -0.027 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.81 A-V: -0.026 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.84 A-V: -0.026 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.87 A-V: -0.027 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.90 A-V: -0.027 fd=   2 aq=    0KB vq=    0KB sq=    0B
+   5.93 A-V: -0.026 fd=   2 aq=    0KB vq=    0KB sq=    0B
+[AVIOContext @ 0xf10208009360] Statistics: 252826 bytes read, 0 seeks

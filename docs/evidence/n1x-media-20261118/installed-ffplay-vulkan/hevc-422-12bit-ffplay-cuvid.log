@@ -1,0 +1,126 @@
+$ /usr/bin/ffplay-n1x -hide_banner -autoexit -an -loglevel verbose -vcodec hevc_cuvid -framerate 10 -f hevc $WORKDIR/stream.hevc
+exit_code=0
+
+stdout:
+
+
+stderr:
+Initialized opengl renderer.
+    nan    :  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[2K
+Input #0, hevc, from '$WORKDIR/stream.hevc':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv422p12le(tv), 320x180, 10 fps, 10 tbr, 1200k tbn
+[hevc_mp4toannexb @ 0xed221800ecf0] The input looks like it is Annex B already
+[hevc_cuvid @ 0xed2218009c40] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xed2218009c40] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xed2218009c40] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xed2218009c40] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xed2218009c40] Formats: Original: p212le | HW: p212le | SW: p212le
+    nan M-V:    nan fd=   0 aq=    0KB vq=   84KB sq=    0B
+    nan M-V:    nan fd=   0 aq=    0KB vq=   81KB sq=    0B
+[ffplay_buffer @ 0xed1ff999ca30] w:320 h:180 pixfmt:p212le tb:1/1200000 fr:10/1 sar:0/1 csp:unknown range:tv alpha:unspecified
+[auto_scale_0 @ 0xed1ff999d1f0] w:iw h:ih flags:'' interl:0
+[ffplay_buffersink @ 0xed1ff999cb90] auto-inserting filter 'auto_scale_0' between the filter 'ffplay_buffer' and the filter 'ffplay_buffersink'
+[auto_scale_0 @ 0xed1ff999d1f0] w:320 h:180 fmt:p212le csp:unknown range:tv sar:0/1 -> w:320 h:180 fmt:yuv420p csp:bt709 range:tv sar:0/1 flags:0x00000004
+[auto_scale_0 @ 0xed1ff999d1f0] [framesync @ 0xed1ff999d2b0] Selected 1/1200000 time base
+[auto_scale_0 @ 0xed1ff999d1f0] [framesync @ 0xed1ff999d2b0] Sync level 1
+[ffplay_buffer @ 0xed1ff999ca30] video frame properties congruent with link at pts_time: 0
+[auto_scale_0 @ 0xed1ff999d1f0] w:320 h:180 fmt:p212le csp:unknown range:tv sar:0/1 -> w:320 h:180 fmt:yuv420p csp:bt709 range:tv sar:0/1 flags:0x00000004
+[auto_scale_0 @ 0xed1ff999d1f0] [framesync @ 0xed1ff999d2b0] Sync level 1
+[auto_scale_0 @ 0xed1ff999d1f0] w:320 h:180 fmt:p212le csp:unknown range:tv sar:0/1 -> w:320 h:180 fmt:yuv420p csp:bt709 range:tv sar:0/1 flags:0x00000004
+[auto_scale_0 @ 0xed1ff999d1f0] [framesync @ 0xed1ff999d2b0] Sync level 1
+[auto_scale_0 @ 0xed1ff999d1f0] w:320 h:180 fmt:p212le csp:unknown range:tv sar:1/1 -> w:320 h:180 fmt:yuv420p csp:bt709 range:tv sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xed1ff999d1f0] [framesync @ 0xed1ff999d2b0] Sync level 1
+[swscaler @ 0xed1ff9b95230] YUV color matrix differs for YUV->YUV, using intermediate RGB to convert
+Created 320x180 texture with SDL_PIXELFORMAT_IYUV.
+   0.04 M-V:  0.000 fd=   0 aq=    0KB vq=   67KB sq=    0B
+   0.07 M-V:  0.000 fd=   0 aq=    0KB vq=   67KB sq=    0B
+   0.10 M-V:  0.000 fd=   0 aq=    0KB vq=   67KB sq=    0B
+   0.13 M-V:  0.000 fd=   0 aq=    0KB vq=   64KB sq=    0B
+   0.16 M-V:  0.000 fd=   0 aq=    0KB vq=   64KB sq=    0B
+   0.19 M-V:  0.000 fd=   0 aq=    0KB vq=   64KB sq=    0B
+   0.22 M-V:  0.000 fd=   0 aq=    0KB vq=   62KB sq=    0B
+   0.25 M-V:  0.000 fd=   0 aq=    0KB vq=   62KB sq=    0B
+   0.28 M-V:  0.000 fd=   0 aq=    0KB vq=   62KB sq=    0B
+   0.32 M-V:  0.000 fd=   0 aq=    0KB vq=   60KB sq=    0B
+   0.35 M-V:  0.000 fd=   0 aq=    0KB vq=   60KB sq=    0B
+   0.38 M-V:  0.000 fd=   0 aq=    0KB vq=   60KB sq=    0B
+   0.42 M-V:  0.000 fd=   0 aq=    0KB vq=   54KB sq=    0B
+   0.45 M-V:  0.000 fd=   0 aq=    0KB vq=   54KB sq=    0B
+   0.48 M-V:  0.000 fd=   0 aq=    0KB vq=   54KB sq=    0B
+   0.52 M-V:  0.000 fd=   0 aq=    0KB vq=   51KB sq=    0B
+   0.55 M-V:  0.000 fd=   0 aq=    0KB vq=   51KB sq=    0B
+   0.58 M-V:  0.000 fd=   0 aq=    0KB vq=   51KB sq=    0B
+   0.62 M-V:  0.000 fd=   0 aq=    0KB vq=   49KB sq=    0B
+   0.65 M-V:  0.000 fd=   0 aq=    0KB vq=   49KB sq=    0B
+   0.68 M-V:  0.000 fd=   0 aq=    0KB vq=   49KB sq=    0B
+   0.72 M-V:  0.000 fd=   0 aq=    0KB vq=   47KB sq=    0B
+   0.75 M-V:  0.000 fd=   0 aq=    0KB vq=   47KB sq=    0B
+   0.78 M-V:  0.000 fd=   0 aq=    0KB vq=   47KB sq=    0B
+   0.82 M-V:  0.000 fd=   0 aq=    0KB vq=   40KB sq=    0B
+   0.85 M-V:  0.000 fd=   0 aq=    0KB vq=   40KB sq=    0B
+   0.88 M-V:  0.000 fd=   0 aq=    0KB vq=   40KB sq=    0B
+   0.92 M-V:  0.000 fd=   0 aq=    0KB vq=   38KB sq=    0B
+   0.95 M-V:  0.000 fd=   0 aq=    0KB vq=   38KB sq=    0B
+   0.98 M-V:  0.000 fd=   0 aq=    0KB vq=   38KB sq=    0B
+   1.02 M-V:  0.000 fd=   0 aq=    0KB vq=   35KB sq=    0B
+   1.05 M-V:  0.000 fd=   0 aq=    0KB vq=   35KB sq=    0B
+   1.08 M-V:  0.000 fd=   0 aq=    0KB vq=   35KB sq=    0B
+   1.11 M-V:  0.000 fd=   0 aq=    0KB vq=   33KB sq=    0B
+   1.14 M-V:  0.000 fd=   0 aq=    0KB vq=   33KB sq=    0B
+   1.17 M-V:  0.000 fd=   0 aq=    0KB vq=   33KB sq=    0B
+   1.21 M-V:  0.000 fd=   0 aq=    0KB vq=   27KB sq=    0B
+   1.24 M-V:  0.000 fd=   0 aq=    0KB vq=   27KB sq=    0B
+   1.27 M-V:  0.000 fd=   0 aq=    0KB vq=   27KB sq=    0B
+   1.31 M-V:  0.000 fd=   0 aq=    0KB vq=   24KB sq=    0B
+   1.34 M-V:  0.000 fd=   0 aq=    0KB vq=   24KB sq=    0B
+   1.37 M-V:  0.000 fd=   0 aq=    0KB vq=   24KB sq=    0B
+   1.41 M-V:  0.000 fd=   0 aq=    0KB vq=   21KB sq=    0B
+   1.44 M-V:  0.000 fd=   0 aq=    0KB vq=   21KB sq=    0B
+   1.47 M-V:  0.000 fd=   0 aq=    0KB vq=   21KB sq=    0B
+   1.51 M-V:  0.000 fd=   0 aq=    0KB vq=   19KB sq=    0B
+   1.54 M-V:  0.000 fd=   0 aq=    0KB vq=   19KB sq=    0B
+   1.57 M-V:  0.000 fd=   0 aq=    0KB vq=   19KB sq=    0B
+   1.61 M-V:  0.000 fd=   0 aq=    0KB vq=   11KB sq=    0B
+   1.64 M-V:  0.000 fd=   0 aq=    0KB vq=   11KB sq=    0B
+   1.67 M-V:  0.000 fd=   0 aq=    0KB vq=   11KB sq=    0B
+   1.70 M-V:  0.000 fd=   0 aq=    0KB vq=    8KB sq=    0B
+   1.73 M-V:  0.000 fd=   0 aq=    0KB vq=    8KB sq=    0B
+   1.76 M-V:  0.000 fd=   0 aq=    0KB vq=    8KB sq=    0B
+   1.79 M-V:  0.000 fd=   0 aq=    0KB vq=    8KB sq=    0B
+   1.83 M-V:  0.000 fd=   0 aq=    0KB vq=    6KB sq=    0B
+   1.86 M-V:  0.000 fd=   0 aq=    0KB vq=    6KB sq=    0B
+   1.89 M-V:  0.000 fd=   0 aq=    0KB vq=    6KB sq=    0B
+   1.93 M-V:  0.000 fd=   0 aq=    0KB vq=    3KB sq=    0B
+   1.96 M-V:  0.000 fd=   0 aq=    0KB vq=    3KB sq=    0B
+   1.99 M-V:  0.000 fd=   0 aq=    0KB vq=    3KB sq=    0B
+   2.02 M-V:  0.001 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.05 M-V:  0.001 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.08 M-V:  0.001 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.12 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.15 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.18 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.22 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.25 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.28 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.32 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.35 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.38 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.41 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.44 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.47 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.51 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.54 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.57 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.61 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.64 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.67 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.71 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.74 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.77 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.81 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.84 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.87 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   2.91 M-V:  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[AVIOContext @ 0xed2218009410] Statistics: 115867 bytes read, 0 seeks

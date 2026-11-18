@@ -25,6 +25,7 @@ def run(command, label, evidence, work, *, env=None, timeout=25):
     content = "$ " + " ".join(map(str, command)) + "\nexit_code=" + str(
         result.returncode) + "\n\nstdout:\n" + result.stdout + "\nstderr:\n" + result.stderr
     content = content.replace(str(Path.home()), "$HOME").replace(str(work), "$WORKDIR")
+    content = re.sub(r"Device UUID:\s*[0-9A-Fa-f:]+", "Device UUID: [redacted]", content)
     content = "\n".join(line.rstrip() for line in content.replace("\r", "\n").splitlines()) + "\n"
     (evidence / f"{label}.log").write_text(content)
     return result
@@ -131,6 +132,30 @@ def check_case(chroma, depth, args, work):
         if not ffplay_hardware:
             raise RuntimeError(f"{label}: FFplay did not use CUVID through EOF")
 
+    ffplay_vulkan_hardware = None
+    ffplay_vulkan_surface = None
+    if chroma == "422" and args.ffplay_vulkan:
+        ffplay_vk = run([args.ffplay_vulkan, "-hide_banner", "-autoexit", "-an",
+                         "-loglevel", "verbose", "-enable_vulkan", "-vcodec",
+                         "hevc_cuvid", "-framerate", "10", "-f", "hevc", str(video)],
+                        f"{label}-ffplay-vulkan", evidence, work,
+                        env={"SDL_VIDEODRIVER": "wayland"}, timeout=20)
+        vulkan_surface_match = re.search(
+            r"\[ffplay_buffer[^\n]*pixfmt:(\w+)", ffplay_vk.stderr)
+        ffplay_vulkan_surface = vulkan_surface_match.group(1) if vulkan_surface_match else None
+        expected = {8: "nv16", 10: "p210le", 12: "p212le"}[depth]
+        ffplay_vulkan_hardware = (
+            ffplay_vk.returncode == 0 and
+            "Initialized libplacebo" in ffplay_vk.stderr and
+            "Device 0 selected: NVIDIA RTX Spark N1X" in ffplay_vk.stderr and
+            "CUVID capabilities for hevc_cuvid" in ffplay_vk.stderr and
+            f"Formats: Original: {expected} | HW: {expected} | SW: {expected}" in ffplay_vk.stderr and
+            ffplay_vulkan_surface == expected and
+            "auto_scale_0" not in ffplay_vk.stderr and
+            "SDL_PIXELFORMAT_IYUV" not in ffplay_vk.stderr)
+        if not ffplay_vulkan_hardware:
+            raise RuntimeError(f"{label}: FFplay Vulkan/CUVID renderer failed")
+
     return {"status": "observed", "fixture": stream,
             "fixture_sha256": sha256(video), "software_cuvid_pixel_match": True,
             "frame_hashes_sha256": hashlib.sha256("\n".join(reference).encode()).hexdigest(),
@@ -139,6 +164,8 @@ def check_case(chroma, depth, args, work):
             "mpv_hardware_decode": vulkan_hardware,
             "ffplay_cuvid_hardware_decode": ffplay_hardware,
             "ffplay_texture": ffplay_texture,
+            "ffplay_vulkan_cuvid_hardware_decode": ffplay_vulkan_hardware,
+            "ffplay_vulkan_surface": ffplay_vulkan_surface,
             "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."}
 
 
@@ -149,8 +176,11 @@ def main():
     parser.add_argument("--ffmpeg-cuvid", required=True)
     parser.add_argument("--player", default="/usr/bin/p16-video-play")
     parser.add_argument("--ffplay-cuvid", help="isolated FFplay binary for 4:2:2 application test")
+    parser.add_argument("--ffplay-vulkan", help="FFplay with libplacebo Vulkan renderer for 4:2:2")
     parser.add_argument("--case", choices=[f"{chroma}:{depth}" for chroma, depth in CASES],
                         help="run one format/depth case for targeted rechecks")
+    parser.add_argument("--chroma-only", choices=("422", "444"),
+                        help="run one chroma family")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -165,11 +195,16 @@ def main():
             "x265_12": sha256(args.x265_12),
             "ffmpeg_cuvid": sha256(args.ffmpeg_cuvid),
             "player": sha256(args.player),
-            "ffplay_cuvid": sha256(args.ffplay_cuvid) if args.ffplay_cuvid else None},
+            "ffplay_cuvid": sha256(args.ffplay_cuvid) if args.ffplay_cuvid else None,
+            "ffplay_vulkan": sha256(args.ffplay_vulkan) if args.ffplay_vulkan else None},
         "cases": {},
     }
     failures = 0
-    selected = [case for case in CASES if args.case in (None, f"{case[0]}:{case[1]}")]
+    selected = [case for case in CASES if
+                args.case in (None, f"{case[0]}:{case[1]}") and
+                args.chroma_only in (None, case[0])]
+    if not selected:
+        parser.error("--case and --chroma-only select no cases")
     for chroma, depth in selected:
         name = f"hevc_{chroma}_{depth}bit"
         try:
