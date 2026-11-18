@@ -1,0 +1,80 @@
+{
+  "status": "pass",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "fixture": {
+    "sha256": "7a1e57030fc601181fefb6a6ddda98f9e8e718451a2268d58378221b1331d613",
+    "frames": 30,
+    "format": "HEVC RExt yuv444p12le",
+    "fps": 10,
+    "duration_s": 3,
+    "timestamp_filter": "setts=pts=N:dts=N:duration=1:time_base=1/10"
+  },
+  "results": [
+    {
+      "status": "pass",
+      "binary": "/usr/bin/ffplay-n1x",
+      "sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+      "decoder": "cuvid",
+      "elapsed_s": 5.46,
+      "last_video_clock_s": 2.91,
+      "renderer_input": "yuv444p12msble",
+      "checks": {
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "/usr/bin/ffplay-n1x",
+      "sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+      "decoder": "vaapi",
+      "elapsed_s": 6.165,
+      "last_video_clock_s": 2.89,
+      "renderer_input": "vaapi",
+      "checks": {
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x",
+      "sha256": "38ad27de55e97fb92a3f035dcdef04ff9857e8e375783c90a56a6be0585d09b1",
+      "decoder": "cuvid",
+      "elapsed_s": 5.554,
+      "last_video_clock_s": 2.88,
+      "renderer_input": "yuv444p12msble",
+      "checks": {
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    },
+    {
+      "status": "pass",
+      "binary": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x",
+      "sha256": "38ad27de55e97fb92a3f035dcdef04ff9857e8e375783c90a56a6be0585d09b1",
+      "decoder": "vaapi",
+      "elapsed_s": 6.207,
+      "last_video_clock_s": 2.9,
+      "renderer_input": "vaapi",
+      "checks": {
+        "vulkan_renderer": true,
+        "hardware_decoder": true,
+        "expected_renderer_input": true,
+        "timed_to_end": true,
+        "no_renderer_error": true
+      }
+    }
+  ],
+  "limit": "Player input and EOF are verified; display color accuracy, actual output bit depth and zero-copy are not measured."
+}

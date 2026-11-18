@@ -38,4 +38,8 @@ The extracted package binary SHA256 is
 `6a82cf0c63e8aae9918281135a7091449308346c1f834fa5f8a0a56a2292c3ea`;
 its separate [hardware readback result](hevc44412-vaapi-q416-package-kernel38.json)
 also matches all 30 software frames. The package is not installed yet.
-Installation and normal application use of the new package are separate gates.
+The [timed 12-bit FFplay test](hevc44412-vaapi-player-kernel38/hevc44412-vaapi-playback.json)
+qualifies application playback through VA-API and libplacebo for both the
+installed 9.0.2-5 player and the extracted 9.0.2-6 player. This does not
+exercise FFmpeg's CPU readback conversion; package installation and its
+installed readback regression are separate gates.

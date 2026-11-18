@@ -69,8 +69,14 @@ the stream but offers no usable 16-bit readback. Forced `yuv444p` completes
 An isolated [Q416-mapped FFmpeg candidate](docs/evidence/n1x-media-20261118/hevc444-vaapi-readback.md)
 downloads 30 `yuv444p16le` hardware frames with `-threads 1`; all 10,368,000
 bytes equal software output for both 10-bit and 12-bit HEVC RExt 4:4:4. Its [patch](platform/video/0001-vaapi-map-q416-planar-16bit-444.patch)
-is in the reproducible package recipe. Package installation and normal
-application use of this corrected VA-API path remain pending.
+is in the reproducible package recipe. A [timed FFplay application test](docs/evidence/n1x-media-20261118/hevc44412-vaapi-player-kernel38/hevc44412-vaapi-playback.json)
+reached the end of a three-second 12-bit 4:4:4 clip using both CUVID and
+VA-API decode with the Vulkan renderer. The renderer received `vaapi` frames
+in both the installed 9.0.2-5 player and the extracted 9.0.2-6 package
+player. This playback path already works on 9.0.2-5; the Q416 patch
+specifically enables correct FFmpeg 16-bit VA-API readback. Package 9.0.2-6
+installation and installed-package readback remain pending. Physical display
+precision, color accuracy and zero-copy behavior remain unmeasured.
 The [VA-API capability query](docs/evidence/n1x-media-20261118/vainfo-nvidia.log)
 lists Main12 and Main444 8/10/12-bit decode entrypoints; other advertised
 profiles still need their own output tests.
