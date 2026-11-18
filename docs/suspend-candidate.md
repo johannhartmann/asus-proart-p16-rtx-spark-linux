@@ -236,6 +236,15 @@ subsequent live contention/replacement results are recorded above. Kernel36
 initially passed native cold boot and the pre-PM audio/NPU phases, then stopped
 on the UVM warning. The corrected UVM later passed the native sequence above.
 
+The [kernel37 offline bundle](evidence/kernel37-offline-20261118.md) contains
+the MMU notifier Lockdep correction, two matching kernel packages and a
+13-module platform driver package. All 8,507 built modules pass split-BTF
+checks. Seven fresh EFI/KVM cases cover the exact Image, full 30-module boot,
+MMU notifier paths, PCIe/SDHCI hot removal including guest `pm_test=platform`,
+and NVIDIA UVM PM lock order with a positive control. The bundle has not been
+installed or selected for a native boot; physical sleep and real GPU/media
+workloads on kernel37 remain unqualified.
+
 ## Deployment gate
 
 Keep the working kernel34 and recovery images. Build all changes into one

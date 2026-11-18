@@ -1,0 +1,181 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "recorded_on": "2026-11-18",
+  "kernel_release": "7.2.8-37-rtx-spark-npu",
+  "kernel_source_commit": "ca47e8af419fc6661ffb0aef20d1c7abe55665a8",
+  "module_source_commit": "0de41e842e1ed8debc0ac93ff028f22bb9c91ec8",
+  "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+  "kernel_packages": {
+    "packages/linux-p16-platform-37-7.2.8-37-aarch64.pkg.tar.zst": "ceb9bfd3487bf52f9c7a7e3e6cc53bae961a0336c4e8409e486434d0d24eceae",
+    "packages/linux-p16-platform-37-headers-7.2.8-37-aarch64.pkg.tar.zst": "db529383269c530e7e20674b250c9751a026e05c3940a61a3a73fe6267072e09"
+  },
+  "driver_package": {
+    "package": "linux-p16-platform-37-drivers-7.2.8-37-aarch64.pkg.tar.xz",
+    "package_sha256": "ef7b1549a9e037024099bb085b3b49367e41f624af8f54125c61aad1b5633a57",
+    "kernel_release": "7.2.8-37-rtx-spark-npu",
+    "modules": 13,
+    "provenance_sha256": "6f2dfc888bcbf76ec89390c207c42d5cc6d3949edcf69da2e760fd584860ebb8"
+  },
+  "module_btf_checked": 8507,
+  "module_builds": [
+    "als",
+    "dsp",
+    "dsp/validation",
+    "hwmon",
+    "nvidia",
+    "pluton",
+    "provider",
+    "scp",
+    "sensorhub",
+    "tests"
+  ],
+  "module_inputs": 4081,
+  "build_log_sha256": "188da0c63e61de7e346b00849130b6f600d32470d1314dd63b49e4c820f432b9",
+  "nvidia_build_log_sha256": "9470808ae9b781fb897578b9ca4678333a5c287d59a6b1776f25cd29842f3dfe",
+  "cases": {
+    "vm-pre-register": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "pre_register": true,
+        "expected_warning": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "module_sha256": "e7986f10672dc860d65ccc21f0a4bb264d2ed4503f15ffeb953edc228d092e8f",
+        "host_modules_loaded": false,
+        "host_pm_requested": false,
+        "warning_count": 0,
+        "seconds": 12.639516372000799
+      },
+      "uart_log_sha256": "09041bd175063e4387407ad071abb08eed3e571519be8bae6f03f40d387f5238",
+      "compressed_log": "vm-pre-register.uart.log.gz",
+      "compressed_sha256": "9f9565bb2be18f3562d27ebff198d84ba014ffe2a0d41aac4e3bbc5237e7bfd8"
+    },
+    "vm-register-fallback": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "pre_register": false,
+        "expected_warning": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "module_sha256": "e7986f10672dc860d65ccc21f0a4bb264d2ed4503f15ffeb953edc228d092e8f",
+        "host_modules_loaded": false,
+        "host_pm_requested": false,
+        "warning_count": 0,
+        "seconds": 13.814521011998295
+      },
+      "uart_log_sha256": "935597915320eec43bbcfa5f6649b0b3d77ab735776f17e9bf9e6eabaefa9f38",
+      "compressed_log": "vm-register-fallback.uart.log.gz",
+      "compressed_sha256": "c03a8cf6e7181073f387b6e3c8b5cf03e513f99a0eb190bc1c71d553aeafc399"
+    },
+    "module-set-vm": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "modules_loaded": 30,
+        "permanent_const_irq_fix": true,
+        "efi_kernel_userspace_vdso_signal_fork": true,
+        "virtual_cpus": 1,
+        "host_boot_id": "a59cc694-d52c-42a4-9300-164584c3a6c6",
+        "seconds": 24.035647684999276,
+        "max_host_thermal_mC": 68100,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c"
+      },
+      "uart_log_sha256": "aeb7e717eea31592f3f690bde9dbbe3ff17fc2b3127faa4091500780ecff136d",
+      "compressed_log": "module-set-vm.uart.log.gz",
+      "compressed_sha256": "46670c1b56e642639522435ff322a76f1b38b6bf112579b0e8ff812d06a7f943"
+    },
+    "pci-hotremove": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "legacy_positive_control": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "host_pm_requested": false,
+        "host_modules_loaded": false,
+        "guest_pm_test": null,
+        "seconds": 20.52484061800351,
+        "hot_remove_requested": true
+      },
+      "uart_log_sha256": "8e88c09e6e23ef2ff6bd5c8ad6320a325288bef2cf4aa696439bd2bb026864dc",
+      "compressed_log": "pci-hotremove.uart.log.gz",
+      "compressed_sha256": "cf05a47422ba128d6dd3a99b93a2841b6b92e810a52b5e784a446840a958f4ce"
+    },
+    "pci-guest-pm": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "legacy_positive_control": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "host_pm_requested": false,
+        "host_modules_loaded": false,
+        "guest_pm_test": "platform",
+        "removal_after_early_resume": true,
+        "explicit_irq_wake_during_noirq": false,
+        "seconds": 18.966736798000056,
+        "hot_remove_requested": true
+      },
+      "uart_log_sha256": "9f353c845d1a0a9d1bd256b4938a8235c7d2fc75f9a392bbcdd0507c9e89cd6c",
+      "compressed_log": "pci-guest-pm.uart.log.gz",
+      "compressed_sha256": "9a4151e4e35ad72d22a684a730ad131dfe1588fb6fc93423c8c11b170eba3c2a"
+    },
+    "uvm-pm-v2": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "legacy": false,
+        "positive": false,
+        "va_spaces": 2,
+        "host_pm_requested": false,
+        "host_modules_loaded": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "module_sha256": "48702e11007168169e611e16ba8a4f29cc827cfc28912a25cf82650f032022f8",
+        "seconds": 11.745233403009479,
+        "checks": {
+          "fixed": "1",
+          "va_spaces": "2",
+          "positive": "0",
+          "cycles": "4",
+          "mutations": "4",
+          "debug_locks": "1",
+          "expected": "1",
+          "failures": "0"
+        }
+      },
+      "uart_log_sha256": "7f97ae6bcbf58c15150ab41421a5f0700d7bffbd4d7b57ea07c19fbe85d030d9",
+      "compressed_log": "uvm-pm-v2.uart.log.gz",
+      "compressed_sha256": "81d40f2c4483e4b705c12557080dabe047945aff0b6c27d060c5b0387c57ee60"
+    },
+    "uvm-pm-positive": {
+      "result": {
+        "passed": true,
+        "kernel": "7.2.8-37-rtx-spark-npu",
+        "legacy": false,
+        "positive": true,
+        "va_spaces": 1,
+        "host_pm_requested": false,
+        "host_modules_loaded": false,
+        "image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+        "module_sha256": "48702e11007168169e611e16ba8a4f29cc827cfc28912a25cf82650f032022f8",
+        "seconds": 12.455810405997909,
+        "checks": {
+          "fixed": "1",
+          "va_spaces": "1",
+          "positive": "1",
+          "cycles": "4",
+          "mutations": "4",
+          "debug_locks": "0",
+          "expected": "0",
+          "failures": "0"
+        }
+      },
+      "uart_log_sha256": "5968224947c5ceccfdd7b2d6bb62fa90c512237138e5f1645f3b0aba5d7eb397",
+      "compressed_log": "uvm-pm-positive.uart.log.gz",
+      "compressed_sha256": "62f9b6738f1de121f2fc1a83f5b17255fe36e1b15058674d429636d88796faf4"
+    }
+  },
+  "packages_installed": false,
+  "boot_files_written": false,
+  "host_modules_loaded": false,
+  "host_pm_requested": false,
+  "native_hardware_qualified": false
+}

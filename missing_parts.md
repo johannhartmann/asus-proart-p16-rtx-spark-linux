@@ -123,6 +123,11 @@ cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning
 with the original Image and keep Lockdep active with a small kernel-core
 correction. The patched Image has not replaced the running kernel; real GPU,
 media and post-resume use still require a separately packaged native boot.
+The [complete kernel37 offline bundle](docs/evidence/kernel37-offline-20261118.md)
+now packages that correction with matched 615.78.08 platform modules. Seven
+fresh EFI/KVM cases and all 8,507 split-BTF module checks pass against its
+final Image. The installed system remains on kernel36; native media, camera,
+NVENC and resume results on kernel37 are still open.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
