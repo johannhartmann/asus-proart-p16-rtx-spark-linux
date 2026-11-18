@@ -1,0 +1,118 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-37-rtx-spark-npu",
+  "boot_id": "add4e65c-7804-4e34-a887-b8646b467db3",
+  "driver": "615.78.08",
+  "module_load": "insmod candidate after modprobe dependencies; original module unloaded",
+  "candidate_module_sha256": "d1cd8e6db2b2c7f4c597c4410003cf38a386625cc5109883132ab662cffd4545",
+  "patch_sha256": "3c158a423da904023a2577b88949381152eb0891e79d60afcf00424cf23313e3",
+  "trace_before": "0",
+  "trace_during": "1024",
+  "trace_after": "0",
+  "capture": {
+    "started": "2026-11-18T15:25:20.277857+00:00",
+    "cases": {
+      "rgb-720p": {
+        "command": [
+          "timeout",
+          "30",
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "v4l2",
+          "-input_format",
+          "mjpeg",
+          "-framerate",
+          "30",
+          "-video_size",
+          "1280x720",
+          "-i",
+          "/dev/video0",
+          "-frames:v",
+          "60",
+          "-f",
+          "null",
+          "-"
+        ],
+        "exit_code": 0,
+        "frame_line": "60",
+        "requested_frames": 60
+      },
+      "rgb-1080p": {
+        "command": [
+          "timeout",
+          "30",
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "v4l2",
+          "-input_format",
+          "mjpeg",
+          "-framerate",
+          "30",
+          "-video_size",
+          "1920x1080",
+          "-i",
+          "/dev/video0",
+          "-frames:v",
+          "60",
+          "-f",
+          "null",
+          "-"
+        ],
+        "exit_code": 0,
+        "frame_line": "60",
+        "requested_frames": 60
+      },
+      "ir-360p": {
+        "command": [
+          "timeout",
+          "30",
+          "ffmpeg",
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "v4l2",
+          "-input_format",
+          "gray",
+          "-framerate",
+          "15",
+          "-video_size",
+          "360x360",
+          "-i",
+          "/dev/video2",
+          "-frames:v",
+          "30",
+          "-f",
+          "null",
+          "-"
+        ],
+        "exit_code": 0,
+        "frame_line": "30",
+        "requested_frames": 30
+      }
+    },
+    "ended": "2026-11-18T15:25:29.293419+00:00"
+  },
+  "gstreamer_camera": {
+    "pass": true,
+    "decoded_frames": 60,
+    "unique_frames": 60,
+    "vulkan_encoder": true
+  },
+  "kernel_uvc_trace": [
+    "2026-11-18T16:25:20+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-18T16:25:20+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-18T16:25:23+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-18T16:25:23+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-18T16:25:27+01:00 p16 kernel: uvcvideo 7-1:1.2: Allocated 5 URB buffers of 32x1176 bytes each",
+    "2026-11-18T16:26:22+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-18T16:26:22+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each"
+  ],
+  "new_kernel_warnings_in_test_window": [],
+  "installed_kernel_package_contains_patch": false,
+  "external_streamcam_connected": false,
+  "camera_pixels_retained": false
+}

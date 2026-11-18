@@ -1313,6 +1313,11 @@ source+=('mmu-interval-notifier-might-lock.patch')
 sha256sums+=('7ea8104853bc880a37598967fd3a5f1f1e735d385d1adfa5a85a03a77e4c21ac')
 b2sums+=('c0fdf33e39e16471123427aa1bc9f711eba9df7029b11386a5c773bd5b71eed9bb460019260bfe770469a85cb27ed5b218af7e4d9816e23c2f49c290b42e2989')
 
+# Keep UVC noncoherent URBs within the N1X XHCI DMA segment limit.
+source+=('uvc-urb-dma-segment-limit.patch')
+sha256sums+=('3c158a423da904023a2577b88949381152eb0891e79d60afcf00424cf23313e3')
+b2sums+=('4b3dbc9ac31eea0a0d3343f8d2b30fa48e1303f48009053331742758394d768ad8983519e32fbe724673e5fd8618839bd97aae59bcf58d71723f643caf84706e')
+
 # https://www.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc
 
 export KBUILD_BUILD_HOST=omarchy

@@ -9,7 +9,7 @@
   "trace_before": "0",
   "trace_after": "0",
   "rgb_urb_bytes": 94080,
-  "rgb_page_rounded_bytes": 98304,
+  "rgb_page_rounded_bytes": 94208,
   "ir_urb_bytes": 37632,
   "cases": {
     "rgb-mjpeg-1280x720": {

@@ -1,0 +1,43 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "bios": "H7607BA.300",
+  "kernel": "7.2.8-37-rtx-spark-npu",
+  "boot_id": "add4e65c-7804-4e34-a887-b8646b467db3",
+  "boot_current": "0000",
+  "boot_order": "0002,0001,2001,2002,2003",
+  "uki_sha256": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+  "nvidia_driver": "615.78.08",
+  "nvidia_gpu": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)",
+  "hyprland_monitors": ["eDP-1 3840x2400", "DP-1 3840x2160"],
+  "lockdep_initial_debug_locks": 1,
+  "installed_production_modules_match_staging_manifest": 13,
+  "nvenc_open_session": {
+    "h264": {"error": 21, "exit_code": 187},
+    "hevc": {"error": 21, "exit_code": 187},
+    "av1": {"error": 21, "exit_code": 187}
+  },
+  "gstreamer_camera_vulkan_h264": {
+    "decoded_frames": 60,
+    "unique_downscaled_frame_hashes": 60,
+    "pass": true
+  },
+  "v4l2_contention": {
+    "primary_frames": 120,
+    "second_client_busy": true,
+    "recovery_frames": 10,
+    "pass": true
+  },
+  "internal_ir_grey": {"resolution": "360x360", "fps": 15, "frames": 30, "pass": true},
+  "dma_warning": {
+    "time_local": "2026-11-18T16:16:39+01:00",
+    "host": "NVDA8001:00",
+    "process": "ffmpeg",
+    "allocation_bytes": 94208,
+    "host_max_segment_bytes": 65536,
+    "uvc_packet_bytes": 2940,
+    "uvc_packets_before_patch": 32,
+    "warning_free_boot": false
+  },
+  "physical_suspend_qualified": false,
+  "camera_pixels_retained": false
+}

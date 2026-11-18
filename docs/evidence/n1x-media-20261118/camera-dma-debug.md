@@ -28,25 +28,32 @@ now identifies the exact allocation: MJPEG 1280×720/30 used five URBs of
 `32 × 3,072 = 98,304` bytes each on `NVDA8000:00`. The 1920×1080 MJPEG and
 1280×720 YUYV modes requested still larger URBs. All three captured 30
 frames. A separate [internal camera trace](uvc-urb-size-current-boot.json)
-measured 94,080-byte RGB URBs and 37,632-byte IR URBs on `NVDA8001:00`; its
-page-rounded RGB size also equals 98,304 bytes, but it is a different USB
-host and cannot explain the recorded `NVDA8000:00` warning. Both temporary
-trace windows ended with the setting restored to zero. Neither produced a
-*new* DMA warning on this already warned boot.
+measured 94,080-byte RGB URBs and 37,632-byte IR URBs on `NVDA8001:00`; the
+page-rounded RGB allocation is 94,208 bytes. It is a different USB host and
+cannot explain the recorded `NVDA8000:00` warning. Both temporary trace
+windows ended with the setting restored to zero. Neither produced a *new* DMA
+warning on this already warned boot.
+
+The subsequent [native kernel37 boot](../kernel37-native-20261118.md) did
+produce a separate warning at 16:16:39 on the internal camera's
+`NVDA8001:00` host. The 94,080-byte RGB URB was allocated as 94,208 bytes,
+above that host's 65,536-byte limit. This confirms that both the external
+StreamCam and the built-in RGB camera encounter the same UVC allocation
+limit, independently. The kernel37 boot is not warning-free.
 
 An [uninstalled UVC candidate](../../../kernel/uvc-urb-dma-segment-limit.patch)
 caps noncoherent URB allocations to the host's advertised DMA segment size.
 It applies without fuzz to the kernel37 source and compiles as a module with
 matching vermagic and split BTF; the [offline receipt](uvc-dma-candidate-offline.json)
-pins its source and module hashes. Its packet cap and frame throughput have not
-been tested on the StreamCam or the internal camera; no kernel or running
-module contains this patch yet.
+pins its source and module hashes. The subsequent [native live test](uvc-dma-live-kernel37.md)
+passed internal RGB, IR and GStreamer/Vulkan capture with capped RGB URBs and
+no new DMA warning. The external StreamCam was disconnected. The installed
+kernel37 package does not contain this patch.
 
-Before installing the candidate, reproduce with a fresh boot. Compare capture
-frame integrity and throughput with and without the UVC buffer-size limit,
-and check the DMA/IOMMU debug results on that same Image. Keep the XHCI
-segment limit truthful. A successful camera recording remains a separate
-application result.
+The original-module fresh-boot reproduction and live candidate comparison are
+complete. Next integrate the patch into a new kernel build and check a fresh
+boot, external StreamCam capture when attached, and post-resume operation.
+Keep the XHCI segment limit truthful.
 
 This boot also has a distinct NVIDIA UVM Lockdep warning from 17 November
 16:47:15. A physical suspend test performed now would not provide a clean
