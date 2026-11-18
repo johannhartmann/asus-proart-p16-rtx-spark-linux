@@ -29,12 +29,19 @@ def frame_timing(path):
     timestamps = [float(line.strip().split(",")[0]) for line in
                   output.stdout.splitlines() if line.strip() and line.strip() != "N/A"]
     gaps = [later - earlier for earlier, later in zip(timestamps, timestamps[1:])]
+    large_gaps = [{"after_frame_index": index,
+                   "after_pts_seconds": round(timestamps[index], 6),
+                   "gap_seconds": round(gap, 6),
+                   "nominal_missing_30fps_frames": max(0, round(gap * 30) - 1)}
+                  for index, gap in enumerate(gaps) if gap > 0.05]
     return {
         "frames_with_pts": len(timestamps),
         "first_pts_seconds": timestamps[0] if timestamps else None,
         "last_pts_seconds": timestamps[-1] if timestamps else None,
         "max_gap_seconds": round(max(gaps), 6) if gaps else None,
         "gaps_over_50ms": sum(gap > 0.05 for gap in gaps),
+        "large_gap_events": large_gaps[:20],
+        "large_gap_events_truncated": len(large_gaps) > 20,
         "nonpositive_gaps": sum(gap <= 0 for gap in gaps),
     }
 

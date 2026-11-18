@@ -1,0 +1,35 @@
+{
+  "package": "p16-nvof-tools 0.1.0-4",
+  "camera_record_command": "/usr/bin/p16-record-camera-vulkan",
+  "export_command": "/usr/bin/p16-interpolate-video",
+  "requested_camera_seconds": 120,
+  "record_elapsed_seconds": 122.194,
+  "export_elapsed_seconds": 197.622,
+  "source": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "30/1",
+    "nb_read_frames": "3596"
+  },
+  "source_frame_timing": {
+    "frames_with_pts": 3596,
+    "first_pts_seconds": 0.0,
+    "last_pts_seconds": 119.967,
+    "max_gap_seconds": 0.134,
+    "gaps_over_50ms": 2,
+    "nonpositive_gaps": 0
+  },
+  "output": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "60/1",
+    "nb_read_frames": "7191"
+  },
+  "nvof_pairs_logged": true,
+  "vulkan_encoder_logged": true,
+  "independent_decode_exit_code": 0,
+  "camera_pixels_retained": false,
+  "pass": false
+}

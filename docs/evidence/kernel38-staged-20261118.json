@@ -46,10 +46,13 @@
   },
   "platform_image_check_passed": true,
   "platform_image_check": "8504 installed and 430 initramfs modules passed BTF, dependencies and embedded SPI HID bytes matched installed modules",
+  "uki_sha256": "fec36b331b86cc580ae14d18facae1903f440892a9b0490ab78bd4af14c68e95",
   "uki_limine_blake2b": "71524fe2cd7f953cac0e88d099d8e60001d00b525131b3d311f0278d69a26d7270de4d539f2c8d797b1d574de582b351b78f392882359cda6beecfde73aaae5f",
   "limine_default": "Omarchy/linux-p16-platform-36",
   "limine_candidate_entry": "Omarchy/linux-p16-platform-38",
   "permanent_uefi_boot_order": "0002,0001,2001,2002,2003",
+  "one_time_uefi_boot_next": "0003",
+  "one_time_uefi_entry": "P16 Kernel38 Test",
   "running_kernel": "7.2.8-37-rtx-spark-npu",
   "native_boot_verified": false,
   "physical_suspend_qualified": false
