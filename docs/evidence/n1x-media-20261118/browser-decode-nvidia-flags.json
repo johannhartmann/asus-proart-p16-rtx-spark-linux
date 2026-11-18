@@ -1,0 +1,30 @@
+{
+  "status": "unqualified",
+  "browser": "chromium",
+  "mode": "nvidia-vaapi-flags",
+  "flags": [
+    "--enable-features=AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiVideoDecoder",
+    "--ignore-gpu-blocklist",
+    "--use-gl=angle",
+    "--use-angle=gl"
+  ],
+  "fixture": "generated H.264 320x180 24 fps",
+  "playback": {
+    "width": 320,
+    "height": 180,
+    "totalVideoFrames": 96,
+    "droppedVideoFrames": 5,
+    "duration": 4
+  },
+  "decoder_properties": [
+    {
+      "name": "kVideoDecoderName",
+      "value": "FFmpegVideoDecoder"
+    },
+    {
+      "name": "kIsPlatformVideoDecoder",
+      "value": "false"
+    }
+  ],
+  "note": "Playback succeeded, but CDP Media did not establish VA-API hardware decoding"
+}

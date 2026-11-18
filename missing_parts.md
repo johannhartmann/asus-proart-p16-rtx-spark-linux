@@ -34,7 +34,7 @@ cannot qualify that separate platform pipeline.
 
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
-| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through VA-API and direct CUVID; the installed mpv playback command uses H.264 hardware decode | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
+| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through VA-API and direct CUVID; installed mpv uses H.264 hardware decode; Chromium H.264 playback falls back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package built; NVENC session fails with error 21 on driver 615.78.08. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API, including a 60-frame real RGB camera recording in FFmpeg | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback; connected displays run in sRGB with no active HDR metadata; proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
@@ -69,6 +69,11 @@ stopped before sleep: ACPI TAD RTC1 returned `Input/output error` and EFI RTC0
 returned `Invalid argument` when asked to arm a wake alarm. NVIDIA kernel
 suspend notifiers are active and the verified VT handoff must be preserved.
 No after-resume media result is claimed.
+The [Chromium decode check](docs/evidence/n1x-media-20261118/browser-decode.json)
+played 96 H.264 frames but reported `FFmpegVideoDecoder` and
+`kIsPlatformVideoDecoder=false`. A second run with the NVIDIA VA-API bridge's
+documented Chromium flags gave the same software path. Browser hardware decode
+therefore remains open despite successful Chromium WebRTC camera capture.
 
 ## Common evidence and release gates
 

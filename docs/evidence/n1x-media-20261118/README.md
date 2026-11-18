@@ -25,6 +25,7 @@ retained.
 | RGB camera in normal applications | Pass for mpv preview and OBS recording | `mpv-rgb-camera.log.gz` shows a live 1280×720 source in a Wayland window. `obs-camera.log` shows `v4l2_input` at 1280×720/30 and a temporary six-second H.264 recording; independent FFprobe/FFmpeg read 180 frames. OBS reported 181 output frames, so the one-frame accounting difference remains to investigate. OBS logged one V4L2 select timeout when the source was added. |
 | OBS advanced Vulkan recording | Blocked | `obs-vulkan-record-fail.log` records an isolated FFmpeg output profile with `h264_vulkan`; OBS reported `Failed to open video codec: Invalid argument` and produced no recording. The tested OBS path cannot yet consume Vulkan Video directly. |
 | Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless test does not qualify the normal graphical permission flow or PipeWire camera portal. |
+| Chromium H.264 decode | Software fallback | [`browser-decode.json`](browser-decode.json) and [`browser-decode-nvidia-flags.json`](browser-decode-nvidia-flags.json) record complete 96-frame playback but CDP Media reports `FFmpegVideoDecoder` and `kIsPlatformVideoDecoder=false`. The second run uses the NVIDIA VA-API bridge's documented Chrome flags. [`check-browser-decode.mjs`](../../../scripts/check-browser-decode.mjs) exits nonzero without an explicit VA-API decoder. Browser hardware decoding remains open. |
 
 The command-line corpus was run with:
 
@@ -49,6 +50,8 @@ The browser check is repeated with:
 
 ```sh
 node scripts/check-browser-camera.mjs docs/evidence/n1x-media-20261118/browser-camera.json
+node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode.json
+node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-nvidia-flags.json --nvidia-vaapi
 ```
 
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
@@ -60,7 +63,8 @@ advanced encode matrix, including a valid HEVC 12-bit fixture (the installed
 Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log)
 despite CUVID reporting decode capability);
 OBS hardware encode or another desktop recording app
-using the validated Vulkan encoder; graphical browser permission and PipeWire
+using the validated Vulkan encoder; browser hardware decode, graphical browser
+permission and PipeWire
 camera portal; device privacy and contention; audio sync, seek and longer playback;
 fresh boot and physical s2idle/resume; HDR display output; proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a
