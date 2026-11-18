@@ -480,12 +480,13 @@ uses CUDA 13.4.2 on this P16. The default and GPU-hybrid handles report zero
 dedicated JPEG decoder and encoder engines; the explicit hardware decoder and
 encoder backends return `NVJPEG_STATUS_ARCH_MISMATCH` (7). This rules out a
 dedicated nvJPEG hardware engine in the current runtime. The separate
-[64-image GPU-hybrid batch test](docs/evidence/n1x-media-20261118/nvjpeg-gpu-batch-kernel38.md)
-decodes real baseline JPEG pixels into CUDA memory and observes nvJPEG's GPU
-Huffman kernel in Nsight; its RGB output has 62.15 dB PSNR and maximum channel
-error 2 against software. This establishes GPU-compute JPEG decode on the
-native kernel38/615 stack, not a dedicated JPEG engine, encoder, application
-integration or post-resume result.
+[GPU-compute codec test](docs/evidence/n1x-media-20261118/nvjpeg-gpu-batch-kernel38.md)
+decodes a 64-image baseline JPEG batch into CUDA memory and encodes one image
+back to JPEG. Nsight observes GPU Huffman and encoder kernels; the decode has
+62.15 dB PSNR and maximum channel error 2 against software, while the
+independently decoded encode has 38.41 dB PSNR against its source. This
+establishes GPU-compute JPEG decode and encode on native kernel38/615, not a
+dedicated JPEG engine, application integration or post-resume result.
 
 ## 3. Cameras: P16 USB path and N1X MIPI/CSI path
 

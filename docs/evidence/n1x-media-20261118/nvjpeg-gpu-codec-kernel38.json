@@ -1,0 +1,120 @@
+{
+  "captured_at": "2026-11-18T18:01:19.011041+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "cuda_package": "cuda 13.4.2-1",
+  "source_sha256": "38d57be449891b99731605b071c932d95ee3754426b93cc25c5370ba8d271e7c",
+  "executable_sha256": "f4617f424071a30392fc127d3d27b8c78ecf6da63c582e180276c31e51d67d5f",
+  "input_jpeg_sha256": "81b1336c1a3c35466aec4f5eb735df910a499550523a5b46e49cee1e138e6572",
+  "jpeg_stream": {
+    "profile": "Baseline",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuvj420p"
+  },
+  "nvjpeg": {
+    "backend": "NVJPEG_BACKEND_GPU_HYBRID",
+    "batch": 64,
+    "width": 320,
+    "height": 180,
+    "subsampling": 2,
+    "rgb_bytes": 172800,
+    "batch_output_identical": true,
+    "rgb_fnv1a64": "9cda73bb2a76b85d",
+    "encode_backend": "NVJPEG_ENC_BACKEND_GPU",
+    "encoded_jpeg_bytes": 10627
+  },
+  "software_rgb_sha256": "c690a74f03a9e8996942fba4885ebbc8a59b3883f59da08847545625aeab15d0",
+  "nvjpeg_rgb_sha256": "1a5ded06151f018642e5836d64d6ee935f775ecf1b6b9b0b1ca976ce8addf6d5",
+  "encoded_jpeg_sha256": "bf870a318e0ff6b8300f06d397a7c1e72feff57aea63fa9efce06bb76e75c086",
+  "encoded_jpeg_stream": {
+    "profile": "Baseline",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuvj420p"
+  },
+  "encoded_software_rgb_sha256": "8704b51c5dd054595e9a44bae7b39fb345ba722ede946c74e4c972bda166259d",
+  "mean_absolute_error": 0.03226273148148148,
+  "max_absolute_error": 2,
+  "mse": 0.03964699074074074,
+  "psnr_db": 62.148701314914014,
+  "encode_roundtrip_mse": 9.385075231481482,
+  "encode_roundtrip_psnr_db": 38.4064260255878,
+  "cuda_gpu_kernels": [
+    {
+      "name": "void nvjpeg::DecodeBatchedCujpeg::decodeDcHuffman<(int)2, (int)2>(unsigned char *restrict *, const int *, const unsigned short *, const unsigned short *, unsigned int *, const unsigned long *, unsigned int *, const unsigned long *, const nvjpeg::DecodeBatchedCujpeg::scan_cpars_t *, const nvjpeg::DecodeBatchedCujpeg::frame_header_t *, unsigned int *, int, int)",
+      "instances": 1,
+      "total_time_ns": 2968775
+    },
+    {
+      "name": "void nvjpeg::DecodeBatchedCujpeg::parseBatched_k<(int)64, (int)4, (int)2, (int)2>(int, unsigned char *, const unsigned long *, unsigned char *restrict *, int *, unsigned short *, unsigned short *, nvjpeg::DecodeBatchedCujpeg::scan_cpars_t *, unsigned short *, nvjpeg::DecodeBatchedCujpeg::frame_header_t *, int *, int *, int *, int *)",
+      "instances": 1,
+      "total_time_ns": 1173327
+    },
+    {
+      "name": "nvjpeg::DecodeBatchedCujpeg::jpegdec_vld(const unsigned int *, const unsigned long *, const unsigned int *, const unsigned long *, unsigned char *restrict *, const int *, const nvjpeg::DecodeBatchedCujpeg::frame_header_t *, const unsigned short *, const unsigned short *, int, int)",
+      "instances": 1,
+      "total_time_ns": 174242
+    },
+    {
+      "name": "void nvjpeg::batchedYCbCr2RGB_kernelv2<(nvjpegOutputFormat_t)5, nvjpeg::ConvertToFormatBatchedV2::LaunchParams<(int)32, (int)8, (int)16>>(nvjpeg::conversionBatchedParam *, NppiSize, unsigned int, unsigned int, bool)",
+      "instances": 1,
+      "total_time_ns": 58913
+    },
+    {
+      "name": "void nvjpeg::encoding::ACKernel<(int)8, (nvjpeg::encoding::WARP_COM)0>(bool, unsigned int *, int *, unsigned long, unsigned long, const short *, unsigned long, int, const uint2 *, int, int, int)",
+      "instances": 3,
+      "total_time_ns": 8640
+    },
+    {
+      "name": "void nvjpeg::encoding::DCKernel<(nvjpeg::encoding::WARP_COM)0>(nvjpeg::ScanOrder, const short *, unsigned long, unsigned int *, int *, const uint2 *, unsigned long, unsigned long, int, int)",
+      "instances": 3,
+      "total_time_ns": 8576
+    },
+    {
+      "name": "void nvjpeg::encoding::BlockAssembleKernel<nvjpeg::ScanOrderInterleaved>(T1, unsigned int *, const unsigned long *, const unsigned int *, unsigned long, const int *, unsigned long, unsigned long, int)",
+      "instances": 1,
+      "total_time_ns": 7776
+    },
+    {
+      "name": "void nvjpeg::forwardDct32x8Kernel<uchar2, (int)1, (int)32, (int)8>(nvjpeg::FwdDctParams)",
+      "instances": 3,
+      "total_time_ns": 6336
+    },
+    {
+      "name": "void nvjpeg::format_to_ycbcr_kernel<(nvjpegInputFormat_t)5, (nvjpegChromaSubsampling_t)2, nvjpeg::ColorModelToYUV::LaunchParams<(int)32, (int)8>>(nvjpegImage_t, NppiSize, nvjpegImage_t, NppiSize)",
+      "instances": 1,
+      "total_time_ns": 5184
+    },
+    {
+      "name": "void nvjpeg::encoding::SumBlocksKernel<(nvjpeg::encoding::WARP_COM)0>(unsigned long *, int)",
+      "instances": 2,
+      "total_time_ns": 2752
+    },
+    {
+      "name": "void nvjpeg::encoding::OutputOffsetKernel<nvjpeg::ScanOrderInterleaved, (nvjpeg::encoding::WARP_COM)0>(T1, unsigned long *, unsigned long *, const int *, unsigned long, unsigned long, int)",
+      "instances": 1,
+      "total_time_ns": 2305
+    },
+    {
+      "name": "void nvjpeg::encoding::UpdateBlocksKernel<(int)32, (int)8>(unsigned long *, const unsigned long *, int)",
+      "instances": 2,
+      "total_time_ns": 2144
+    },
+    {
+      "name": "void nvjpeg::encoding::BlockLengthKernel<(nvjpeg::encoding::WARP_COM)0, (int)32, (int)8>(unsigned long *, unsigned long *, const unsigned char *, int)",
+      "instances": 1,
+      "total_time_ns": 1408
+    },
+    {
+      "name": "nvjpeg::encoding::ByteStuffingKernel(unsigned char *, const unsigned long *, const unsigned char *, int)",
+      "instances": 1,
+      "total_time_ns": 1248
+    }
+  ],
+  "gpu_huffman_kernel_observed": true,
+  "gpu_encode_kernel_observed": true,
+  "camera_or_test_pixels_retained": false,
+  "pass": true
+}

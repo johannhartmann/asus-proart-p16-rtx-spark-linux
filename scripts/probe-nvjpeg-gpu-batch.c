@@ -1,4 +1,4 @@
-/* Exercise GPU-assisted nvJPEG Huffman decode on a real baseline JPEG batch. */
+/* Exercise GPU-assisted nvJPEG batch decode and GPU JPEG encoding. */
 #include <cuda_runtime_api.h>
 #include <nvjpeg.h>
 #include <stdint.h>
@@ -32,8 +32,8 @@ static uint64_t hash_bytes(const unsigned char *data, size_t size) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s INPUT.jpg OUTPUT.rgb\n", argv[0]);
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s INPUT.jpg OUTPUT.rgb ENCODED.jpg\n", argv[0]);
         return 2;
     }
     FILE *input = fopen(argv[1], "rb");
@@ -100,12 +100,45 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    nvjpegEncoderState_t encoder = NULL;
+    nvjpegEncoderParams_t parameters = NULL;
+    NV("nvjpegEncoderStateCreateWithBackend GPU",
+       nvjpegEncoderStateCreateWithBackend(handle, &encoder,
+                                           NVJPEG_ENC_BACKEND_GPU, stream));
+    NV("nvjpegEncoderParamsCreate",
+       nvjpegEncoderParamsCreate(handle, &parameters, stream));
+    NV("nvjpegEncoderParamsSetQuality",
+       nvjpegEncoderParamsSetQuality(parameters, 90, stream));
+    NV("nvjpegEncoderParamsSetSamplingFactors",
+       nvjpegEncoderParamsSetSamplingFactors(parameters, NVJPEG_CSS_420, stream));
+    NV("nvjpegEncodeImage GPU",
+       nvjpegEncodeImage(handle, encoder, parameters, &destinations[0],
+                         NVJPEG_INPUT_RGBI, width, height, stream));
+    CU("cudaStreamSynchronize encode", cudaStreamSynchronize(stream));
+    size_t encoded_size = 0;
+    NV("nvjpegEncodeRetrieveBitstream size",
+       nvjpegEncodeRetrieveBitstream(handle, encoder, NULL, &encoded_size, stream));
+    if (!encoded_size || encoded_size > 16 * 1024 * 1024)
+        die("encoded JPEG size", (int)encoded_size);
+    unsigned char *encoded = malloc(encoded_size);
+    if (!encoded) die("malloc encoded JPEG", 1);
+    NV("nvjpegEncodeRetrieveBitstream",
+       nvjpegEncodeRetrieveBitstream(handle, encoder, encoded, &encoded_size,
+                                     stream));
+    FILE *encoded_output = fopen(argv[3], "wb");
+    if (!encoded_output || fwrite(encoded, 1, encoded_size, encoded_output) != encoded_size ||
+        fclose(encoded_output))
+        die("write encoded JPEG", 1);
     printf("{\"backend\":\"NVJPEG_BACKEND_GPU_HYBRID\",\"batch\":%d,"
            "\"width\":%d,\"height\":%d,\"subsampling\":%d,"
            "\"rgb_bytes\":%zu,\"batch_output_identical\":true,"
-           "\"rgb_fnv1a64\":\"%016llx\"}\n",
+           "\"rgb_fnv1a64\":\"%016llx\",\"encode_backend\":\"NVJPEG_ENC_BACKEND_GPU\","
+           "\"encoded_jpeg_bytes\":%zu}\n",
            BATCH, width, height, subsampling, bytes,
-           (unsigned long long)first_hash);
+           (unsigned long long)first_hash, encoded_size);
+    free(encoded);
+    NV("nvjpegEncoderParamsDestroy", nvjpegEncoderParamsDestroy(parameters));
+    NV("nvjpegEncoderStateDestroy", nvjpegEncoderStateDestroy(encoder));
     for (int i = 0; i < BATCH; ++i)
         CU("cudaFree output", cudaFree(destinations[i].channel[0]));
     free(pixels);
