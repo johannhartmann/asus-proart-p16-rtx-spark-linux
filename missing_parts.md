@@ -118,9 +118,11 @@ checks NVIDIA's archive SHA256, applies all three local DRM/PM/UVM patches
 without fuzz, and builds five modules with matching kernel36 `vermagic`.
 The ARM64 distribution's matching 620 utils and DKMS archives are now
 downloaded with valid package signatures. No 620 module was loaded and the
-615 userspace/firmware stack remains installed. Versioned dependencies require
-an isolated 620 root/boot candidate with a proven 615 rollback, followed by
-native display, suspend/resume and NVENC session/output tests.
+615 userspace/firmware stack remains installed. Five 620 modules now also
+[build against kernel38](docs/evidence/n1x-media-20261118/nvenc-620-offline.md#matched-kernel38-offline-build)
+with matching `vermagic` and BTF. Versioned dependencies require an isolated
+620 root/boot candidate with a proven 615 rollback, followed by native
+display, suspend/resume and NVENC session/output tests.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

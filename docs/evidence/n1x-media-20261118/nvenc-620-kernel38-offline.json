@@ -1,0 +1,54 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel_release": "7.2.8-38-rtx-spark-npu",
+  "image_sha256": "8fb6781cf43549c38631b60356a757cfa2749672dd7d4ebb7a07c03faf45fa74",
+  "nvidia_version": "620.70.06",
+  "signed_package_hashes": {
+    "nvidia-utils-620.70.06-1-aarch64.pkg.tar.xz": "bc4b8afd35bc14b963b4a2d5d123a76ca72bba3d56c8237ae44b1439ac2bd3da",
+    "nvidia-open-dkms-620.70.06-1-aarch64.pkg.tar.xz": "e333f8744caa175bccca649b165ff5a31c94de6b7ca573364a0106231351af92"
+  },
+  "package_signature_key": "68B3537F39A313B3E574D06777193F152BDBE6A6",
+  "local_patches": [
+    "nvidia-drm-colorspace-deadlock.patch",
+    "nvidia-pm-notifier-owner.patch",
+    "nvidia-uvm-pm-lock-order.patch"
+  ],
+  "patch_fuzz": 0,
+  "patched_files_match_run_audit": true,
+  "modules": {
+    "nvidia-drm.ko": {
+      "sha256": "874d64c40dfe22b78ee671b881580754fd022e8b8bf96a2fb77798aae86fbac9",
+      "version": "620.70.06",
+      "vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+    },
+    "nvidia-modeset.ko": {
+      "sha256": "c3dd55bbfbef1c2d9ec36ff5747ed16e062a799f2d91d00cd4ed09969106f54d",
+      "version": "620.70.06",
+      "vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+    },
+    "nvidia-peermem.ko": {
+      "sha256": "06a7d4cbe480804c9a4e04dbcdf6bf38462bf308e5b6c8490bbb678d715e556d",
+      "version": "620.70.06",
+      "vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+    },
+    "nvidia-uvm.ko": {
+      "sha256": "695df7647ddc585cf5f69337545325f31bc4284a164d144f74bc8b9c3300d4b0",
+      "version": "620.70.06",
+      "vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+    },
+    "nvidia.ko": {
+      "sha256": "7ef30e54dd06d0cc6c2cfd7d4ea7e0cf1de4cb30ab723b9a9758823a91884438",
+      "version": "620.70.06",
+      "vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+    }
+  },
+  "modules_btf_checked": 5,
+  "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+  "build_exit_code": 0,
+  "build_log_sha256": "74722aee6bad6963598a5db852e5aee71e063f35061a38680436751e2cfb6488",
+  "build_warnings": 9,
+  "modules_installed": false,
+  "userspace_installed": false,
+  "host_modules_loaded": false,
+  "native_nvenc_qualified": false
+}

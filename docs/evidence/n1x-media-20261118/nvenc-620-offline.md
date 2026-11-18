@@ -85,3 +85,23 @@ Then check display start, module/firmware identity, physical suspend/resume,
 the CUDA and OpenGL NVENC session probes, independently decoded H.264/HEVC/AV1
 outputs and real application recording. The offline build establishes none
 of those runtime results.
+
+## Matched kernel38 offline build
+
+After the patched kernel38 package completed, the signed distribution DKMS
+source with the same three local patches was built through its top-level
+Makefile against exact `7.2.8-38-rtx-spark-npu` headers and `vmlinux`. The
+first attempt invoking `kernel-open/` directly lacked the generated vendor
+core objects; the top-level build generated those objects and finished with
+exit 0. All five modules report NVIDIA 620.70.06 and matching kernel38
+`vermagic`; all five passed split-BTF validation against the final kernel
+BTF. The [receipt](nvenc-620-kernel38-offline.json) pins the module and input
+hashes. The [compressed build log](nvenc-620-kernel38-build.log.gz) contains
+nine warnings: three unused variables in vendor source, one unimplemented
+aarch64 debug-breakpoint warning and five frame-size warnings. There is no
+compile or modpost error.
+
+The modules have **not** been loaded or installed. A native test still needs
+the signed 620 userspace and firmware in an isolated root/boot candidate and
+must preserve a bootable 615 root. The build establishes ABI compatibility
+with kernel38, not an NVENC session or display result.
