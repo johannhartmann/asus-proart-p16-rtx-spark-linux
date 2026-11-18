@@ -1,0 +1,62 @@
+{
+  "captured_at": "2026-11-18T19:08:55.764392+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "ffmpeg_path": "/home/johann/p16/video-build/ffmpeg-libplacebo-7.387/ffmpeg-9.0.2/ffmpeg-pl387",
+  "ffmpeg_sha256": "daac1bc065a2e8f3b9101e422218c44c01938f872ccc3f8d86a1480d9e1f1df2",
+  "frames": 60,
+  "source": "testsrc2 1280x720/30 NV12",
+  "downsample": "software Lanczos 640x360",
+  "control": "software bicubic 1280x720",
+  "candidate": "Vulkan/libplacebo ewa_lanczos 1280x720",
+  "gpu_filter": "format=nv12,hwupload,libplacebo=w=1280:h=720:upscaler=ewa_lanczos,hwdownload,format=nv12",
+  "explicit_bt709_limited_tags": false,
+  "expected_bytes_per_full_resolution_output": 82944000,
+  "output_bytes": {
+    "reference": 82944000,
+    "cpu": 82944000,
+    "gpu": 82944000
+  },
+  "gpu_device_logged": true,
+  "libplacebo_api_logged": 387,
+  "gpu_sample_frame_hashes": [
+    "311bd6df3f9975617ec922c3d809b7d2027575ce5eaac98ec260e7e3848dfd76",
+    "fb15d5c682afec86d95040e8a29a02e7ce5f868b1b30c705745864fc4968d68e",
+    "b49db5c44ef33b54f8b1e1cdff462dc3bc2e18a7a019b20d4543296527146411"
+  ],
+  "cpu_sample_frame_hashes": [
+    "ef75e9bee06361b8443b32945bd8941e9d44d647779e0505665d6d62803d4d07",
+    "6939e5864ceb780da39234876522ab37a58c0a4c26e74c044bdf10c914b2046c",
+    "3f865a7b4a9efe1d7bd705b251468f00de8b128421db89d0d3a6329af90e0630"
+  ],
+  "gpu_sample_frames_distinct": true,
+  "cpu_sample_frames_distinct": true,
+  "gpu_output_sha256": "320bc25d2ae6e5c87c19eb1879e9b5fbfbea195c8b441fd86b568e445b150976",
+  "cpu_output_sha256": "323bb7ea6a4467caaa8ea6695ef5c002a3b7dfa1d1581a5b309fe1089fae654b",
+  "gpu_psnr_db": {
+    "y": 22.228751,
+    "u": 27.099466,
+    "v": 27.482773,
+    "average": 23.360043
+  },
+  "cpu_psnr_db": {
+    "y": 35.684154,
+    "u": 33.077971,
+    "v": 29.142284,
+    "average": 33.323653
+  },
+  "gpu_ssim": {
+    "all": 0.945648,
+    "db": 12.647853
+  },
+  "cpu_ssim": {
+    "all": 0.968873,
+    "db": 15.068577
+  },
+  "gpu_wall_seconds_including_startup_and_file_io": 1.971,
+  "cpu_wall_seconds_including_startup_and_file_io": 0.143,
+  "temporary_pixels_retained": false,
+  "functional_pass": true,
+  "quality_vs_bicubic_on_this_fixture": false
+}

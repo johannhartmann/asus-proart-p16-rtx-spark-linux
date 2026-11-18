@@ -417,9 +417,13 @@ mapping quality, long playback and proprietary TrueHDR remain open.
 The separate [FFmpeg filter check](docs/evidence/n1x-media-20261118/ffmpeg-libplacebo-filter-kernel38.md)
 found that its `libplacebo` Vulkan filter fails at initialization with the
 installed API 360 library: FFmpeg's adapter rejects the N1X Vulkan queue flag
-before a frame is processed. `scale_vulkan` does process a bounded frame on
-the N1X. This does not affect the installed mpv/libplacebo playback result,
-but it leaves FFmpeg/libplacebo export and its quality/latency gate open.
+before a frame is processed. `scale_vulkan` processes a bounded frame on
+the N1X. A [private API 387 candidate](docs/evidence/n1x-media-20261118/libplacebo-upscale-private.md)
+processes 60 GPU frames, but its tagged EWA Lanczos and Spline36 outputs score
+below CPU bicubic on one synthetic reference; untagged raw input is markedly
+worse. The installed mpv/libplacebo playback result stands separately.
+FFmpeg/libplacebo export still needs explicit color tags, visual review,
+steady latency and an installed application before acceptance.
 
 The [NVIDIA Optical Flow SDK](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK)
 CUDA API is usable on this N1X, independent of the NVENC session failure. The

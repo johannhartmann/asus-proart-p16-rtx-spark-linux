@@ -29,6 +29,9 @@ adapter/library API boundary, not evidence of a failed N1X shader.
 The local Arch ARM sync database offers libplacebo 7.387.0-1, but a direct
 upgrade is rejected: installed `ffmpeg` and `mpv` require
 `libplacebo.so=360-64`. Upgrading that shared library requires a coordinated
-package set and rebuilt FFmpeg filter. No package was changed in this check.
+package set and rebuilt FFmpeg filter. A later
+[private API 387 build](libplacebo-upscale-private.md) does run the filter on
+the N1X for 60 frames; it leaves the installed ABI and packages untouched.
+No package was changed in this check.
 Installed mpv's own libplacebo Vulkan renderer has already passed separate
 playback tests; this result applies to FFmpeg's export filter.
