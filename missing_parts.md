@@ -281,6 +281,12 @@ qualification.
 The candidate still requires installation and a repeat through
 `/usr/bin/p16-record-camera-vulkan`; subjective quality and post-resume use
 remain open.
+The [120-second direct all-intra AV1 repeat](docs/evidence/n1x-media-20261118/camera-av1-intra-120s-kernel38.json)
+independently decoded all 3,616 encoded frames with both libdav1d and libaom,
+and all decoded frame hashes were distinct. Packet PTS increased across the
+run, with one 99-ms gap. The camera control was restored, and no new GPU,
+IOMMU or DMA kernel warning appeared. This is sustained bitstream evidence,
+not a perfect-cadence or installed-command claim.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;

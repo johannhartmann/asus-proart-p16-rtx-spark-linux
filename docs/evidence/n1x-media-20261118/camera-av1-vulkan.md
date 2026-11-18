@@ -108,6 +108,18 @@ extra input frame at the `-t 30` boundary remains outside strict retention.
 The output occupied 305 MB, about 10% above the 277 MB default-GOP run for
 this camera scene.
 
+A [120-second direct all-intra repeat](camera-av1-intra-120s-kernel38.json)
+read 3,617 camera frames and encoded 3,616 packets. Libdav1d and libaom each
+decoded all 3,616 frames; every libdav1d frame hash was distinct. Packet PTS
+were strictly increasing across 119.990 seconds, with one 99-ms gap. The
+output occupied 1.276 GB and the encoder ran for 122.0 seconds. The camera
+control returned from the temporary `0` to its original `1`. No new
+DMA-API, NVRM Xid, IOMMU fault, KASAN, BUG or WARNING line was recorded in
+the boot journal during the test. This qualifies complete two-minute decode
+and timing accounting, while the isolated gap and one read frame at the
+`-t 120` boundary keep perfect cadence and strict input retention open. It
+is a direct FFmpeg test, not an installed 0.1.0-12 command result.
+
 `p16-media-tools 0.1.0-11` adds `-g 1` only for its AV1 mode while retaining
 the microsecond encoder time base. The [extracted-package 30-second
 test](camera-av1-packaged-intra-30s-kernel38.json) passes the same camera and

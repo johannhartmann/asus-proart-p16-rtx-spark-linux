@@ -107,3 +107,7 @@ Libdav1d and libaom again produced byte-identical 120-frame pixels in all
 six AV1 cases. The raw camera source and bitstreams were deleted; this is
 objective pixel comparison, not subjective scene acceptance or proof of
 post-resume behavior.
+The separate [120-second real-camera all-intra
+run](camera-av1-intra-120s-kernel38.json) completes 3,616/3,616 frames with
+both decoders; one 99-ms camera/output gap remains visible. Neither the
+short quality comparison nor complete decode erases that cadence limit.

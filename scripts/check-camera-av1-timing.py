@@ -146,7 +146,8 @@ def main():
                            "bitstream_sha256": COMMON.digest(video)})
             decoded = run(["/usr/bin/ffmpeg", "-v", "error", "-c:v",
                            "libdav1d", "-i", str(video), "-fps_mode",
-                           "passthrough", "-f", "framemd5", "-"], timeout=120)
+                           "passthrough", "-f", "framemd5", "-"],
+                          timeout=max(120, args.seconds * 3))
             hashes = re.findall(
                 r"^0,\s*\d+,\s*\d+,\s*\d+,\s*\d+,\s*([0-9a-f]{32})$",
                 decoded.stdout, re.MULTILINE)
@@ -159,7 +160,7 @@ def main():
             if remux.returncode:
                 raise RuntimeError("AV1 IVF remux failed")
             aom = run(["/usr/bin/aomdec", "--noblit", "--progress", "--summary",
-                       str(ivf)], timeout=120)
+                       str(ivf)], timeout=max(120, args.seconds * 3))
             report.update({"libaom_exit_code": aom.returncode,
                            "libaom_frames": count(
                                r"(\d+) decoded frames/\d+ showed frames",
