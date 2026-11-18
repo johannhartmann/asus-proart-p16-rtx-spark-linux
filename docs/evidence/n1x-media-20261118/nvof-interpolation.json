@@ -1,12 +1,18 @@
 {
-  "package": "p16-nvof-tools 0.1.0-1",
-  "analyzerSha256": "f2e1ae3babcb2e83bd9f9e4980debd8c4ee9c951a412fda70d538782d1f958e0",
-  "wrapperSha256": "e9a5b40dbe6cdcc0fd57dc192a87e6b29b25bfdf9c46ef568ee573564959608e",
+  "package": "p16-nvof-tools 0.1.0-4",
+  "analyzerSha256": "a681396d3aeef2a18bb3e872975b7ac14de13ce01a54826aed282881cfdb71ac",
+  "wrapperSha256": "22fec8def0fc4fcf805d71a37b345ee3e06d5ed5c33c5aa666af081d781071e4",
   "controlled": {
     "outputFrames": 3,
     "sourceFramesPreserved": true,
     "midpointMse": 0.0,
     "crossfadeMse": 8239.184981856857,
+    "fullResolution": {
+      "width": 1280,
+      "height": 720,
+      "outputFrames": 3,
+      "sampledMidpointMse": 0.0
+    },
     "nvofPairsLogged": true
   },
   "timedAv": {
@@ -22,6 +28,7 @@
       "avg_frame_rate": "0/0",
       "nb_read_frames": "92"
     },
+    "exportElapsedSeconds": 2.122,
     "videoEndSeconds": 1.978,
     "audioEndSeconds": 1.962,
     "endOffsetSeconds": 0.016000000000000014,
@@ -30,10 +37,11 @@
   },
   "liveCamera": {
     "sourceFrames": "60",
+    "exportElapsedSeconds": 5.156,
     "output": {
       "codec_name": "h264",
-      "width": 320,
-      "height": 180,
+      "width": 1280,
+      "height": 720,
       "avg_frame_rate": "60/1",
       "nb_read_frames": "119"
     },

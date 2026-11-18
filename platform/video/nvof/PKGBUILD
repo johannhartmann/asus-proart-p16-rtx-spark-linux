@@ -1,6 +1,6 @@
 pkgname=p16-nvof-tools
 pkgver=0.1.0
-pkgrel=3
+pkgrel=4
 pkgdesc='N1X Optical Flow Accelerator video analysis and frame interpolation commands'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
@@ -14,8 +14,8 @@ source=('p16-nvof-analyze.cpp' 'p16-optical-flow' 'p16-interpolate-video'
         "nvOpticalFlowCuda.h::https://raw.githubusercontent.com/NVIDIA/NVIDIAOpticalFlowSDK/${_sdkcommit}/nvOpticalFlowCuda.h")
 sha256sums=('8c0a96747d999d0c43624dd61501d1c018d268da810193db56eab52266f6611e'
             '7df80fea8bd8792445038fa305b5567082ddc396dc64dd333abc80beec7bc39a'
-            'e9a5b40dbe6cdcc0fd57dc192a87e6b29b25bfdf9c46ef568ee573564959608e'
-            '923655836f3856e5ab364748a82ba479a4d46530bc2b2aab9c220fcbf16d36f2'
+            '22fec8def0fc4fcf805d71a37b345ee3e06d5ed5c33c5aa666af081d781071e4'
+            '46f701e0f95d6d7ed0a7de74720b8f8cdf511a2791bacc3f5dabb2db5d686a66'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3'
             'a83f6045e5c470b35a6c50672f92e082b78d55752fe51cc20eb1a2738be05b9d'
             '07defc79637fb9893f2a06204972eaa6bcf9e5bea400c88440439ebaaa39f115')

@@ -16,16 +16,17 @@ creation, initialization and execution were verified separately. The JSON
 output is a motion-analysis result.
 
 `p16-interpolate-video INPUT_VIDEO OUTPUT.mkv [MAX_FRAME_PAIRS]` uses NVOFA
-vectors in both directions to warp neighboring 320×180 RGB frames to their
+vectors in both directions to warp neighboring RGB frames at source resolution to their
 temporal midpoint. It exports one midpoint per source pair with FFmpeg's
 NVIDIA Vulkan Video H.264 encoder, doubling the source frame rate. When the
 input has audio, it copies the track to the output and trims it to the video.
 The default processes the full file up to one million frame pairs; pass a
-smaller bound for a short export. The command requires a usable constant input
-frame rate, refuses to overwrite existing files and discards partial output
-on failure. The implementation uses CPU warping after dedicated hardware flow
-computation. Its current 320×180 output is an experimental baseline, not a
-production-quality high-resolution interpolator or NVIDIA RTX Frame Generation.
+smaller bound for a short export. The source dimensions must be divisible by
+four and lie within 128×64 to 4096×4096. The command requires a usable
+constant input frame rate, refuses to overwrite existing files and discards
+partial output on failure. The implementation uses CPU warping after dedicated
+hardware flow computation. Its midpoint quality is qualified on controlled
+translation only; it is not NVIDIA RTX Frame Generation.
 
 Run `p16-optical-flow camera.mkv 30 > flow.json` on a video file. Both a
 controlled eight-pixel translation and a short real P16 camera recording were

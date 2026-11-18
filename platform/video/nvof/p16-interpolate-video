@@ -19,8 +19,15 @@ if [[ ! $pairs =~ ^[0-9]+$ ]] || (( pairs < 1 || pairs > 1000000 )); then
   echo 'MAX_FRAME_PAIRS must be an integer from 1 to 1000000' >&2
   exit 2
 fi
-rate=$(/usr/bin/ffprobe -v error -select_streams v:0 \
-  -show_entries stream=avg_frame_rate -of default=noprint_wrappers=1:nokey=1 "$input")
+details=$(/usr/bin/ffprobe -v error -select_streams v:0 \
+  -show_entries stream=width,height,avg_frame_rate -of csv=p=0 "$input")
+IFS=, read -r width height rate <<< "$details"
+if [[ ! $width =~ ^[0-9]+$ || ! $height =~ ^[0-9]+$ ]] || \
+   (( width < 128 || height < 64 || width > 4096 || height > 4096 ||
+      width % 4 != 0 || height % 4 != 0 )); then
+  echo "NVOFA export needs source dimensions divisible by four, from 128x64 to 4096x4096: ${width}x${height}" >&2
+  exit 2
+fi
 if [[ ! $rate =~ ^[0-9]+/[0-9]+$ ]]; then
   echo "Video has no usable constant frame rate: $rate" >&2
   exit 2
@@ -37,12 +44,12 @@ temporary=$(mktemp "${output}.partial.XXXXXX")
 trap 'rm -f -- "$temporary"' EXIT
 analyzer=${P16_NVOF_BINARY:-/usr/bin/p16-nvof-analyze}
 /usr/bin/ffmpeg -hide_banner -loglevel error -nostdin -i "$input" -an \
-  -vf scale=320:180:flags=bicubic,format=rgb24 \
+  -vf format=rgb24 \
   -frames:v "$((pairs + 1))" -fps_mode passthrough -f rawvideo - | \
-  "$analyzer" --interpolate 320 180 "$pairs" | \
+  "$analyzer" --interpolate "$width" "$height" "$pairs" | \
   /usr/bin/ffmpeg -hide_banner -loglevel info -nostdin \
     -init_hw_device vulkan=vk:0 -filter_hw_device vk \
-    -f rawvideo -pixel_format rgb24 -video_size 320x180 \
+    -f rawvideo -pixel_format rgb24 -video_size "${width}x${height}" \
     -framerate "$output_rate" -i pipe:0 -i "$input" \
     -map 0:v:0 -map 1:a? -vf format=nv12,hwupload \
     -c:v h264_vulkan -c:a copy -shortest -f matroska -y "$temporary"

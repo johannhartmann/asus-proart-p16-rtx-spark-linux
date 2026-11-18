@@ -47,8 +47,9 @@ def main():
                                 "-count_frames", "-show_entries", "stream=codec_name,width,height,nb_read_frames",
                                 "-of", "json", str(video)]).stdout)
         record_log = (recorder.stdout + recorder.stderr).decode(errors="replace")
+        saved_log = record_log.replace(temporary, "$TEMP")
         (args.evidence / "nvof-camera-record.log").write_text(
-            record_log.replace(temporary, "$TEMP"))
+            "\n".join(line.rstrip() for line in saved_log.splitlines()) + "\n")
         recording_hash = hashlib.sha256(video.read_bytes()).hexdigest()
     result = {"package": run(["/usr/bin/pacman", "-Q", "p16-nvof-tools"]).stdout.decode().strip(),
               "sdkCommit": "edb50da3cf849840d680249aa6dbef248ebce2ca",

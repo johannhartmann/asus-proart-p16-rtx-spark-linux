@@ -1,19 +1,20 @@
 Input #0, video4linux2,v4l2, from '/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0':
-  Duration: N/A, start: 100226.855107, bitrate: N/A
-  Stream #0:0: Video: mjpeg (Baseline), yuvj422p(pc, bt470bg/unknown/unknown), 1280x720, 30 fps, 30 tbr, 1000k tbn, start 100226.855107
+  Duration: N/A, start: 101790.278662, bitrate: N/A
+  Stream #0:0: Video: mjpeg (Baseline), yuvj422p(pc, bt470bg/unknown/unknown), 1280x720, 30 fps, 30 tbr, 1000k tbn, start 101790.278662
 Stream mapping:
   Stream #0:0 -> #0:0 (mjpeg (native) -> h264 (h264_vulkan))
 Press [q] to stop, [?] for help
-[swscaler @ 0xfc486c1b7be0] deprecated pixel format used, make sure you did set range correctly
-[h264_vulkan @ 0xc41880bdfa50] No rate control settings specified, using fixed QP = 18
+[swscaler @ 0xf45a741b7be0] deprecated pixel format used, make sure you did set range correctly
+[h264_vulkan @ 0xc44ba5f27a50] No rate control settings specified, using fixed QP = 18
 Output #0, matroska, to '$TEMP/camera.mkv':
   Metadata:
     encoder         : Lavf63.1.102
   Stream #0:0: Video: h264 (High) (H264 / 0x34363248), nv12(pc, bt470bg/unknown/unknown, progressive), 1280x720, q=2-31, 30 fps, 1k tbn
     Metadata:
       encoder         : Lavc63.1.102 h264_vulkan
-frame=   13 fps=0.0 q=-0.0 size=       1KiB time=00:00:00.40 bitrate=  12.0kbits/s speed= 0.8x elapsed=0:00:00.50
-frame=   28 fps= 28 q=-0.0 size=       1KiB time=00:00:00.90 bitrate=   5.3kbits/s speed= 0.9x elapsed=0:00:01.00
-frame=   43 fps= 29 q=-0.0 size=       1KiB time=00:00:01.40 bitrate=   3.4kbits/s speed=0.933x elapsed=0:00:01.50
-[out#0/matroska @ 0xc41880bdf0b0] video:2622KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.041898%
-frame=   60 fps= 30 q=-0.0 Lsize=    2623KiB time=00:00:01.96 bitrate=10927.1kbits/s speed=0.972x elapsed=0:00:02.02
+frame=   12 fps=0.0 q=-0.0 size=       1KiB time=00:00:00.36 bitrate=  13.1kbits/s speed=0.733x elapsed=0:00:00.50
+frame=   27 fps= 27 q=-0.0 size=       1KiB time=00:00:00.86 bitrate=   5.5kbits/s speed=0.866x elapsed=0:00:01.00
+frame=   42 fps= 28 q=-0.0 size=       1KiB time=00:00:01.36 bitrate=   3.5kbits/s speed=0.911x elapsed=0:00:01.50
+frame=   58 fps= 29 q=-0.0 size=       1KiB time=00:00:01.90 bitrate=   2.5kbits/s speed=0.95x elapsed=0:00:02.00
+[out#0/matroska @ 0xc44ba5f270b0] video:2552KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.043053%
+frame=   60 fps= 29 q=-0.0 Lsize=    2553KiB time=00:00:01.96 bitrate=10633.9kbits/s speed=0.965x elapsed=0:00:02.03

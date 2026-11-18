@@ -1,7 +1,7 @@
 {
-  "package": "p16-nvof-tools 0.1.0-1",
+  "package": "p16-nvof-tools 0.1.0-4",
   "sdkCommit": "edb50da3cf849840d680249aa6dbef248ebce2ca",
-  "analyzerSha256": "6ec43f65de9e2ab90fcfaa8a6b2d6173adbcfb5299d676dc88d07972f874552e",
+  "analyzerSha256": "a681396d3aeef2a18bb3e872975b7ac14de13ce01a54826aed282881cfdb71ac",
   "wrapperSha256": "7df80fea8bd8792445038fa305b5567082ddc396dc64dd333abc80beec7bc39a",
   "staticControl": {
     "backend": "NVIDIA NVOFA CUDA",
@@ -41,7 +41,7 @@
     "mean_magnitude": 8.0,
     "mean_nonzero_fraction": 1.0
   },
-  "cameraRecordingSha256": "0e7e6b40ccfcfaa2efebf916c682a030a09944727dcec2730a19465948d01b9e",
+  "cameraRecordingSha256": "a5932e117a261646e2653a11ba094b22e053fbae6ce8b9a0755ec3da1c8c3893",
   "cameraRecordingProbe": {
     "programs": [],
     "stream_groups": [],
@@ -63,189 +63,189 @@
     "grid": 4,
     "pairs": [
       {
-        "mean_dx": -0.0047,
-        "mean_dy": 0.0022,
-        "mean_magnitude": 0.0134,
+        "mean_dx": -0.0045,
+        "mean_dy": -0.0003,
+        "mean_magnitude": 0.0139,
         "nonzero_fraction": 0.0
       },
       {
-        "mean_dx": -0.0021,
-        "mean_dy": -0.0008,
-        "mean_magnitude": 0.0135,
+        "mean_dx": 0.0019,
+        "mean_dy": 0.0017,
+        "mean_magnitude": 0.0273,
         "nonzero_fraction": 0.0
       },
       {
-        "mean_dx": 0.0512,
-        "mean_dy": -0.0215,
-        "mean_magnitude": 0.1018,
-        "nonzero_fraction": 0.0319
+        "mean_dx": 0.0158,
+        "mean_dy": -0.0088,
+        "mean_magnitude": 0.0664,
+        "nonzero_fraction": 0.0017
       },
       {
-        "mean_dx": 0.0023,
-        "mean_dy": 0.2172,
-        "mean_magnitude": 0.4187,
-        "nonzero_fraction": 0.32
+        "mean_dx": 0.0017,
+        "mean_dy": 0.0044,
+        "mean_magnitude": 0.0779,
+        "nonzero_fraction": 0.0025
       },
       {
-        "mean_dx": -0.0139,
-        "mean_dy": 0.3681,
-        "mean_magnitude": 0.715,
-        "nonzero_fraction": 0.4875
+        "mean_dx": 0.0132,
+        "mean_dy": 0.0345,
+        "mean_magnitude": 0.1282,
+        "nonzero_fraction": 0.0397
       },
       {
-        "mean_dx": 0.0424,
-        "mean_dy": 0.257,
-        "mean_magnitude": 0.8293,
-        "nonzero_fraction": 0.43
-      },
-      {
-        "mean_dx": 0.1714,
-        "mean_dy": -0.0036,
-        "mean_magnitude": 0.4767,
-        "nonzero_fraction": 0.2558
-      },
-      {
-        "mean_dx": 0.0454,
-        "mean_dy": 0.2063,
-        "mean_magnitude": 0.3938,
-        "nonzero_fraction": 0.2086
-      },
-      {
-        "mean_dx": 0.0071,
-        "mean_dy": 0.0511,
-        "mean_magnitude": 0.0998,
-        "nonzero_fraction": 0.0103
-      },
-      {
-        "mean_dx": 0.074,
-        "mean_dy": 0.1091,
-        "mean_magnitude": 0.2247,
-        "nonzero_fraction": 0.1369
-      },
-      {
-        "mean_dx": 0.0391,
-        "mean_dy": 0.0335,
-        "mean_magnitude": 0.3798,
-        "nonzero_fraction": 0.28
-      },
-      {
-        "mean_dx": 0.0554,
-        "mean_dy": 0.1419,
-        "mean_magnitude": 0.2996,
-        "nonzero_fraction": 0.2258
-      },
-      {
-        "mean_dx": 0.0384,
-        "mean_dy": 0.0623,
-        "mean_magnitude": 0.1796,
-        "nonzero_fraction": 0.0911
-      },
-      {
-        "mean_dx": 0.0495,
-        "mean_dy": 0.1078,
-        "mean_magnitude": 0.5035,
-        "nonzero_fraction": 0.3794
-      },
-      {
-        "mean_dx": -0.0086,
-        "mean_dy": 0.0629,
-        "mean_magnitude": 0.1104,
-        "nonzero_fraction": 0.0014
-      },
-      {
-        "mean_dx": 0.0191,
-        "mean_dy": 0.0093,
-        "mean_magnitude": 0.0584,
-        "nonzero_fraction": 0.0061
-      },
-      {
-        "mean_dx": 0.0006,
-        "mean_dy": -0.0044,
-        "mean_magnitude": 0.0439,
-        "nonzero_fraction": 0.0
-      },
-      {
-        "mean_dx": 0.0023,
-        "mean_dy": 0.0046,
-        "mean_magnitude": 0.0455,
-        "nonzero_fraction": 0.0008
-      },
-      {
-        "mean_dx": 0.0362,
-        "mean_dy": 0.0045,
-        "mean_magnitude": 0.066,
-        "nonzero_fraction": 0.0208
-      },
-      {
-        "mean_dx": 0.0135,
-        "mean_dy": 0.0036,
-        "mean_magnitude": 0.058,
-        "nonzero_fraction": 0.0122
-      },
-      {
-        "mean_dx": 0.0128,
-        "mean_dy": 0.015,
-        "mean_magnitude": 0.0614,
-        "nonzero_fraction": 0.0047
-      },
-      {
-        "mean_dx": 0.0468,
-        "mean_dy": -0.0005,
-        "mean_magnitude": 0.0823,
-        "nonzero_fraction": 0.0222
-      },
-      {
-        "mean_dx": 0.0282,
-        "mean_dy": -0.0064,
-        "mean_magnitude": 0.0632,
-        "nonzero_fraction": 0.0147
-      },
-      {
-        "mean_dx": 0.0052,
-        "mean_dy": 0.0126,
-        "mean_magnitude": 0.058,
-        "nonzero_fraction": 0.0028
-      },
-      {
-        "mean_dx": 0.0349,
-        "mean_dy": 0.0184,
-        "mean_magnitude": 0.0745,
-        "nonzero_fraction": 0.0222
-      },
-      {
-        "mean_dx": 0.0198,
-        "mean_dy": -0.0102,
-        "mean_magnitude": 0.0622,
+        "mean_dx": 0.003,
+        "mean_dy": 0.0131,
+        "mean_magnitude": 0.0934,
         "nonzero_fraction": 0.0136
       },
       {
-        "mean_dx": 0.017,
-        "mean_dy": -0.0051,
-        "mean_magnitude": 0.057,
+        "mean_dx": -0.0194,
+        "mean_dy": 0.0046,
+        "mean_magnitude": 0.0936,
+        "nonzero_fraction": 0.0069
+      },
+      {
+        "mean_dx": 0.0069,
+        "mean_dy": 0.0566,
+        "mean_magnitude": 0.1783,
+        "nonzero_fraction": 0.0403
+      },
+      {
+        "mean_dx": -0.0292,
+        "mean_dy": 0.0726,
+        "mean_magnitude": 0.159,
+        "nonzero_fraction": 0.0514
+      },
+      {
+        "mean_dx": -0.0105,
+        "mean_dy": 0.0063,
+        "mean_magnitude": 0.1555,
+        "nonzero_fraction": 0.045
+      },
+      {
+        "mean_dx": 0.0113,
+        "mean_dy": -0.0134,
+        "mean_magnitude": 0.0795,
+        "nonzero_fraction": 0.0197
+      },
+      {
+        "mean_dx": 0.0111,
+        "mean_dy": -0.0041,
+        "mean_magnitude": 0.0531,
         "nonzero_fraction": 0.0
       },
       {
-        "mean_dx": 0.0106,
-        "mean_dy": 0.0004,
-        "mean_magnitude": 0.0373,
+        "mean_dx": 0.0242,
+        "mean_dy": 0.0557,
+        "mean_magnitude": 0.1659,
+        "nonzero_fraction": 0.0436
+      },
+      {
+        "mean_dx": -0.0003,
+        "mean_dy": 0.0136,
+        "mean_magnitude": 0.0409,
         "nonzero_fraction": 0.0
       },
       {
-        "mean_dx": -0.0094,
-        "mean_dy": 0.0077,
-        "mean_magnitude": 0.0382,
+        "mean_dx": -0.0026,
+        "mean_dy": 0.0043,
+        "mean_magnitude": 0.0404,
         "nonzero_fraction": 0.0
       },
       {
-        "mean_dx": 0.0056,
-        "mean_dy": -0.0,
-        "mean_magnitude": 0.0389,
+        "mean_dx": 0.0046,
+        "mean_dy": -0.0094,
+        "mean_magnitude": 0.045,
+        "nonzero_fraction": 0.0031
+      },
+      {
+        "mean_dx": 0.0008,
+        "mean_dy": 0.0049,
+        "mean_magnitude": 0.0466,
+        "nonzero_fraction": 0.0003
+      },
+      {
+        "mean_dx": 0.0027,
+        "mean_dy": 0.0105,
+        "mean_magnitude": 0.0435,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": -0.0023,
+        "mean_dy": 0.0064,
+        "mean_magnitude": 0.0252,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.006,
+        "mean_dy": 0.0005,
+        "mean_magnitude": 0.0277,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0019,
+        "mean_dy": -0.0032,
+        "mean_magnitude": 0.034,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0004,
+        "mean_dy": -0.0003,
+        "mean_magnitude": 0.0207,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": -0.001,
+        "mean_dy": -0.0006,
+        "mean_magnitude": 0.0218,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0005,
+        "mean_dy": 0.0044,
+        "mean_magnitude": 0.0207,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0012,
+        "mean_dy": -0.0002,
+        "mean_magnitude": 0.0157,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0035,
+        "mean_dy": 0.0006,
+        "mean_magnitude": 0.0203,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0035,
+        "mean_dy": 0.0003,
+        "mean_magnitude": 0.0189,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0038,
+        "mean_dy": 0.0064,
+        "mean_magnitude": 0.0207,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0101,
+        "mean_dy": 0.0023,
+        "mean_magnitude": 0.0262,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0139,
+        "mean_dy": -0.0004,
+        "mean_magnitude": 0.0273,
         "nonzero_fraction": 0.0
       }
     ],
     "pair_count": 30,
-    "mean_magnitude": 0.1868,
-    "mean_nonzero_fraction": 0.0993
+    "mean_magnitude": 0.0596,
+    "mean_nonzero_fraction": 0.0089
   },
   "cameraRecordingRetained": false,
   "pass": true

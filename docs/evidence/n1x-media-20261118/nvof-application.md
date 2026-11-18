@@ -3,21 +3,16 @@
 18 November 2026; ASUS ProArt P16 H7607BA, kernel
 `7.2.8-36-rtx-spark-npu`, NVIDIA 615.78.08, CUDA 13.4.2.
 
-The installed `p16-nvof-tools 0.1.0-1` package was built from
+The installed `p16-nvof-tools 0.1.0-4` package was built from
 [`platform/video/nvof/PKGBUILD`](../../../platform/video/nvof/PKGBUILD).
 Its NVIDIA Optical Flow SDK 2.0 headers are pinned to commit
 `edb50da3cf849840d680249aa6dbef248ebce2ca` with SHA256 checksums.
 The package archive SHA256 is
-`02af31edfac3c9435cbc23bc3cfd12d21468f88b3d0256721b914e5e1226e06b`.
+`48ce9acd470864e94586a8ec93abc4239f8b9394eefe2800396566680a5ffcc9`.
 The installed analyzer SHA256 is
-`6ec43f65de9e2ab90fcfaa8a6b2d6173adbcfb5299d676dc88d07972f874552e`.
-The subsequent `0.1.0-3` source revision buffers JSON until a complete frame
-pair succeeds and adds midpoint video export. Its archive SHA256 is
-`ecda4eaf4aee77ebf05ad79ad02cad9002fe28ca1283e4fc307c800f56fd1875`.
-It was built and passed a synthetic translation, short-input error test and
-candidate export tests, but is awaiting graphical authentication for
-installation. The live-camera analysis evidence below remains tied to
-installed `0.1.0-1` until that update completes.
+`a681396d3aeef2a18bb3e872975b7ac14de13ce01a54826aed282881cfdb71ac`.
+This revision buffers JSON until a complete frame pair succeeds and includes
+the separately tested midpoint video export command.
 
 The direct API probe established `NvOFAPICreateInstanceCuda`, CUDA context,
 NVOFA handle, supported output grids 1/2/4, session initialization, buffer
@@ -49,6 +44,7 @@ python3 scripts/check-p16-optical-flow.py docs/evidence/n1x-media-20261118
 ```
 
 This qualifies an actual optical-flow computation and a packaged video
-analysis command on Linux ARM64. It does not synthesize intermediate frames,
-measure interpolation artifacts, establish A/V sync for a new export or
-enable NVIDIA's proprietary RTX Video Frame Generation application feature.
+analysis command on Linux ARM64. Midpoint export and bounded A/V are tested
+separately in [the interpolation record](nvof-interpolation.md); neither test
+establishes perceptual motion-artifact quality or NVIDIA's proprietary RTX
+Video Frame Generation application feature.

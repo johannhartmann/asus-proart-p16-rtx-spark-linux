@@ -9,6 +9,7 @@ from pathlib import Path
 import random
 import subprocess
 import tempfile
+import time
 
 
 def run(args, *, data=None, env=None):
@@ -62,6 +63,19 @@ def main():
                 for c in range(3)]
     mse = lambda image: sum((image[i] - expected[i]) ** 2 for i in interior) / len(interior)
     crossfade = bytes((a + b) // 2 for a, b in zip(first, last))
+    full_width, full_height = 1280, 720
+    full_rng = random.Random(43)
+    full_first = bytes(full_rng.randrange(256) for _ in range(full_width * full_height * 3))
+    full_last = shifted(full_first, full_width, full_height, 8)
+    full_control = run([args.analyzer, "--interpolate", str(full_width),
+                        str(full_height), "1"], data=full_first + full_last)
+    full_middle = full_control.stdout[len(full_first):2 * len(full_first)]
+    full_target = shifted(full_first, full_width, full_height, 4)
+    full_indices = [(y * full_width + x) * 3 + c
+                    for y in range(16, full_height - 16, 13)
+                    for x in range(16, full_width - 16, 13)
+                    for c in range(3)]
+    full_mse = sum((full_middle[i] - full_target[i]) ** 2 for i in full_indices) / len(full_indices)
     with tempfile.TemporaryDirectory(prefix="p16-nvof-interp-") as temporary:
         root = Path(temporary)
         source = root / "timed-source.mkv"
@@ -75,14 +89,18 @@ def main():
              "-c:a", "aac", "-shortest", "-y", str(source)])
         env = os.environ.copy()
         env["P16_NVOF_BINARY"] = args.analyzer
+        start = time.monotonic()
         av = run([args.wrapper, str(source), str(av_out), "50"], env=env)
+        av_elapsed = time.monotonic() - start
         av_video = probe(av_out, "v:0")[0]
         av_audio = probe(av_out, "a:0")[0]
         av_video_end = end_time(av_out, "v:0")
         av_audio_end = end_time(av_out, "a:0")
         run(["/usr/bin/ffmpeg", "-v", "error", "-i", str(av_out), "-f", "null", "-"])
         camera_record = run(["/usr/bin/p16-record-camera-vulkan", "2", str(camera)])
+        start = time.monotonic()
         camera_export = run([args.wrapper, str(camera), str(camera_out), "100"], env=env)
+        camera_elapsed = time.monotonic() - start
         camera_video = probe(camera_out, "v:0")[0]
         run(["/usr/bin/ffmpeg", "-v", "error", "-i", str(camera_out), "-f", "null", "-"])
         player_log = root / "player.log"
@@ -91,8 +109,9 @@ def main():
         playback = player_log.read_text(errors="replace")
         camera_log = (camera_record.stdout + camera_record.stderr).decode(errors="replace")
         export_log = (camera_export.stdout + camera_export.stderr).decode(errors="replace")
+        saved_log = (camera_log + "\n" + export_log).replace(temporary, "$TEMP")
         (args.evidence / "nvof-interpolation-camera.log").write_text(
-            (camera_log + "\n" + export_log).replace(temporary, "$TEMP"))
+            "\n".join(line.rstrip() for line in saved_log.splitlines()) + "\n")
         result = {
             "package": run(["/usr/bin/pacman", "-Q", "p16-nvof-tools"]).stdout.decode().strip(),
             "analyzerSha256": hashlib.sha256(Path(args.analyzer).read_bytes()).hexdigest(),
@@ -100,9 +119,13 @@ def main():
             "controlled": {"outputFrames": len(frames), "sourceFramesPreserved":
                            frames[0] == first and frames[2] == last,
                            "midpointMse": mse(frames[1]), "crossfadeMse": mse(crossfade),
+                           "fullResolution": {"width": full_width, "height": full_height,
+                                              "outputFrames": len(full_control.stdout) // len(full_first),
+                                              "sampledMidpointMse": full_mse},
                            "nvofPairsLogged": "nvof_interpolated_pairs=1" in
                            control.stderr.decode(errors="replace")},
             "timedAv": {"video": av_video, "audio": av_audio,
+                        "exportElapsedSeconds": round(av_elapsed, 3),
                         "videoEndSeconds": av_video_end, "audioEndSeconds": av_audio_end,
                         "endOffsetSeconds": abs(av_video_end - av_audio_end),
                         "nvofPairsLogged": "nvof_interpolated_pairs=47" in
@@ -110,17 +133,20 @@ def main():
                         "vulkanEncoderLogged": "h264_vulkan" in
                         (av.stdout + av.stderr).decode(errors="replace")},
             "liveCamera": {"sourceFrames": probe(camera, "v:0")[0]["nb_read_frames"],
+                           "exportElapsedSeconds": round(camera_elapsed, 3),
                            "output": camera_video,
                            "nvofPairsLogged": "nvof_interpolated_pairs=59" in export_log,
                            "vulkanEncoderLogged": "h264_vulkan" in export_log,
                            "mpvExit": player.returncode,
                            "mpvVaapiDecode": "Using hardware decoding (vaapi)." in playback,
-                           "mpvVulkanRenderer": "VO: [gpu-next] 320x180 vaapi[nv12]" in playback,
+                           "mpvVulkanRenderer": "VO: [gpu-next] 1280x720 vaapi[nv12]" in playback,
                            "mpvEof": "Exiting... (End of file)" in playback},
             "cameraPixelsRetained": False}
     c, a, live = result["controlled"], result["timedAv"], result["liveCamera"]
     result["pass"] = (c["sourceFramesPreserved"] and c["nvofPairsLogged"] and
                       c["midpointMse"] < 1 and c["crossfadeMse"] > 1000 and
+                      c["fullResolution"]["outputFrames"] == 3 and
+                      c["fullResolution"]["sampledMidpointMse"] < 1 and
                       a["video"]["codec_name"] == "h264" and
                       a["video"]["avg_frame_rate"] == "48/1" and
                       a["video"]["nb_read_frames"] == "95" and
@@ -128,6 +154,8 @@ def main():
                       a["endOffsetSeconds"] < 0.1 and a["nvofPairsLogged"] and
                       a["vulkanEncoderLogged"] and live["sourceFrames"] == "60" and
                       live["output"]["avg_frame_rate"] == "60/1" and
+                      live["output"]["width"] == 1280 and
+                      live["output"]["height"] == 720 and
                       live["output"]["nb_read_frames"] == "119" and
                       all(live[key] for key in ("nvofPairsLogged", "vulkanEncoderLogged",
                                                 "mpvVaapiDecode", "mpvVulkanRenderer", "mpvEof")))
