@@ -1,0 +1,25 @@
+{
+  "package": "p16-media-tools 0.1.0-5",
+  "package_archive_sha256": "bfedc2de67d03a447c2c7d57122a50f21f3e057b992f7928ed081f36fcbb87a2",
+  "package_files": 18,
+  "package_missing_files": 0,
+  "self_test": {
+    "device": "/sys/devices/platform/NVDA8001:00/usb7/7-1",
+    "usb_id": "636e:0bdb",
+    "acpi_parent": "NVDA8001:00",
+    "mode": "self-test",
+    "authorized_before": "1",
+    "nodes_before": ["/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"],
+    "nodes_while_off": [],
+    "authorized_while_off": "0",
+    "nodes_after": ["/dev/video0", "/dev/video1", "/dev/video2", "/dev/video3"],
+    "authorized_after": "1",
+    "pass": true
+  },
+  "installed_wrapper_sha256": "a408bcdd50d1aa0e8923dd12494b28f0d3bb12fd27d34cefd4174624d782b5e4",
+  "installed_root_helper_sha256": "da05faa3cf6c61b1aef2c992827006a9ba0052131cc0556fe7f8c1079f57d6c0",
+  "post_restore_v4l2_capture": "camera-privacy-after-switch.json",
+  "post_restore_browser_capture": "browser-camera-after-privacy-switch.json",
+  "final_authorized": "1",
+  "camera_pixels_retained": false
+}

@@ -26,8 +26,8 @@ retained.
 | Live RGB camera → GStreamer Vulkan H.264 | Pass for 60 frames | The installed `p16-record-camera-gstreamer` sends real P16 MJPEG camera frames through FFmpeg decode, GStreamer `rawvideoparse`/`vulkanupload` and `vulkanh264enc`. [`gstreamer-camera-vulkan.json`](gstreamer-camera-vulkan.json) and the [pipeline log](gstreamer-camera-vulkan.log) show 60 independently decoded H.264 1280×720 frames and 60 distinct downscaled frame hashes. Footage was deleted. This is Vulkan Video, not NVENC or OBS. |
 | Dedicated nvJPEG hardware engine | Unavailable in current N1X runtime | [`nvjpeg-capability.json`](nvjpeg-capability.json) from the [direct CUDA API probe](../../../scripts/probe-nvjpeg-capability.c) records zero hardware JPEG decode/encode engines. Explicit hardware decoder and encoder backends return `NVJPEG_STATUS_ARCH_MISMATCH` (7). GPU-hybrid handle creation succeeds but its actual JPEG workload remains untested. |
 | N1X Optical Flow Accelerator | Pass for API and installed video analysis | [Application record](nvof-application.md) and [`nvof-application.json`](nvof-application.json) show the packaged `p16-optical-flow` using NVIDIA's CUDA Optical Flow API 2.0 on the N1X. Identical textured frames produce mean magnitude 0.0002 pixels; an 8-pixel translated image produces mean horizontal flow 8.0000 pixels. A real 60-frame P16 camera recording was processed for 30 pairs and then deleted. This demonstrates the optical-flow engine in an installed Linux video-analysis workflow; installed export is tested separately below. |
-| NVOFA midpoint video export | Installed application path passes bounded tests | [Interpolation record](nvof-interpolation.md) and [`nvof-interpolation.json`](nvof-interpolation.json) show both installed 0.1.0-4 commands using forward/backward hardware flow, source-resolution midpoint warping and Vulkan Video H.264 export. Controlled translations at 320×180 and 1280×720 match the four-pixel midpoint, a 24→48 fps AAC fixture ends audio/video within 16 ms, and a real 1280×720 camera clip exports 60→119 frames at 30→60 fps then plays in mpv with hardware decode. Visual artifacts and long exports remain open. |
-| Packaged P16 media commands | Installed; four commands pass their bounded paths | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-3 is installed; the earlier [`installed-tools.json`](installed-tools.json) covers version 0.1.0-1 playback and recording. The `p16-hdr-play` hash, normal playback and watchdog recovery are in [the HDR output record](hdr-output.md), from package 0.1.0-2 with the same command hash as 0.1.0-3. The new GStreamer recorder is covered above. The earlier `p16-video-play-installed.log.gz` and `p16-record-camera-vulkan-installed.log` verify VA-API/Vulkan playback and two-second live RGB recording. Current package archive SHA256: `fd1494371334ef38ee9ab359c5af0db22ac35ea2ed723f54b48bd0b011462ab6`. |
+| NVOFA midpoint video export | Installed application path passes bounded tests | [Interpolation record](nvof-interpolation.md) and [`nvof-interpolation.json`](nvof-interpolation.json) show both installed 0.1.0-4 commands using forward/backward hardware flow, source-resolution midpoint warping and Vulkan Video H.264 export. Controlled translations at 320×180 and 1280×720 match the four-pixel midpoint, a 24→48 fps AAC fixture ends audio/video within 16 ms, and a real 1280×720 camera clip exports 60→119 frames at 30→60 fps then plays in mpv with hardware decode. An [occlusion fixture](nvof-occlusion.json) improves over crossfade but has boundary error. Human visual acceptance and long exports remain open. |
+| Packaged P16 media commands | Installed paths pass their bounded workloads | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-5 is installed. The earlier [`installed-tools.json`](installed-tools.json) covers version 0.1.0-1 playback and recording; the [HDR record](hdr-output.md) covers `p16-hdr-play`, and the GStreamer recorder is covered above. The [browser record](browser-vaapi.md) covers the installed Chrome launcher, and the [camera privacy record](camera-privacy.md) covers the installed USB authorization switch. The earlier `p16-video-play-installed.log.gz` and `p16-record-camera-vulkan-installed.log` verify VA-API/Vulkan playback and live RGB recording. Current package archive SHA256: `bfedc2de67d03a447c2c7d57122a50f21f3e057b992f7928ed081f36fcbb87a2`. |
 | Interactive A/V playback | Pass for a bounded H.264/AAC fixture | [`av-playback.json`](av-playback.json) and `av-playback-mpv.log.gz` show the installed player selecting VA-API decode, Vulkan `gpu-next` output and PipeWire audio. IPC drove forward and backward seek, pause, resume and EOF. The sampled audio/video clock difference during playback was at most 22 ms. This does not establish perceived lip sync or a long-duration stability result. |
 | NVENC API | Blocked for H.264, HEVC and AV1 | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but each `nvenc-*.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. The [API-version comparison](nvenc-api-version-compare.json) repeats all three probes with codec headers 12.2 and 13.1; both fail at session creation. The independent [direct C probe](nvenc-direct-session.json) creates the API function table but also gets status 21 opening a CUDA/NVENC session with either header. No NVENC output was produced. |
 | Installed NVENC check | Blocked for H.264, HEVC and AV1 | [`installed-nvenc/installed-nvenc.json`](installed-nvenc/installed-nvenc.json) and its three codec logs repeat the session probe with `/usr/bin/ffmpeg-n1x` from the installed 9.0.2-4 package. Every codec exits 187 at `OpenEncodeSessionEx` error 21. The probe exits nonzero by design when the hardware encoder is unavailable. |
@@ -38,6 +38,7 @@ retained.
 | P16 internal RGB / IR cameras | Pass for bounded V4L2 capture | `p16-rgb.log` records 30 MJPEG 1280×720 frames; `p16-ir.log` records 15 GREY 360×360 frames. Per-frame luma statistics vary and the streams contain nonuniform pixels. No frames were saved. |
 | RGB camera in normal applications | Pass for mpv preview and OBS recording | `mpv-rgb-camera.log.gz` shows a live 1280×720 source in a Wayland window. `obs-camera.log` shows `v4l2_input` at 1280×720/30 and a temporary six-second H.264 recording; independent FFprobe/FFmpeg read 180 frames. OBS reported 181 output frames, so the one-frame accounting difference remains to investigate. OBS logged one V4L2 select timeout when the source was added. |
 | RGB camera V4L2 contention | Pass | [`camera-contention.json`](camera-contention.json) records a 120-frame primary capture, `Device or resource busy` and zero frames for a concurrent client, then a 10-frame capture after release. No pixels were retained. |
+| Internal camera privacy | Linux USB switch passes; UVC control read-only | [Privacy record](camera-privacy.md) and [`camera-privacy-control.json`](camera-privacy-control.json) show UVC `privacy=0` with a read-only flag; setting it to 1 fails while a normal brightness write succeeds. The owner reports no physical shutter. Installed [`p16-camera-privacy self-test`](camera-privacy-switch.json) removed all four internal V4L2 nodes at `authorized=0`, restored them at 1, and passed subsequent V4L2 and Chromium capture. This software switch may reset at reboot. |
 | GTK camera portal → PipeWire | Pass for native app and 30 buffers | [`camera-portal.json`](camera-portal.json) records graphical permission, a portal-provided PipeWire remote, the internal ASUS RGB node, 30 MJPEG 1280×720/30 buffers with varying nonzero sizes, and EOS. The [GTK/libportal probe](../../../scripts/check-p16-camera-portal.py) sets a Video/Capture/Camera stream role; omission caused `target not found`. No pixels were retained. Sandboxed Flatpak capture and permission revocation remain untested. |
 | OBS advanced Vulkan recording | Blocked | `obs-vulkan-record-fail.log` records an isolated FFmpeg output profile with `h264_vulkan`; OBS reported `Failed to open video codec: Invalid argument` and produced no recording. The tested OBS path cannot yet consume Vulkan Video directly. |
 | Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless browser run does not qualify its normal graphical permission flow; the GTK portal capture is recorded separately above. |
@@ -98,6 +99,18 @@ python3 scripts/check-p16-camera-contention.py \
 The direct probe deliberately exits nonzero when the encoder session fails.
 Its logs show API discovery and function-table creation succeeding before
 status 21. The two header versions use the same source file and runtime driver.
+The bounded camera privacy and NVOFA occlusion checks are:
+
+```sh
+python3 scripts/check-p16-camera-privacy.py \
+  --output docs/evidence/n1x-media-20261118/camera-privacy-control.json
+p16-camera-privacy self-test
+python3 scripts/check-p16-nvof-occlusion.py \
+  --output docs/evidence/n1x-media-20261118/nvof-occlusion.json
+```
+
+The camera self-test requests graphical Polkit authentication and restores
+authorization before it exits.
 Repeat the installed package encoder check with:
 
 ```sh
@@ -189,7 +202,8 @@ python3 scripts/check-hevc422-av-playback.py \
 ```
 
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
-the physical privacy behavior has not yet been tested. `/dev/video2` is the
+the owner reports no physical shutter. The installed USB authorization switch
+passed its off/on self-test and later application capture. `/dev/video2` is the
 internal IR device; no face-authentication claim follows from capture.
 PipeWire 1.6.10 and WirePlumber 0.5.18 expose the ASUS RGB V4L2 node as a
 `Video/Source`; `org.freedesktop.portal.Camera` reports
@@ -210,7 +224,7 @@ advanced encode matrix, including 12-bit hardware encoding (the installed
 Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log));
 OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; browser hardware decode, graphical browser
-permission; physical device privacy; perceived A/V sync and longer playback;
+permission; electronic camera privacy/LED behavior; perceived A/V sync and longer playback;
 fresh boot and physical s2idle/resume; measured 4:2:2 display precision and
 proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a

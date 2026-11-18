@@ -26,6 +26,17 @@ frame count for one well-behaved translation. It does not represent occlusion,
 complex motion, or visual acceptance of camera footage. A second 1280×720
 translation control produced three frames and sampled midpoint MSE 0.
 
+A separate [occlusion fixture](nvof-occlusion.json) moves a 48×48 foreground
+with a unique, nonperiodic texture 16 pixels across an independently textured
+stationary background. The known midpoint is 8 pixels between the endpoints.
+On a region containing the moving object and exposed background, NVOFA
+midpoint MSE is 783 versus 2195 for a direct crossfade. Around the leading
+and trailing exposure boundaries, local MSE remains around 2008–2663; static
+background MSE is about 26. This supports a real improvement over crossfade
+on a controlled occlusion, while showing visible-edge error remains possible.
+An earlier periodic checkerboard control was discarded because identical
+patterns at multiple offsets made the correspondence ambiguous.
+
 The timed A/V test exported 48 input video frames at 24 fps to 95 H.264
 frames at 48 fps, retained AAC audio and ended the video and audio tracks
 within 16 ms. Independent FFmpeg decoding succeeded. The real P16 RGB camera

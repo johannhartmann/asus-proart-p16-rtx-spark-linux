@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Authorize only the P16's internal USB RGB/IR camera in the Linux USB core."""
+
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+
+ACPI_ROOT = Path("/sys/bus/acpi/devices/NVDA8001:00/physical_node")
+VENDOR, PRODUCT = "636e", "0bdb"
+
+
+def camera_device():
+    root = ACPI_ROOT.resolve(strict=True)
+    matches = []
+    for authorized in root.glob("usb*/*/authorized"):
+        parent = authorized.parent
+        if not (parent / "idVendor").exists() or not (parent / "idProduct").exists():
+            continue
+        if ((parent / "idVendor").read_text().strip().lower() == VENDOR and
+                (parent / "idProduct").read_text().strip().lower() == PRODUCT):
+            matches.append(parent)
+    if len(matches) != 1:
+        raise RuntimeError(f"expected one internal ASUS camera, found {len(matches)}")
+    return matches[0]
+
+
+def camera_nodes(device):
+    result = []
+    for node in Path("/sys/class/video4linux").glob("video*"):
+        if node.resolve().is_relative_to(device):
+            result.append("/dev/" + node.name)
+    return sorted(result)
+
+
+def wait_nodes(device, should_exist):
+    for _ in range(50):
+        nodes = camera_nodes(device)
+        if bool(nodes) == should_exist:
+            return nodes
+        time.sleep(0.1)
+    raise RuntimeError("camera V4L2 nodes did not reach expected state")
+
+
+def main():
+    if len(sys.argv) != 2 or sys.argv[1] not in ("status", "on", "off", "self-test"):
+        print("Usage: p16-camera-privacy {status|on|off|self-test}", file=sys.stderr)
+        return 2
+    mode = sys.argv[1]
+    if mode != "status" and os.geteuid() != 0:
+        print("camera authorization changes require graphical Polkit authentication",
+              file=sys.stderr)
+        return 1
+    try:
+        device = camera_device()
+        authorized = device / "authorized"
+        before = authorized.read_text().strip()
+        report = {"device": str(device), "usb_id": f"{VENDOR}:{PRODUCT}",
+                  "acpi_parent": "NVDA8001:00", "mode": mode,
+                  "authorized_before": before, "nodes_before": camera_nodes(device)}
+        if mode == "status":
+            report["authorized_after"] = before
+            report["nodes_after"] = report["nodes_before"]
+        elif mode == "self-test":
+            if before != "1" or not report["nodes_before"]:
+                raise RuntimeError("self-test requires an enabled internal camera")
+            try:
+                authorized.write_text("0")
+                report["nodes_while_off"] = wait_nodes(device, False)
+                report["authorized_while_off"] = authorized.read_text().strip()
+            finally:
+                authorized.write_text("1")
+                report["nodes_after"] = wait_nodes(device, True)
+                report["authorized_after"] = authorized.read_text().strip()
+            report["pass"] = (report["authorized_while_off"] == "0" and
+                              report["authorized_after"] == "1" and
+                              len(report["nodes_after"]) >= 2)
+        else:
+            target = "1" if mode == "on" else "0"
+            authorized.write_text(target)
+            report["nodes_after"] = wait_nodes(device, mode == "on")
+            report["authorized_after"] = authorized.read_text().strip()
+            report["pass"] = report["authorized_after"] == target
+        print(json.dumps(report, indent=2))
+        return 0 if report.get("pass", True) else 1
+    except (OSError, RuntimeError) as error:
+        print(f"p16-camera-privacy: {error}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

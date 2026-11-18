@@ -36,8 +36,8 @@ cannot qualify that separate platform pipeline.
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API at 1280×720 with the P16 launcher, while Arch ARM Chromium 156 falls back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
-| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. Visual quality and long-run performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass | Privacy and resume tested independently |
+| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. Human visual quality and long-run performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. | Electronic privacy/LED behavior and post-resume capture tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -119,7 +119,7 @@ second Linux media framework's Vulkan hardware encoder in a real recording,
 but does not change the NVENC API or OBS failure.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback, on-demand HDR10 output and P16 RGB/Vulkan recording
-commands without replacing system codecs. Version 0.1.0-3 is installed on the
+commands without replacing system codecs. Version 0.1.0-5 is installed on the
 reference P16: the installed
 mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
 installed recording command produced a 60-frame H.264 file from the live RGB
@@ -179,6 +179,17 @@ temporary browser profile and no fake media or permission-UI flags, it selected
 `ASUS FHD webcam`, negotiated 1280×720/30, and sampled 30 varying preview
 frames without retaining pixels. That browser test is separate from the GTK
 PipeWire portal test.
+The [P16 UVC privacy test](docs/evidence/n1x-media-20261118/camera-privacy-control.json)
+then confirmed a read-only `privacy=0` control. A write to privacy failed while
+writing the current brightness value succeeded; the camera continued producing
+30 frames. The owner reports no physical shutter. The installed
+[`p16-camera-privacy`](platform/video/tools/README.md) command uses standard
+Linux USB authorization on the exact internal camera device. Its
+[self-test](docs/evidence/n1x-media-20261118/camera-privacy-switch.json) removed
+all four V4L2 nodes at `authorized=0`, restored them at 1 and then passed
+unprivileged V4L2 and Chromium capture. This is a software privacy mechanism;
+it must not be described as a hardware shutter. Its state may reset after
+reboot or device re-enumeration.
 
 ## Common evidence and release gates
 
@@ -330,8 +341,11 @@ near-zero sampled error at 1280×720; a two-second
 offset. A live 60-frame P16 camera clip exports 119 frames at 1280×720/60 fps, decodes
 independently and plays to EOF in mpv with hardware decoding. Both commands
 from package `0.1.0-4` were re-tested after installation. Motion artifacts,
-output quality,
-long exports and proprietary frame generation are unqualified.
+output quality, long exports and proprietary frame generation are unqualified.
+A [moving-foreground occlusion control](docs/evidence/n1x-media-20261118/nvof-occlusion.json)
+also uses the installed binary. Its nonperiodic moving texture yields midpoint
+MSE 783 versus 2195 for crossfade, but local exposure-boundary errors remain.
+This adds a controlled quality result without claiming subjective acceptance.
 
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.

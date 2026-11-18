@@ -1,27 +1,31 @@
 pkgname=p16-media-tools
 pkgver=0.1.0
-pkgrel=4
-pkgdesc='P16 NVIDIA video playback, HDR output and Vulkan camera recording commands'
+pkgrel=5
+pkgdesc='P16 NVIDIA video playback, camera privacy and Vulkan recording commands'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('MIT')
 depends=('ffmpeg' 'mpv' 'hyprland' 'python' 'gstreamer' 'gst-plugins-base-libs'
-         'gst-plugins-bad-libs' 'libva-nvidia-driver' 'nvidia-utils')
+         'gst-plugins-bad-libs' 'libva-nvidia-driver' 'nvidia-utils' 'polkit')
 optdepends=('google-chrome: NVIDIA VA-API browser playback via p16-video-chrome')
 source=('p16-video-play' 'p16-hdr-play' 'p16-record-camera-vulkan'
-        'p16-record-camera-gstreamer' 'p16-video-chrome' 'README.md' 'LICENSE')
+        'p16-record-camera-gstreamer' 'p16-video-chrome'
+        'p16-camera-privacy' 'p16-camera-privacy-root' 'README.md' 'LICENSE')
 sha256sums=('fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688'
             '291aea39c5ed3cadba150bfe09a2f42f60290e6f959518611f312e8aa942d92e'
             'b5b4cc38fd32929719c645aa88b1974a6f0abd062888df1c5df6ad45ca21a6f4'
             '701188cca4dfbc4d0cbf9fd431a44b90901bca830e05c5c7784be4e1005a36b8'
             '9d2f74b2350d393666684467da9f8d17efd597da3da15ee8b0ecbcdf65b87099'
-            '3c93a0bab842ff40b63250c032c338be416a8f4fe3e58ab83e35d711cc48442c'
+            'a408bcdd50d1aa0e8923dd12494b28f0d3bb12fd27d34cefd4174624d782b5e4'
+            'da05faa3cf6c61b1aef2c992827006a9ba0052131cc0556fe7f8c1079f57d6c0'
+            '4e1763148c6f4a9e19724c9a768f10fb0057c06e06e3479fa091f14142a1e91b'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3')
 
 check() {
   bash -n "$srcdir/p16-video-play" "$srcdir/p16-record-camera-vulkan" \
-    "$srcdir/p16-record-camera-gstreamer" "$srcdir/p16-video-chrome"
-  python -m py_compile "$srcdir/p16-hdr-play"
+    "$srcdir/p16-record-camera-gstreamer" "$srcdir/p16-video-chrome" \
+    "$srcdir/p16-camera-privacy"
+  python -m py_compile "$srcdir/p16-hdr-play" "$srcdir/p16-camera-privacy-root"
 }
 
 package() {
@@ -32,6 +36,9 @@ package() {
   install -Dm755 "$srcdir/p16-record-camera-gstreamer" \
     "$pkgdir/usr/bin/p16-record-camera-gstreamer"
   install -Dm755 "$srcdir/p16-video-chrome" "$pkgdir/usr/bin/p16-video-chrome"
+  install -Dm755 "$srcdir/p16-camera-privacy" "$pkgdir/usr/bin/p16-camera-privacy"
+  install -Dm755 "$srcdir/p16-camera-privacy-root" \
+    "$pkgdir/usr/lib/p16-media-tools/p16-camera-privacy-root"
   install -Dm644 "$srcdir/README.md" \
     "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 "$srcdir/LICENSE" \

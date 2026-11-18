@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 1 )); then
+  echo 'Usage: p16-camera-privacy {status|on|off|self-test}' >&2
+  exit 2
+fi
+
+case $1 in
+  status)
+    exec /usr/lib/p16-media-tools/p16-camera-privacy-root status
+    ;;
+  on|off|self-test)
+    exec /usr/bin/pkexec --disable-internal-agent \
+      /usr/lib/p16-media-tools/p16-camera-privacy-root "$1"
+    ;;
+  *)
+    echo 'Usage: p16-camera-privacy {status|on|off|self-test}' >&2
+    exit 2
+    ;;
+esac

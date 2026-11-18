@@ -1,0 +1,45 @@
+{
+  "fixture": "48x48 textured foreground moves 16 pixels over a fixed textured background",
+  "dimensions": [
+    320,
+    180
+  ],
+  "region": [
+    80,
+    176,
+    48,
+    120
+  ],
+  "nvof_midpoint_mse": 782.6980613425926,
+  "crossfade_midpoint_mse": 2194.7471064814813,
+  "region_mse": {
+    "trailing_uncover": {
+      "nvof": 2007.576388888889,
+      "crossfade": 2056.3220486111113
+    },
+    "new_foreground_left": {
+      "nvof": 2814.7526041666665,
+      "crossfade": 6321.323784722223
+    },
+    "foreground_overlap": {
+      "nvof": 859.9858940972222,
+      "crossfade": 5880.013888888889
+    },
+    "new_foreground_right": {
+      "nvof": 1447.592013888889,
+      "crossfade": 5676.715277777777
+    },
+    "leading_uncover": {
+      "nvof": 2663.4748263888887,
+      "crossfade": 1931.03125
+    },
+    "static_background": {
+      "nvof": 25.904947916666668,
+      "crossfade": 0.0
+    }
+  },
+  "source_frames_preserved": true,
+  "nvof_pairs_logged": true,
+  "frames_retained": false,
+  "pass": true
+}

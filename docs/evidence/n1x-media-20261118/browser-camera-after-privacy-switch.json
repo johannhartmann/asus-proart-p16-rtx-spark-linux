@@ -1,0 +1,15 @@
+{
+  "status": "pass",
+  "browser": "chromium",
+  "method": "getUserMedia, real V4L2 device, headless WebRTC preview",
+  "camera": {
+    "selectedLabel": "ASUS FHD webcam",
+    "width": 1280,
+    "height": 720,
+    "frameRate": 30,
+    "frames": 30,
+    "meanMin": 116.46614583333316,
+    "meanMax": 135.88744212962973
+  },
+  "note": "Fake permission UI only; no fake media device or retained frame"
+}

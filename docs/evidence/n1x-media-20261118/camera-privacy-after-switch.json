@@ -1,0 +1,23 @@
+{
+  "status": "pass",
+  "device": "/dev/video0",
+  "format": "MJPEG 1280x720 30 fps",
+  "physical_shutter_present": false,
+  "physical_shutter_source": "user report",
+  "v4l2_privacy_read_only": true,
+  "writable_brightness_control": "brightness: 0",
+  "set_brightness_same_value_exit_code": 0,
+  "v4l2_privacy_before": "privacy: 0",
+  "v4l2_set_privacy_exit_code": 255,
+  "v4l2_set_privacy_error": "Error setting controls: Permission denied",
+  "v4l2_privacy_after": "privacy: 0",
+  "frames": 30,
+  "mean_luma_min": 48.2662,
+  "mean_luma_max": 136.626,
+  "mean_luma_average": 105.97696666666667,
+  "pixel_min": 0,
+  "pixel_max": 255,
+  "ffmpeg_exit_code": 0,
+  "retained_camera_pixels": false,
+  "note": "UVC privacy is read-only at 0; this does not test an undocumented electronic shutter or camera LED."
+}

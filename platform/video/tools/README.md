@@ -51,6 +51,20 @@ Google Chrome is optional for the other media commands. The bounded H.264
 fixture and Arch ARM Chromium 156 fell back to software. Other codecs, sites,
 resolutions and long playback still need qualification.
 
+`p16-camera-privacy status|off|on` controls Linux USB authorization for the
+internal ASUS RGB/IR camera only. The privileged helper verifies the P16 ACPI
+parent `NVDA8001:00` and USB ID `636e:0bdb` before changing the standard
+`authorized` attribute. `off` removes the camera's V4L2 nodes; `on` restores
+them. Both changes use Omarchy's graphical Polkit authentication. USB
+authorization may reset after a reboot or device re-enumeration; check
+`status` after either event.
+`p16-camera-privacy self-test` briefly disables and restores the device in a
+`finally` block to verify both transitions. Existing camera applications may
+need to reopen their stream after a transition. This is a software privacy
+control; the P16 has no physical camera shutter according to the owner, and
+its UVC `privacy` control is read-only. The [privacy result](../../../docs/evidence/n1x-media-20261118/camera-privacy-control.json)
+records that UVC limit.
+
 These commands use distribution mpv and FFmpeg. The [media evidence](../../../docs/evidence/n1x-media-20261118/README.md)
 records the exact machine and driver qualification. They should be installed
 only on the tested P16 model or after checking equivalent hardware paths on

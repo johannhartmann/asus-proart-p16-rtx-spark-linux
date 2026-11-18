@@ -32,11 +32,14 @@ has a minimum-resolution performance gate; this machine's 320×180 versus
 1280×720 result is consistent with such a gate, without proving which check
 rejected the small stream.
 
-The installed package is `p16-media-tools` 0.1.0-4, archive SHA256
+The tested package was `p16-media-tools` 0.1.0-4, archive SHA256
 `0e3bbd55a8d5d6b15f607cd45add9b1438ec1f420b4e39722897f1e91b0efa7a`.
 `pacman -Qk` reports 14 files with none missing; `/usr/bin/p16-video-chrome`
 has the same SHA256 as the repository script,
 `9d2f74b2350d393666684467da9f8d17efd597da3da15ee8b0ecbcdf65b87099`.
+Package 0.1.0-5 later added the internal camera privacy command and retained
+the same `p16-video-chrome` source and checksum; the current package archive
+is recorded in the [media table](README.md).
 A [libva API trace summary](browser-decode-p16-libva-trace.json) from the
 installed run records one VA context, 96 successful `vaBeginPicture` and
 `vaRenderPicture` calls, 95 successful `vaEndPicture` calls and 21 successful
