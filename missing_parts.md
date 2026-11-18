@@ -219,7 +219,9 @@ This is a bounded default-rate-control Vulkan Video bitstream result, not an
 NVENC or visually qualified application result. Longer camera runs found
 delayed decode failure at explicit 10–40 Mbit/s targets. A frame-aligned
 quality test found severe inter-frame AV1 drift despite complete decode;
-an all-intra GOP removes it on this driver. The exact fault layer remains open.
+libdav1d and libaom produce byte-identical pixels in the synthetic cases, so
+this is not a single-decoder artifact. An all-intra GOP removes the drift on
+this driver. The exact fault layer remains open.
 The installed [`p16-record-obs-vulkan`](platform/video/tools/README.md) bridge
 instead receives OBS's raw NUT output through a private Linux FIFO and uses
 FFmpeg's explicit Vulkan device and `hwupload` path. A real camera plus a

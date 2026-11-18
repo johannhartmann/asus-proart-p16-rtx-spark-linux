@@ -71,7 +71,10 @@ The repeatable [frame-aligned quality probe](../../../scripts/check-vulkan-encod
 uses one 120-frame NV12 source, independently decodes every output to raw
 NV12, verifies exact byte counts and compares frames by index. The
 [kernel38/615 result](vulkan-encode-quality-gop-kernel38.json) is sharply
-codec-specific:
+codec-specific. For every AV1 case, FFmpeg/libdav1d and the separate
+`aomdec` libaom implementation produce **byte-identical 120-frame I420
+pixels**. The low inter-frame PSNR is present in both decoders, not a
+single-decoder artifact:
 
 | Encoder and GOP | PSNR against exact source | Encoded bytes |
 | --- | ---: | ---: |
@@ -86,7 +89,8 @@ codec-specific:
 AV1 frame 1 is near lossless but inter frames deteriorate within each GOP;
 the default GOP's last frame is 14.74 dB. More frequent keyframes reset the
 drift, while lowering QP does not reliably improve it. The precise fault
-layer remains undetermined. Until fixed, the P16 AV1 recorder uses GOP 1:
+layer remains undetermined; the cross-decoder equality narrows it toward the
+encoded bitstream or common interpretation. Until fixed, the P16 AV1 recorder uses GOP 1:
 its [30-second real-camera run](camera-av1-intra-30s-kernel38.json) independently
 decodes 905/905 frames with each decoder, restores the camera control and
 occupies 305 MB versus 277 MB for the previous default-GOP recording.

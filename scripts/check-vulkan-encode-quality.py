@@ -3,6 +3,7 @@
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -38,6 +39,14 @@ def raw_input(path):
             "-framerate", FPS, "-i", str(path)]
 
 
+def sha256(path):
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
@@ -64,6 +73,9 @@ def main():
         expected = FRAMES * 1280 * 720 * 3 // 2
         if source.stat().st_size != expected:
             raise RuntimeError("source raw frame count mismatch")
+        result["source_sha256"] = sha256(source)
+        result["ffmpeg_sha256"] = sha256(Path("/usr/bin/ffmpeg"))
+        result["aomdec_sha256"] = sha256(Path("/usr/bin/aomdec"))
         for name, options in CASES.items():
             video = work / f"{name}.mkv"
             decoded = work / f"{name}.nv12"
@@ -95,6 +107,7 @@ def main():
             result["results"][name] = {
                 "options": options,
                 "encoded_bytes": video.stat().st_size,
+                "encoded_sha256": sha256(video),
                 "psnr_average_db": float(average.group(1)),
                 "psnr_min_frame_db": round(min(values), 2),
                 "psnr_min_frame_number": values.index(min(values)) + 1,
@@ -103,6 +116,25 @@ def main():
                                   (0, 9, 29, 30, 59, 60, 89, 90, 119)},
                 "psnr_frame_count": len(values),
             }
+            if name.startswith("av1_"):
+                ivf = work / f"{name}.ivf"
+                davraw = work / f"{name}.dav1d.i420"
+                aomraw = work / f"{name}.aom.i420"
+                run(["/usr/bin/ffmpeg", "-hide_banner", "-loglevel", "error",
+                     "-i", str(video), "-c:v", "copy", "-f", "ivf", str(ivf)])
+                run(["/usr/bin/ffmpeg", "-hide_banner", "-loglevel", "error",
+                     "-c:v", "libdav1d", "-i", str(ivf), "-fps_mode", "passthrough",
+                     "-pix_fmt", "yuv420p", "-f", "rawvideo", str(davraw)])
+                run(["/usr/bin/aomdec", "--i420", "--rawvideo", "-o",
+                     str(aomraw), str(ivf)])
+                if davraw.stat().st_size != expected or aomraw.stat().st_size != expected:
+                    raise RuntimeError(f"cross-decoder frame count mismatch: {name}")
+                result["results"][name]["cross_decoder"] = {
+                    "dav1d_raw_sha256": sha256(davraw),
+                    "libaom_raw_sha256": sha256(aomraw),
+                    "pixel_equal": sha256(davraw) == sha256(aomraw),
+                    "frames": FRAMES,
+                }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({name: {"bytes": data["encoded_bytes"],

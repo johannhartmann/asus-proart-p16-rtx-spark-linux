@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-18T21:24:51.845754+00:00",
+  "captured_at": "2026-11-18T21:35:51.252138+00:00",
   "kernel": "7.2.8-38-rtx-spark-npu",
   "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
   "driver": "615.78.08",
@@ -15,6 +15,7 @@
         "18"
       ],
       "encoded_bytes": 2191918,
+      "encoded_sha256": "019ac11a92d7dca5e07de1324620f8a0a867ebaf05880bf94a72782b81346884",
       "psnr_average_db": 46.858005,
       "psnr_min_frame_db": 45.82,
       "psnr_min_frame_number": 119,
@@ -38,6 +39,7 @@
         "h264_vulkan"
       ],
       "encoded_bytes": 4082746,
+      "encoded_sha256": "1388a0af33901b84cca91382701db33d50dd9b9259a99fe2dcb3c9cc3b34b635",
       "psnr_average_db": 54.264602,
       "psnr_min_frame_db": 54.02,
       "psnr_min_frame_number": 115,
@@ -61,6 +63,7 @@
         "hevc_vulkan"
       ],
       "encoded_bytes": 7157790,
+      "encoded_sha256": "af02ef55f6425a864156adf72453a90b4564b7e1730b662590a98a6b33175eda",
       "psnr_average_db": 67.523406,
       "psnr_min_frame_db": 48.57,
       "psnr_min_frame_number": 1,
@@ -84,6 +87,7 @@
         "av1_vulkan"
       ],
       "encoded_bytes": 6071389,
+      "encoded_sha256": "942777ffa6868303ac386ea507fca484de7b12ab8352650b23e14adc90a67587",
       "psnr_average_db": 19.812158,
       "psnr_min_frame_db": 14.74,
       "psnr_min_frame_number": 120,
@@ -99,7 +103,13 @@
         "91": 18.09,
         "120": 14.74
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "27ff19d488f7995cb89f7248e96eee078721c7fad5f2e15998e15a092cc4387e",
+        "libaom_raw_sha256": "27ff19d488f7995cb89f7248e96eee078721c7fad5f2e15998e15a092cc4387e",
+        "pixel_equal": true,
+        "frames": 120
+      }
     },
     "av1_default_g1": {
       "options": [
@@ -109,6 +119,7 @@
         "1"
       ],
       "encoded_bytes": 9436381,
+      "encoded_sha256": "eff70e1e921506837f445b5dea5249f19c34326754e5d2fbd1b9e3cc5ce8c799",
       "psnr_average_db": 63.741161,
       "psnr_min_frame_db": 62.66,
       "psnr_min_frame_number": 61,
@@ -124,7 +135,13 @@
         "91": 63.55,
         "120": 64.3
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "4ed3e6366f166ca36c0dd6ce44fa38c3a72debeaf1ed9ed6c626310f78cdd02d",
+        "libaom_raw_sha256": "4ed3e6366f166ca36c0dd6ce44fa38c3a72debeaf1ed9ed6c626310f78cdd02d",
+        "pixel_equal": true,
+        "frames": 120
+      }
     },
     "av1_default_g10": {
       "options": [
@@ -134,6 +151,7 @@
         "10"
       ],
       "encoded_bytes": 6366251,
+      "encoded_sha256": "381664df5fcfbb19299204016c5f086b11fa1cfd687d9764858e7e0284a47a80",
       "psnr_average_db": 28.220703,
       "psnr_min_frame_db": 22.78,
       "psnr_min_frame_number": 120,
@@ -149,7 +167,13 @@
         "91": 63.55,
         "120": 22.78
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "4d759edc7eec99303eb05e859a1c69458cbf9c19106ccf09ae7737dcd8cce79e",
+        "libaom_raw_sha256": "4d759edc7eec99303eb05e859a1c69458cbf9c19106ccf09ae7737dcd8cce79e",
+        "pixel_equal": true,
+        "frames": 120
+      }
     },
     "av1_default_g30": {
       "options": [
@@ -159,6 +183,7 @@
         "30"
       ],
       "encoded_bytes": 6146514,
+      "encoded_sha256": "b73a3ffd72da09a320c63745a16c8712c0bc2c6d3e70c6058369b46519631052",
       "psnr_average_db": 24.333205,
       "psnr_min_frame_db": 17.71,
       "psnr_min_frame_number": 120,
@@ -174,7 +199,13 @@
         "91": 63.55,
         "120": 17.71
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "96120bba8001aeedc7465bd0a954999d5147834284df50b59f72dafc1415b5e8",
+        "libaom_raw_sha256": "96120bba8001aeedc7465bd0a954999d5147834284df50b59f72dafc1415b5e8",
+        "pixel_equal": true,
+        "frames": 120
+      }
     },
     "av1_cqp25_g30": {
       "options": [
@@ -188,6 +219,7 @@
         "30"
       ],
       "encoded_bytes": 3720900,
+      "encoded_sha256": "ba6afb36cb8e62c0d885d52230802e0132b1b10152801aab94e4dab824705afd",
       "psnr_average_db": 24.943335,
       "psnr_min_frame_db": 17.79,
       "psnr_min_frame_number": 120,
@@ -203,7 +235,13 @@
         "91": 58.07,
         "120": 17.79
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "213df36e1e80d52d13858504d54b75a9deb43a9fcc07822f9cae5d68dfcd8eb0",
+        "libaom_raw_sha256": "213df36e1e80d52d13858504d54b75a9deb43a9fcc07822f9cae5d68dfcd8eb0",
+        "pixel_equal": true,
+        "frames": 120
+      }
     },
     "av1_cqp15_g30": {
       "options": [
@@ -217,6 +255,7 @@
         "30"
       ],
       "encoded_bytes": 4341482,
+      "encoded_sha256": "fdd5c61f924434e5f4098352ab3faec52ad16bea1319ce6da9b7717202098bc1",
       "psnr_average_db": 24.288881,
       "psnr_min_frame_db": 17.0,
       "psnr_min_frame_number": 120,
@@ -232,8 +271,17 @@
         "91": 60.02,
         "120": 17.0
       },
-      "psnr_frame_count": 120
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "baf47a8f7fecd6c7b66dd2aabe05844b9bbcdd4a7f1771fd95b80e82b24747bc",
+        "libaom_raw_sha256": "baf47a8f7fecd6c7b66dd2aabe05844b9bbcdd4a7f1771fd95b80e82b24747bc",
+        "pixel_equal": true,
+        "frames": 120
+      }
     }
   },
-  "temporary_source_and_bitstreams_retained": false
+  "temporary_source_and_bitstreams_retained": false,
+  "source_sha256": "0495439239c07d7d373e9b7d9a9a66cd16f674984022af0111513c6ada249dd0",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "aomdec_sha256": "647f782b3ea4c10bf5fc3d9499056f288e10c951cbce481270e89bf717e6053c"
 }
