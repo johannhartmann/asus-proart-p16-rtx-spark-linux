@@ -32,6 +32,7 @@ retained.
 | OBS advanced Vulkan recording | Blocked | `obs-vulkan-record-fail.log` records an isolated FFmpeg output profile with `h264_vulkan`; OBS reported `Failed to open video codec: Invalid argument` and produced no recording. The tested OBS path cannot yet consume Vulkan Video directly. |
 | Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless test does not qualify the normal graphical permission flow or PipeWire camera portal. |
 | Chromium H.264 decode | Software fallback | [`browser-decode.json`](browser-decode.json) and [`browser-decode-nvidia-flags.json`](browser-decode-nvidia-flags.json) record complete 96-frame playback but CDP Media reports `FFmpegVideoDecoder` and `kIsPlatformVideoDecoder=false`. The second run uses the NVIDIA VA-API bridge's documented Chrome flags. [`check-browser-decode.mjs`](../../../scripts/check-browser-decode.mjs) exits nonzero without an explicit VA-API decoder. Browser hardware decoding remains open. |
+| Google Chrome H.264 decode | Software fallback | [`browser-decode-google-chrome.json`](browser-decode-google-chrome.json) records 96 complete frames on Google Chrome 156 ARM64 with the same NVIDIA flags and CDP Media again reports `FFmpegVideoDecoder` with `kIsPlatformVideoDecoder=false`. This independently leaves Chrome hardware playback unqualified. |
 
 The command-line corpus was run with:
 
@@ -58,6 +59,7 @@ The browser check is repeated with:
 node scripts/check-browser-camera.mjs docs/evidence/n1x-media-20261118/browser-camera.json
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode.json
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-nvidia-flags.json --nvidia-vaapi
+node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-google-chrome.json --nvidia-vaapi --browser=google-chrome-stable
 ```
 
 Repeat the interactive installed-player A/V test with:

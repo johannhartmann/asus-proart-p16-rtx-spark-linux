@@ -8,10 +8,13 @@ import { join } from 'node:path';
 
 const output = process.argv[2];
 if (!output) {
-  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi]');
+  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi] [--browser=chromium|google-chrome-stable]');
   process.exit(2);
 }
 const nvidiaVaapi = process.argv.includes('--nvidia-vaapi');
+const browser = process.argv.find(arg => arg.startsWith('--browser='))?.split('=', 2)[1] ?? 'chromium';
+const browserVersion = spawnSync(browser, ['--version'], {encoding:'utf8', timeout:5000});
+if (browserVersion.status !== 0) throw Error(`${browser} --version failed`);
 const decodeFlags = nvidiaVaapi ? [
   '--enable-features=AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiVideoDecoder',
   '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl',
@@ -58,7 +61,7 @@ const server = createServer(async (request, response) => {
 let chromium;
 try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  chromium = spawn('chromium', [
+  chromium = spawn(browser, [
     `--user-data-dir=${temp}`, '--remote-debugging-address=127.0.0.1',
     '--remote-debugging-port=0', '--no-first-run', '--disable-extensions',
     '--autoplay-policy=no-user-gesture-required',
@@ -112,7 +115,8 @@ try {
       /decoder|hardware|gpu|rendering/i.test(property.name));
     const vaapi = decoder.some(property => /VaapiVideoDecoder/i.test(property.value));
     const report = {status:vaapi ? 'pass' : 'unqualified',
-      browser:'chromium', mode:nvidiaVaapi ? 'nvidia-vaapi-flags' : 'default-vaapi-flag',
+      browser, browser_version:browserVersion.stdout.trim(),
+      mode:nvidiaVaapi ? 'nvidia-vaapi-flags' : 'default-vaapi-flag',
       flags:decodeFlags, fixture:'generated H.264 320x180 24 fps',
       playback, decoder_properties:decoder,
       note:vaapi ? 'CDP Media explicitly identified VaapiVideoDecoder' :

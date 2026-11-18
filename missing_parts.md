@@ -112,6 +112,8 @@ played 96 H.264 frames but reported `FFmpegVideoDecoder` and
 `kIsPlatformVideoDecoder=false`. A second run with the NVIDIA VA-API bridge's
 documented Chromium flags gave the same software path. Browser hardware decode
 therefore remains open despite successful Chromium WebRTC camera capture.
+Google Chrome 156 on ARM64 was also tested with those flags and reported the
+same software decoder for a complete 96-frame playback.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release. The active PipeWire and
