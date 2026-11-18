@@ -149,6 +149,8 @@ def main():
     parser.add_argument("--ffmpeg-cuvid", required=True)
     parser.add_argument("--player", default="/usr/bin/p16-video-play")
     parser.add_argument("--ffplay-cuvid", help="isolated FFplay binary for 4:2:2 application test")
+    parser.add_argument("--case", choices=[f"{chroma}:{depth}" for chroma, depth in CASES],
+                        help="run one format/depth case for targeted rechecks")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -167,7 +169,8 @@ def main():
         "cases": {},
     }
     failures = 0
-    for chroma, depth in CASES:
+    selected = [case for case in CASES if args.case in (None, f"{case[0]}:{case[1]}")]
+    for chroma, depth in selected:
         name = f"hevc_{chroma}_{depth}bit"
         try:
             with tempfile.TemporaryDirectory(prefix="n1x-hevc-pro-") as directory:

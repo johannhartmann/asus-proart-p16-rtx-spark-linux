@@ -1,0 +1,42 @@
+{
+  "status": "pass",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "driver": "615.78.08",
+  "ffplay": "platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x",
+  "ffplay_sha256": "50ddc21fbb6e3e7f952c39f61dcd908c90ec9510a5884a69f9eb3dbf1fe40768",
+  "fixture_sha256": "f6b5be76e9d403a618db520c81825f75952af798ae23c1e5c03b0c9fba3c738f",
+  "fixture": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p",
+        "nb_read_frames": "144"
+      },
+      {
+        "codec_name": "aac",
+        "profile": "LC",
+        "nb_read_frames": "282"
+      }
+    ],
+    "format": {
+      "duration": "6.021000"
+    }
+  },
+  "elapsed_s": 6.809,
+  "av_sample_count": 185,
+  "av_max_abs_delta_s": 0.032,
+  "checks": {
+    "cuvid_opened": true,
+    "audio_opened": true,
+    "timed_playback": true,
+    "reached_eof": true,
+    "display_chroma_downsampled": true
+  },
+  "limit": "SDL IYUV output converts 4:2:2 to 4:2:0; no full-precision display claim."
+}

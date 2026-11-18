@@ -1,0 +1,230 @@
+exit_code=0
+
+
+Initialized opengl renderer.
+    nan    :  0.000 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[2K
+Input #0, matroska,webm, from '$WORKDIR/hevc422-av.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:06.02, start: 0.000000, bitrate: 335 kb/s
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv422p(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], 24 fps, 24 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx265
+      DURATION        : 00:00:06.000000000
+  Stream #0:1: Audio: aac (LC), 48000 Hz, mono, fltp, delay 1024
+    Metadata:
+      ENCODER         : Lavc63.1.102 aac
+      DURATION        : 00:00:06.021000000
+[ffplay_abuffer @ 0xe12100008650] tb:1/48000 samplefmt:fltp samplerate:48000 chlayout:mono
+[ffplay_abuffersink @ 0xe121000c1c70] auto-inserting filter 'auto_aresample_0' between the filter 'ffplay_abuffer' and the filter 'ffplay_abuffersink'
+[auto_aresample_0 @ 0xe12100006b40] ch:1 chl:mono fmt:fltp r:48000Hz -> ch:1 chl:mono fmt:s16 r:48000Hz
+[hevc_cuvid @ 0xe12100183b30] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xe12100183b30] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xe12100183b30] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xe12100183b30] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+    nan A-V:    nan fd=   0 aq=   12KB vq=   26KB sq=    0B
+[hevc_cuvid @ 0xe12100183b30] Formats: Original: nv16 | HW: nv16 | SW: nv16
+[ffplay_abuffer @ 0xe121000c1c70] tb:1/48000 samplefmt:fltp samplerate:48000 chlayout:mono
+[ffplay_abuffersink @ 0xe12100008650] auto-inserting filter 'auto_aresample_0' between the filter 'ffplay_abuffer' and the filter 'ffplay_abuffersink'
+[auto_aresample_0 @ 0xe12100026910] ch:1 chl:mono fmt:fltp r:48000Hz -> ch:1 chl:mono fmt:s16 r:48000Hz
+   0.33 A-V:    nan fd=   0 aq=   12KB vq=   30KB sq=    0B
+[ffplay_buffer @ 0xe11ec997e070] w:320 h:180 pixfmt:nv16 tb:1/1000 fr:24/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[auto_scale_0 @ 0xe11ec997e6e0] w:iw h:ih flags:'' interl:0
+[ffplay_buffersink @ 0xe11ec997e1d0] auto-inserting filter 'auto_scale_0' between the filter 'ffplay_buffer' and the filter 'ffplay_buffersink'
+[auto_scale_0 @ 0xe11ec997e6e0] w:320 h:180 fmt:nv16 csp:unknown range:tv sar:1/1 -> w:320 h:180 fmt:yuv420p csp:bt709 range:tv sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xe11ec997e6e0] [framesync @ 0xe11ec997e7a0] Selected 1/1000 time base
+[auto_scale_0 @ 0xe11ec997e6e0] [framesync @ 0xe11ec997e7a0] Sync level 1
+[ffplay_buffer @ 0xe11ec997e070] video frame properties congruent with link at pts_time: 0
+[swscaler @ 0xe11ec99a5e60] YUV color matrix differs for YUV->YUV, using intermediate RGB to convert
+Created 320x180 texture with SDL_PIXELFORMAT_IYUV.
+   0.03 A-V:  0.012 fd=   0 aq=   13KB vq=   25KB sq=    0B
+   0.08 A-V:  0.013 fd=   0 aq=   13KB vq=   25KB sq=    0B
+   0.12 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.15 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.18 A-V:  0.013 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.21 A-V:  0.013 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.24 A-V:  0.012 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.27 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.30 A-V:  0.013 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.34 A-V:  0.013 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.37 A-V:  0.012 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.40 A-V:  0.012 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.43 A-V:  0.012 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.46 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.49 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.52 A-V:  0.012 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.56 A-V:  0.013 fd=   0 aq=   13KB vq=   25KB sq=    0B
+   0.59 A-V:  0.013 fd=   0 aq=   13KB vq=   26KB sq=    0B
+   0.62 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.65 A-V:  0.013 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.68 A-V:  0.013 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.71 A-V:  0.013 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.74 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.77 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.81 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   0.84 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   0.87 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.90 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.93 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   0.96 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   0.99 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.02 A-V:  0.012 fd=   0 aq=   14KB vq=   29KB sq=    0B
+   1.05 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.09 A-V:  0.013 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   1.12 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.15 A-V:  0.012 fd=   0 aq=   14KB vq=   30KB sq=    0B
+   1.18 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.21 A-V:  0.013 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   1.24 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   1.27 A-V:  0.012 fd=   0 aq=   14KB vq=   30KB sq=    0B
+   1.30 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.34 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.37 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.40 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.43 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.46 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.49 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.53 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.57 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.60 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.63 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.66 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.69 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.72 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.75 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   1.78 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   1.82 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   1.85 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   1.88 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.91 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   1.94 A-V:  0.012 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   1.97 A-V:  0.013 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   2.00 A-V:  0.013 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   2.03 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   2.06 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   2.10 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   2.13 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.16 A-V:  0.012 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.19 A-V:  0.012 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   2.22 A-V:  0.013 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   2.25 A-V:  0.013 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   2.28 A-V:  0.012 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.32 A-V:  0.012 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   2.35 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.38 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.41 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.44 A-V:  0.012 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   2.47 A-V:  0.012 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.50 A-V:  0.013 fd=   0 aq=   13KB vq=   37KB sq=    0B
+   2.53 A-V:  0.012 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.57 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.60 A-V:  0.012 fd=   0 aq=   14KB vq=   36KB sq=    0B
+   2.63 A-V:  0.013 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   2.66 A-V:  0.012 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   2.69 A-V:  0.012 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.72 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.75 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.78 A-V:  0.012 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   2.82 A-V:  0.012 fd=   0 aq=   14KB vq=   37KB sq=    0B
+   2.85 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.88 A-V:  0.013 fd=   0 aq=   13KB vq=   35KB sq=    0B
+   2.91 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   2.94 A-V:  0.012 fd=   0 aq=   14KB vq=   36KB sq=    0B
+   2.97 A-V:  0.013 fd=   0 aq=   14KB vq=   36KB sq=    0B
+   3.00 A-V:  0.013 fd=   0 aq=   13KB vq=   36KB sq=    0B
+   3.03 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   3.06 A-V:  0.012 fd=   0 aq=   14KB vq=   33KB sq=    0B
+   3.10 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   3.13 A-V:  0.013 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   3.16 A-V:  0.012 fd=   0 aq=   13KB vq=   34KB sq=    0B
+   3.19 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   3.22 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.25 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.29 A-V:  0.012 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   3.32 A-V:  0.012 fd=   0 aq=   13KB vq=   33KB sq=    0B
+   3.35 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.38 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.41 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.45 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   3.48 A-V:  0.012 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   3.51 A-V:  0.013 fd=   0 aq=   13KB vq=   32KB sq=    0B
+   3.55 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.59 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.62 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.65 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.68 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.71 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.74 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.77 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.80 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.84 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   3.87 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.90 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.93 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   3.96 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   3.99 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.02 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.05 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.09 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   4.12 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   4.15 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.18 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.21 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.24 A-V:  0.012 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.27 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.30 A-V:  0.013 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.34 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.37 A-V:  0.012 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   4.40 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   4.43 A-V:  0.013 fd=   0 aq=   13KB vq=   30KB sq=    0B
+   4.46 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.49 A-V:  0.012 fd=   0 aq=   13KB vq=   31KB sq=    0B
+   4.52 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.55 A-V:  0.013 fd=   0 aq=   13KB vq=   29KB sq=    0B
+   4.59 A-V:  0.012 fd=   0 aq=   14KB vq=   28KB sq=    0B
+   4.62 A-V:  0.012 fd=   0 aq=   13KB vq=   28KB sq=    0B
+   4.65 A-V:  0.012 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   4.68 A-V:  0.013 fd=   0 aq=   13KB vq=   27KB sq=    0B
+   4.71 A-V:  0.012 fd=   0 aq=   12KB vq=   25KB sq=    0B
+   4.74 A-V:  0.012 fd=   0 aq=   12KB vq=   24KB sq=    0B
+   4.77 A-V:  0.012 fd=   0 aq=   12KB vq=   23KB sq=    0B
+   4.80 A-V:  0.013 fd=   0 aq=   11KB vq=   23KB sq=    0B
+   4.84 A-V:  0.012 fd=   0 aq=   11KB vq=   23KB sq=    0B
+   4.87 A-V:  0.012 fd=   0 aq=   10KB vq=   20KB sq=    0B
+   4.90 A-V:  0.012 fd=   0 aq=   10KB vq=   19KB sq=    0B
+   4.93 A-V:  0.012 fd=   0 aq=   10KB vq=   19KB sq=    0B
+   4.96 A-V:  0.012 fd=   0 aq=    9KB vq=   18KB sq=    0B
+   4.99 A-V:  0.012 fd=   0 aq=    9KB vq=   17KB sq=    0B
+   5.03 A-V:  0.013 fd=   0 aq=    9KB vq=   15KB sq=    0B
+   5.06 A-V:  0.013 fd=   0 aq=    8KB vq=   14KB sq=    0B
+   5.09 A-V:  0.012 fd=   0 aq=    8KB vq=   14KB sq=    0B
+   5.12 A-V:  0.012 fd=   0 aq=    8KB vq=   13KB sq=    0B
+   5.15 A-V:  0.012 fd=   0 aq=    7KB vq=   13KB sq=    0B
+   5.18 A-V:  0.013 fd=   0 aq=    7KB vq=   11KB sq=    0B
+   5.21 A-V:  0.012 fd=   0 aq=    6KB vq=   11KB sq=    0B
+   5.24 A-V:  0.012 fd=   0 aq=    6KB vq=    9KB sq=    0B
+   5.27 A-V:  0.012 fd=   0 aq=    5KB vq=    9KB sq=    0B
+   5.31 A-V:  0.013 fd=   0 aq=    5KB vq=    8KB sq=    0B
+   5.34 A-V:  0.012 fd=   0 aq=    4KB vq=    8KB sq=    0B
+   5.38 A-V:  0.012 fd=   0 aq=    4KB vq=    5KB sq=    0B
+   5.41 A-V:  0.012 fd=   0 aq=    4KB vq=    4KB sq=    0B
+   5.44 A-V:  0.013 fd=   0 aq=    3KB vq=    4KB sq=    0B
+   5.47 A-V:  0.012 fd=   0 aq=    3KB vq=    3KB sq=    0B
+   5.50 A-V:  0.012 fd=   0 aq=    3KB vq=    3KB sq=    0B
+   5.54 A-V:  0.012 fd=   0 aq=    2KB vq=    1KB sq=    0B
+   5.57 A-V:  0.013 fd=   0 aq=    2KB vq=    0KB sq=    0B
+   5.60 A-V:  0.012 fd=   0 aq=    1KB vq=    0KB sq=    0B
+   5.63 A-V:  0.012 fd=   0 aq=    1KB vq=    0KB sq=    0B
+   5.66 A-V:  0.012 fd=   0 aq=    1KB vq=    0KB sq=    0B
+   5.69 A-V:  0.013 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.72 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.75 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.78 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.82 A-V:  0.013 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.85 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.88 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.91 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.94 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+   5.97 A-V:  0.012 fd=   0 aq=    0KB vq=    0KB sq=    0B
+[AVIOContext @ 0xe12100009360] Statistics: 252826 bytes read, 0 seeks

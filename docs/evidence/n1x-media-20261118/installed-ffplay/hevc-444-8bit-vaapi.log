@@ -1,0 +1,60 @@
+$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $WORKDIR/stream.hevc -frames:v 30 -f null -
+exit_code=0
+
+stdout:
+
+stderr:
+[vist#0:0/hevc @ 0xba1d217dcce0] Selecting decoder 'hevc' because of requested hwaccel method vaapi
+Input #0, hevc, from '$WORKDIR/stream.hevc':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv444p(tv), 320x180, 25 fps, 10 tbr, 1200k tbn
+[out#0/null @ 0xba1d21864820] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xba1d217dded0] Created video stream from input stream 0:0
+[VAAPI @ 0xba1d217de280] libva: VA-API version 1.24.0
+[VAAPI @ 0xba1d217de280] libva: User environment variable requested driver 'nvidia'
+[VAAPI @ 0xba1d217de280] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
+[VAAPI @ 0xba1d217de280] libva: Found init function __vaDriverInit_1_0
+[VAAPI @ 0xba1d217de280] libva: va_openDriver() returns 0
+[VAAPI @ 0xba1d217de280] Initialised VAAPI connection: version 1.24
+[VAAPI @ 0xba1d217de280] VAAPI driver: VA-API NVDEC driver [direct backend].
+[VAAPI @ 0xba1d217de280] Driver not found in known nonstandard list, using standard behaviour.
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xba1d217dded0] Starting thread...
+[vf#0:0 @ 0xba1d217e4990] Starting thread...
+[vist#0:0/hevc @ 0xba1d217dcce0] [dec:hevc @ 0xba1d21864a00] Starting thread...
+[in#0/hevc @ 0xba1d217dc6e0] Starting thread...
+Press [q] to stop, [?] for help
+[hevc @ 0xba1d225b3bb0] HEVC profile Main 4:4:4 is found.
+    Last message repeated 1 times
+[graph -1 input from stream 0:0 @ 0xf972bc0045d0] w:320 h:180 pixfmt:vaapi tb:1/1200000 fr:10/1 sar:0/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xf972bc0045d0] video frame properties congruent with link at pts_time: 0
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, vaapi(tv, progressive), 320x180, q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+[out#0/null @ 0xba1d21864820] Starting thread...
+[in#0/hevc @ 0xba1d217dc6e0] EOF while reading input
+[in#0/hevc @ 0xba1d217dc6e0] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xba1d217dcce0] [dec:hevc @ 0xba1d21864a00] Decoder thread received EOF packet
+[vist#0:0/hevc @ 0xba1d217dcce0] [dec:hevc @ 0xba1d21864a00] Decoder returned EOF, finishing
+[vf#0:0 @ 0xba1d217e4990] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xba1d217dded0] [enc:wrapped_avframe @ 0xba1d217de160] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xba1d217dded0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xba1d21864820] All streams finished
+[out#0/null @ 0xba1d21864820] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xba1d217e4990] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xba1d217dcce0] [dec:hevc @ 0xba1d21864a00] Terminating thread with return code 0 (success)
+[out#0/null @ 0xba1d21864820] Output file #0 (pipe:):
+[out#0/null @ 0xba1d21864820]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xba1d21864820]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xba1d21864820] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=19.4x elapsed=0:00:00.15
+[in#0/hevc @ 0xba1d217dc6e0] Input file #0 ($WORKDIR/stream.hevc):
+[in#0/hevc @ 0xba1d217dc6e0]   Input stream #0:0 (video): 30 packets read (106244 bytes); 30 frames decoded; 0 decode errors;
+[in#0/hevc @ 0xba1d217dc6e0]   Total: 30 packets (106244 bytes) demuxed
+[AVIOContext @ 0xba1d217e4f60] Statistics: 106244 bytes read, 0 seeks
+
+Exiting with exit code 0
