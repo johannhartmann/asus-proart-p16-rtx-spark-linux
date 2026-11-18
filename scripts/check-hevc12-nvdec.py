@@ -39,6 +39,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--x265-12", required=True)
     parser.add_argument("--ffmpeg-cuvid", required=True)
+    parser.add_argument("--player", help="installed P16 player command for bounded 12-bit playback")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -91,6 +92,29 @@ def main():
                 "pixfmt:vaapi" not in vaapi.stderr or
                 not re.search(r"frame=\s*30\b", vaapi.stderr)):
             raise RuntimeError("VA-API 12-bit hardware-frame decode not confirmed")
+        player_result = None
+        if args.player:
+            player = subprocess.run(
+                [args.player, str(bitstream), "--no-config", "--no-audio",
+                 "--frames=30", "--force-window=yes", "--autofit=640x360"],
+                capture_output=True, text=True, check=False, timeout=18,
+                env={**os.environ, "LIBVA_DRIVER_NAME": "nvidia",
+                     "NVD_BACKEND": "direct"})
+            selected = [line for line in player.stdout.splitlines()
+                        if any(term in line for term in
+                               ("Using hardware decoding", "VO:", "No video PTS",
+                                "Exiting..."))]
+            (args.output_dir / "hevc12-player.log").write_text(
+                "exit_code=" + str(player.returncode) + "\n" +
+                "\n".join(selected) + "\n")
+            if (player.returncode != 0 or
+                    "Using hardware decoding (vaapi)." not in player.stdout or
+                    "vaapi[p012]" not in player.stdout or
+                    "Exiting... (End of file)" not in player.stdout):
+                raise RuntimeError("installed player did not finish 12-bit VA-API playback")
+            player_result = {"status": "pass", "command": args.player,
+                             "backend": "VA-API p012 -> gpu-next", "frames_limit": 30,
+                             "raw_bitstream_timestamps": "missing; mpv synthesized PTS"}
         result = {
             "status": "pass", "machine": "ASUS ProArt P16 H7607BA",
             "kernel": Path("/proc/sys/kernel/osrelease").read_text().strip(),
@@ -104,6 +128,7 @@ def main():
             "vaapi_hardware_frames": 30,
             "x265_12_binary_sha256": sha256(args.x265_12),
             "ffmpeg_cuvid_binary_sha256": sha256(args.ffmpeg_cuvid),
+            "player": player_result,
             "limits": "VA-API frames counted on hardware surfaces; pixel comparison used direct CUVID because VA-API hwdownload was not qualified.",
         }
     (args.output_dir / "hevc12-result.json").write_text(json.dumps(result, indent=2) + "\n")

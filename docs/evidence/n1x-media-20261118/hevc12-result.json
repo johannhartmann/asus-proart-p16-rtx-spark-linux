@@ -18,5 +18,12 @@
   "vaapi_hardware_frames": 30,
   "x265_12_binary_sha256": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
   "ffmpeg_cuvid_binary_sha256": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+  "player": {
+    "status": "pass",
+    "command": "/usr/bin/p16-video-play",
+    "backend": "VA-API p012 -> gpu-next",
+    "frames_limit": 30,
+    "raw_bitstream_timestamps": "missing; mpv synthesized PTS"
+  },
   "limits": "VA-API frames counted on hardware surfaces; pixel comparison used direct CUVID because VA-API hwdownload was not qualified."
 }

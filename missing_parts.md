@@ -53,8 +53,10 @@ bounded workloads, including HEVC and AV1 10-bit cases.
 An isolated x265 4.3 build generated a valid 12-bit HEVC RExt fixture.
 [`check-hevc12-nvdec.py`](scripts/check-hevc12-nvdec.py) confirms 30 CUVID
 frames with pixel hashes matching software decode and 30 VA-API hardware
-frames. VA-API frame readback and normal application use of 12-bit HEVC remain
-unqualified.
+frames. The installed `p16-video-play` command reaches VA-API `p012` output
+through `gpu-next` and finishes the bounded stream. The raw fixture has no
+timestamps, so frame pacing and audio sync remain unqualified. VA-API frame
+readback also remains unqualified.
 The [NVENC API-version comparison](docs/evidence/n1x-media-20261118/nvenc-api-version-compare.json)
 uses identical FFmpeg 9.0.2 sources with pinned NVIDIA codec headers 12.2 and
 13.1. All three NVENC codecs fail at `OpenEncodeSessionEx` with error 21 on
