@@ -34,9 +34,9 @@ cannot qualify that separate platform pipeline.
 
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
-| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit samples pass through VA-API and the candidate's direct CUVID decoders; mpv H.264 hardware playback passes | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
+| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through VA-API and direct CUVID; the installed mpv playback command uses H.264 hardware decode | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package built; NVENC session fails with error 21 on driver 615.78.08. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API, including a 60-frame real RGB camera recording in FFmpeg | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
-| GPU video effects | mpv/libplacebo Vulkan scaling and interpolation exercised in playback; connected displays run in sRGB with no active HDR metadata; proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
+| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback; connected displays run in sRGB with no active HDR metadata; proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
@@ -58,9 +58,12 @@ FFmpeg output failed to open `h264_vulkan` with `Invalid argument`; its hardware
 recording gate remains open. Neither Vulkan result proves NVENC API use.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback and P16 RGB/Vulkan recording commands without replacing
-system codecs. Its camera command produced a 60-frame file when run directly
-from the source tree; package installation and installed-command use are a
-separate gate.
+system codecs. Version 0.1.0-1 is installed on the reference P16: the installed
+mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
+installed recording command produced a 60-frame H.264 file from the live RGB
+camera. The temporary footage was deleted after independent probing. This
+qualifies those specific Linux workflows on this machine; it does not close
+NVENC, OBS hardware recording, HDR or power-management gates.
 
 ## Common evidence and release gates
 

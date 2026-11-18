@@ -1,0 +1,59 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v mjpeg_cuvid -i /tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 506 kb/s
+  Stream #0:0: Video: mjpeg (Baseline), 1 reference frame, yuvj420p(pc, bt470bg/unknown/unknown, progressive, center), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 mjpeg
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xbb3520484e50] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xbb3520485200] Created video stream from input stream 0:0
+[mjpeg_cuvid @ 0xbb3520478b40] CUVID capabilities for mjpeg_cuvid:
+[mjpeg_cuvid @ 0xbb3520478b40] 8 bit: supported: 1, min_width: 64, max_width: 32768, min_height: 64, max_height: 16384
+[mjpeg_cuvid @ 0xbb3520478b40] 10 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[mjpeg_cuvid @ 0xbb3520478b40] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+Stream mapping:
+  Stream #0:0 -> #0:0 (mjpeg (mjpeg_cuvid) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xbb3520485200] Starting thread...
+[vf#0:0 @ 0xbb3520476c50] Starting thread...
+[vist#0:0/mjpeg @ 0xbb3520484cd0] [dec:mjpeg_cuvid @ 0xbb35204784b0] Starting thread...
+[in#0/matroska,webm @ 0xbb3520473ea0] Starting thread...
+Press [q] to stop, [?] for help
+[mjpeg_cuvid @ 0xbb3520478b40] Formats: Original: nv12 | HW: nv12 | SW: nv12
+[mjpeg_cuvid @ 0xbb3520478b40] ignoring invalid SAR: 0/0
+[graph -1 input from stream 0:0 @ 0xe6a274003020] w:320 h:180 pixfmt:nv12 tb:1/1000 fr:10/1 sar:1/1 csp:gbr range:pc alpha:unspecified
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, nv12(pc, gbr/reserved/reserved, progressive, center), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xbb3520484e50] Starting thread...
+[in#0/matroska,webm @ 0xbb3520473ea0] EOF while reading input
+[in#0/matroska,webm @ 0xbb3520473ea0] Terminating thread with return code 0 (success)
+[vist#0:0/mjpeg @ 0xbb3520484cd0] [dec:mjpeg_cuvid @ 0xbb35204784b0] Decoder thread received EOF packet
+[vist#0:0/mjpeg @ 0xbb3520484cd0] [dec:mjpeg_cuvid @ 0xbb35204784b0] Decoder returned EOF, finishing
+[vf#0:0 @ 0xbb3520476c50] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xbb3520485200] [enc:wrapped_avframe @ 0xbb35204857b0] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xbb3520485200] Terminating thread with return code 0 (success)
+[out#0/null @ 0xbb3520484e50] All streams finished
+[out#0/null @ 0xbb3520484e50] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xbb3520476c50] Terminating thread with return code 0 (success)
+[vist#0:0/mjpeg @ 0xbb3520484cd0] [dec:mjpeg_cuvid @ 0xbb35204784b0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xbb3520484e50] Output file #0 (pipe:):
+[out#0/null @ 0xbb3520484e50]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xbb3520484e50]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xbb3520484e50] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=13.3x elapsed=0:00:00.22
+[in#0/matroska,webm @ 0xbb3520473ea0] Input file #0 (/tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv):
+[in#0/matroska,webm @ 0xbb3520473ea0]   Input stream #0:0 (video): 30 packets read (188104 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xbb3520473ea0]   Total: 30 packets (188104 bytes) demuxed
+[AVIOContext @ 0xbb352047cba0] Statistics: 189843 bytes read, 0 seeks
+
+Exiting with exit code 0

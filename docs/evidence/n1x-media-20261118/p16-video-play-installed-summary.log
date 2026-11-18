@@ -1,0 +1,12 @@
+[   0.002][v][cplayer] Command line options: '--hwdec=vaapi' '--vo=gpu-next' '--gpu-api=vulkan' '--scale=ewa_lanczos' '--interpolation' '--tscale=oversample' '--video-sync=display-resample' '--no-audio' '--log-file=docs/evidence/n1x-media-20261118/p16-video-play-installed.log' '/tmp/p16-player-package-qmnrozhd/motion.mkv'
+[   0.003][v][cplayer] Setting option 'scale' = 'ewa_lanczos' (flags = 8)
+[   0.003][v][cplayer] Setting option 'interpolation' = '' (flags = 8)
+[   0.003][v][cplayer] Setting option 'tscale' = 'oversample' (flags = 8)
+[   0.117][v][vo/gpu-next/libplacebo]     GPU 0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) v1.4.351 (integrated)
+[   2.903][i][vd] Using hardware decoding (vaapi).
+[   2.907][i][cplayer] VO: [gpu-next] 320x180 vaapi[nv12]
+[   2.908][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   2.919][v][vo/gpu-next] Video scale: 3.968750/3.966667
+[   2.974][v][vo/gpu-next] Video scale: 4.103125/4.100000
+[   2.994][v][vo/gpu-next] Video scale: 4.103125/4.100000
+[   5.926][i][cplayer] Exiting... (End of file)

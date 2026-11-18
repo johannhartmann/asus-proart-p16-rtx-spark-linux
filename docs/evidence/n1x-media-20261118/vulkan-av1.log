@@ -1,159 +1,158 @@
-$ ffmpeg -hide_banner -loglevel verbose -init_hw_device vulkan=vk:0 -filter_hw_device vk -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -vf format=nv12,hwupload -c:v av1_vulkan -y /tmp/n1x-media-4eewi2w2/vulkan-av1.mkv
+$ ffmpeg -hide_banner -loglevel verbose -init_hw_device vulkan=vk:0 -filter_hw_device vk -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -vf format=nv12,hwupload -c:v av1_vulkan -y /tmp/n1x-media-d82lw7wc/vulkan-av1.mkv
 
 stdout:
 
 stderr:
-[Vulkan @ 0xb5000329d610] Supported layers:
-[Vulkan @ 0xb5000329d610] 	VK_LAYER_NV_optimus
-[Vulkan @ 0xb5000329d610] 	VK_LAYER_NV_present
-[Vulkan @ 0xb5000329d610] GPU listing:
-[Vulkan @ 0xb5000329d610]     0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
-[Vulkan @ 0xb5000329d610] Device 0 selected: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_push_descriptor
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_physical_device_drm
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_shader_atomic_float
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_cooperative_matrix
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_shader_object
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_shader_subgroup_rotate
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_host_image_copy
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_workgroup_memory_explicit_layout
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_shader_relaxed_extended_instruction
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_shader_long_vector
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_shader_replicated_composites
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_shader_expect_assume
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_maintenance1
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_maintenance2
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_internally_synchronized_queues
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_external_memory_fd
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_external_memory_dma_buf
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_image_drm_format_modifier
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_external_semaphore_fd
-[Vulkan @ 0xb5000329d610] Using device extension VK_EXT_external_memory_host
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_queue
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_encode_queue
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_decode_queue
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_encode_h264
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_decode_h264
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_encode_h265
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_decode_h265
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_decode_vp9
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_encode_av1
-[Vulkan @ 0xb5000329d610] Using device extension VK_KHR_video_decode_av1
-[Vulkan @ 0xb5000329d610] Queue families:
-[Vulkan @ 0xb5000329d610]     0: graphics compute transfer sparse (queues: 16)
-[Vulkan @ 0xb5000329d610]     1: transfer sparse (queues: 1)
-[Vulkan @ 0xb5000329d610]     2: compute transfer sparse (queues: 8)
-[Vulkan @ 0xb5000329d610]     3: transfer decode sparse (queues: 1)
-[Vulkan @ 0xb5000329d610]     4: transfer encode sparse (queues: 1)
-[Vulkan @ 0xb5000329d610] Using device: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
-[Vulkan @ 0xb5000329d610] Alignments:
-[Vulkan @ 0xb5000329d610]     optimalBufferCopyRowPitchAlignment: 1
-[Vulkan @ 0xb5000329d610]     minMemoryMapAlignment:              64
-[Vulkan @ 0xb5000329d610]     nonCoherentAtomSize:                64
-[Vulkan @ 0xb5000329d610]     minImportedHostPointerAlignment:    4096
-[Parsed_testsrc2_0 @ 0xb500045039d0] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
+[Vulkan @ 0xb1aa6d0fb610] Supported layers:
+[Vulkan @ 0xb1aa6d0fb610] 	VK_LAYER_NV_optimus
+[Vulkan @ 0xb1aa6d0fb610] 	VK_LAYER_NV_present
+[Vulkan @ 0xb1aa6d0fb610] GPU listing:
+[Vulkan @ 0xb1aa6d0fb610]     0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xb1aa6d0fb610] Device 0 selected: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) (integrated) (0x2e03)
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_push_descriptor
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_physical_device_drm
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_shader_atomic_float
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_cooperative_matrix
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_shader_object
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_shader_subgroup_rotate
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_host_image_copy
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_workgroup_memory_explicit_layout
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_shader_relaxed_extended_instruction
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_shader_long_vector
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_shader_replicated_composites
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_shader_expect_assume
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_maintenance1
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_maintenance2
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_internally_synchronized_queues
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_external_memory_fd
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_external_memory_dma_buf
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_image_drm_format_modifier
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_external_semaphore_fd
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_EXT_external_memory_host
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_queue
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_encode_queue
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_decode_queue
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_encode_h264
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_decode_h264
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_encode_h265
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_decode_h265
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_decode_vp9
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_encode_av1
+[Vulkan @ 0xb1aa6d0fb610] Using device extension VK_KHR_video_decode_av1
+[Vulkan @ 0xb1aa6d0fb610] Queue families:
+[Vulkan @ 0xb1aa6d0fb610]     0: graphics compute transfer sparse (queues: 16)
+[Vulkan @ 0xb1aa6d0fb610]     1: transfer sparse (queues: 1)
+[Vulkan @ 0xb1aa6d0fb610]     2: compute transfer sparse (queues: 8)
+[Vulkan @ 0xb1aa6d0fb610]     3: transfer decode sparse (queues: 1)
+[Vulkan @ 0xb1aa6d0fb610]     4: transfer encode sparse (queues: 1)
+[Vulkan @ 0xb1aa6d0fb610] Using device: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)
+[Vulkan @ 0xb1aa6d0fb610] Alignments:
+[Vulkan @ 0xb1aa6d0fb610]     optimalBufferCopyRowPitchAlignment: 1
+[Vulkan @ 0xb1aa6d0fb610]     minMemoryMapAlignment:              64
+[Vulkan @ 0xb1aa6d0fb610]     nonCoherentAtomSize:                64
+[Vulkan @ 0xb1aa6d0fb610]     minImportedHostPointerAlignment:    4096
+[Parsed_testsrc2_0 @ 0xb1aa6e3619d0] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
 Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
   Duration: N/A, start: 0.000000, bitrate: N/A
   Stream #0:0: Video: wrapped_avframe, 1 reference frame, yuv420p, 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 10 tbn
-[out#0/matroska @ 0xb500045061d0] No explicit maps, mapping streams automatically...
-[vost#0:0/av1_vulkan @ 0xb50004506580] Created video stream from input stream 0:0
+[out#0/matroska @ 0xb1aa6e3641d0] No explicit maps, mapping streams automatically...
+[vost#0:0/av1_vulkan @ 0xb1aa6e364580] Created video stream from input stream 0:0
 Stream mapping:
   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> av1 (av1_vulkan))
-[vost#0:0/av1_vulkan @ 0xb50004506580] Starting thread...
-[vf#0:0 @ 0xb5000362c730] Starting thread...
-[vist#0:0/wrapped_avframe @ 0xb50004506050] [dec:wrapped_avframe @ 0xb5000362df40] Starting thread...
-[in#0/lavfi @ 0xb50004500440] Starting thread...
+[vost#0:0/av1_vulkan @ 0xb1aa6e364580] Starting thread...
+[vf#0:0 @ 0xb1aa6d48a730] Starting thread...
+[vist#0:0/wrapped_avframe @ 0xb1aa6e364050] [dec:wrapped_avframe @ 0xb1aa6d48bf40] Starting thread...
+[in#0/lavfi @ 0xb1aa6e35e440] Starting thread...
 Press [q] to stop, [?] for help
-[graph -1 input from stream 0:0 @ 0xea2374004540] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
-[auto_scale_0 @ 0xea2374006060] w:iw h:ih flags:'' interl:0
-[Parsed_format_0 @ 0xea2374003ea0] auto-inserting filter 'auto_scale_0' between the filter 'graph -1 input from stream 0:0' and the filter 'Parsed_format_0'
-[auto_scale_0 @ 0xea2374006060] w:320 h:180 fmt:yuv420p csp:unknown range:unknown sar:1/1 -> w:320 h:180 fmt:nv12 csp:unknown range:unknown sar:1/1 flags:0x00000004
-[auto_scale_0 @ 0xea2374006060] [framesync @ 0xea2374006120] Selected 1/10 time base
-[auto_scale_0 @ 0xea2374006060] [framesync @ 0xea2374006120] Sync level 1
-[graph -1 input from stream 0:0 @ 0xea2374004540] video frame properties congruent with link at pts_time: 0
-[vost#0:0/av1_vulkan @ 0xb50004506580] [enc:av1_vulkan @ 0xb50004506b50] Using input frames context (format vulkan) with av1_vulkan encoder.
-[av1_vulkan @ 0xb50003625420] Using level 2.0.
-[av1_vulkan @ 0xb50003625420] Using profile Main
-[av1_vulkan @ 0xb50003625420] No rate control settings specified, using fixed QP = 18
-[av1_vulkan @ 0xb50003625420] Encoder capabilities for av1 profile "Main":
-[av1_vulkan @ 0xb50003625420]     Width: from 192 to 8192
-[av1_vulkan @ 0xb50003625420]     Height: from 128 to 8192
-[av1_vulkan @ 0xb50003625420]     Width alignment: 64
-[av1_vulkan @ 0xb50003625420]     Height alignment: 64
-[av1_vulkan @ 0xb50003625420]     Bitstream offset alignment: 256
-[av1_vulkan @ 0xb50003625420]     Bitstream size alignment: 256
-[av1_vulkan @ 0xb50003625420]     Maximum references: 17
-[av1_vulkan @ 0xb50003625420]     Maximum active references: 7
-[av1_vulkan @ 0xb50003625420]     Codec header version: 1.0.0 (driver), 1.0.0 (compiled)
-[av1_vulkan @ 0xb50003625420]     Encoder max quality: 7
-[av1_vulkan @ 0xb50003625420]     Encoder image width alignment: 2
-[av1_vulkan @ 0xb50003625420]     Encoder image height alignment: 2
-[av1_vulkan @ 0xb50003625420]     Capability flags: separate_references
-[av1_vulkan @ 0xb50003625420] Supported input formats:
-[av1_vulkan @ 0xb50003625420]     0: 1000156003
-[av1_vulkan @ 0xb50003625420] Allocating 4096 bytes in bind index 0 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 2633728 bytes in bind index 2 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 196608 bytes in bind index 3 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 4096 bytes in bind index 4 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 208896 bytes in bind index 5 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 49152 bytes in bind index 6 for video session
-[av1_vulkan @ 0xb50003625420] Allocating 999424 bytes in bind index 7 for video session
-[av1_vulkan @ 0xb50003625420] AV1 encoder capabilities:
-[av1_vulkan @ 0xb50003625420]     Standard capability flags:
-[av1_vulkan @ 0xb50003625420]         per_rate_control_group_min_max_q_index: 1
-[av1_vulkan @ 0xb50003625420]         generate_obu_extension_header: 0
-[av1_vulkan @ 0xb50003625420]         primary_reference_cdf_only: 1
-[av1_vulkan @ 0xb50003625420]         frame_size_override: 1
-[av1_vulkan @ 0xb50003625420]         motion_vector_scaling: 0
-[av1_vulkan @ 0xb50003625420]     Capabilities:
-[av1_vulkan @ 0xb50003625420]         64x64 superblocks: 1
-[av1_vulkan @ 0xb50003625420]         128x128 superblocks: 0
-[av1_vulkan @ 0xb50003625420]         maxSingleReferenceCount: 7
-[av1_vulkan @ 0xb50003625420]         singleReferenceNameMask: 0x7f
-[av1_vulkan @ 0xb50003625420]         maxUnidirectionalCompoundReferenceCount: 4
-[av1_vulkan @ 0xb50003625420]         maxUnidirectionalCompoundGroup1ReferenceCount: 4
-[av1_vulkan @ 0xb50003625420]         unidirectionalCompoundReferenceNameMask: 0xf
-[av1_vulkan @ 0xb50003625420]         maxBidirectionalCompoundReferenceCount: 7
-[av1_vulkan @ 0xb50003625420]         maxBidirectionalCompoundGroup1ReferenceCount: 4
-[av1_vulkan @ 0xb50003625420]         maxBidirectionalCompoundGroup2ReferenceCount: 3
-[av1_vulkan @ 0xb50003625420]         bidirectionalCompoundReferenceNameMask: 0x7f
-[av1_vulkan @ 0xb50003625420]         maxTemporalLayerCount: 1
-[av1_vulkan @ 0xb50003625420]         maxSpatialLayerCount: 1
-[av1_vulkan @ 0xb50003625420]         maxOperatingPoints: 1
-[av1_vulkan @ 0xb50003625420]         min/max Qindex: [1, 255]
-[av1_vulkan @ 0xb50003625420]         prefersGopRemainingFrames: 0
-[av1_vulkan @ 0xb50003625420]         requiresGopRemainingFrames: 0
-[av1_vulkan @ 0xb50003625420]         maxLevel: 23
-[av1_vulkan @ 0xb50003625420]         codedPictureAlignment: 8x8
-[av1_vulkan @ 0xb50003625420]         maxTiles: 16x128
-[av1_vulkan @ 0xb50003625420]         Tile size: 192x64 to 4096x2304
-[av1_vulkan @ 0xb50003625420] Using intra, P- and B-frames (supported references: 17 / 7).
-[av1_vulkan @ 0xb50003625420] Feedback units written, overrides: 1
-Output #0, matroska, to '/tmp/n1x-media-4eewi2w2/vulkan-av1.mkv':
+[graph -1 input from stream 0:0 @ 0xfb2bb4004540] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
+[auto_scale_0 @ 0xfb2bb4006060] w:iw h:ih flags:'' interl:0
+[Parsed_format_0 @ 0xfb2bb4003ea0] auto-inserting filter 'auto_scale_0' between the filter 'graph -1 input from stream 0:0' and the filter 'Parsed_format_0'
+[auto_scale_0 @ 0xfb2bb4006060] w:320 h:180 fmt:yuv420p csp:unknown range:unknown sar:1/1 -> w:320 h:180 fmt:nv12 csp:unknown range:unknown sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xfb2bb4006060] [framesync @ 0xfb2bb4006120] Selected 1/10 time base
+[auto_scale_0 @ 0xfb2bb4006060] [framesync @ 0xfb2bb4006120] Sync level 1
+[graph -1 input from stream 0:0 @ 0xfb2bb4004540] video frame properties congruent with link at pts_time: 0
+[vost#0:0/av1_vulkan @ 0xb1aa6e364580] [enc:av1_vulkan @ 0xb1aa6e364b50] Using input frames context (format vulkan) with av1_vulkan encoder.
+[av1_vulkan @ 0xb1aa6d483420] Using level 2.0.
+[av1_vulkan @ 0xb1aa6d483420] Using profile Main
+[av1_vulkan @ 0xb1aa6d483420] No rate control settings specified, using fixed QP = 18
+[av1_vulkan @ 0xb1aa6d483420] Encoder capabilities for av1 profile "Main":
+[av1_vulkan @ 0xb1aa6d483420]     Width: from 192 to 8192
+[av1_vulkan @ 0xb1aa6d483420]     Height: from 128 to 8192
+[av1_vulkan @ 0xb1aa6d483420]     Width alignment: 64
+[av1_vulkan @ 0xb1aa6d483420]     Height alignment: 64
+[av1_vulkan @ 0xb1aa6d483420]     Bitstream offset alignment: 256
+[av1_vulkan @ 0xb1aa6d483420]     Bitstream size alignment: 256
+[av1_vulkan @ 0xb1aa6d483420]     Maximum references: 17
+[av1_vulkan @ 0xb1aa6d483420]     Maximum active references: 7
+[av1_vulkan @ 0xb1aa6d483420]     Codec header version: 1.0.0 (driver), 1.0.0 (compiled)
+[av1_vulkan @ 0xb1aa6d483420]     Encoder max quality: 7
+[av1_vulkan @ 0xb1aa6d483420]     Encoder image width alignment: 2
+[av1_vulkan @ 0xb1aa6d483420]     Encoder image height alignment: 2
+[av1_vulkan @ 0xb1aa6d483420]     Capability flags: separate_references
+[av1_vulkan @ 0xb1aa6d483420] Supported input formats:
+[av1_vulkan @ 0xb1aa6d483420]     0: 1000156003
+[av1_vulkan @ 0xb1aa6d483420] Allocating 4096 bytes in bind index 0 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 2633728 bytes in bind index 2 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 196608 bytes in bind index 3 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 4096 bytes in bind index 4 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 208896 bytes in bind index 5 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 49152 bytes in bind index 6 for video session
+[av1_vulkan @ 0xb1aa6d483420] Allocating 999424 bytes in bind index 7 for video session
+[av1_vulkan @ 0xb1aa6d483420] AV1 encoder capabilities:
+[av1_vulkan @ 0xb1aa6d483420]     Standard capability flags:
+[av1_vulkan @ 0xb1aa6d483420]         per_rate_control_group_min_max_q_index: 1
+[av1_vulkan @ 0xb1aa6d483420]         generate_obu_extension_header: 0
+[av1_vulkan @ 0xb1aa6d483420]         primary_reference_cdf_only: 1
+[av1_vulkan @ 0xb1aa6d483420]         frame_size_override: 1
+[av1_vulkan @ 0xb1aa6d483420]         motion_vector_scaling: 0
+[av1_vulkan @ 0xb1aa6d483420]     Capabilities:
+[av1_vulkan @ 0xb1aa6d483420]         64x64 superblocks: 1
+[av1_vulkan @ 0xb1aa6d483420]         128x128 superblocks: 0
+[av1_vulkan @ 0xb1aa6d483420]         maxSingleReferenceCount: 7
+[av1_vulkan @ 0xb1aa6d483420]         singleReferenceNameMask: 0x7f
+[av1_vulkan @ 0xb1aa6d483420]         maxUnidirectionalCompoundReferenceCount: 4
+[av1_vulkan @ 0xb1aa6d483420]         maxUnidirectionalCompoundGroup1ReferenceCount: 4
+[av1_vulkan @ 0xb1aa6d483420]         unidirectionalCompoundReferenceNameMask: 0xf
+[av1_vulkan @ 0xb1aa6d483420]         maxBidirectionalCompoundReferenceCount: 7
+[av1_vulkan @ 0xb1aa6d483420]         maxBidirectionalCompoundGroup1ReferenceCount: 4
+[av1_vulkan @ 0xb1aa6d483420]         maxBidirectionalCompoundGroup2ReferenceCount: 3
+[av1_vulkan @ 0xb1aa6d483420]         bidirectionalCompoundReferenceNameMask: 0x7f
+[av1_vulkan @ 0xb1aa6d483420]         maxTemporalLayerCount: 1
+[av1_vulkan @ 0xb1aa6d483420]         maxSpatialLayerCount: 1
+[av1_vulkan @ 0xb1aa6d483420]         maxOperatingPoints: 1
+[av1_vulkan @ 0xb1aa6d483420]         min/max Qindex: [1, 255]
+[av1_vulkan @ 0xb1aa6d483420]         prefersGopRemainingFrames: 0
+[av1_vulkan @ 0xb1aa6d483420]         requiresGopRemainingFrames: 0
+[av1_vulkan @ 0xb1aa6d483420]         maxLevel: 23
+[av1_vulkan @ 0xb1aa6d483420]         codedPictureAlignment: 8x8
+[av1_vulkan @ 0xb1aa6d483420]         maxTiles: 16x128
+[av1_vulkan @ 0xb1aa6d483420]         Tile size: 192x64 to 4096x2304
+[av1_vulkan @ 0xb1aa6d483420] Using intra, P- and B-frames (supported references: 17 / 7).
+[av1_vulkan @ 0xb1aa6d483420] Feedback units written, overrides: 1
+Output #0, matroska, to '/tmp/n1x-media-d82lw7wc/vulkan-av1.mkv':
   Metadata:
     encoder         : Lavf63.1.102
   Stream #0:0: Video: av1 (Main), 1 reference frame (AV01 / 0x31305641), nv12(progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 10 fps, 1k tbn
     Metadata:
       encoder         : Lavc63.1.102 av1_vulkan
-[out#0/matroska @ 0xb500045061d0] Starting thread...
-[vost#0:0/av1_vulkan @ 0xb50004506580] [enc:av1_vulkan @ 0xb50004506b50] Encoder thread received EOF
-[vf#0:0 @ 0xb5000362c730] All consumers returned EOF
-[vost#0:0/av1_vulkan @ 0xb50004506580] Terminating thread with return code 0 (success)
-[out#0/matroska @ 0xb500045061d0] All streams finished
-[out#0/matroska @ 0xb500045061d0] Terminating thread with return code 0 (success)
-[in#0/lavfi @ 0xb50004500440] Terminating thread with return code 0 (success)
-[vist#0:0/wrapped_avframe @ 0xb50004506050] [dec:wrapped_avframe @ 0xb5000362df40] Decoder thread received EOF packet
-[vist#0:0/wrapped_avframe @ 0xb50004506050] [dec:wrapped_avframe @ 0xb5000362df40] Decoder returned EOF, finishing
-[vf#0:0 @ 0xb5000362c730] Terminating thread with return code 0 (success)
-[vist#0:0/wrapped_avframe @ 0xb50004506050] [dec:wrapped_avframe @ 0xb5000362df40] Terminating thread with return code 0 (success)
-[AVIOContext @ 0xb5000362f3b0] Statistics: 179253 bytes written, 0 seeks, 1 writeouts
-[out#0/matroska @ 0xb500045061d0] Output file #0 (/tmp/n1x-media-4eewi2w2/vulkan-av1.mkv):
-[out#0/matroska @ 0xb500045061d0]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (178711 bytes);
-[out#0/matroska @ 0xb500045061d0]   Total: 30 packets (178711 bytes) muxed
-[out#0/matroska @ 0xb500045061d0] video:175KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.303283%
-frame=   30 fps=0.0 q=-0.0 Lsize=     175KiB time=00:00:03.00 bitrate= 478.0kbits/s speed=31.6x elapsed=0:00:00.09
-[in#0/lavfi @ 0xb50004500440] Input file #0 (testsrc2=size=320x180:rate=10):
-[in#0/lavfi @ 0xb50004500440]   Input stream #0:0 (video): 34 packets read (14416 bytes); 33 frames decoded; 0 decode errors;
-[in#0/lavfi @ 0xb50004500440]   Total: 34 packets (14416 bytes) demuxed
+[out#0/matroska @ 0xb1aa6e3641d0] Starting thread...
+[vost#0:0/av1_vulkan @ 0xb1aa6e364580] [enc:av1_vulkan @ 0xb1aa6e364b50] Encoder thread received EOF
+[vf#0:0 @ 0xb1aa6d48a730] All consumers returned EOF
+[vost#0:0/av1_vulkan @ 0xb1aa6e364580] Terminating thread with return code 0 (success)
+[out#0/matroska @ 0xb1aa6e3641d0] All streams finished
+[out#0/matroska @ 0xb1aa6e3641d0] Terminating thread with return code 0 (success)
+[in#0/lavfi @ 0xb1aa6e35e440] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xb1aa6d48a730] Terminating thread with return code 0 (success)
+[vist#0:0/wrapped_avframe @ 0xb1aa6e364050] [dec:wrapped_avframe @ 0xb1aa6d48bf40] Decoder returned EOF, finishing
+[vist#0:0/wrapped_avframe @ 0xb1aa6e364050] [dec:wrapped_avframe @ 0xb1aa6d48bf40] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xb1aa6d48d3b0] Statistics: 179253 bytes written, 0 seeks, 1 writeouts
+[out#0/matroska @ 0xb1aa6e3641d0] Output file #0 (/tmp/n1x-media-d82lw7wc/vulkan-av1.mkv):
+[out#0/matroska @ 0xb1aa6e3641d0]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (178711 bytes);
+[out#0/matroska @ 0xb1aa6e3641d0]   Total: 30 packets (178711 bytes) muxed
+[out#0/matroska @ 0xb1aa6e3641d0] video:175KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.303283%
+frame=   30 fps=0.0 q=-0.0 Lsize=     175KiB time=00:00:03.00 bitrate= 478.0kbits/s speed=  36x elapsed=0:00:00.08
+[in#0/lavfi @ 0xb1aa6e35e440] Input file #0 (testsrc2=size=320x180:rate=10):
+[in#0/lavfi @ 0xb1aa6e35e440]   Input stream #0:0 (video): 37 packets read (15688 bytes); 34 frames decoded; 0 decode errors;
+[in#0/lavfi @ 0xb1aa6e35e440]   Total: 37 packets (15688 bytes) demuxed
 
 Exiting with exit code 0

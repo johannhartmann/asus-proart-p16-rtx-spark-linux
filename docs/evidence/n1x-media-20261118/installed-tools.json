@@ -1,0 +1,26 @@
+{
+  "package": "p16-media-tools 0.1.0-1",
+  "binaries": {
+    "p16-video-play": "fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688",
+    "p16-record-camera-vulkan": "b5b4cc38fd32929719c645aa88b1974a6f0abd062888df1c5df6ad45ca21a6f4"
+  },
+  "playback": {
+    "status": "pass",
+    "hardware_decode": "vaapi",
+    "renderer": "gpu-next/libplacebo Vulkan",
+    "completed": true
+  },
+  "recording": {
+    "status": "pass",
+    "source": "P16 internal RGB V4L2",
+    "encoder": "h264_vulkan",
+    "stream": {
+      "codec_name": "h264",
+      "width": 1280,
+      "height": 720,
+      "avg_frame_rate": "30/1",
+      "nb_read_frames": "60"
+    },
+    "temporary_recording_deleted": true
+  }
+}

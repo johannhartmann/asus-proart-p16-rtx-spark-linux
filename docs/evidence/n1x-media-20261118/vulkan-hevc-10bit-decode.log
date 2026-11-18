@@ -1,9 +1,9 @@
-$ ffmpeg -hide_banner -loglevel info -i /tmp/n1x-media-4eewi2w2/vulkan-hevc-10bit.mkv -frames:v 30 -f null -
+$ ffmpeg -hide_banner -loglevel info -i /tmp/n1x-media-d82lw7wc/vulkan-hevc-10bit.mkv -frames:v 30 -f null -
 
 stdout:
 
 stderr:
-Input #0, matroska,webm, from '/tmp/n1x-media-4eewi2w2/vulkan-hevc-10bit.mkv':
+Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vulkan-hevc-10bit.mkv':
   Metadata:
     ENCODER         : Lavf63.1.102
   Duration: 00:00:03.00, start: 0.000000, bitrate: 452 kb/s
@@ -21,5 +21,5 @@ Output #0, null, to 'pipe:':
     Metadata:
       encoder         : Lavc63.1.102 wrapped_avframe
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xb15953209950] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
-frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed= 128x elapsed=0:00:00.02
+[out#0/null @ 0xbab7f1c87950] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed= 121x elapsed=0:00:00.02

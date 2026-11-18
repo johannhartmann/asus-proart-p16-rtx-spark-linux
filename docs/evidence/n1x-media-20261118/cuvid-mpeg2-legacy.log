@@ -1,0 +1,60 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v mpeg2_cuvid -i /tmp/n1x-media-d82lw7wc/mpeg2-legacy.mkv -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/mpeg2-legacy.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 408 kb/s
+  Stream #0:0: Video: mpeg2video (Main), 1 reference frame, yuv420p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 mpeg2video
+      DURATION        : 00:00:03.000000000
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 49152 vbv_delay: N/A
+[out#0/null @ 0xc6fc530e7bf0] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xc6fc530e7fa0] Created video stream from input stream 0:0
+[mpeg2_cuvid @ 0xc6fc530e38c0] CUVID capabilities for mpeg2_cuvid:
+[mpeg2_cuvid @ 0xc6fc530e38c0] 8 bit: supported: 1, min_width: 48, max_width: 4080, min_height: 16, max_height: 4080
+[mpeg2_cuvid @ 0xc6fc530e38c0] 10 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[mpeg2_cuvid @ 0xc6fc530e38c0] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+Stream mapping:
+  Stream #0:0 -> #0:0 (mpeg2video (mpeg2_cuvid) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xc6fc530e7fa0] Starting thread...
+[vf#0:0 @ 0xc6fc530f10c0] Starting thread...
+[vist#0:0/mpeg2video @ 0xc6fc530e7a10] [dec:mpeg2_cuvid @ 0xc6fc530e32a0] Starting thread...
+[in#0/matroska,webm @ 0xc6fc530dfea0] Starting thread...
+Press [q] to stop, [?] for help
+[mpeg2_cuvid @ 0xc6fc530e38c0] Formats: Original: nv12 | HW: nv12 | SW: nv12
+[graph -1 input from stream 0:0 @ 0xf65c88003020] w:320 h:180 pixfmt:nv12 tb:1/1000 fr:10/1 sar:1/1 csp:gbr range:tv alpha:unspecified
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, nv12(tv, gbr/reserved/reserved, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xc6fc530e7bf0] Starting thread...
+[in#0/matroska,webm @ 0xc6fc530dfea0] EOF while reading input
+[in#0/matroska,webm @ 0xc6fc530dfea0] Terminating thread with return code 0 (success)
+[vist#0:0/mpeg2video @ 0xc6fc530e7a10] [dec:mpeg2_cuvid @ 0xc6fc530e32a0] Decoder thread received EOF packet
+[vist#0:0/mpeg2video @ 0xc6fc530e7a10] [dec:mpeg2_cuvid @ 0xc6fc530e32a0] Decoder returned EOF, finishing
+[vf#0:0 @ 0xc6fc530f10c0] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xc6fc530e7fa0] [enc:wrapped_avframe @ 0xc6fc530e8500] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xc6fc530e7fa0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc6fc530e7bf0] All streams finished
+[out#0/null @ 0xc6fc530e7bf0] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xc6fc530f10c0] Terminating thread with return code 0 (success)
+[vist#0:0/mpeg2video @ 0xc6fc530e7a10] [dec:mpeg2_cuvid @ 0xc6fc530e32a0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc6fc530e7bf0] Output file #0 (pipe:):
+[out#0/null @ 0xc6fc530e7bf0]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xc6fc530e7bf0]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xc6fc530e7bf0] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=  15x elapsed=0:00:00.20
+[in#0/matroska,webm @ 0xc6fc530dfea0] Input file #0 (/tmp/n1x-media-d82lw7wc/mpeg2-legacy.mkv):
+[in#0/matroska,webm @ 0xc6fc530dfea0]   Input stream #0:0 (video): 30 packets read (152254 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xc6fc530dfea0]   Total: 30 packets (152254 bytes) demuxed
+[AVIOContext @ 0xc6fc530e8ba0] Statistics: 153110 bytes read, 0 seeks
+
+Exiting with exit code 0

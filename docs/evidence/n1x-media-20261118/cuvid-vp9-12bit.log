@@ -1,0 +1,58 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v vp9_cuvid -i /tmp/n1x-media-d82lw7wc/vp9-12bit.webm -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vp9-12bit.webm':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 193 kb/s
+  Stream #0:0: Video: vp9 (Profile 2), 1 reference frame, yuv420p12le(tv, progressive), 320x180, SAR 1:1 DAR 16:9, 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libvpx-vp9
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xaefbb37ffd70] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xaefbb3800120] Created video stream from input stream 0:0
+[vp9_cuvid @ 0xaefbb3801d70] CUVID capabilities for vp9_cuvid:
+[vp9_cuvid @ 0xaefbb3801d70] 8 bit: supported: 1, min_width: 128, max_width: 8192, min_height: 128, max_height: 8192
+[vp9_cuvid @ 0xaefbb3801d70] 10 bit: supported: 1, min_width: 128, max_width: 8192, min_height: 128, max_height: 8192
+[vp9_cuvid @ 0xaefbb3801d70] 12 bit: supported: 1, min_width: 128, max_width: 8192, min_height: 128, max_height: 8192
+Stream mapping:
+  Stream #0:0 -> #0:0 (vp9 (vp9_cuvid) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xaefbb3800120] Starting thread...
+[vf#0:0 @ 0xaefbb3800880] Starting thread...
+[vist#0:0/vp9 @ 0xaefbb37ffbf0] [dec:vp9_cuvid @ 0xaefbb3804d40] Starting thread...
+[in#0/matroska,webm @ 0xaefbb37fcea0] Starting thread...
+Press [q] to stop, [?] for help
+[vp9_cuvid @ 0xaefbb3801d70] Formats: Original: p012le | HW: p012le | SW: p012le
+[graph -1 input from stream 0:0 @ 0xe6335c003020] w:320 h:180 pixfmt:p012le tb:1/1000 fr:10/1 sar:1/1 csp:gbr range:tv alpha:unspecified
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, p012le(tv, gbr/reserved/reserved, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xaefbb37ffd70] Starting thread...
+[in#0/matroska,webm @ 0xaefbb37fcea0] EOF while reading input
+[in#0/matroska,webm @ 0xaefbb37fcea0] Terminating thread with return code 0 (success)
+[vist#0:0/vp9 @ 0xaefbb37ffbf0] [dec:vp9_cuvid @ 0xaefbb3804d40] Decoder thread received EOF packet
+[vist#0:0/vp9 @ 0xaefbb37ffbf0] [dec:vp9_cuvid @ 0xaefbb3804d40] Decoder returned EOF, finishing
+[vf#0:0 @ 0xaefbb3800880] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xaefbb3800120] [enc:wrapped_avframe @ 0xaefbb3800410] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xaefbb3800120] Terminating thread with return code 0 (success)
+[out#0/null @ 0xaefbb37ffd70] All streams finished
+[out#0/null @ 0xaefbb37ffd70] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xaefbb3800880] Terminating thread with return code 0 (success)
+[vist#0:0/vp9 @ 0xaefbb37ffbf0] [dec:vp9_cuvid @ 0xaefbb3804d40] Terminating thread with return code 0 (success)
+[out#0/null @ 0xaefbb37ffd70] Output file #0 (pipe:):
+[out#0/null @ 0xaefbb37ffd70]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xaefbb37ffd70]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xaefbb37ffd70] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=12.9x elapsed=0:00:00.23
+[in#0/matroska,webm @ 0xaefbb37fcea0] Input file #0 (/tmp/n1x-media-d82lw7wc/vp9-12bit.webm):
+[in#0/matroska,webm @ 0xaefbb37fcea0]   Input stream #0:0 (video): 30 packets read (71952 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xaefbb37fcea0]   Total: 30 packets (71952 bytes) demuxed
+[AVIOContext @ 0xaefbb3805b80] Statistics: 72680 bytes read, 0 seeks
+
+Exiting with exit code 0

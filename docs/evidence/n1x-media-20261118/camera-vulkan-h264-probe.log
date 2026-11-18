@@ -1,4 +1,4 @@
-$ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,width,height,avg_frame_rate,nb_read_frames -of json /tmp/n1x-media-4eewi2w2/p16-rgb-vulkan-h264.mkv
+$ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,width,height,avg_frame_rate,nb_read_frames -of json /tmp/n1x-media-d82lw7wc/p16-rgb-vulkan-h264.mkv
 
 stdout:
 {

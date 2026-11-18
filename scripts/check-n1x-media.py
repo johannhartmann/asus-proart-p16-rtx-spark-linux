@@ -158,6 +158,61 @@ def vulkan_10bit_roundtrip(ffmpeg, ffprobe, codec, work, evidence):
             "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged"}
 
 
+def vp9_fixture(ffmpeg, ffprobe, depth, work, evidence):
+    label = f"vp9-{depth}bit"
+    source = work / f"{label}.webm"
+    pixfmt = {8: "yuv420p", 10: "yuv420p10le", 12: "yuv420p12le"}[depth]
+    generated = command(
+        [ffmpeg, "-hide_banner", "-loglevel", "info", "-f", "lavfi",
+         "-i", "testsrc2=size=320x180:rate=10", "-frames:v", "30",
+         "-vf", f"format={pixfmt}", "-c:v", "libvpx-vp9",
+         "-deadline", "realtime", "-cpu-used", "8", "-b:v", "0",
+         "-crf", "30", "-y", str(source)], label, evidence,
+    )
+    require(generated.returncode == 0, f"{label}: fixture encode failed")
+    probed = command(
+        [ffprobe, "-v", "error", "-select_streams", "v:0", "-count_frames",
+         "-show_entries", "stream=codec_name,profile,pix_fmt,width,height,nb_read_frames",
+         "-of", "json", str(source)], f"{label}-probe", evidence,
+    )
+    require(probed.returncode == 0, f"{label}: ffprobe failed")
+    stream = json.loads(probed.stdout)["streams"][0]
+    require(stream.get("codec_name") == "vp9" and stream.get("pix_fmt") == pixfmt and
+            stream.get("profile") == ("Profile 0" if depth == 8 else "Profile 2") and
+            (stream.get("width"), stream.get("height")) == (320, 180) and
+            stream.get("nb_read_frames") == "30", f"{label}: wrong stream {stream}")
+    return {"stream": stream, "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "bytes": source.stat().st_size}
+
+
+def legacy_fixture(ffmpeg, ffprobe, codec, work, evidence):
+    encoder, container, bitstream_codec = {
+        "vp8": ("libvpx", "webm", "vp8"),
+        "mpeg2": ("mpeg2video", "mkv", "mpeg2video"),
+        "mjpeg": ("mjpeg", "mkv", "mjpeg"),
+    }[codec]
+    source = work / f"{codec}-legacy.{container}"
+    label = f"{codec}-legacy"
+    generated = command(
+        [ffmpeg, "-hide_banner", "-loglevel", "info", "-f", "lavfi",
+         "-i", "testsrc2=size=320x180:rate=10", "-frames:v", "30",
+         "-c:v", encoder, "-y", str(source)], label, evidence,
+    )
+    require(generated.returncode == 0, f"{label}: fixture encode failed")
+    probed = command(
+        [ffprobe, "-v", "error", "-select_streams", "v:0", "-count_frames",
+         "-show_entries", "stream=codec_name,pix_fmt,width,height,nb_read_frames",
+         "-of", "json", str(source)], f"{label}-probe", evidence,
+    )
+    require(probed.returncode == 0, f"{label}: ffprobe failed")
+    stream = json.loads(probed.stdout)["streams"][0]
+    require(stream.get("codec_name") == bitstream_codec and
+            (stream.get("width"), stream.get("height")) == (320, 180) and
+            stream.get("nb_read_frames") == "30", f"{label}: wrong stream {stream}")
+    return {"stream": stream, "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "bytes": source.stat().st_size}
+
+
 def vaapi_decode_file(ffmpeg, codec, source, evidence, label=None):
     label = label or f"vaapi-{codec}"
     result = command(
@@ -328,6 +383,7 @@ def main():
             "ffmpeg_package": output_line(["pacman", "-Q", "ffmpeg"]),
             "libva_nvidia_package": output_line(["pacman", "-Q", "libva-nvidia-driver"]),
             "x265_package": output_line(["pacman", "-Q", "x265"]),
+            "libvpx_package": output_line(["pacman", "-Q", "libvpx"]),
             "nvenc_candidate_sha256": file_hash(args.nvenc_candidate)
             if args.nvenc_candidate else None,
         },
@@ -354,6 +410,29 @@ def main():
             record(report["results"], f"vulkan_{codec}_10bit_roundtrip",
                    lambda codec=codec: vulkan_10bit_roundtrip(
                        args.ffmpeg, args.ffprobe, codec, work, args.output_dir))
+        for depth in (8, 10, 12):
+            name = f"vp9_{depth}bit_fixture"
+            source = work / f"vp9-{depth}bit.webm"
+            record(report["results"], name,
+                   lambda depth=depth: vp9_fixture(
+                       args.ffmpeg, args.ffprobe, depth, work, args.output_dir))
+            if report["results"][name]["status"] == "pass":
+                record(report["results"], f"vp9_{depth}bit_vaapi",
+                       lambda depth=depth, source=source: vaapi_decode_file(
+                           args.ffmpeg, "vp9", source, args.output_dir,
+                           f"vaapi-vp9-{depth}bit"))
+        for codec in ("vp8", "mpeg2", "mjpeg"):
+            name = f"{codec}_legacy_fixture"
+            extension = "webm" if codec == "vp8" else "mkv"
+            source = work / f"{codec}-legacy.{extension}"
+            record(report["results"], name,
+                   lambda codec=codec: legacy_fixture(
+                       args.ffmpeg, args.ffprobe, codec, work, args.output_dir))
+            if report["results"][name]["status"] == "pass":
+                record(report["results"], f"{codec}_legacy_vaapi",
+                       lambda codec=codec, source=source: vaapi_decode_file(
+                           args.ffmpeg, codec, source, args.output_dir,
+                           f"vaapi-{codec}-legacy"))
         if args.camera:
             record(report["results"], "p16_rgb",
                    lambda: camera(args.ffmpeg, "/dev/video0", "mjpeg", "1280x720",
@@ -380,6 +459,21 @@ def main():
                                args.nvenc_candidate, codec,
                                work / f"vulkan-{codec}-10bit.mkv", args.output_dir,
                                f"cuvid-{codec}-10bit"))
+            for depth in (8, 10, 12):
+                if report["results"].get(f"vp9_{depth}bit_fixture", {}).get("status") == "pass":
+                    record(report["results"], f"vp9_{depth}bit_cuvid",
+                           lambda depth=depth: cuvid_candidate(
+                               args.nvenc_candidate, "vp9",
+                               work / f"vp9-{depth}bit.webm", args.output_dir,
+                               f"cuvid-vp9-{depth}bit"))
+            for codec in ("vp8", "mpeg2", "mjpeg"):
+                if report["results"].get(f"{codec}_legacy_fixture", {}).get("status") == "pass":
+                    extension = "webm" if codec == "vp8" else "mkv"
+                    record(report["results"], f"{codec}_legacy_cuvid",
+                           lambda codec=codec, extension=extension: cuvid_candidate(
+                               args.nvenc_candidate, codec,
+                               work / f"{codec}-legacy.{extension}", args.output_dir,
+                               f"cuvid-{codec}-legacy"))
             record(report["results"], "nvenc_h264",
                    lambda: nvenc_candidate(args.nvenc_candidate, args.output_dir))
     path = args.output_dir / "result.json"

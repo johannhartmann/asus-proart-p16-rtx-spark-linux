@@ -1,0 +1,22 @@
+$ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,pix_fmt,width,height,nb_read_frames -of json /tmp/n1x-media-d82lw7wc/vp8-legacy.webm
+
+stdout:
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "vp8",
+            "width": 320,
+            "height": 180,
+            "pix_fmt": "yuv420p",
+            "nb_read_frames": "30"
+        }
+    ]
+}
+
+stderr:

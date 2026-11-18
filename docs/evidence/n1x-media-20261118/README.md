@@ -12,11 +12,11 @@ retained.
 
 | Path | Result | Evidence and limit |
 | --- | --- | --- |
-| NVDEC via VA-API | Pass for 30-frame H.264, HEVC Main and AV1 Main 8-bit samples, plus HEVC/AV1 10-bit samples | `vaapi-*.log` selects `VA-API NVDEC driver [direct backend]` and VA-API frame surfaces; these cases do not qualify the complete codec/profile matrix. |
-| NVDEC via direct CUVID | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC/AV1 10-bit samples | The isolated FFmpeg candidate's `cuvid-*.log` selects the named `*_cuvid` decoder and completes 30 frames per case. This is separate from its failing NVENC encoder API. |
+| NVDEC via VA-API | Pass for 30-frame H.264, HEVC Main and AV1 Main 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | `vaapi-*.log` selects `VA-API NVDEC driver [direct backend]` and VA-API frame surfaces; these cases do not qualify the complete codec/profile matrix. |
+| NVDEC via direct CUVID | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | The isolated FFmpeg candidate's `cuvid-*.log` selects the named `*_cuvid` decoder and completes 30 frames per case. This is separate from its failing NVENC encoder API. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
-| Packaged camera command | Built; direct command run passes | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 contains the stable P16 V4L2 camera path. `p16-record-camera-vulkan.log` records a two-second command run producing 60 H.264 1280×720/30 frames, independently checked with FFprobe. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`; this row alone does not prove the package was installed. |
+| Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
 | NVENC API | Blocked | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but `nvenc-h264.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. No NVENC session or output was produced. |
 | Desktop playback | Pass for one H.264 sample | `mpv-vaapi.log.gz` records hardware decode, libplacebo `gpu-next` output and EOF; `mpv-software-control.log` records intentional software decode. Key lines from the full mpv logs are in `mpv-summary.log`. |
 | Vulkan scaling and frame mixing | Application path exercised | `mpv-effects.log.gz` records NVIDIA Vulkan/libplacebo, `ewa_lanczos`, interpolation, 320×180 source scaled to a 1190×718 and then 1400×960 Wayland window, and EOF. It does not establish AI super-resolution, generated motion frames, HDR or image-quality acceptance. |
@@ -39,7 +39,7 @@ The package was built cleanly as `ffmpeg-n1x-video 9.0.2-2`, then rebuilt
 with the correct GPL-2.0-or-later license metadata as `9.0.2-3`. SHA256 of the
 final package archive is `3a9643bf8343928a95978d9e25617c576569688102285abef8d14f9a5f66f39f`.
 Both executables started after extraction from the archive. The latest corpus
-has 17 passing cases and one failing case. No new NVRM/Xid or IOMMU fault was
+has 35 passing cases and one failing case. No new NVRM/Xid or IOMMU fault was
 present in the kernel journal during the later tests. The exit status is 1
 because the NVENC runtime probe fails. That failure is
 intentional and must remain visible. The generated video fixtures lived only
@@ -56,7 +56,10 @@ the physical privacy behavior has not yet been tested. `/dev/video2` is the
 internal IR device; no face-authentication claim follows from capture.
 
 Still open: NVENC API session on a supported driver; full codec/profile and
-advanced encode matrix; OBS hardware encode or another desktop recording app
+advanced encode matrix, including a valid HEVC 12-bit fixture (the installed
+Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log)
+despite CUVID reporting decode capability);
+OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; graphical browser permission and PipeWire
 camera portal; device privacy and contention; audio sync, seek and longer playback;
 fresh boot and physical s2idle/resume; HDR display output; proprietary NVIDIA

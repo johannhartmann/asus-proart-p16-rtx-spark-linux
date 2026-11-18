@@ -1,0 +1,22 @@
+$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v mpeg2video -y /tmp/n1x-media-d82lw7wc/mpeg2-legacy.mkv
+
+stdout:
+
+stderr:
+Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 10 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> mpeg2video (native))
+Press [q] to stop, [?] for help
+[mpeg2video @ 0xbecf884ea1d0] too many threads/slices (13), reducing to 12
+Output #0, matroska, to '/tmp/n1x-media-d82lw7wc/mpeg2-legacy.mkv':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: mpeg2video (Main) (mpg2 / 0x3267706D), yuv420p(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 1k tbn
+    Metadata:
+      encoder         : Lavc63.1.102 mpeg2video
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/200000 buffer size: 0 vbv_delay: N/A
+[out#0/matroska @ 0xbecf884e97f0] video:149KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.562218%
+frame=   30 fps=0.0 q=7.4 Lsize=     150KiB time=00:00:02.90 bitrate= 422.4kbits/s speed= 123x elapsed=0:00:00.02
