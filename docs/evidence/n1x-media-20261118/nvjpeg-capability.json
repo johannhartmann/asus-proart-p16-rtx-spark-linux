@@ -1,0 +1,28 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "driver": "615.78.08",
+  "cudaPackage": "cuda 13.4.2-1",
+  "statusMeanings": {
+    "0": "NVJPEG_STATUS_SUCCESS",
+    "7": "NVJPEG_STATUS_ARCH_MISMATCH"
+  },
+  "probe": {
+    "default_create": 0,
+    "default_decoder_info": 0,
+    "default_decoder_engines": 0,
+    "cores_per_engine": 0,
+    "default_encoder_info": 0,
+    "default_encoder_engines": 0,
+    "default_hardware_encoder_create": 7,
+    "gpu_hybrid_create": 0,
+    "gpu_hybrid_decoder_info": 0,
+    "gpu_hybrid_decoder_engines": 0,
+    "gpu_hybrid_encoder_info": 0,
+    "gpu_hybrid_encoder_engines": 0,
+    "gpu_hybrid_hardware_encoder_create": 7,
+    "hardware_create": 7
+  },
+  "dedicatedJpegDecoder": false,
+  "dedicatedJpegEncoder": false,
+  "note": "GPU hybrid handle creation succeeds, but no JPEG decode or encode workload was run; this does not establish use of GPU compute acceleration."
+}

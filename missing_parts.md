@@ -320,6 +320,12 @@ Optical flow and JPEG acceleration may be investigated separately by querying
 the exact N1X driver/API capabilities. Do not infer dedicated OFA/NVJPEG blocks
 from another NVIDIA SoC or from the presence of CUDA libraries; add a test row
 only after a device-specific capability and runtime path are established.
+The [N1X nvJPEG capability probe](docs/evidence/n1x-media-20261118/nvjpeg-capability.json)
+uses CUDA 13.4.2 on this P16. The default and GPU-hybrid handles report zero
+dedicated JPEG decoder and encoder engines; the explicit hardware decoder and
+encoder backends return `NVJPEG_STATUS_ARCH_MISMATCH` (7). This rules out a
+dedicated nvJPEG hardware engine in the current runtime. It does not test
+nvJPEG's GPU-compute JPEG path or optical flow.
 
 ## 3. Cameras: P16 USB path and N1X MIPI/CSI path
 
