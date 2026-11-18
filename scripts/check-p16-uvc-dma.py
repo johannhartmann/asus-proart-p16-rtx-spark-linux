@@ -18,6 +18,7 @@ import time
 
 RGB = "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0"
 IR = "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.2-video-index0"
+STREAMCAM = "/dev/v4l/by-path/platform-NVDA8000:00-usb-0:1.1:1.0-video-index0"
 CASES = (
     ("rgb-720p", RGB, "mjpeg", "1280x720", 30, 60),
     ("rgb-1080p", RGB, "mjpeg", "1920x1080", 30, 60),
@@ -53,6 +54,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--max-segment", type=int, default=65536)
+    parser.add_argument("--include-streamcam", action="store_true",
+                        help="also capture the external Logitech host at 1080p MJPEG")
     args = parser.parse_args()
     trace = int(Path("/sys/module/uvcvideo/parameters/trace").read_text().strip())
     if not trace & 1024:
@@ -66,9 +69,12 @@ def main():
         "trace_during": trace,
         "max_dma_segment_bytes": args.max_segment,
         "camera_pixels_retained": False,
+        "streamcam_included": args.include_streamcam,
         "cases": {},
     }
-    for case in CASES:
+    cases = CASES + (("streamcam-1080p", STREAMCAM, "mjpeg", "1920x1080", 30, 60),) \
+        if args.include_streamcam else CASES
+    for case in cases:
         result["cases"][case[0]] = capture(*case, args.output_dir)
     journal = subprocess.run(
         ["journalctl", "-k", "-b", "--since", f"@{since}", "--no-pager",
@@ -94,12 +100,16 @@ def main():
     expected_rgb_packets = args.max_segment // 4096 * 4096 // 2940
     rgb_capped = sum(f"Limiting URB to {expected_rgb_packets} packets" in line
                      for line in uvc) >= 2
+    expected_streamcam_packets = args.max_segment // 4096 * 4096 // 3072
+    streamcam_capped = not args.include_streamcam or any(
+        f"Limiting URB to {expected_streamcam_packets} packets" in line
+        for line in uvc)
     result["pass"] = (all(item["exit_code"] == 0 and
                           item["frames"] == item["expected_frames"]
                           for item in result["cases"].values()) and
-                      len(allocations) >= 3 and
+                      len(allocations) >= len(cases) and
                       all(item["within_dma_limit"] for item in allocations) and
-                      rgb_capped and not warnings)
+                      rgb_capped and streamcam_capped and not warnings)
     (args.output_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"pass": result["pass"], "cases": result["cases"],
                       "allocations": allocations, "warnings": len(warnings)}))

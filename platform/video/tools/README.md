@@ -30,6 +30,13 @@ video only and refuses to overwrite an existing output. The default camera
 path is the P16 internal USB port's stable V4L2 `by-path` link; override it
 with `P16_RGB_DEVICE` if device enumeration changes. The command does not
 implement audio capture, camera privacy control, OBS integration or NVENC.
+Use `--fixed-fps` before `SECONDS` to temporarily set the standard V4L2
+`exposure_dynamic_framerate` control to 0. The command restores the original
+value after recording, including an ordinary FFmpeg failure. This prevents
+automatic low-light exposure from lowering the camera frame rate, but may
+produce a darker picture. The default leaves the camera's exposure policy
+alone. The option does not guarantee a lossless stream; check frame timestamps
+and corruption warnings for long recordings.
 
 `p16-record-camera-gstreamer SECONDS OUTPUT.h264` records the same live camera
 through GStreamer's `vulkanh264enc`. FFmpeg reads and converts the camera's

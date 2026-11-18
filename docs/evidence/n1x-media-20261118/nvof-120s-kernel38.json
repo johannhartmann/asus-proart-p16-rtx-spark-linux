@@ -1,0 +1,128 @@
+{
+  "package": "p16-nvof-tools 0.1.0-4",
+  "camera_record_command": "/usr/bin/p16-record-camera-vulkan",
+  "export_command": "/usr/bin/p16-interpolate-video",
+  "requested_camera_seconds": 120,
+  "record_elapsed_seconds": 122.171,
+  "export_elapsed_seconds": 197.201,
+  "source": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "30/1",
+    "nb_read_frames": "3585"
+  },
+  "source_frame_timing": {
+    "frames_with_pts": 3585,
+    "first_pts_seconds": 0.0,
+    "last_pts_seconds": 119.967,
+    "max_gap_seconds": 0.067,
+    "gaps_over_50ms": 15,
+    "large_gap_events": [
+      {
+        "after_frame_index": 64,
+        "after_pts_seconds": 2.133,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 491,
+        "after_pts_seconds": 16.4,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 625,
+        "after_pts_seconds": 20.9,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 764,
+        "after_pts_seconds": 25.567,
+        "gap_seconds": 0.066,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 903,
+        "after_pts_seconds": 30.233,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 1043,
+        "after_pts_seconds": 34.933,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 1182,
+        "after_pts_seconds": 39.6,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 1321,
+        "after_pts_seconds": 44.267,
+        "gap_seconds": 0.066,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2222,
+        "after_pts_seconds": 74.333,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2362,
+        "after_pts_seconds": 79.033,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2496,
+        "after_pts_seconds": 83.533,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2635,
+        "after_pts_seconds": 88.2,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2774,
+        "after_pts_seconds": 92.867,
+        "gap_seconds": 0.066,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 2913,
+        "after_pts_seconds": 97.533,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 3053,
+        "after_pts_seconds": 102.233,
+        "gap_seconds": 0.067,
+        "nominal_missing_30fps_frames": 1
+      }
+    ],
+    "large_gap_events_truncated": false,
+    "nonpositive_gaps": 0
+  },
+  "output": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "60/1",
+    "nb_read_frames": "7169"
+  },
+  "nvof_pairs_logged": true,
+  "vulkan_encoder_logged": true,
+  "independent_decode_exit_code": 0,
+  "camera_pixels_retained": false,
+  "pass": false
+}

@@ -1,25 +1,26 @@
 pkgname=p16-media-tools
 pkgver=0.1.0
-pkgrel=7
+pkgrel=8
 pkgdesc='P16 NVIDIA video playback, camera privacy and Vulkan recording commands'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('MIT')
 depends=('ffmpeg' 'mpv' 'hyprland' 'python' 'gstreamer' 'gst-plugins-base-libs'
-         'gst-plugins-bad-libs' 'libva-nvidia-driver' 'nvidia-utils' 'polkit')
+         'gst-plugins-bad-libs' 'libva-nvidia-driver' 'nvidia-utils' 'polkit'
+         'v4l-utils')
 optdepends=('google-chrome: NVIDIA VA-API browser playback via p16-video-chrome')
 source=('p16-video-play' 'p16-hdr-play' 'p16-record-camera-vulkan'
         'p16-record-camera-gstreamer' 'p16-record-obs-vulkan' 'p16-video-chrome'
         'p16-camera-privacy' 'p16-camera-privacy-root' 'README.md' 'LICENSE')
 sha256sums=('fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688'
             '291aea39c5ed3cadba150bfe09a2f42f60290e6f959518611f312e8aa942d92e'
-            'b5b4cc38fd32929719c645aa88b1974a6f0abd062888df1c5df6ad45ca21a6f4'
+            '9eb5bc65fb3fead8bda84835aa0d500db62239b10d402e5582c263ee15aa2e0d'
             '701188cca4dfbc4d0cbf9fd431a44b90901bca830e05c5c7784be4e1005a36b8'
             '8a9fd82f946f1cd6e23bc850984c709e51fd3df7997e9664e81d80df152a8c05'
             '9d2f74b2350d393666684467da9f8d17efd597da3da15ee8b0ecbcdf65b87099'
             'a408bcdd50d1aa0e8923dd12494b28f0d3bb12fd27d34cefd4174624d782b5e4'
             'da05faa3cf6c61b1aef2c992827006a9ba0052131cc0556fe7f8c1079f57d6c0'
-            '892cb110b6215ab434feaf3425cf97644c8df7436b1b7f4a1ccf8ae6aaf72ec7'
+            'f1061a5f81aac57fce4097b90812a24b4f128eaebfee73b4d42647275fe41916'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3')
 
 check() {

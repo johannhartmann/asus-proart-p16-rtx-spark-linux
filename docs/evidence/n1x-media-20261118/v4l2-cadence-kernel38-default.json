@@ -1,0 +1,150 @@
+{
+  "captured_at": "2026-11-18T17:25:31.318076+00:00",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "device": "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+  "path": "V4L2 MJPEG packet copy; no Vulkan or other video encoder",
+  "requested_seconds": 120,
+  "record_elapsed_seconds": 120.63,
+  "source": {
+    "codec_name": "mjpeg",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "30/1",
+    "nb_read_frames": "1419"
+  },
+  "frame_timing": {
+    "frames_with_pts": 1419,
+    "first_pts_seconds": 0.0,
+    "last_pts_seconds": 119.924,
+    "max_gap_seconds": 0.304,
+    "gaps_over_50ms": 1087,
+    "large_gap_events": [
+      {
+        "after_frame_index": 322,
+        "after_pts_seconds": 10.783,
+        "gap_seconds": 0.05,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 323,
+        "after_pts_seconds": 10.833,
+        "gap_seconds": 0.052,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 324,
+        "after_pts_seconds": 10.885,
+        "gap_seconds": 0.05,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 327,
+        "after_pts_seconds": 11.034,
+        "gap_seconds": 0.052,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 329,
+        "after_pts_seconds": 11.135,
+        "gap_seconds": 0.05,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 331,
+        "after_pts_seconds": 11.234,
+        "gap_seconds": 0.053,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 334,
+        "after_pts_seconds": 11.385,
+        "gap_seconds": 0.05,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 335,
+        "after_pts_seconds": 11.435,
+        "gap_seconds": 0.052,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 336,
+        "after_pts_seconds": 11.487,
+        "gap_seconds": 0.05,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 339,
+        "after_pts_seconds": 11.636,
+        "gap_seconds": 0.052,
+        "nominal_missing_30fps_frames": 1
+      },
+      {
+        "after_frame_index": 341,
+        "after_pts_seconds": 11.737,
+        "gap_seconds": 0.1,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 342,
+        "after_pts_seconds": 11.837,
+        "gap_seconds": 0.101,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 343,
+        "after_pts_seconds": 11.938,
+        "gap_seconds": 0.1,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 344,
+        "after_pts_seconds": 12.038,
+        "gap_seconds": 0.101,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 345,
+        "after_pts_seconds": 12.139,
+        "gap_seconds": 0.099,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 346,
+        "after_pts_seconds": 12.238,
+        "gap_seconds": 0.102,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 347,
+        "after_pts_seconds": 12.34,
+        "gap_seconds": 0.099,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 348,
+        "after_pts_seconds": 12.439,
+        "gap_seconds": 0.102,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 349,
+        "after_pts_seconds": 12.541,
+        "gap_seconds": 0.099,
+        "nominal_missing_30fps_frames": 2
+      },
+      {
+        "after_frame_index": 350,
+        "after_pts_seconds": 12.64,
+        "gap_seconds": 0.102,
+        "nominal_missing_30fps_frames": 2
+      }
+    ],
+    "large_gap_events_truncated": true,
+    "nonpositive_gaps": 0
+  },
+  "ffmpeg_final_progress": "frame= 1421 fps= 12 q=-1.0 Lsize=  342945KiB time=00:02:00.05 bitrate=23400.3kbits/s speed=0.999x elapsed=0:02:00.13",
+  "camera_pixels_retained": false,
+  "exact_30fps_cadence": false
+}

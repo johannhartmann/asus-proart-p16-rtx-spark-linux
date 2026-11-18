@@ -1,0 +1,117 @@
+{
+  "captured_at": "2026-11-18T17:09:46.744761+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "trace_during": 1024,
+  "max_dma_segment_bytes": 65536,
+  "camera_pixels_retained": false,
+  "cases": {
+    "rgb-720p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "mjpeg",
+        "-framerate",
+        "30",
+        "-video_size",
+        "1280x720",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+        "-frames:v",
+        "60",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "frames": 60,
+      "expected_frames": 60
+    },
+    "rgb-1080p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "mjpeg",
+        "-framerate",
+        "30",
+        "-video_size",
+        "1920x1080",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+        "-frames:v",
+        "60",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "frames": 60,
+      "expected_frames": 60
+    },
+    "ir-360p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "gray",
+        "-framerate",
+        "15",
+        "-video_size",
+        "360x360",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.2-video-index0",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "frames": 30,
+      "expected_frames": 30
+    }
+  },
+  "uvc_trace_lines": [
+    "2026-11-18T18:09:46+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-18T18:09:46+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-18T18:09:49+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-18T18:09:49+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-18T18:09:51+01:00 p16 kernel: uvcvideo 7-1:1.2: Allocated 5 URB buffers of 32x1176 bytes each"
+  ],
+  "allocations": [
+    {
+      "packets": 22,
+      "packet_bytes": 2940,
+      "requested_bytes": 64680,
+      "page_rounded_bytes": 65536,
+      "within_dma_limit": true
+    },
+    {
+      "packets": 22,
+      "packet_bytes": 2940,
+      "requested_bytes": 64680,
+      "page_rounded_bytes": 65536,
+      "within_dma_limit": true
+    },
+    {
+      "packets": 32,
+      "packet_bytes": 1176,
+      "requested_bytes": 37632,
+      "page_rounded_bytes": 40960,
+      "within_dma_limit": true
+    }
+  ],
+  "new_kernel_warnings": [],
+  "pass": true
+}

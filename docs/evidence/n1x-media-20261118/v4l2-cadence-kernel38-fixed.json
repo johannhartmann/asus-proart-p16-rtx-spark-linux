@@ -1,0 +1,47 @@
+{
+  "captured_at": "2026-11-18T17:31:03.443949+00:00",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "device": "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+  "path": "V4L2 MJPEG packet copy; no Vulkan or other video encoder",
+  "requested_seconds": 120,
+  "record_elapsed_seconds": 120.414,
+  "source": {
+    "codec_name": "mjpeg",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "30/1",
+    "nb_read_frames": "3616"
+  },
+  "frame_timing": {
+    "frames_with_pts": 3616,
+    "first_pts_seconds": 0.0,
+    "last_pts_seconds": 119.987,
+    "max_gap_seconds": 0.1,
+    "gaps_over_50ms": 1,
+    "large_gap_events": [
+      {
+        "after_frame_index": 3438,
+        "after_pts_seconds": 114.049,
+        "gap_seconds": 0.1,
+        "nominal_missing_30fps_frames": 2
+      }
+    ],
+    "large_gap_events_truncated": false,
+    "nonpositive_gaps": 0
+  },
+  "ffmpeg_final_progress": "frame= 3618 fps= 30 q=-1.0 Lsize=  994033KiB time=00:02:00.05 bitrate=67829.1kbits/s speed=   1x elapsed=0:02:00.05",
+  "ffmpeg_warning_lines": [
+    "[in#0/video4linux2,v4l2 @ 0xb997a574d8b0] Dequeued v4l2 buffer contains corrupted data (268896 bytes).",
+    "[in#0/video4linux2,v4l2 @ 0xb997a574d8b0] Dequeued v4l2 buffer contains corrupted data (222324 bytes)."
+  ],
+  "camera_pixels_retained": false,
+  "exact_30fps_cadence": false,
+  "exposure_control": {
+    "requested_fixed_framerate": true,
+    "original_dynamic_framerate": 1,
+    "during_dynamic_framerate": 0,
+    "after_capture_dynamic_framerate": 0,
+    "restored_dynamic_framerate": 1
+  }
+}

@@ -10,7 +10,7 @@ firmware, kernel, NVIDIA driver, userspace build, and application version.
 
 The reference machine is the ASUS ProArt P16 H7607BA, 20-core RTX Spark N1X.
 The initial media baseline used `7.2.8-36-rtx-spark-npu` and NVIDIA
-`615.78.08`; the current native kernel37 result is recorded below. NVIDIA's [N1X codec
+`615.78.08`; native kernel37 and kernel38 results are recorded below. NVIDIA's [N1X codec
 matrix](https://developer.nvidia.com/video-encode-decode-support-matrix) lists
 one ninth-generation NVENC, one sixth-generation NVDEC, up to 12 concurrent
 encode sessions, H.264/HEVC/AV1 encoding, and a much broader decode/profile
@@ -38,7 +38,7 @@ cannot qualify that separate platform pipeline.
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. Explicit AV1 Vulkan rate control produced corrupt 720p output despite encoder success; default options decoded correctly | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Three 120-second runs missed eight, 14 and four camera input frames respectively, while exporting every captured pair correctly; the latest run isolated two timestamp gaps accounting for four frames. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), OBS recording through x264 and through an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Fresh kernel37 RGB capture exposed a 94,208/65,536-byte DMA-debug warning on the internal camera's `NVDA8001:00` host; the earlier 98,304-byte warning was on the external StreamCam's `NVDA8000:00` host. | Electronic privacy/LED behavior, warning-free UVC allocation, and post-resume capture tested independently |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), OBS recording through x264 and through an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Kernel37 exposed overlarge internal and external UVC DMA allocations; native kernel38 caps internal RGB allocations at 65,536 bytes with clean RGB/IR capture. External StreamCam and post-resume capture remain to be verified on kernel38. | Electronic privacy/LED behavior, warning-free UVC allocation on both hosts, and post-resume capture tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -139,14 +139,20 @@ a DMA-debug warning, so clean-boot and physical suspend qualification remain
 open.
 Kernel37 is installed as an additional [verified boot entry](docs/evidence/kernel37-staged-20261118.md),
 with its 13 production modules hash-matched after the generic DKMS hook and
-its UKI checked against the installed SPI HID bytes. Kernel37 is currently
-running through a one-time UEFI boot entry; kernel36 remains the Limine
-default. Native kernel37 results are recorded separately from staging.
-The [kernel38 candidate is also staged](docs/evidence/kernel38-staged-20261118.md)
+its UKI checked against the installed SPI HID bytes. Kernel37 was tested
+through a one-time UEFI boot entry; kernel36 remains the Limine default.
+Native kernel37 results are recorded separately from staging.
+The [kernel38 candidate was staged](docs/evidence/kernel38-staged-20261118.md)
 with the UVC DMA cap, matching 615 driver package, 13 hash-matched production
-modules and a rebuilt UKI whose embedded SPI HID modules match disk. Its
+modules and a rebuilt initial UKI whose embedded SPI HID modules match disk. Its
 8,504 installed and 430 initramfs modules passed BTF verification. Limine
-still defaults to kernel36; kernel38 has not yet received a native boot test.
+still defaults to kernel36. Its [first native boot](docs/evidence/kernel38-native-20261118.md)
+has working NVIDIA display and RGB/IR capture with capped DMA allocations,
+and no new kernel warning. NVENC remains at error 21 on the running 615 stack.
+The first kernel38 UKI omitted the known-good audio DSP flags, so the generic
+SOF placeholder bound instead of `n1x_adsp`; an audio-enabled UKI is now
+staged for a later qualified boot. Physical suspend and matched 620 runtime
+remain open.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
@@ -257,12 +263,13 @@ records the ASUS RGB/IR URBs on `NVDA8001:00`; those cameras did not cause the
 earlier external-host warning. On a fresh kernel37 boot, internal RGB capture
 produced its own 94,208/65,536-byte warning on `NVDA8001:00`. A small UVC
 buffer-limit patch [passed a live kernel37 module test](docs/evidence/n1x-media-20261118/uvc-dma-live-kernel37.md)
-for RGB, IR and GStreamer/Vulkan capture without a new DMA warning. It is not
-yet part of an installed kernel package or a fresh warning-free boot. The
-[kernel38 offline bundle](docs/evidence/kernel38-offline-20261118.md) now
-packages that UVC fix with matching 615.78.08 platform modules. Its packaged
-Image passed a direct KVM boot, and all 8,507 modules passed BTF validation;
-native camera and suspend gates remain open.
+for RGB, IR and GStreamer/Vulkan capture without a new DMA warning. The
+[kernel38 bundle](docs/evidence/kernel38-offline-20261118.md) packages that
+UVC fix with matching 615.78.08 platform modules. Its packaged Image passed
+a direct KVM boot, and all 8,507 modules passed BTF validation. The
+[first native boot](docs/evidence/kernel38-native-20261118.md) captured RGB
+and IR frames with capped internal RGB allocations and no new warning.
+External StreamCam and physical suspend remain open.
 
 ## Common evidence and release gates
 
@@ -431,9 +438,15 @@ recorded 3,586 source frames and exported all 7,171 corresponding frames;
 its strict input-cadence gate also failed. A [third 120-second run with decoded
 frame timing](docs/evidence/n1x-media-20261118/nvof-120s-frame-timing.md)
 recorded 3,596 frames and found two 67/134-ms gaps accounting for its four
-missing frames; NVOFA exported all 7,191 corresponding frames. Native
-kernel38 repetition and USB/V4L2 timing attribution are needed before calling
-the longer path stable.
+missing frames; NVOFA exported all 7,191 corresponding frames. The
+[first native kernel38 repeat](docs/evidence/n1x-media-20261118/nvof-120s-kernel38.md)
+recorded 3,585 source frames with 15 short timestamp gaps and exported all
+7,169 corresponding frames. A [direct V4L2 cadence comparison](docs/evidence/n1x-media-20261118/camera-cadence-kernel38.md)
+found a severe long-run slowdown with `exposure_dynamic_framerate=1` and a
+much steadier stream with that control temporarily set to 0. The fixed-rate
+Vulkan output has 3,600 smooth encoded frames but FFmpeg reports 16 dropped
+input frames. USB/V4L2 corruption and the remaining input drops need
+attribution before calling the long capture path lossless.
 
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.
