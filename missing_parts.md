@@ -98,8 +98,10 @@ uses identical FFmpeg 9.0.2 sources with pinned NVIDIA codec headers 12.2 and
 both builds; a header downgrade alone does not enable the session.
 The [latest installed binary check](docs/evidence/n1x-media-20261118/installed-nvenc-vulkan/installed-nvenc.json)
 repeats H.264, HEVC and AV1 through `/usr/bin/ffmpeg-n1x` from package
-9.0.2-5. All three still fail at session creation with error 21; enabling the
-Vulkan renderer did not change the NVENC result.
+9.0.2-5. All three still fail at session creation with error 21. Both tested SDK
+headers [name that status](docs/evidence/n1x-media-20261118/nvenc-status-21.md)
+`NV_ENC_ERR_INCOMPATIBLE_CLIENT_KEY`; the name alone does not establish the
+driver's cause. Enabling the Vulkan renderer did not change the NVENC result.
 An independent [CUDA/NVENC C probe](scripts/probe-nvenc-session.c) also reaches
 `NvEncodeAPICreateInstance` successfully with API 12.2 and 13.1, but
 `NvEncOpenEncodeSessionEx` returns 21 for both. This reproduces the failure
