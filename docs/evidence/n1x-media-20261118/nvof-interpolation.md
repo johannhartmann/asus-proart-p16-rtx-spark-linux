@@ -57,8 +57,14 @@ python3 scripts/check-p16-nvof-interpolation.py \
 
 The source-resolution export is installed and was consumed by a real camera
 clip and a normal desktop player. The two-second camera export took about
-5.2 seconds on this machine. Current output uses CPU warping and has no
-perceptual motion-artifact review or long-playback qualification.
+5.2 seconds on this machine. A separate
+[20-second camera run](nvof-20s-soak.json) recorded 600 source frames at
+1280×720/30 fps, exported 1199 frames at 1280×720/60 fps in 33.0 seconds,
+and decoded every output frame independently. Temporary footage was deleted;
+the run produced no new NVRM, Xid or IOMMU kernel lines. This extends the
+bounded stability window but does not qualify hours-long playback or all
+motion content. Current output uses CPU warping and has no perceptual
+motion-artifact review.
 Variable-frame-rate input is untested and the
 wrapper assumes a constant frame rate. The measured A/V timestamp bound
 applies only to the two-second fixture.
