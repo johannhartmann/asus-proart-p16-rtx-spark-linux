@@ -251,7 +251,11 @@ earlier external-host warning. On a fresh kernel37 boot, internal RGB capture
 produced its own 94,208/65,536-byte warning on `NVDA8001:00`. A small UVC
 buffer-limit patch [passed a live kernel37 module test](docs/evidence/n1x-media-20261118/uvc-dma-live-kernel37.md)
 for RGB, IR and GStreamer/Vulkan capture without a new DMA warning. It is not
-yet part of an installed kernel package or a fresh warning-free boot.
+yet part of an installed kernel package or a fresh warning-free boot. The
+[kernel38 offline bundle](docs/evidence/kernel38-offline-20261118.md) now
+packages that UVC fix with matching 615.78.08 platform modules. Its packaged
+Image passed a direct KVM boot, and all 8,507 modules passed BTF validation;
+native camera and suspend gates remain open.
 
 ## Common evidence and release gates
 

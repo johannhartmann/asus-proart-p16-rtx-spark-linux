@@ -1,0 +1,20 @@
+{
+  "image_sha256": "8fb6781cf43549c38631b60356a757cfa2749672dd7d4ebb7a07c03faf45fa74",
+  "expected_release": "7.2.8-38-rtx-spark-npu",
+  "observed_release": "7.2.8-38-rtx-spark-npu",
+  "debug_locks": 1,
+  "qemu_exit_code": 0,
+  "elapsed_seconds": 1.417,
+  "warning_lines": [],
+  "direct_kernel_boot_only": true,
+  "host_modules_loaded": false,
+  "host_pm_requested": false,
+  "pass": true,
+  "kernel_package_sha256": "ef460d584ce5b283188ed983ce5407247448170f3faa6329d6905dee1ae26e7d",
+  "headers_package_sha256": "b0682c0c5693965bc14d797a65410b22384b7fca18e937d2db42ca679032d746",
+  "packaged_vmlinuz_matches_tested_image": true,
+  "in_tree_packaged_modules_btf_checked": 8490,
+  "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768",
+  "packaged_uvcvideo_sha256": "8c2c4daf8ca5b3e6481bae2546d5992fb2a0afdeb9d5bddf53835a3c54f43c0f",
+  "packaged_uvcvideo_vermagic": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+}

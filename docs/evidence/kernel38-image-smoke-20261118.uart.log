@@ -1,0 +1,2 @@
+KERNEL_SMOKE release=7.2.8-38-rtx-spark-npu debug_locks=1
+[    0.567440] reboot: Power down
