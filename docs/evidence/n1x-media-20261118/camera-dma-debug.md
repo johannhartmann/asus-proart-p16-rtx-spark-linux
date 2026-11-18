@@ -60,6 +60,23 @@ page-rounded URB sizes and new kernel warnings. Its caller restores the trace
 setting afterward. The existing native live record used the same captures
 before this script was added.
 
+The [single-auth wrapper](../../../scripts/run-p16-uvc-dma-trace.py) is
+prepared for the remaining kernel38 both-host trace. It uses one graphical
+Polkit invocation to set trace bit 1024, runs the checker as the original
+desktop user, and restores the original bit in `finally` even when a capture
+fails or times out. It refuses an existing output directory and verifies the
+StreamCam is connected before changing the trace. Run it with:
+
+```sh
+pkexec --disable-internal-agent /usr/bin/python3 \
+  /home/johann/p16/p16rtx_linux/scripts/run-p16-uvc-dma-trace.py \
+  --output-dir /home/johann/p16/p16rtx_linux/docs/evidence/kernel38-uvc-both-hosts-recheck \
+  --include-streamcam
+```
+
+That privileged trace run has not occurred yet. The wrapper does not require
+a reboot or install a module.
+
 This boot also has a distinct NVIDIA UVM Lockdep warning from 17 November
 16:47:15. A physical suspend test performed now would not provide a clean
 Lockdep qualification, even if camera capture worked after resume. The UVM

@@ -323,7 +323,9 @@ a direct KVM boot, and all 8,507 modules passed BTF validation. The
 and IR frames with capped internal RGB allocations and no new warning. A
 [separate StreamCam capture](docs/evidence/kernel38-uvc-streamcam-native-20261118.json)
 passed 60 frames at 1080p without a new warning. External URB sizing and
-physical suspend remain open.
+physical suspend remain open. A [single-auth UVC trace wrapper](scripts/run-p16-uvc-dma-trace.py)
+is prepared to measure internal and external URBs and restore trace state on
+the current boot, without another reboot.
 
 ## Common evidence and release gates
 
