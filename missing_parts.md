@@ -266,6 +266,13 @@ then exposed severe inter-frame AV1 quality drift. Candidate 0.1.0-11 adds
 all-intra GOP 1 only for AV1; its exact extracted package command produced
 905 monotonic camera frames and both libdav1d and libaom decoded all 905.
 Synthetic PSNR rose from 19.81 dB at the default GOP to 63.74 dB all-intra.
+The [H.264 timestamp comparison](docs/evidence/n1x-media-20261118/camera-h264-timing.md)
+then found eight repeated decoded frame timestamps and DTS values over 30
+seconds at FFmpeg's 1/30 encoder time base. B-frame packet PTS reordering is
+normal and is checked separately. Candidate 0.1.0-12 applies the camera's
+microsecond time base to H.264 as well: its exact extracted command encoded
+and independently decoded 905/905 distinct frames with strictly increasing
+decoded timestamps and DTS, and the AV1 branch passed a short regression.
 The candidate still requires installation and a repeat through
 `/usr/bin/p16-record-camera-vulkan`; subjective quality and post-resume use
 remain open.

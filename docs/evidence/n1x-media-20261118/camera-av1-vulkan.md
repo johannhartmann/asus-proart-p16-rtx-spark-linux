@@ -119,6 +119,14 @@ package archive SHA256 is
 The package is not yet installed. This is a version-specific quality workaround, with
 subjective camera-picture acceptance, A/V sync and post-resume use open.
 
+Package candidate 0.1.0-12 moves the same microsecond encoder time base to
+the common H.264/AV1 command path. Its [short exact-package AV1
+regression](camera-av1-package12-short-kernel38.json) encoded 61 packets with
+strictly increasing PTS, all decoded by libdav1d and libaom. The 0.1.0-11
+30-second AV1 run above remains the longer test of the unchanged AV1 options;
+the [new H.264 30-second gate](camera-h264-timing.md) qualifies the added
+H.264 behavior. Candidate 0.1.0-12 is not installed yet.
+
 Repeat the timing gate with a new report path:
 
 ```sh

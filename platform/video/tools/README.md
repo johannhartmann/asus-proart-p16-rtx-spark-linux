@@ -36,14 +36,19 @@ value after recording, including an ordinary FFmpeg failure. This prevents
 automatic low-light exposure from lowering the camera frame rate, but may
 produce a darker picture. The default leaves the camera's exposure policy
 alone. The option does not guarantee a lossless stream; check frame timestamps
-and corruption warnings for long recordings.
+and corruption warnings for long recordings. Both H.264 and AV1 use the
+camera's microsecond encoder time base. In a 30-second direct H.264 test, the
+default 1/30 time base repeated eight decoded frame timestamps; the
+microsecond setting yielded 905 decodable frames with strictly increasing
+decoded timestamps and packet DTS. B-frame packet PTS can still appear out of
+order and must not be treated as a decode error.
 Use `--av1` before `SECONDS` to select `av1_vulkan` with default rate
 control and an all-intra GOP (`-g 1`). The camera input and output use passthrough timestamps so FFmpeg
 does not manufacture extra frames when low-light exposure reduces the true
 camera rate. On kernel38/615, a bounded 60-real-frame AV1 camera capture
 passed full libdav1d and libaom decode; the [record](../../../docs/evidence/n1x-media-20261118/camera-av1-vulkan.md)
 also shows why `--fixed-fps` was needed for about 30 real frames/s on that
-run. The AV1 path requests the camera's microsecond encoder time base. A
+run. The AV1 path also uses the camera's microsecond encoder time base. A
 30-second test of the previous package candidate produced eight repeated
 container timestamps at FFmpeg's default 30 Hz encoder time base; the
 microsecond setting produced strictly increasing timestamps and complete
