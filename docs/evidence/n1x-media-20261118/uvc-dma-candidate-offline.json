@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-18",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "affected_attached_camera": "Logitech StreamCam on NVDA8000:00",
+  "warning_host_max_segment_bytes": 65536,
+  "kernel_release": "7.2.8-37-rtx-spark-npu",
+  "patch": "kernel/uvc-urb-dma-segment-limit.patch",
+  "patch_sha256": "3c158a423da904023a2577b88949381152eb0891e79d60afcf00424cf23313e3",
+  "patch_applies_fuzz_zero": true,
+  "original_source_sha256": "580535c5587e76dfc32d205c7c2532d6f7e9d75e3d559f6febbf0dcb8a2000e5",
+  "patched_source_sha256": "718d02a001709771c7b15a9cf2298ba70b861269bc0332394e5b9ce752ed33fb",
+  "module_sha256": "d1cd8e6db2b2c7f4c597c4410003cf38a386625cc5109883132ab662cffd4545",
+  "module_vermagic": "7.2.8-37-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+  "module_split_btf_validated": true,
+  "derived_packet_caps_not_native_results": {
+    "mjpeg_1280x720_30": {
+      "packet_bytes": 3072,
+      "original_packets": 32,
+      "capped_packets": 21,
+      "capped_urb_bytes": 64512
+    },
+    "mjpeg_1920x1080_30": {
+      "packet_bytes": 6144,
+      "original_packets": 32,
+      "capped_packets": 10,
+      "capped_urb_bytes": 61440
+    },
+    "yuyv_1280x720_30": {
+      "packet_bytes": 9216,
+      "original_packets": 32,
+      "capped_packets": 7,
+      "capped_urb_bytes": 64512
+    }
+  },
+  "installed": false,
+  "loaded": false,
+  "camera_capture_with_patch_tested": false,
+  "fresh_boot_dma_warning_retest": false
+}

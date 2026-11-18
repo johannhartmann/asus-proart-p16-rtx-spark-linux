@@ -1,0 +1,43 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "attached_camera": "Logitech StreamCam",
+  "camera_node": "/dev/video4",
+  "usb_host": "NVDA8000:00",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "date": "2026-11-18",
+  "current_boot_only": true,
+  "prior_dma_warning_bytes": 98304,
+  "host_max_segment_bytes": 65536,
+  "mjpeg_720p_urb_bytes": 98304,
+  "mjpeg_1080p_urb_bytes": 196608,
+  "yuyv_720p_urb_bytes": 294912,
+  "new_dma_warning_in_window": false,
+  "trace_before": "0",
+  "trace_after": "0",
+  "cases": {
+    "streamcam-mjpeg-1280x720-30": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 30 q=-0.0 Lsize=N/A time=00:00:01.16 bitrate=N/A speed=1.16x elapsed=0:00:01.00"
+    },
+    "streamcam-mjpeg-1920x1080-30": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 29 q=-0.0 Lsize=N/A time=00:00:01.16 bitrate=N/A speed=1.15x elapsed=0:00:01.01"
+    },
+    "streamcam-yuyv-1280x720-30": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 30 q=-0.0 Lsize=N/A time=00:00:01.16 bitrate=N/A speed=1.15x elapsed=0:00:01.01"
+    }
+  },
+  "uvc_kernel_lines": [
+    "Nov 18 15:59:51 p16 kernel: uvcvideo 2-1.1:1.0: Device requested 3072 B/frame bandwidth",
+    "Nov 18 15:59:51 p16 kernel: uvcvideo 2-1.1:1.0: Selecting alternate setting 6 (3072 B/frame bandwidth)",
+    "Nov 18 15:59:52 p16 kernel: uvcvideo 2-1.1:1.0: Allocated 5 URB buffers of 32x3072 bytes each",
+    "Nov 18 15:59:53 p16 kernel: uvcvideo 2-1.1:1.0: Device requested 6144 B/frame bandwidth",
+    "Nov 18 15:59:53 p16 kernel: uvcvideo 2-1.1:1.0: Selecting alternate setting 7 (6144 B/frame bandwidth)",
+    "Nov 18 15:59:53 p16 kernel: uvcvideo 2-1.1:1.0: Allocated 5 URB buffers of 32x6144 bytes each",
+    "Nov 18 15:59:55 p16 kernel: uvcvideo 2-1.1:1.0: Device requested 9216 B/frame bandwidth",
+    "Nov 18 15:59:55 p16 kernel: uvcvideo 2-1.1:1.0: Selecting alternate setting 8 (9216 B/frame bandwidth)",
+    "Nov 18 15:59:55 p16 kernel: uvcvideo 2-1.1:1.0: Allocated 5 URB buffers of 32x9216 bytes each"
+  ],
+  "camera_pixels_retained": false
+}

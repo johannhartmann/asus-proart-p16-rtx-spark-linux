@@ -1,0 +1,44 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "date": "2026-11-18",
+  "current_boot_only": true,
+  "new_dma_warning_in_window": false,
+  "uvc_trace_bit": 1024,
+  "trace_before": "0",
+  "trace_after": "0",
+  "rgb_urb_bytes": 94080,
+  "rgb_page_rounded_bytes": 98304,
+  "ir_urb_bytes": 37632,
+  "cases": {
+    "rgb-mjpeg-1280x720": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 30 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.998x elapsed=0:00:01.00"
+    },
+    "rgb-mjpeg-1920x1080": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 30 q=-0.0 Lsize=N/A time=00:00:01.00 bitrate=N/A speed=0.997x elapsed=0:00:01.00"
+    },
+    "ir-grey-360x360": {
+      "exit_code": 0,
+      "frame_line": "frame=   30 fps= 15 q=-0.0 Lsize=N/A time=00:00:02.00 bitrate=N/A speed=0.994x elapsed=0:00:02.01"
+    }
+  },
+  "uvc_kernel_lines": [
+    "Nov 18 15:55:09 p16 kernel: uvcvideo 7-1:1.0: Device requested 2940 B/frame bandwidth",
+    "Nov 18 15:55:09 p16 kernel: uvcvideo 7-1:1.0: Selecting alternate setting 7 (2940 B/frame bandwidth)",
+    "Nov 18 15:55:09 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 32x2940 bytes each",
+    "Nov 18 15:55:10 p16 kernel: uvcvideo 7-1:1.0: Device requested 2940 B/frame bandwidth",
+    "Nov 18 15:55:10 p16 kernel: uvcvideo 7-1:1.0: Selecting alternate setting 7 (2940 B/frame bandwidth)",
+    "Nov 18 15:55:10 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 32x2940 bytes each",
+    "Nov 18 15:55:12 p16 kernel: uvcvideo 7-1:1.2: Device requested 1176 B/frame bandwidth",
+    "Nov 18 15:55:12 p16 kernel: uvcvideo 7-1:1.2: Selecting alternate setting 7 (1176 B/frame bandwidth)",
+    "Nov 18 15:55:12 p16 kernel: uvcvideo 7-1:1.2: Allocated 5 URB buffers of 32x1176 bytes each"
+  ],
+  "camera_pixels_retained": false,
+  "camera": "Internal ASUS FHD webcam",
+  "usb_host": "NVDA8001:00",
+  "warning_host": "NVDA8000:00",
+  "same_host_as_warning": false
+}

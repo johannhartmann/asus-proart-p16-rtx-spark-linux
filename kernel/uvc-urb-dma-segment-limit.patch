@@ -1,0 +1,52 @@
+From: Johann Hartmann <johann@mayflower.de>
+Subject: [PATCH] media: uvcvideo: keep noncoherent URBs within DMA segment limit
+
+usb_alloc_noncoherent() allocates a DMA-mapped buffer for each UVC URB. The
+size is page rounded by dma_alloc_noncontiguous(), which can exceed the host
+controller's advertised maximum DMA segment size even when the requested
+payload is slightly smaller.
+
+On the N1X P16, an attached Logitech StreamCam MJPEG stream on XHCI
+NVDA8000:00 requests 32 packets of 3072 bytes (98304 bytes). That DMA
+mapping exceeds the host's 65536-byte maximum and triggers DMA-debug. Limit
+packets per URB using the USB host DMA device's segment limit, rounded down
+to complete pages. Keep the existing retry-on-allocation-failure path and
+fail cleanly if even one packet cannot fit.
+
+Signed-off-by: Johann Hartmann <johann@mayflower.de>
+---
+ drivers/media/usb/uvc/uvc_video.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1840,6 +1840,9 @@
+ 	unsigned int size, unsigned int psize, gfp_t gfp_flags)
+ {
+ 	unsigned int npackets;
++	unsigned int max_packets;
++	unsigned int max_seg_size;
++	struct device *dma_dev;
+ 	unsigned int i;
+ 
+ 	/* Buffers are already allocated, bail out. */
+@@ -1853,6 +1856,19 @@
+ 	npackets = DIV_ROUND_UP(size, psize);
+ 	if (npackets > UVC_MAX_PACKETS)
+ 		npackets = UVC_MAX_PACKETS;
++
++	/* The noncoherent DMA allocation is page rounded and one DMA segment. */
++	dma_dev = bus_to_hcd(stream->dev->udev->bus)->self.sysdev;
++	max_seg_size = dma_get_max_seg_size(dma_dev);
++	max_packets = round_down(max_seg_size, PAGE_SIZE) / psize;
++	if (!max_packets)
++		return 0;
++	if (npackets > max_packets) {
++		uvc_dbg(stream->dev, VIDEO,
++			 "Limiting URB to %u packets (DMA max %u bytes)\n",
++			 max_packets, max_seg_size);
++		npackets = max_packets;
++	}
+ 
+ 	/* Retry allocations until one succeed. */
+ 	for (; npackets > 0; npackets /= 2) {
