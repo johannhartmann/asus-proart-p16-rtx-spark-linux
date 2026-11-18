@@ -23,3 +23,10 @@ again played 96 frames through `VaapiVideoDecoder` without drops. No new NVRM,
 Xid or IOMMU line appeared after 13:26:27 CET during that repeat. This
 isolated repeat does not erase the first warning. Longer or concurrent
 browser stability remains unqualified.
+
+A later [20-second AV1 run](browser-decode-p16-av1-20s-720p.json) on the same
+installed launcher played 480 frames with zero drops through
+`VaapiVideoDecoder`, with `kIsPlatformVideoDecoder=true`. The kernel journal
+between 13:35:01 and 13:35:34 CET had no NVRM, Xid or IOMMU line. This
+improves the bounded stability evidence but does not establish hours-long or
+post-resume operation.

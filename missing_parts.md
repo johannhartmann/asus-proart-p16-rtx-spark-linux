@@ -157,7 +157,8 @@ no drops. The `p16-video-chrome` launcher also selected that path in an
 isolated profile. The installed launcher then passed the same 96-frame,
 1280×720 check with VP9 and AV1. A concurrent NVRM allocation warning was
 logged during the first AV1 run; an identical repeat passed without a new
-kernel warning. The [AV1 Vulkan rate-control check](docs/evidence/n1x-media-20261118/av1-vulkan-ratecontrol.md)
+kernel warning. A later 20-second AV1 playback passed 480 frames without
+drops or a concurrent kernel warning. The [AV1 Vulkan rate-control check](docs/evidence/n1x-media-20261118/av1-vulkan-ratecontrol.md)
 separately shows invalid output from explicit bitrate and QP modes, so the
 browser fixture was generated with `aomenc` and independently decoded first.
 [Browser evidence](docs/evidence/n1x-media-20261118/browser-vaapi.md)

@@ -12,6 +12,9 @@ the AV1 fixture used `aomenc` and MP4. Each fixture passed independent FFmpeg
 software decoding before browser playback. A [repeat of AV1](browser-decode-p16-av1-repeat-720p.json)
 also passed, but a [contemporaneous NVRM allocation warning](browser-av1-nvrm-warning.md)
 keeps longer browser stability open.
+A subsequent [20-second AV1 run](browser-decode-p16-av1-20s-720p.json) played
+480 frames with zero drops through the platform decoder. The kernel journal
+from 13:35:01 to 13:35:34 CET contained no new NVRM, Xid or IOMMU line.
 The [P16 launcher source run](browser-decode-p16-wrapper-720p.json) and
 [installed package run](browser-decode-p16-installed-720p.json) also selected
 `VaapiVideoDecoder` for all 96 frames. The launcher sets
@@ -54,7 +57,8 @@ installed run records one VA context, 96 successful `vaBeginPicture` and
 surface exports, with no libva error returns. The raw trace was deleted after
 counting. This independently confirms that Chrome invoked the VA-API driver;
 the 95 completions do not establish a one-to-one match with the 96 DOM frames.
-Qualification covers three short 8-bit fixtures in test Chrome profiles.
+Qualification covers short H.264/VP9 and 20-second AV1 8-bit fixtures in test
+Chrome profiles.
 HEVC, 10/12-bit profiles, real web sites, other resolutions, continuous use
 and resume need separate application tests. No independent GPU engine counter
 was recorded during these four-second runs.
