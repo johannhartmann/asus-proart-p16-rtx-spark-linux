@@ -110,6 +110,13 @@ NVIDIA's aarch64 620.70.06 release lists the P16's N1X PCI ID `2E03`, but
 NVENC on that version is untested here; the currently running stack remains
 615.78.08. A separate ARM64 RTX 5050 report suggests a 615 driver regression,
 but it does not prove the N1X's cause or a 620 fix.
+The [620.70.06 offline audit](docs/evidence/n1x-media-20261118/nvenc-620-offline.md)
+checks NVIDIA's archive SHA256, applies all three local DRM/PM/UVM patches
+without fuzz, and builds five modules with matching kernel36 `vermagic`.
+It does not load a 620 module or replace the 615 userspace/firmware stack.
+The next driver-version test needs a matched 620 module, firmware and userspace
+installation with a proven 615 rollback boot, followed by native display,
+suspend/resume and NVENC session/output tests.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
