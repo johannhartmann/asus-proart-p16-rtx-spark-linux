@@ -1,0 +1,18 @@
+{
+  "device": "/dev/video0",
+  "primary": {
+    "exit_code": 0,
+    "frames": 120
+  },
+  "concurrent": {
+    "exit_code": 240,
+    "busy": true,
+    "frames": 0
+  },
+  "after_release": {
+    "exit_code": 0,
+    "frames": 10
+  },
+  "retained_camera_pixels": false,
+  "status": "pass"
+}

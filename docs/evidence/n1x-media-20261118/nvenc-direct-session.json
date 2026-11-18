@@ -1,0 +1,32 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "source": "scripts/probe-nvenc-session.c",
+  "source_sha256": "ac274d4ebcbee15cdc8ba3b06cd71e82cd7912d519c9dab646466d0688a7d3d8",
+  "tests": [
+    {
+      "api_headers": "12.2",
+      "binary_sha256": "6d37a5d9346a704136f9211d4fefd646b1b5d1ee72ea973161a637cb6d15845e",
+      "exit_code": 5,
+      "stdout": [
+        "header_api_version=0x200000c",
+        "driver_api_query_status=0 driver_max_api_version=0xd1",
+        "create_instance_status=0",
+        "open_session_status=21"
+      ]
+    },
+    {
+      "api_headers": "13.1",
+      "binary_sha256": "a90acef3ec47baa283fcb9e27f592d26bc0abd3281f98d486c8fabca7bbfae70",
+      "exit_code": 5,
+      "stdout": [
+        "header_api_version=0x100000d",
+        "driver_api_query_status=0 driver_max_api_version=0xd1",
+        "create_instance_status=0",
+        "open_session_status=21"
+      ]
+    }
+  ],
+  "conclusion": "Direct CUDA/NVENC API session creation returns status 21 with both header versions; FFmpeg is not required to reproduce the failure."
+}

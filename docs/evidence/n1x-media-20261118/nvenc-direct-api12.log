@@ -1,0 +1,5 @@
+header_api_version=0x200000c
+driver_api_query_status=0 driver_max_api_version=0xd1
+create_instance_status=0
+open_session_status=21
+exit_code=5

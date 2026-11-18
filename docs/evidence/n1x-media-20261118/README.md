@@ -17,12 +17,13 @@ retained.
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
 | Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
-| NVENC API | Blocked for H.264, HEVC and AV1 | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but each `nvenc-*.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. The [API-version comparison](nvenc-api-version-compare.json) repeats all three probes with codec headers 12.2 and 13.1; both fail at session creation. No NVENC output was produced. |
+| NVENC API | Blocked for H.264, HEVC and AV1 | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but each `nvenc-*.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. The [API-version comparison](nvenc-api-version-compare.json) repeats all three probes with codec headers 12.2 and 13.1; both fail at session creation. The independent [direct C probe](nvenc-direct-session.json) creates the API function table but also gets status 21 opening a CUDA/NVENC session with either header. No NVENC output was produced. |
 | Desktop playback | Pass for one H.264 sample | `mpv-vaapi.log.gz` records hardware decode, libplacebo `gpu-next` output and EOF; `mpv-software-control.log` records intentional software decode. Key lines from the full mpv logs are in `mpv-summary.log`. |
 | Vulkan scaling and frame mixing | Application path exercised | `mpv-effects.log.gz` records NVIDIA Vulkan/libplacebo, `ewa_lanczos`, interpolation, 320×180 source scaled to a 1190×718 and then 1400×960 Wayland window, and EOF. It does not establish AI super-resolution, generated motion frames, HDR or image-quality acceptance. |
 | Desktop HDR output | Open | [`hdr-display-state.log`](hdr-display-state.log) records both connected outputs in Hyprland's `srgb` preset, default DRM Colorspace and no active HDR metadata. This session cannot qualify an SDR-to-HDR playback path or NVIDIA TrueHDR. |
 | P16 internal RGB / IR cameras | Pass for bounded V4L2 capture | `p16-rgb.log` records 30 MJPEG 1280×720 frames; `p16-ir.log` records 15 GREY 360×360 frames. Per-frame luma statistics vary and the streams contain nonuniform pixels. No frames were saved. |
 | RGB camera in normal applications | Pass for mpv preview and OBS recording | `mpv-rgb-camera.log.gz` shows a live 1280×720 source in a Wayland window. `obs-camera.log` shows `v4l2_input` at 1280×720/30 and a temporary six-second H.264 recording; independent FFprobe/FFmpeg read 180 frames. OBS reported 181 output frames, so the one-frame accounting difference remains to investigate. OBS logged one V4L2 select timeout when the source was added. |
+| RGB camera V4L2 contention | Pass | [`camera-contention.json`](camera-contention.json) records a 120-frame primary capture, `Device or resource busy` and zero frames for a concurrent client, then a 10-frame capture after release. No pixels were retained. |
 | OBS advanced Vulkan recording | Blocked | `obs-vulkan-record-fail.log` records an isolated FFmpeg output profile with `h264_vulkan`; OBS reported `Failed to open video codec: Invalid argument` and produced no recording. The tested OBS path cannot yet consume Vulkan Video directly. |
 | Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless test does not qualify the normal graphical permission flow or PipeWire camera portal. |
 | Chromium H.264 decode | Software fallback | [`browser-decode.json`](browser-decode.json) and [`browser-decode-nvidia-flags.json`](browser-decode-nvidia-flags.json) record complete 96-frame playback but CDP Media reports `FFmpegVideoDecoder` and `kIsPlatformVideoDecoder=false`. The second run uses the NVIDIA VA-API bridge's documented Chrome flags. [`check-browser-decode.mjs`](../../../scripts/check-browser-decode.mjs) exits nonzero without an explicit VA-API decoder. Browser hardware decoding remains open. |
@@ -54,9 +55,30 @@ node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-d
 node scripts/check-browser-decode.mjs docs/evidence/n1x-media-20261118/browser-decode-nvidia-flags.json --nvidia-vaapi
 ```
 
+The direct NVENC session probe uses the installed CUDA 13.4 headers and driver
+libraries. Build it once per pinned `nv-codec-headers` include directory:
+
+```sh
+cc -std=c11 -Wall -Wextra -I/opt/cuda/include \
+  -I/path/to/nv-codec-headers/include scripts/probe-nvenc-session.c \
+  -lcuda -lnvidia-encode -o /tmp/probe-nvenc-session
+/tmp/probe-nvenc-session
+python3 scripts/check-p16-camera-contention.py \
+  --output docs/evidence/n1x-media-20261118/camera-contention.json
+```
+
+The direct probe deliberately exits nonzero when the encoder session fails.
+Its logs show API discovery and function-table creation succeeding before
+status 21. The two header versions use the same source file and runtime driver.
+
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
 the physical privacy behavior has not yet been tested. `/dev/video2` is the
 internal IR device; no face-authentication claim follows from capture.
+PipeWire 1.6.10 and WirePlumber 0.5.18 expose the ASUS RGB V4L2 node as a
+`Video/Source` and `org.freedesktop.portal.Camera` reports
+`IsCameraPresent=true`. This confirms discovery, not a portal capture; an
+initial GStreamer `pipewiresrc` target attempt returned `target not found`.
+The graphical permission and portal stream gates remain open.
 
 Still open: NVENC API session on a supported driver; full codec/profile and
 advanced encode matrix, including a valid HEVC 12-bit fixture (the installed
@@ -65,7 +87,7 @@ despite CUVID reporting decode capability);
 OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; browser hardware decode, graphical browser
 permission and PipeWire
-camera portal; device privacy and contention; audio sync, seek and longer playback;
+camera portal; physical device privacy; audio sync, seek and longer playback;
 fresh boot and physical s2idle/resume; HDR display output; proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a
 separate N1X MIPI/CSI machine. No MIPI/CSI devices are present on this P16.

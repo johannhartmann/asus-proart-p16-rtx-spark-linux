@@ -54,6 +54,10 @@ The [NVENC API-version comparison](docs/evidence/n1x-media-20261118/nvenc-api-ve
 uses identical FFmpeg 9.0.2 sources with pinned NVIDIA codec headers 12.2 and
 13.1. All three NVENC codecs fail at `OpenEncodeSessionEx` with error 21 on
 both builds; a header downgrade alone does not enable the session.
+An independent [CUDA/NVENC C probe](scripts/probe-nvenc-session.c) also reaches
+`NvEncodeAPICreateInstance` successfully with API 12.2 and 13.1, but
+`NvEncOpenEncodeSessionEx` returns 21 for both. This reproduces the failure
+without FFmpeg; the cause within the installed driver/platform remains unknown.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
@@ -78,6 +82,11 @@ played 96 H.264 frames but reported `FFmpegVideoDecoder` and
 `kIsPlatformVideoDecoder=false`. A second run with the NVIDIA VA-API bridge's
 documented Chromium flags gave the same software path. Browser hardware decode
 therefore remains open despite successful Chromium WebRTC camera capture.
+The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
+holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
+second client, then captures 10 frames after release. The active PipeWire and
+portal services advertise the camera, but an application capture through the
+portal has not yet been demonstrated.
 
 ## Common evidence and release gates
 
