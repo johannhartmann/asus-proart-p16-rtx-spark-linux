@@ -26,7 +26,17 @@ corrupted data` messages. The probe restored the original control value 1
 in `finally` and verified the readback. These results strongly associate
 the large sustained rate collapse with the camera's dynamic-exposure frame
 rate setting, while the remaining corrupt frames and short gaps still need
-USB/V4L2 attribution.
+attribution.
+
+The lower-level [V4L2 buffer-sequence test](v4l2-sequence-kernel38.json)
+then captured **3,600 consecutive MJPEG buffers** in 119.834 seconds with
+`exposure_dynamic_framerate=0`, bypassing FFmpeg and retaining no image data.
+Buffer sequence numbers ran from 1 through 3,600 without a gap; all buffers
+had nonzero size. Their monotonic sensor timestamps differed by 29.698–36.444
+ms, with no gap above 50 ms. V4L2 reported no dequeue error and the kernel
+logged no new warning. The control returned to its original value 1. This
+qualifies buffer delivery and timing in this run; `v4l2-ctl` did not decode
+the MJPEG payload or validate its pixels.
 
 A separate [120-second Vulkan Video recording with fixed exposure cadence](vulkan-fixed120s-kernel38.json)
 produced exactly **3,600 decodable H.264 frames** with 33–34-ms output gaps
@@ -34,10 +44,17 @@ and no output gap over 50 ms. FFmpeg nevertheless reported `dup=0 drop=16`.
 The initial checker marked the smooth output as a pass; the evidence JSON
 reclassifies the stricter lossless-input gate as failed, and the checker now
 requires zero duplicates and drops. This is a usable 30-fps encoded output,
-but it does not establish that every camera input frame was retained.
+but it does not establish that every camera input frame was retained in the
+encoded output. A 30-second Vulkan run with `-fps_mode passthrough` and the
+same temporary exposure setting wrote 904 frames; its encoded timestamps had
+four 66–67-ms gaps and eight non-increasing steps, with no corruption warning.
+This supports FFmpeg's constant-30-fps resampling as a cause of the logged
+`drop` count. It does not prove that all MJPEG payloads are valid or that
+the remaining gaps originate in one specific component.
 
 Fixed cadence may reduce low-light exposure. The control is therefore kept
 as an explicit recording option; no global camera setting was changed. The
-direct V4L2 result and FFmpeg's Vulkan input-drop counter leave lossless
-capture open. A later test must attribute the remaining corrupt buffers and
-drops at USB/V4L2 and FFmpeg before claiming a flawless long camera source.
+direct V4L2 sequence result supports sustained buffer timing, while the
+FFmpeg packet-copy corruption and Vulkan resampling observations leave
+end-to-end lossless capture open. A later test must validate MJPEG payloads
+and distinguish input errors from deliberate output-rate conversion.

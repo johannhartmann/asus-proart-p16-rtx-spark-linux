@@ -1,0 +1,39 @@
+{
+  "captured_at": "2026-11-18T18:08:08.315835+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "device": "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+  "command": [
+    "/usr/bin/v4l2-ctl",
+    "-d",
+    "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+    "--set-fmt-video=width=1280,height=720,pixelformat=MJPG",
+    "--set-parm=30",
+    "--stream-mmap=4",
+    "--stream-count=3600",
+    "--verbose"
+  ],
+  "exit_code": 0,
+  "requested_buffers": 3600,
+  "observed_buffers": 3600,
+  "elapsed_seconds": 119.834,
+  "first_sequence": 1,
+  "last_sequence": 3600,
+  "sequence_gap_events": [],
+  "sequence_gap_count": 0,
+  "large_timestamp_gap_events": [],
+  "large_timestamp_gap_count": 0,
+  "max_timestamp_gap_seconds": 0.03644399999984671,
+  "min_timestamp_gap_seconds": 0.029697999999825697,
+  "zero_byte_buffers": 0,
+  "control": {
+    "requested_fixed_framerate": true,
+    "original_dynamic_framerate": 1,
+    "during_dynamic_framerate": 0,
+    "restored_dynamic_framerate": 1
+  },
+  "v4l2_error_lines": [],
+  "new_kernel_warnings": [],
+  "camera_pixels_retained": false,
+  "pass": true
+}

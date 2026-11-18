@@ -445,10 +445,13 @@ missing frames; NVOFA exported all 7,191 corresponding frames. The
 recorded 3,585 source frames with 15 short timestamp gaps and exported all
 7,169 corresponding frames. A [direct V4L2 cadence comparison](docs/evidence/n1x-media-20261118/camera-cadence-kernel38.md)
 found a severe long-run slowdown with `exposure_dynamic_framerate=1` and a
-much steadier stream with that control temporarily set to 0. The fixed-rate
-Vulkan output has 3,600 smooth encoded frames but FFmpeg reports 16 dropped
-input frames. USB/V4L2 corruption and the remaining input drops need
-attribution before calling the long capture path lossless.
+much steadier stream with that control temporarily set to 0. A
+[direct 3,600-buffer V4L2 run](docs/evidence/n1x-media-20261118/v4l2-sequence-kernel38.json)
+then had no sequence or timestamp gap above 50 ms and no new kernel warning.
+The fixed-rate Vulkan output has 3,600 smooth encoded frames but FFmpeg
+reports 16 output-rate drops; a 30-second passthrough run showed source
+timestamp irregularities. That drop count must not be labeled USB packet
+loss. MJPEG payload validity and end-to-end losslessness remain open.
 
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.

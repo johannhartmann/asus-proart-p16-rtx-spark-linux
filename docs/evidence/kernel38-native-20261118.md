@@ -34,7 +34,9 @@ processed every captured adjacent pair and exported 7,169 decodable frames,
 but the camera source had 3,585 rather than 3,600 frames. The
 [camera-cadence investigation](n1x-media-20261118/camera-cadence-kernel38.md)
 found strong exposure-rate effects and a smooth 3,600-frame fixed-rate Vulkan
-output with 16 FFmpeg input drops. Long lossless source capture remains open.
+output with 16 FFmpeg output-rate drops. A direct 3,600-buffer V4L2 run had
+continuous sensor sequence numbers and timestamps under fixed exposure.
+MJPEG payload validity and end-to-end losslessness remain open.
 
 ## Audio boot-profile issue
 
