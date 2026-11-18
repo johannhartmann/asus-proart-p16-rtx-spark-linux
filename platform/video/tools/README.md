@@ -43,7 +43,14 @@ does not manufacture extra frames when low-light exposure reduces the true
 camera rate. On kernel38/615, a bounded 60-real-frame AV1 camera capture
 passed full libdav1d and libaom decode; the [record](../../../docs/evidence/n1x-media-20261118/camera-av1-vulkan.md)
 also shows why `--fixed-fps` was needed for about 30 real frames/s on that
-run. Explicit AV1 bitrate and CQP 30 controls have produced corrupt output
+run. The AV1 path requests the camera's microsecond encoder time base. A
+30-second test of the previous package candidate produced eight repeated
+container timestamps at FFmpeg's default 30 Hz encoder time base; the
+microsecond setting produced strictly increasing timestamps and complete
+decode with two software decoders. One camera frame read at the `-t 30`
+boundary was not encoded, so that timed run does not prove strict retention
+of every dequeued input frame. Explicit AV1 bitrate and CQP 30 controls have
+produced corrupt output
 on this stack and are not exposed by this command. AV1 recording here uses
 Vulkan Video, not the NVENC API.
 

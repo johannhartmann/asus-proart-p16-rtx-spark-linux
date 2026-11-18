@@ -54,6 +54,47 @@ archive SHA256 is in the report. The candidate is **not installed** at this
 point, so this is application-command qualification of the extracted package,
 not an installed-path result.
 
+## Thirty-second camera timing and package correction
+
+The first [30-second recording from the extracted 0.1.0-9
+command](camera-av1-packaged-30s-kernel38.json) exposed a longer-run timing
+failure: 904 AV1 packets had eight non-increasing packet PTS values and four
+gaps above 50 ms. Libaom decoded all 904 packets; FFmpeg's default FrameMD5
+output emitted 901 frames. That output count alone does not establish a
+bitstream decode error, because FFmpeg can resynchronize frames with repeated
+timestamps. The original camera control value `1` was restored.
+
+FFmpeg rejects the documented `-enc_time_base -1` shorthand on this build at
+output setup, as the [negative probe](camera-av1-source-timebase-30s-kernel38.json)
+records. Explicit `-enc_time_base 1/1000000`, matching V4L2's microsecond
+input time base, produces [905 strictly increasing AV1 packet timestamps over
+29.989 seconds](camera-av1-source-timebase-30s-boundary-kernel38.json).
+Both libdav1d with passthrough output and libaom decoded all 905 packets.
+FFmpeg read 906 camera frames and encoded 905 because `-t 30` ended at the
+next input boundary; the report deliberately leaves its strict all-input
+gate false. No packet gap exceeded 50 ms, and the V4L2 control was restored.
+
+`p16-media-tools 0.1.0-10` applies the explicit microsecond encoder time
+base only to its AV1 mode. The [extracted-package 30-second
+test](camera-av1-packaged-30s-timebase-verified-kernel38.json), run by
+[`check-camera-av1-timing.py`](../../../scripts/check-camera-av1-timing.py),
+records 906 actual camera input frames, 905 encoded packets, 905 distinct
+libdav1d frames and 905 libaom frames. All packet PTS values increase,
+the largest gap is 36 ms and the camera control returns to `1`. The single
+input frame beyond the timed output remains explicitly unqualified as
+strict input retention. A two-second H.264 regression from the same package
+candidate independently decoded 60 frames and restored the control. The
+package archive SHA256 is `71ca01e4c88284f0de7baa19787a0526a656d8f9eb71b79a7abfa8f880a29431`.
+This is an extracted package, **not yet installed**; sustained quality,
+A/V sync, post-resume use and strict all-input retention remain open.
+
+Repeat the timing gate with a new report path:
+
+```sh
+python3 scripts/check-camera-av1-timing.py --seconds 30 \
+  --recorder /usr/bin/p16-record-camera-vulkan --output NEW_JSON_PATH
+```
+
 Repeat from the repository root with new output directories:
 
 ```sh

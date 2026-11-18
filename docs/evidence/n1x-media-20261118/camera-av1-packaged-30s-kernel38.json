@@ -1,0 +1,35 @@
+{
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "package": "p16-media-tools 0.1.0-9 extracted candidate, not installed",
+  "package_sha256": "831547c882d36f44a969055d1c9ae679af10a8ac39aaef516a11745bf4b66dd4",
+  "command_options": [
+    "--fixed-fps",
+    "--av1",
+    "30"
+  ],
+  "camera_control_before": 1,
+  "camera_control_after": 1,
+  "stream": {
+    "codec_name": "av1",
+    "profile": "Main",
+    "width": 1280,
+    "height": 720,
+    "nb_read_frames": "904"
+  },
+  "packet_count": 904,
+  "packet_pts_span_s": 29.967,
+  "nonincreasing_pts_count": 8,
+  "gaps_over_50ms": 4,
+  "max_pts_gap_s": 0.067,
+  "min_pts_gap_s": 0.0,
+  "dav1d_frames": 901,
+  "distinct_decoded_frames": 901,
+  "libaom_frames": 904,
+  "encode_wall_s": 32.153,
+  "bitstream_bytes": 276217653,
+  "bitstream_sha256": "602a4be4e4e3e2e54d29839aafbed8fefa55ea13fcffe1df32065ea3aab88dbe",
+  "recording_retained": false,
+  "pass": false
+}

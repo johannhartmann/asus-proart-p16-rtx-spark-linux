@@ -1,0 +1,15 @@
+{
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "camera_control_before": 1,
+  "camera_control_during": 0,
+  "encoder_option": "-enc_time_base -1",
+  "duration_requested_s": 30,
+  "recording_retained": false,
+  "encode_wall_s": 1.855,
+  "encoder_exit_code": 234,
+  "encoder_log_tail": "fa1096d0] Using device extension VK_KHR_video_encode_av1\n[Vulkan @ 0xad8afa1096d0] Using device extension VK_KHR_video_decode_av1\n[Vulkan @ 0xad8afa1096d0] Queue families:\n[Vulkan @ 0xad8afa1096d0]     0: graphics compute transfer sparse (queues: 16)\n[Vulkan @ 0xad8afa1096d0]     1: transfer sparse (queues: 1)\n[Vulkan @ 0xad8afa1096d0]     2: compute transfer sparse (queues: 8)\n[Vulkan @ 0xad8afa1096d0]     3: transfer decode sparse (queues: 1)\n[Vulkan @ 0xad8afa1096d0]     4: transfer encode sparse (queues: 1)\n[Vulkan @ 0xad8afa1096d0] Using device: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)\n[Vulkan @ 0xad8afa1096d0] Alignments:\n[Vulkan @ 0xad8afa1096d0]     optimalBufferCopyRowPitchAlignment: 1\n[Vulkan @ 0xad8afa1096d0]     minMemoryMapAlignment:              64\n[Vulkan @ 0xad8afa1096d0]     nonCoherentAtomSize:                64\n[Vulkan @ 0xad8afa1096d0]     minImportedHostPointerAlignment:    4096\n[in#0 @ 0xad8afb36a060] fd:41 capabilities:84a00001\nInput #0, video4linux2,v4l2, from '/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0':\n  Duration: N/A, start: 13625.155324, bitrate: N/A\n  Stream #0:0: Video: mjpeg (Baseline), 1 reference frame, yuvj422p(pc, bt470bg/unknown/unknown, center), 1280x720, 30 fps, 30 tbr, 1000k tbn, start 13625.155324\n[out#0/matroska @ 0xad8afb36b940] No explicit maps, mapping streams automatically...\n[vost#0:0/av1_vulkan @ 0xad8afb36bd30] Created video stream from input stream 0:0\n[vost#0:0/av1_vulkan @ 0xad8afb36bd30] Invalid time base: -1\nError opening output file $WORKDIR/camera.mkv.\nError opening output files: Invalid argument\n[in#0/video4linux2,v4l2 @ 0xad8afb36a060] Some buffers are still owned by the caller on close.\nioctl(VIDIOC_QBUF): Bad file descriptor\n\nExiting with exit code -22\n",
+  "camera_restore_exit_code": 0,
+  "camera_control_after": 1,
+  "pass": false
+}

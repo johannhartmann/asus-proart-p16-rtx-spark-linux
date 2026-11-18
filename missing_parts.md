@@ -244,10 +244,16 @@ camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
 NVENC, direct in-process OBS Vulkan encoding or power-management gates.
 The 0.1.0-9 package candidate adds an AV1 mode and passthrough timestamps to
-the camera recording command. Its [extracted-package test](docs/evidence/n1x-media-20261118/camera-av1-packaged-candidate.json)
-passed two-second H.264 and AV1 recordings with 60 distinct frames each,
-complete software decode and a restored camera control. The candidate still
-requires installation and a repeat through `/usr/bin/p16-record-camera-vulkan`.
+the camera recording command. Its [short extracted-package test](docs/evidence/n1x-media-20261118/camera-av1-packaged-candidate.json)
+passed two-second H.264 and AV1 recordings with 60 distinct frames each.
+A [30-second AV1 timing test](docs/evidence/n1x-media-20261118/camera-av1-vulkan.md#thirty-second-camera-timing-and-package-correction)
+then exposed eight non-increasing packet PTS values in that candidate.
+Package candidate 0.1.0-10 uses the camera's microsecond encoder time base;
+its 30-second run has 905 strictly increasing packets, 905 distinct libdav1d
+frames, 905 libaom frames and restored camera control. FFmpeg read one
+additional input frame at the `-t 30` boundary, so strict retention of every
+read input is not claimed. The candidate still requires installation and a
+repeat through `/usr/bin/p16-record-camera-vulkan`.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;
