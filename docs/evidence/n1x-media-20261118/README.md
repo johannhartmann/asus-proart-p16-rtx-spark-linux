@@ -38,8 +38,9 @@ retained.
 | P16 internal RGB / IR cameras | Pass for bounded V4L2 capture | `p16-rgb.log` records 30 MJPEG 1280×720 frames; `p16-ir.log` records 15 GREY 360×360 frames. Per-frame luma statistics vary and the streams contain nonuniform pixels. No frames were saved. |
 | RGB camera in normal applications | Pass for mpv preview and OBS recording | `mpv-rgb-camera.log.gz` shows a live 1280×720 source in a Wayland window. `obs-camera.log` shows `v4l2_input` at 1280×720/30 and a temporary six-second H.264 recording; independent FFprobe/FFmpeg read 180 frames. OBS reported 181 output frames, so the one-frame accounting difference remains to investigate. OBS logged one V4L2 select timeout when the source was added. |
 | RGB camera V4L2 contention | Pass | [`camera-contention.json`](camera-contention.json) records a 120-frame primary capture, `Device or resource busy` and zero frames for a concurrent client, then a 10-frame capture after release. No pixels were retained. |
+| GTK camera portal → PipeWire | Pass for native app and 30 buffers | [`camera-portal.json`](camera-portal.json) records graphical permission, a portal-provided PipeWire remote, the internal ASUS RGB node, 30 MJPEG 800×800/30 buffers with varying nonzero sizes, and EOS. The [GTK/libportal probe](../../../scripts/check-p16-camera-portal.py) sets a Video/Capture/Camera stream role; omission caused `target not found`. No pixels were retained. Sandboxed Flatpak capture and permission revocation remain untested. |
 | OBS advanced Vulkan recording | Blocked | `obs-vulkan-record-fail.log` records an isolated FFmpeg output profile with `h264_vulkan`; OBS reported `Failed to open video codec: Invalid argument` and produced no recording. The tested OBS path cannot yet consume Vulkan Video directly. |
-| Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless test does not qualify the normal graphical permission flow or PipeWire camera portal. |
+| Browser/WebRTC RGB preview | Pass for a bounded Chromium `getUserMedia` run | [`browser-camera.json`](browser-camera.json) records the selected `ASUS FHD webcam`, 1280×720/30, and 30 varying preview frames. [`check-browser-camera.mjs`](../../../scripts/check-browser-camera.mjs) uses a local secure origin and auto-accepts the permission prompt, with no fake media device. This headless browser run does not qualify its normal graphical permission flow; the GTK portal capture is recorded separately above. |
 | Chromium H.264 decode | Software fallback | [`browser-decode.json`](browser-decode.json) and [`browser-decode-nvidia-flags.json`](browser-decode-nvidia-flags.json) record complete 96-frame playback but CDP Media reports `FFmpegVideoDecoder` and `kIsPlatformVideoDecoder=false`. The second run uses the NVIDIA VA-API bridge's documented Chrome flags. [`check-browser-decode.mjs`](../../../scripts/check-browser-decode.mjs) exits nonzero without an explicit VA-API decoder. Browser hardware decoding remains open. |
 | Google Chrome H.264 decode | Software fallback | [`browser-decode-google-chrome.json`](browser-decode-google-chrome.json) records 96 complete frames on Google Chrome 156 ARM64 with the same NVIDIA flags and CDP Media again reports `FFmpegVideoDecoder` with `kIsPlatformVideoDecoder=false`. This independently leaves Chrome hardware playback unqualified. |
 
@@ -187,24 +188,27 @@ The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
 the physical privacy behavior has not yet been tested. `/dev/video2` is the
 internal IR device; no face-authentication claim follows from capture.
 PipeWire 1.6.10 and WirePlumber 0.5.18 expose the ASUS RGB V4L2 node as a
-`Video/Source` and `org.freedesktop.portal.Camera` reports
-`IsCameraPresent=true`. This confirms discovery, not a portal capture; an
-initial GStreamer `pipewiresrc` target attempt returned `target not found`.
-The [GTK/libportal probe](../../../scripts/check-p16-camera-portal.py) prepares
-a 30-buffer stream test. A CLI permission request was left unanswered and
-stored a `no` decision for the unsandboxed app ID; that test-created decision
-was removed from the permission store. No graphical approval or portal stream
-has completed. The graphical permission and portal stream gates remain open.
+`Video/Source`; `org.freedesktop.portal.Camera` reports
+`IsCameraPresent=true`. The registered native GTK app
+`io.github.johannhartmann.P16CameraPortalProbe` received graphical camera
+permission through libportal. Its portal-provided PipeWire remote exposed the
+ASUS RGB node, and GStreamer received 30 JPEG buffers with EOS. The initial
+`pipewiresrc` attempts reached `target not found` because they omitted
+`media.type=Video, media.category=Capture, media.role=Camera` from stream
+properties. The corrected path passed twice; the final result is
+[`camera-portal.json`](camera-portal.json). The earlier CLI-created `no`
+decision for an unregistered app ID was removed before this test. No camera
+pixels were saved. A sandboxed application and post-resume capture still need
+their own tests.
 
 Still open: NVENC API session on a supported driver; full codec/profile and
 advanced encode matrix, including 12-bit hardware encoding (the installed
 Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log));
 OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; browser hardware decode, graphical browser
-permission and PipeWire
-camera portal; physical device privacy; perceived A/V sync and longer playback;
+permission; physical device privacy; perceived A/V sync and longer playback;
 fresh boot and physical s2idle/resume; measured 4:2:2 display precision and
-HDR display output; proprietary NVIDIA
+proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a
 separate N1X MIPI/CSI machine. No MIPI/CSI devices are present on this P16.
 The [resume preflight](../n1x-media-resume-20261118/README.md) did not start

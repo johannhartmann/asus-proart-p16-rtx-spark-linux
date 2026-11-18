@@ -37,7 +37,7 @@ cannot qualify that separate platform pipeline.
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling, while mpv 4:2:2 and Chromium/Chrome H.264 fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. Visual quality and long-run performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass | Privacy, graphical browser permission and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -157,13 +157,18 @@ Google Chrome 156 on ARM64 was also tested with those flags and reported the
 same software decoder for a complete 96-frame playback.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
-second client, then captures 10 frames after release. The active PipeWire and
-portal services advertise the camera, but an application capture through the
-portal has not yet been demonstrated.
-[`check-p16-camera-portal.py`](scripts/check-p16-camera-portal.py) prepares a
-GTK/libportal permission request and a bounded 30-buffer PipeWire capture.
-It still needs a completed graphical camera permission response; no portal
-capture pass is claimed.
+second client, then captures 10 frames after release.
+The [GTK/libportal application test](scripts/check-p16-camera-portal.py)
+obtained graphical camera permission, opened the portal PipeWire remote,
+enumerated the exposed camera nodes, and captured 30 MJPEG buffers from the
+internal RGB camera. GStreamer required `media.type=Video`,
+`media.category=Capture`, and `media.role=Camera` on its stream; without them,
+WirePlumber reported `target not found` even though the node was visible.
+The [result](docs/evidence/n1x-media-20261118/camera-portal.json) records
+800×800/30 caps, varying nonzero buffer sizes, EOS, and no retained pixels.
+This qualifies the Linux camera portal and PipeWire capture path for a native
+GTK application. A sandboxed Flatpak consumer, permission denial/revocation,
+and a post-resume repeat remain open.
 
 ## Common evidence and release gates
 
