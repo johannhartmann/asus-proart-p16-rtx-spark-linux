@@ -1,0 +1,51 @@
+$ /usr/bin/p16-video-play $WORKDIR/stream.hevc --no-config --no-audio --frames=30 --force-window=yes --autofit=640x360 --hwdec=hevc-vulkan
+exit_code=0
+
+stdout:
+[lavf] This format is marked by FFmpeg as having no timestamps!
+[lavf] FFmpeg will likely make up its own broken timestamps. For
+[lavf] video streams you can correct this with:
+[lavf]     --no-correct-pts --container-fps-override=VALUE
+[lavf] with VALUE being the real framerate of the stream. You can
+[lavf] expect seeking and buffering estimation to be generally
+[lavf] broken as well.
+● Video  --vid=1  (hevc 320x180 25 fps)
+[vo/gpu-next/libplacebo] Spent 1969.521 ms creating vulkan device (slow!)
+Using hardware decoding (vulkan).
+No video PTS! Making something up. Using 25.000000 FPS.
+No video PTS! Making something up. Using 25.000000 FPS.
+Ignoring further missing PTS warnings.
+VO: [gpu-next] 320x180 vulkan[p410]
+V: 00:00:00 / unknown (29%)
+V: 00:00:00 / unknown (31%) DS: 5.0000/0
+V: 00:00:00 / unknown (33%) DS: 5.0000/0
+V: 00:00:00 / unknown (35%) DS: 4.6667/0
+V: 00:00:00 / unknown (41%) DS: 4.7500/0
+V: 00:00:00 / unknown (44%) DS: 4.8000/0
+V: 00:00:00 / unknown (45%) DS: 4.8333/0
+V: 00:00:00 / unknown (47%) DS: 4.8571/0
+V: 00:00:00 / unknown (52%) DS: 4.7500/0
+V: 00:00:00 / unknown (55%) DS: 4.7778/0
+V: 00:00:00 / unknown (56%) DS: 4.8000/0
+V: 00:00:00 / unknown (58%) DS: 4.8182/0
+V: 00:00:00 / unknown (64%) DS: 4.8333/0
+V: 00:00:00 / unknown (66%) DS: 4.7692/0
+V: 00:00:00 / unknown (68%) DS: 4.7857/0
+V: 00:00:00 / unknown (70%) DS: 4.8000/0
+V: 00:00:00 / unknown (76%) DS: 4.8125/0
+V: 00:00:00 / unknown (79%) DS: 4.8235/0
+V: 00:00:00 / unknown (81%) DS: 4.7778/0
+V: 00:00:00 / unknown (83%) DS: 4.7895/0
+V: 00:00:00 / unknown (90%) DS: 4.8000/0
+V: 00:00:00 / unknown (93%) DS: 4.8095/0
+V: 00:00:00 / unknown (95%) DS: 4.8182/0
+V: 00:00:00 / unknown (97%) DS: 4.7826/0
+V: 00:00:00 / unknown (97%) DS: 4.7917/0
+V: 00:00:00 / unknown (97%) DS: 4.8000/0
+V: 00:00:01 / unknown (97%) DS: 4.8077/0
+V: 00:00:01 / unknown (97%) DS: 4.8148/0
+V: 00:00:01 / unknown (97%) DS: 4.7857/0
+V: 00:00:01 / unknown (97%) DS: 4.7931/0
+Exiting... (End of file)
+
+stderr:

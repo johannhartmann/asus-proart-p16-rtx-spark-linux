@@ -1,0 +1,114 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "driver": "615.78.08",
+  "binaries_sha256": {
+    "x265_8": "8725bcdbe1669a3210be2d336ec454cd6c1d2c1eed4909b51fe3111c17b7bbf3",
+    "x265_10": "9af3342972a127d796a9079910499955c9666d5d94795247eb34f2ad03f1c926",
+    "x265_12": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
+    "ffmpeg_cuvid": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+    "player": "fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688"
+  },
+  "cases": {
+    "hevc_444_8bit": {
+      "status": "observed",
+      "fixture": {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv444p",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "7a7fd8f9f7c76a73c36f25095d5207b145415a25ec37ce5991c7bb585ad96555",
+      "software_cuvid_pixel_match": true,
+      "frame_hashes_sha256": "d764f48b3c7f1d52bd16a898c18791d08e48f0fdd83fc56e0d5d89cbf9ce3212",
+      "vaapi_hardware": true,
+      "vaapi_software_fallback": false,
+      "player_vulkan_hardware": true,
+      "player_surface": "vulkan[nv24]",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
+      "hardware_decode_used_in_player": true
+    },
+    "hevc_444_10bit": {
+      "status": "observed",
+      "fixture": {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv444p10le",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "b96cf9bd0c58c02f26d85dae287b7597a45ccd43e7011f246e04b2e09aa08299",
+      "software_cuvid_pixel_match": true,
+      "frame_hashes_sha256": "e5ae9d2922a78a55ecb4082b1cf1cb04b4ff6928631f1f53cbc9d451f9f01a4a",
+      "vaapi_hardware": true,
+      "vaapi_software_fallback": false,
+      "player_vulkan_hardware": true,
+      "player_surface": "vulkan[p410]",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
+      "hardware_decode_used_in_player": true
+    },
+    "hevc_422_8bit": {
+      "status": "observed",
+      "fixture": {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "8a3bae3d0280a7511872cfcd0fa22b74a53cda96b78b42c5d51c5d51b88ab7e9",
+      "software_cuvid_pixel_match": true,
+      "frame_hashes_sha256": "b3d8e8c3a1b474765ca00e441e86f63f0c5be0c112f5a10ec42ea75645c60f19",
+      "vaapi_hardware": false,
+      "vaapi_software_fallback": true,
+      "player_vulkan_hardware": false,
+      "player_surface": "yuv422p",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
+      "hardware_decode_used_in_player": false
+    },
+    "hevc_422_10bit": {
+      "status": "observed",
+      "fixture": {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p10le",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "6d5e2df356f605de328e6d8a832f4cb0f117ee771a9bcfc3057d49538b5e926f",
+      "software_cuvid_pixel_match": true,
+      "frame_hashes_sha256": "169384cf0a8682c40337773282f8096fa80ca1a3d08ef2756961a8680933118c",
+      "vaapi_hardware": false,
+      "vaapi_software_fallback": true,
+      "player_vulkan_hardware": false,
+      "player_surface": "yuv422p10",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
+      "hardware_decode_used_in_player": false
+    },
+    "hevc_422_12bit": {
+      "status": "observed",
+      "fixture": {
+        "codec_name": "hevc",
+        "profile": "Rext",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p12le",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "cd81b59d0c6f280a6eeda36811ed68f44f8a60f85a110d4480b0fdab651146c9",
+      "software_cuvid_pixel_match": true,
+      "frame_hashes_sha256": "7b52094be637c8179c171e97ca846232ba39531976bbcd25184016ca230540e1",
+      "vaapi_hardware": false,
+      "vaapi_software_fallback": true,
+      "player_vulkan_hardware": false,
+      "player_surface": "yuv422p12",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
+      "hardware_decode_used_in_player": false
+    }
+  }
+}
