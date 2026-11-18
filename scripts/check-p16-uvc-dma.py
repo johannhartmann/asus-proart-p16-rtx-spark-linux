@@ -14,6 +14,7 @@ import re
 import subprocess
 import sys
 import time
+from collections import Counter
 
 
 RGB = "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0"
@@ -24,8 +25,17 @@ CASES = (
     ("rgb-1080p", RGB, "mjpeg", "1920x1080", 30, 60),
     ("ir-360p", IR, "gray", "360x360", 15, 30),
 )
-URB = re.compile(r"Allocated \d+ URB buffers of (\d+)x(\d+) bytes each")
+URB = re.compile(r"uvcvideo\s+(\S+?):\s+Allocated \d+ URB buffers of (\d+)x(\d+) bytes each")
+LIMIT = re.compile(r"uvcvideo\s+(\S+?):\s+Limiting URB to (\d+) packets")
 WARNINGS = ("DMA-API:", "WARNING:", "BUG:", "KASAN:", "NVRM: Xid")
+
+
+def interface_for(device):
+    video = Path(device).resolve().name
+    path = (Path("/sys/class/video4linux") / video / "device").resolve(strict=True)
+    if not re.fullmatch(r"\d+-[\d.]+:\d+\.\d+", path.name):
+        raise RuntimeError(f"could not identify UVC interface for {device}")
+    return path.name
 
 
 def capture(name, device, fmt, size, fps, frames, directory):
@@ -46,6 +56,7 @@ def capture(name, device, fmt, size, fps, frames, directory):
     (directory / f"{name}.log").write_text(log)
     counts = re.findall(r"frame=\s*(\d+)", log)
     return {"command": command, "exit_code": code,
+            "usb_interface": interface_for(device),
             "frames": int(counts[-1]) if counts else 0,
             "expected_frames": frames}
 
@@ -87,10 +98,12 @@ def main():
     for line in uvc:
         match = URB.search(line)
         if match:
-            packets, packet_bytes = map(int, match.groups())
+            interface = match.group(1)
+            packets, packet_bytes = map(int, match.groups()[1:])
             requested = packets * packet_bytes
             rounded = (requested + 4095) // 4096 * 4096
-            allocations.append({"packets": packets, "packet_bytes": packet_bytes,
+            allocations.append({"usb_interface": interface,
+                                "packets": packets, "packet_bytes": packet_bytes,
                                 "requested_bytes": requested,
                                 "page_rounded_bytes": rounded,
                                 "within_dma_limit": rounded <= args.max_segment})
@@ -98,16 +111,41 @@ def main():
     result["allocations"] = allocations
     result["new_kernel_warnings"] = warnings
     expected_rgb_packets = args.max_segment // 4096 * 4096 // 2940
-    rgb_capped = sum(f"Limiting URB to {expected_rgb_packets} packets" in line
-                     for line in uvc) >= 2
+    rgb_interface = result["cases"]["rgb-720p"]["usb_interface"]
+    ir_interface = result["cases"]["ir-360p"]["usb_interface"]
+    streamcam_interface = (result["cases"]["streamcam-1080p"]["usb_interface"]
+                           if args.include_streamcam else None)
+    expected_allocations = Counter({rgb_interface: 2, ir_interface: 1})
+    expected_packet_bytes = {rgb_interface: 2940, ir_interface: 1176}
+    if streamcam_interface:
+        expected_allocations[streamcam_interface] = 1
+        expected_packet_bytes[streamcam_interface] = 3072
+    observed_allocations = Counter(item["usb_interface"] for item in allocations)
+    limits = [(match.group(1), int(match.group(2))) for line in uvc
+              if (match := LIMIT.search(line))]
+    rgb_capped = limits.count((rgb_interface, expected_rgb_packets)) >= 2
     expected_streamcam_packets = args.max_segment // 4096 * 4096 // 3072
-    streamcam_capped = not args.include_streamcam or any(
-        f"Limiting URB to {expected_streamcam_packets} packets" in line
-        for line in uvc)
+    streamcam_capped = not args.include_streamcam or (
+        (streamcam_interface, expected_streamcam_packets) in limits)
+    interfaces_covered = all(observed_allocations[interface] >= count
+                             for interface, count in expected_allocations.items())
+    packet_sizes_match = all(
+        item["packet_bytes"] == expected_packet_bytes[item["usb_interface"]]
+        for item in allocations
+        if item["usb_interface"] in expected_packet_bytes)
+    result["interface_checks"] = {
+        "expected_allocations": dict(expected_allocations),
+        "observed_allocations": dict(observed_allocations),
+        "expected_packet_bytes": expected_packet_bytes,
+        "interfaces_covered": interfaces_covered,
+        "packet_sizes_match": packet_sizes_match,
+        "rgb_capped": rgb_capped,
+        "streamcam_capped": streamcam_capped,
+    }
     result["pass"] = (all(item["exit_code"] == 0 and
                           item["frames"] == item["expected_frames"]
                           for item in result["cases"].values()) and
-                      len(allocations) >= len(cases) and
+                      interfaces_covered and packet_sizes_match and
                       all(item["within_dma_limit"] for item in allocations) and
                       rgb_capped and streamcam_capped and not warnings)
     (args.output_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n")

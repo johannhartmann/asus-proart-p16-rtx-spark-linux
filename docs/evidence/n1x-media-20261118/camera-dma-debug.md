@@ -58,7 +58,10 @@ The repeatable [P16 DMA capture check](../../../scripts/check-p16-uvc-dma.py)
 requires UVC trace bit 1024, runs RGB 720p/1080p and IR capture, then checks
 page-rounded URB sizes and new kernel warnings. Its caller restores the trace
 setting afterward. The existing native live record used the same captures
-before this script was added.
+before this script was added. The current checker resolves each V4L2 node's
+USB interface from sysfs and requires separate allocation/limit evidence for
+the internal RGB, internal IR and external StreamCam interfaces. Allocation
+counts from one host cannot satisfy another host's gate.
 
 The [single-auth wrapper](../../../scripts/run-p16-uvc-dma-trace.py) is
 prepared for the remaining kernel38 both-host trace. It uses one graphical
