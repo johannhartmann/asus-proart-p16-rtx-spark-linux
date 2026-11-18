@@ -158,6 +158,10 @@ matched 620 versions, without changing the live root. File installation,
 hooks and UKI are outside that simulation. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
 found 4,281 candidate files with zero unexpected package or unowned-path
 overlaps. The candidate root and UKI have not yet been created.
+The [snapshot helper](scripts/stage-nvidia620-snapshot.py) passes its
+read-only Btrfs/EFI/package preflight but currently refuses staging while
+the graphical media-package transaction waits. Its privileged snapshot
+mode has not been run.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

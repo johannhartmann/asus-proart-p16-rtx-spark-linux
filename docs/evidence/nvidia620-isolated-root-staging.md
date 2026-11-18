@@ -53,6 +53,21 @@ staging.
 
 ## Candidate preparation, without booting
 
+The [snapshot staging helper](../../scripts/stage-nvidia620-snapshot.py) now
+performs a read-only preflight by default. It verifies that `/` is Btrfs
+subvolume `@`, the current kernel is 38 with NVIDIA 615 packages, `/boot` is
+the separate VFAT partition, and Limine is first in BootOrder. It currently
+returns `ready_to_stage: false` while the graphical media-package Pacman
+transaction is waiting; it will not take a package-database snapshot during
+that transaction. Its root-only `--stage --output NEW_MANIFEST` mode is
+prepared but has **not** been run. That mode takes an exclusive Pacman lock,
+mounts the Btrfs top level at a private `/run` path, creates `@nvidia620`
+only if absent, checks distinct subvolume IDs and the copied package database,
+unmounts safely, and compares EFI hashes, BootOrder, package versions and
+boot ID. Failed unmounts leave the private mountpoint intact for inspection;
+the helper never recursively removes a mounted filesystem. It does not
+install 620 packages, write EFI files, set BootNext or reboot.
+
 1. Mount the Btrfs top level (`subvolid=5`) at a private root-only directory
    and take a writable point-in-time snapshot of `@` named `@nvidia620`.
    Mount that snapshot at a second private directory. Verify its Btrfs
