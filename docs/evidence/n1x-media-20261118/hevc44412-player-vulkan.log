@@ -1,0 +1,6 @@
+exit_code=0
+Using hardware decoding (vulkan).
+No video PTS! Making something up. Using 25.000000 FPS.
+No video PTS! Making something up. Using 25.000000 FPS.
+VO: [gpu-next] 320x180 vulkan[p412]
+Exiting... (End of file)

@@ -15,6 +15,7 @@ retained.
 | NVDEC via VA-API | Pass for 30-frame H.264, HEVC Main and AV1 Main 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | `vaapi-*.log` selects `VA-API NVDEC driver [direct backend]` and VA-API frame surfaces; these cases do not qualify the complete codec/profile matrix. |
 | NVDEC via direct CUVID | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | The isolated FFmpeg candidate's `cuvid-*.log` selects the named `*_cuvid` decoder and completes 30 frames per case. This is separate from its failing NVENC encoder API. |
 | HEVC RExt 12-bit decode | Pass for bounded CUVID pixel comparison, VA-API decode and installed player | [`hevc12-result.json`](hevc12-result.json) records a 30-frame x265 12-bit fixture, CUVID output with all frame hashes equal to software decode, and 30 frames on the NVIDIA VA-API direct backend. [`hevc12-player.log`](hevc12-player.log) shows the installed `p16-video-play` selected VA-API `p012`, rendered with `gpu-next` and reached EOF. The raw bitstream has no timestamps, so playback timing and audio sync are not qualified. |
+| HEVC RExt 4:4:4 12-bit decode | Pass for CUVID pixel comparison and installed Vulkan Video playback | [`hevc44412-result.json`](hevc44412-result.json) records 30 frames with CUVID pixels matching software decode and 30 VA-API hardware frames. The installed player with `--hwdec=hevc-vulkan` reports `vulkan[p412]` and EOF in [`hevc44412-player-vulkan.log`](hevc44412-player-vulkan.log). Its default VA-API path reports `vaapi[yuv444p]`; preservation of 12-bit precision there is not established. The raw fixture has no PTS. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
 | Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
@@ -72,6 +73,12 @@ The direct probe deliberately exits nonzero when the encoder session fails.
 Its logs show API discovery and function-table creation succeeding before
 status 21. The two header versions use the same source file and runtime driver.
 
+[`vainfo-nvidia.log`](vainfo-nvidia.log) records the VA-API profile inventory.
+The `libva-utils 2.24.0-1` ARM64 package was extracted without installation;
+its Arch Linux ARM signature verified against the local trusted keyring.
+All listed entries are `VAEntrypointVLD` except `VAProfileNone` video processing;
+the bridge advertises no encode entrypoint.
+
 For the HEVC 12-bit decode test, build x265 4.3 from
 `https://github.com/Multicorewareinc/x265/archive/refs/tags/4.3.tar.gz`
 (SHA256 `fb157f809b74dabbef5002af99489fcaebb4d0073724beffdaaf2be15cbaf7ac`)
@@ -92,6 +99,12 @@ python3 scripts/check-hevc12-nvdec.py \
   --ffmpeg-cuvid platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x \
   --player /usr/bin/p16-video-play \
   --output-dir docs/evidence/n1x-media-20261118
+python3 scripts/check-hevc12-nvdec.py \
+  --x265-12 /path/to/isolated/build/x265 \
+  --ffmpeg-cuvid platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x \
+  --chroma 444 --player /usr/bin/p16-video-play \
+  --vulkan-player /usr/bin/p16-video-play \
+  --output-dir docs/evidence/n1x-media-20261118
 ```
 
 The 12-bit test uses generated frames and deletes the raw and encoded fixture
@@ -105,7 +118,11 @@ PipeWire 1.6.10 and WirePlumber 0.5.18 expose the ASUS RGB V4L2 node as a
 `Video/Source` and `org.freedesktop.portal.Camera` reports
 `IsCameraPresent=true`. This confirms discovery, not a portal capture; an
 initial GStreamer `pipewiresrc` target attempt returned `target not found`.
-The graphical permission and portal stream gates remain open.
+The [GTK/libportal probe](../../../scripts/check-p16-camera-portal.py) prepares
+a 30-buffer stream test. A CLI permission request was left unanswered and
+stored a `no` decision for the unsandboxed app ID; that test-created decision
+was removed from the permission store. No graphical approval or portal stream
+has completed. The graphical permission and portal stream gates remain open.
 
 Still open: NVENC API session on a supported driver; full codec/profile and
 advanced encode matrix, including 12-bit hardware encoding (the installed

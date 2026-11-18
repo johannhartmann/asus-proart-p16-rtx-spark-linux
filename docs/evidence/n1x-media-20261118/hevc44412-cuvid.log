@@ -1,0 +1,102 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v hevc_cuvid -i /tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc -frames:v 30 -pix_fmt yuv444p12le -f framemd5 -
+exit_code=0
+
+stdout:
+#format: frame checksums
+#version: 2
+#hash: MD5
+#software: Lavf63.1.102
+#tb 0: 1/10
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 320x180
+#sar 0: 1/1
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,        1,   345600, d3ec1fb314ec7a2ee29b17d0e9f12a58
+0,          1,          1,        1,   345600, 26cd7ff257102f345438644fb7ce6e78
+0,          2,          2,        1,   345600, 24725a1a777412656471043b8a0fc3f9
+0,          3,          3,        1,   345600, 4ee51b24b4e356f4630173701808d0ef
+0,          4,          4,        1,   345600, 5923c91fb90655a9a38091136ebfcea7
+0,          5,          5,        1,   345600, d27337ce980437d26ebea6393d9a0c6d
+0,          6,          6,        1,   345600, b82fa1feac40951fb0073ef4a0b66f9b
+0,          7,          7,        1,   345600, 4e8352c243adabf9457217b22fa14e94
+0,          8,          8,        1,   345600, 37737aa29262612aa2ee136903cf8148
+0,          9,          9,        1,   345600, 133bf1d1f4e21957520040b5257285af
+0,         10,         10,        1,   345600, 4925c34c0774359962e77e135d79786a
+0,         11,         11,        1,   345600, 56edb3d13af111ab82c8a7820fb24342
+0,         12,         12,        1,   345600, 39c9b1072b4b1ba715db11ccb80bc7d9
+0,         13,         13,        1,   345600, d5dcb4ae968f62ce48c9da00120b5fe1
+0,         14,         14,        1,   345600, 4c339d3365b6540648e7d12c946fcc5d
+0,         15,         15,        1,   345600, ee5f254aeeecb3811f376078983e437f
+0,         16,         16,        1,   345600, 14334a3ec8cb6d0267e130be9afa1b04
+0,         17,         17,        1,   345600, 6ff9e42b05036e4d53d362025dbe09a0
+0,         18,         18,        1,   345600, fe5c32b202a1fc181122d74fc944777e
+0,         19,         19,        1,   345600, 1cf8c8fd2fd2909446143f10465f5c19
+0,         20,         20,        1,   345600, fd71876536ba49e0e62165e8891c447a
+0,         21,         21,        1,   345600, f17d2955967cf43c853c6a0cfe074c21
+0,         22,         22,        1,   345600, cd7fe20197fe6d25ae57cd6e6c3c44d4
+0,         23,         23,        1,   345600, 042c7b0858d6d889d56d7638b85f27bd
+0,         24,         24,        1,   345600, fbbffe99df47c9a1143fd4e2fd645136
+0,         25,         25,        1,   345600, 2d69506bdad6130e998dd94b521a9e8d
+0,         26,         26,        1,   345600, f6026b353c217fd209898880a07f65e7
+0,         27,         27,        1,   345600, fa7895e68223ad153645a8ef7c71ca1d
+0,         28,         28,        1,   345600, a47a27e29f24ce0f012472ccce0cbf33
+0,         29,         29,        1,   345600, f459757087991f21b5bb7f42474e11c6
+
+stderr:
+Input #0, hevc, from '/tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv444p12le(tv), 320x180, 25 fps, 10 tbr, 1200k tbn
+[out#0/framemd5 @ 0xbaa85a062c10] No explicit maps, mapping streams automatically...
+[vost#0:0/rawvideo @ 0xbaa859fafb40] Created video stream from input stream 0:0
+[hevc_mp4toannexb @ 0xbaa859faebb0] The input looks like it is Annex B already
+[hevc_cuvid @ 0xbaa859ff91a0] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xbaa859ff91a0] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xbaa859ff91a0] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xbaa859ff91a0] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (hevc_cuvid) -> rawvideo (native))
+[vost#0:0/rawvideo @ 0xbaa859fafb40] Starting thread...
+[vf#0:0 @ 0xbaa859fb65b0] Starting thread...
+[vist#0:0/hevc @ 0xbaa859fb0120] [dec:hevc_cuvid @ 0xbaa85a062df0] Starting thread...
+[in#0/hevc @ 0xbaa859fadeb0] Starting thread...
+Press [q] to stop, [?] for help
+[hevc_cuvid @ 0xbaa859ff91a0] Formats: Original: yuv444p12msble | HW: yuv444p12msble | SW: yuv444p12msble
+[graph -1 input from stream 0:0 @ 0xfc4064003020] w:320 h:180 pixfmt:yuv444p12msble tb:1/1200000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[auto_scale_0 @ 0xfc4064003b90] w:iw h:ih flags:'' interl:0
+[format @ 0xfc4064003570] auto-inserting filter 'auto_scale_0' between the filter 'Parsed_null_0' and the filter 'format'
+[auto_scale_0 @ 0xfc4064003b90] w:320 h:180 fmt:yuv444p12msble csp:unknown range:tv sar:1/1 -> w:320 h:180 fmt:yuv444p12le csp:unknown range:tv sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xfc4064003b90] [framesync @ 0xfc4064003c50] Selected 1/1200000 time base
+[auto_scale_0 @ 0xfc4064003b90] [framesync @ 0xfc4064003c50] Sync level 1
+[graph -1 input from stream 0:0 @ 0xfc4064003020] video frame properties congruent with link at pts_time: 0
+Output #0, framemd5, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: rawvideo, 1 reference frame (Y3[0][12] / 0xC003359), yuv444p12le(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 20736 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 rawvideo
+[out#0/framemd5 @ 0xbaa85a062c10] Starting thread...
+[in#0/hevc @ 0xbaa859fadeb0] EOF while reading input
+[in#0/hevc @ 0xbaa859fadeb0] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xbaa859fb0120] [dec:hevc_cuvid @ 0xbaa85a062df0] Decoder thread received EOF packet
+[vist#0:0/hevc @ 0xbaa859fb0120] [dec:hevc_cuvid @ 0xbaa85a062df0] Decoder returned EOF, finishing
+[auto_scale_0 @ 0xfc4064003b90] [framesync @ 0xfc4064003c50] Sync level 0
+[vf#0:0 @ 0xbaa859fb65b0] All consumers returned EOF
+[vost#0:0/rawvideo @ 0xbaa859fafb40] [enc:rawvideo @ 0xbaa859fafdd0] Encoder thread received EOF
+[vf#0:0 @ 0xbaa859fb65b0] Terminating thread with return code 0 (success)
+[vost#0:0/rawvideo @ 0xbaa859fafb40] Terminating thread with return code 0 (success)
+[out#0/framemd5 @ 0xbaa85a062c10] All streams finished
+[out#0/framemd5 @ 0xbaa85a062c10] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xbaa859fb0120] [dec:hevc_cuvid @ 0xbaa85a062df0] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xbaa859ffab60] Statistics: 2614 bytes written, 0 seeks, 31 writeouts
+[out#0/framemd5 @ 0xbaa85a062c10] Output file #0 (pipe:):
+[out#0/framemd5 @ 0xbaa85a062c10]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (10368000 bytes);
+[out#0/framemd5 @ 0xbaa85a062c10]   Total: 30 packets (10368000 bytes) muxed
+[out#0/framemd5 @ 0xbaa85a062c10] video:10125KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=       3KiB time=00:00:03.00 bitrate=   7.0kbits/s speed=12.1x elapsed=0:00:00.24
+[in#0/hevc @ 0xbaa859fadeb0] Input file #0 (/tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc):
+[in#0/hevc @ 0xbaa859fadeb0]   Input stream #0:0 (video): 30 packets read (105135 bytes); 30 frames decoded; 0 decode errors;
+[in#0/hevc @ 0xbaa859fadeb0]   Total: 30 packets (105135 bytes) demuxed
+[AVIOContext @ 0xbaa859fb6b90] Statistics: 105135 bytes read, 0 seeks
+
+Exiting with exit code 0

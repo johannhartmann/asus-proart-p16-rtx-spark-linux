@@ -1,0 +1,90 @@
+$ ffmpeg -hide_banner -loglevel verbose -i /tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc -frames:v 30 -pix_fmt yuv444p12le -f framemd5 -
+exit_code=0
+
+stdout:
+#format: frame checksums
+#version: 2
+#hash: MD5
+#software: Lavf63.1.102
+#tb 0: 1/10
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 320x180
+#sar 0: 0/1
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,        1,   345600, d3ec1fb314ec7a2ee29b17d0e9f12a58
+0,          1,          1,        1,   345600, 26cd7ff257102f345438644fb7ce6e78
+0,          2,          2,        1,   345600, 24725a1a777412656471043b8a0fc3f9
+0,          3,          3,        1,   345600, 4ee51b24b4e356f4630173701808d0ef
+0,          4,          4,        1,   345600, 5923c91fb90655a9a38091136ebfcea7
+0,          5,          5,        1,   345600, d27337ce980437d26ebea6393d9a0c6d
+0,          6,          6,        1,   345600, b82fa1feac40951fb0073ef4a0b66f9b
+0,          7,          7,        1,   345600, 4e8352c243adabf9457217b22fa14e94
+0,          8,          8,        1,   345600, 37737aa29262612aa2ee136903cf8148
+0,          9,          9,        1,   345600, 133bf1d1f4e21957520040b5257285af
+0,         10,         10,        1,   345600, 4925c34c0774359962e77e135d79786a
+0,         11,         11,        1,   345600, 56edb3d13af111ab82c8a7820fb24342
+0,         12,         12,        1,   345600, 39c9b1072b4b1ba715db11ccb80bc7d9
+0,         13,         13,        1,   345600, d5dcb4ae968f62ce48c9da00120b5fe1
+0,         14,         14,        1,   345600, 4c339d3365b6540648e7d12c946fcc5d
+0,         15,         15,        1,   345600, ee5f254aeeecb3811f376078983e437f
+0,         16,         16,        1,   345600, 14334a3ec8cb6d0267e130be9afa1b04
+0,         17,         17,        1,   345600, 6ff9e42b05036e4d53d362025dbe09a0
+0,         18,         18,        1,   345600, fe5c32b202a1fc181122d74fc944777e
+0,         19,         19,        1,   345600, 1cf8c8fd2fd2909446143f10465f5c19
+0,         20,         20,        1,   345600, fd71876536ba49e0e62165e8891c447a
+0,         21,         21,        1,   345600, f17d2955967cf43c853c6a0cfe074c21
+0,         22,         22,        1,   345600, cd7fe20197fe6d25ae57cd6e6c3c44d4
+0,         23,         23,        1,   345600, 042c7b0858d6d889d56d7638b85f27bd
+0,         24,         24,        1,   345600, fbbffe99df47c9a1143fd4e2fd645136
+0,         25,         25,        1,   345600, 2d69506bdad6130e998dd94b521a9e8d
+0,         26,         26,        1,   345600, f6026b353c217fd209898880a07f65e7
+0,         27,         27,        1,   345600, fa7895e68223ad153645a8ef7c71ca1d
+0,         28,         28,        1,   345600, a47a27e29f24ce0f012472ccce0cbf33
+0,         29,         29,        1,   345600, f459757087991f21b5bb7f42474e11c6
+
+stderr:
+Input #0, hevc, from '/tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc':
+  Duration: N/A, bitrate: N/A
+  Stream #0:0: Video: hevc (Rext), 1 reference frame, yuv444p12le(tv), 320x180, 25 fps, 10 tbr, 1200k tbn
+[out#0/framemd5 @ 0xc59ac6cdee00] No explicit maps, mapping streams automatically...
+[vost#0:0/rawvideo @ 0xc59ac6c2bda0] Created video stream from input stream 0:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> rawvideo (native))
+[vost#0:0/rawvideo @ 0xc59ac6c2bda0] Starting thread...
+[vf#0:0 @ 0xc59ac6c32860] Starting thread...
+[vist#0:0/hevc @ 0xc59ac6c2abb0] [dec:hevc @ 0xc59ac6cdefe0] Starting thread...
+[in#0/hevc @ 0xc59ac6c2a5b0] Starting thread...
+Press [q] to stop, [?] for help
+[graph -1 input from stream 0:0 @ 0xe60f60003d40] w:320 h:180 pixfmt:yuv444p12le tb:1/1200000 fr:10/1 sar:0/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xe60f60003d40] video frame properties congruent with link at pts_time: 0
+Output #0, framemd5, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: rawvideo, 1 reference frame (Y3[0][12] / 0xC003359), yuv444p12le(tv, progressive), 320x180, q=2-31, 20736 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 rawvideo
+[out#0/framemd5 @ 0xc59ac6cdee00] Starting thread...
+[in#0/hevc @ 0xc59ac6c2a5b0] EOF while reading input
+[in#0/hevc @ 0xc59ac6c2a5b0] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xc59ac6c2abb0] [dec:hevc @ 0xc59ac6cdefe0] Decoder thread received EOF packet
+[vist#0:0/hevc @ 0xc59ac6c2abb0] [dec:hevc @ 0xc59ac6cdefe0] Decoder returned EOF, finishing
+[vf#0:0 @ 0xc59ac6c32860] All consumers returned EOF
+[vost#0:0/rawvideo @ 0xc59ac6c2bda0] [enc:rawvideo @ 0xc59ac6c2c030] Encoder thread received EOF
+[vf#0:0 @ 0xc59ac6c32860] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xc59ac6c2abb0] [dec:hevc @ 0xc59ac6cdefe0] Terminating thread with return code 0 (success)
+[vost#0:0/rawvideo @ 0xc59ac6c2bda0] Terminating thread with return code 0 (success)
+[out#0/framemd5 @ 0xc59ac6cdee00] All streams finished
+[out#0/framemd5 @ 0xc59ac6cdee00] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xc59ac6c76f70] Statistics: 2614 bytes written, 0 seeks, 31 writeouts
+[out#0/framemd5 @ 0xc59ac6cdee00] Output file #0 (pipe:):
+[out#0/framemd5 @ 0xc59ac6cdee00]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (10368000 bytes);
+[out#0/framemd5 @ 0xc59ac6cdee00]   Total: 30 packets (10368000 bytes) muxed
+[out#0/framemd5 @ 0xc59ac6cdee00] video:10125KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=       3KiB time=00:00:03.00 bitrate=   7.0kbits/s speed=81.1x elapsed=0:00:00.03
+[in#0/hevc @ 0xc59ac6c2a5b0] Input file #0 (/tmp/n1x-hevc12-lzc9r9w6/hevc12.hevc):
+[in#0/hevc @ 0xc59ac6c2a5b0]   Input stream #0:0 (video): 30 packets read (105135 bytes); 30 frames decoded; 0 decode errors;
+[in#0/hevc @ 0xc59ac6c2a5b0]   Total: 30 packets (105135 bytes) demuxed
+[AVIOContext @ 0xc59ac6c32e30] Statistics: 105135 bytes read, 0 seeks
+
+Exiting with exit code 0

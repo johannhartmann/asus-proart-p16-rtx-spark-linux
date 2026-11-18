@@ -1,6 +1,7 @@
 {
   "status": "pass",
   "machine": "ASUS ProArt P16 H7607BA",
+  "chroma": "420",
   "kernel": "7.2.8-36-rtx-spark-npu",
   "nvidia_driver": "615.78.08",
   "fixture": {
@@ -21,9 +22,12 @@
   "player": {
     "status": "pass",
     "command": "/usr/bin/p16-video-play",
-    "backend": "VA-API p012 -> gpu-next",
+    "backend": "VA-API -> gpu-next",
     "frames_limit": 30,
+    "reported_surface_format": "p012",
+    "precision": "12-bit surface reported",
     "raw_bitstream_timestamps": "missing; mpv synthesized PTS"
   },
+  "vulkan_player": null,
   "limits": "VA-API frames counted on hardware surfaces; pixel comparison used direct CUVID because VA-API hwdownload was not qualified."
 }

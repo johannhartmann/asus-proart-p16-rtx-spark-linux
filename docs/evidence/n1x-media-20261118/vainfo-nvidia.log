@@ -1,0 +1,31 @@
+package=libva-utils 2.24.0-1 aarch64
+package_sha256=6d4181355c337f173ac00f99ff5e8b9682b145bdd1854dfd049a14f2b13b9092
+vainfo_sha256=c31c6a1acaf7da27858db1dfdc850621e8f53e207ae736b7047cbdbf614d5a98
+signature_exit=0
+signature_summary=gpg: Good signature from "Arch Linux ARM Build System <builder@archlinuxarm.org>" [full]
+command=LIBVA_DRIVER_NAME=nvidia NVD_BACKEND=direct vainfo --display drm --device /dev/dri/renderD128
+exit_code=0
+Trying display: drm
+vainfo: VA-API version: 1.24 (libva 2.24.0)
+vainfo: Driver version: VA-API NVDEC driver [direct backend]
+vainfo: Supported profile and entrypoints
+      VAProfileMPEG2Simple            :	VAEntrypointVLD
+      VAProfileMPEG2Main              :	VAEntrypointVLD
+      VAProfileVC1Simple              :	VAEntrypointVLD
+      VAProfileVC1Main                :	VAEntrypointVLD
+      VAProfileVC1Advanced            :	VAEntrypointVLD
+      VAProfileH264Main               :	VAEntrypointVLD
+      VAProfileH264High               :	VAEntrypointVLD
+      VAProfileH264ConstrainedBaseline:	VAEntrypointVLD
+      VAProfileJPEGBaseline           :	VAEntrypointVLD
+      VAProfileHEVCMain               :	VAEntrypointVLD
+      VAProfileVP8Version0_3          :	VAEntrypointVLD
+      VAProfileVP9Profile0            :	VAEntrypointVLD
+      VAProfileAV1Profile0            :	VAEntrypointVLD
+      VAProfileHEVCMain10             :	VAEntrypointVLD
+      VAProfileHEVCMain12             :	VAEntrypointVLD
+      VAProfileVP9Profile2            :	VAEntrypointVLD
+      VAProfileHEVCMain444            :	VAEntrypointVLD
+      VAProfileHEVCMain444_10         :	VAEntrypointVLD
+      VAProfileHEVCMain444_12         :	VAEntrypointVLD
+      VAProfileNone                   :	VAEntrypointVideoProc

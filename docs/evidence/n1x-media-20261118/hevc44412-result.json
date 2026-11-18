@@ -1,0 +1,40 @@
+{
+  "status": "pass",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "chroma": "444",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "fixture": {
+    "codec_name": "hevc",
+    "profile": "Rext",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuv444p12le",
+    "nb_read_frames": "30"
+  },
+  "fixture_sha256": "d0a3df84d394e5f110cfaf5e49be690f1a6b6fb35a58cc5506a96977aa9d6e4b",
+  "frames": 30,
+  "cuvid_matches_software_framemd5": true,
+  "frame_hashes_sha256": "3ec393f8221244dfc7b36c3e2afc2d6a182f1ec691f53e4d01f86ccdeb9445bc",
+  "vaapi_hardware_frames": 30,
+  "x265_12_binary_sha256": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
+  "ffmpeg_cuvid_binary_sha256": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+  "player": {
+    "status": "playback_only",
+    "command": "/usr/bin/p16-video-play",
+    "backend": "VA-API -> gpu-next",
+    "frames_limit": 30,
+    "reported_surface_format": "yuv444p",
+    "precision": "12-bit surface preservation not established",
+    "raw_bitstream_timestamps": "missing; mpv synthesized PTS"
+  },
+  "vulkan_player": {
+    "status": "pass",
+    "command": "/usr/bin/p16-video-play",
+    "backend": "Vulkan Video -> gpu-next",
+    "frames_limit": 30,
+    "reported_surface_format": "p412",
+    "raw_bitstream_timestamps": "missing; mpv synthesized PTS"
+  },
+  "limits": "VA-API frames counted on hardware surfaces; pixel comparison used direct CUVID because VA-API hwdownload was not qualified."
+}

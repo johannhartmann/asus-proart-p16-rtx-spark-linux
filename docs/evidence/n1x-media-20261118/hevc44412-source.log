@@ -1,0 +1,6 @@
+$ ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -pix_fmt yuv444p12le -f rawvideo -y /tmp/n1x-hevc12-lzc9r9w6/source.yuv
+exit_code=0
+
+stdout:
+
+stderr:
