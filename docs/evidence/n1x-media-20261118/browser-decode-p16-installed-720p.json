@@ -1,0 +1,26 @@
+{
+  "status": "pass",
+  "browser": "p16-video-chrome",
+  "browser_version": "Google Chrome 156.0.8078.79",
+  "mode": "launcher-flags-only",
+  "flags": [],
+  "fixture": "generated H.264 1280x720 24 fps",
+  "playback": {
+    "width": 1280,
+    "height": 720,
+    "totalVideoFrames": 96,
+    "droppedVideoFrames": 1,
+    "duration": 4
+  },
+  "decoder_properties": [
+    {
+      "name": "kVideoDecoderName",
+      "value": "VaapiVideoDecoder"
+    },
+    {
+      "name": "kIsPlatformVideoDecoder",
+      "value": "true"
+    }
+  ],
+  "note": "CDP Media explicitly identified VaapiVideoDecoder"
+}

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+chrome=/usr/bin/google-chrome-stable
+if [[ ! -x $chrome ]]; then
+  echo 'p16-video-chrome requires google-chrome-stable' >&2
+  exit 127
+fi
+
+# Chrome otherwise reuses a running instance and silently ignores new GPU flags.
+profile_arg=()
+has_profile=false
+for arg in "$@"; do
+  if [[ $arg == --user-data-dir=* || $arg == --user-data-dir ]]; then
+    has_profile=true
+    break
+  fi
+done
+if [[ $has_profile == false ]]; then
+  profile=${P16_CHROME_PROFILE:-${XDG_DATA_HOME:-$HOME/.local/share}/p16-video-chrome}
+  mkdir -p "$profile"
+  profile_arg=("--user-data-dir=$profile")
+fi
+
+exec env LIBVA_DRIVER_NAME=nvidia NVD_BACKEND=direct "$chrome" \
+  "${profile_arg[@]}" \
+  --enable-features=AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiVideoDecoder \
+  --ignore-gpu-blocklist --use-gl=angle --use-angle=gl \
+  --ozone-platform=wayland "$@"

@@ -8,24 +8,39 @@ import { join } from 'node:path';
 
 const output = process.argv[2];
 if (!output) {
-  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi] [--browser=chromium|google-chrome-stable]');
+  console.error('Usage: node scripts/check-browser-decode.mjs RESULT.json [--nvidia-vaapi|--nvidia-vaapi-advanced|--no-test-flags] [--browser=COMMAND] [--size=WIDTHxHEIGHT]');
   process.exit(2);
 }
 const nvidiaVaapi = process.argv.includes('--nvidia-vaapi');
+const advancedVaapi = process.argv.includes('--nvidia-vaapi-advanced');
 const browser = process.argv.find(arg => arg.startsWith('--browser='))?.split('=', 2)[1] ?? 'chromium';
+const size = process.argv.find(arg => arg.startsWith('--size='))?.slice(7) ?? '320x180';
+if (!/^[1-9]\d{1,3}x[1-9]\d{1,3}$/.test(size)) throw Error(`Invalid size ${size}`);
 const browserVersion = spawnSync(browser, ['--version'], {encoding:'utf8', timeout:5000});
 if (browserVersion.status !== 0) throw Error(`${browser} --version failed`);
-const decodeFlags = nvidiaVaapi ? [
+const advancedFeatures = ['AcceleratedVideoDecodeLinuxGL',
+  'AcceleratedVideoDecodeLinuxZeroCopyGL', 'VaapiOnNvidiaGPUs',
+  'VaapiIgnoreDriverChecks', 'VaapiVideoDecoder'].filter(feature =>
+  !(feature === 'AcceleratedVideoDecodeLinuxZeroCopyGL' && process.argv.includes('--no-zero-copy')) &&
+  !(feature === 'VaapiIgnoreDriverChecks' && process.argv.includes('--no-ignore-checks')));
+const decodeFlags = advancedVaapi ? [
+  `--enable-features=${advancedFeatures.join(',')}`,
+  '--ignore-gpu-blocklist',
+  ...(!process.argv.includes('--no-disable-workarounds') ?
+    ['--disable-gpu-driver-bug-workarounds'] : []),
+  '--use-gl=angle', '--use-angle=gl',
+] : nvidiaVaapi ? [
   '--enable-features=AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiVideoDecoder',
   '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl',
 ] : ['--enable-features=VaapiVideoDecoder'];
+const launchFlags = process.argv.includes('--no-test-flags') ? [] : decodeFlags;
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const temp = await mkdtemp(join(tmpdir(), 'n1x-browser-decode-'));
 const video = join(temp, 'h264.mp4');
 const fixture = spawnSync('ffmpeg', [
   '-hide_banner', '-loglevel', 'error', '-f', 'lavfi',
-  '-i', 'testsrc2=size=320x180:rate=24', '-t', '4',
-  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
+  '-i', `testsrc2=size=${size}:rate=24`, '-t', '4',
+  '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
   '-y', video,
 ], {encoding:'utf8', timeout:20000});
 if (fixture.status !== 0) {
@@ -65,7 +80,7 @@ try {
     `--user-data-dir=${temp}`, '--remote-debugging-address=127.0.0.1',
     '--remote-debugging-port=0', '--no-first-run', '--disable-extensions',
     '--autoplay-policy=no-user-gesture-required',
-    ...decodeFlags, '--ozone-platform=wayland',
+    ...launchFlags, '--ozone-platform=wayland',
     '--window-size=640,360', 'about:blank',
   ], {stdio:'ignore',
     env:{...process.env, LIBVA_DRIVER_NAME:'nvidia', NVD_BACKEND:'direct'}});
@@ -108,7 +123,7 @@ try {
     if (reply.error || reply.result?.exceptionDetails || !playback) {
       throw Error(JSON.stringify(reply.error || reply.result?.exceptionDetails || reply));
     }
-    await delay(300);
+    await delay(1000);
     const properties = media.flatMap(event =>
       event.method === 'Media.playerPropertiesChanged' ? event.params.properties : []);
     const decoder = properties.filter(property =>
@@ -116,8 +131,10 @@ try {
     const vaapi = decoder.some(property => /VaapiVideoDecoder/i.test(property.value));
     const report = {status:vaapi ? 'pass' : 'unqualified',
       browser, browser_version:browserVersion.stdout.trim(),
-      mode:nvidiaVaapi ? 'nvidia-vaapi-flags' : 'default-vaapi-flag',
-      flags:decodeFlags, fixture:'generated H.264 320x180 24 fps',
+      mode:process.argv.includes('--no-test-flags') ? 'launcher-flags-only' :
+        advancedVaapi ? 'nvidia-vaapi-advanced-flags' :
+        nvidiaVaapi ? 'nvidia-vaapi-flags' : 'default-vaapi-flag',
+      flags:launchFlags, fixture:`generated H.264 ${size} 24 fps`,
       playback, decoder_properties:decoder,
       note:vaapi ? 'CDP Media explicitly identified VaapiVideoDecoder' :
         'Playback succeeded, but CDP Media did not establish VA-API hardware decoding'};

@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-18",
+  "machine": "ASUS ProArt P16 H7607BA, RTX Spark N1X",
+  "browser": "p16-video-chrome (Google Chrome 156.0.8078.79)",
+  "package": "p16-media-tools 0.1.0-4",
+  "fixture": "H.264 1280x720 24 fps, 96 DOM video frames",
+  "trace_source": "LIBVA_TRACE on installed launcher run",
+  "successful_libva_calls": {
+    "vaCreateContext": 1,
+    "vaBeginPicture": 96,
+    "vaRenderPicture": 96,
+    "vaEndPicture": 95,
+    "vaSyncSurface": 21,
+    "vaExportSurfaceHandle": 21
+  },
+  "libva_error_returns": 0,
+  "cdp_decoder": "VaapiVideoDecoder",
+  "cdp_platform_decoder": true,
+  "cdp_total_video_frames": 96,
+  "cdp_dropped_video_frames": 0,
+  "raw_trace_retained": false,
+  "note": "Libva picture submission and export occurred through the NVIDIA VA-API driver. The trace has 95 completed EndPicture calls; one final picture may have been unsubmitted or its tail unflushed at browser exit. No per-frame one-to-one claim is made."
+}

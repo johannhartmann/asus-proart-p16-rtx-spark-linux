@@ -40,6 +40,17 @@ existing file and removes partial output on failure. A 60-frame camera run
 was independently decoded and checked for changing frames. This is another
 standard Linux Vulkan Video API path, not NVENC or OBS integration.
 
+`p16-video-chrome [URL or Chrome options]` starts Google Chrome with the
+NVIDIA VA-API direct backend and the flags that selected `VaapiVideoDecoder`
+on this P16. It uses a dedicated profile in
+`${XDG_DATA_HOME:-$HOME/.local/share}/p16-video-chrome` so an already running
+Chrome instance cannot silently discard the GPU flags. Set
+`P16_CHROME_PROFILE` to choose another profile, or pass `--user-data-dir`.
+Google Chrome is optional for the other media commands. The bounded H.264
+1280×720 test played 96 frames with `kIsPlatformVideoDecoder=true`; a 320×180
+fixture and Arch ARM Chromium 156 fell back to software. Other codecs, sites,
+resolutions and long playback still need qualification.
+
 These commands use distribution mpv and FFmpeg. The [media evidence](../../../docs/evidence/n1x-media-20261118/README.md)
 records the exact machine and driver qualification. They should be installed
 only on the tested P16 model or after checking equivalent hardware paths on

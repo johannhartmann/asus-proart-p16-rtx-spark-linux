@@ -34,7 +34,7 @@ cannot qualify that separate platform pipeline.
 
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
-| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling, while mpv 4:2:2 and Chromium/Chrome H.264 fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
+| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API at 1280×720 with the P16 launcher, while Arch ARM Chromium 156 falls back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. Visual quality and long-run performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass | Privacy, graphical browser permission and resume tested independently |
@@ -148,13 +148,17 @@ stopped before sleep: ACPI TAD RTC1 returned `Input/output error` and EFI RTC0
 returned `Invalid argument` when asked to arm a wake alarm. NVIDIA kernel
 suspend notifiers are active and the verified VT handoff must be preserved.
 No after-resume media result is claimed.
-The [Chromium decode check](docs/evidence/n1x-media-20261118/browser-decode.json)
-played 96 H.264 frames but reported `FFmpegVideoDecoder` and
-`kIsPlatformVideoDecoder=false`. A second run with the NVIDIA VA-API bridge's
-documented Chromium flags gave the same software path. Browser hardware decode
-therefore remains open despite successful Chromium WebRTC camera capture.
-Google Chrome 156 on ARM64 was also tested with those flags and reported the
-same software decoder for a complete 96-frame playback.
+The initial [Chromium decode check](docs/evidence/n1x-media-20261118/browser-decode.json)
+used a 320×180 H.264 fixture and reported `FFmpegVideoDecoder` with
+`kIsPlatformVideoDecoder=false`. Chrome 156 did likewise on that small fixture.
+At 1280×720, Google Chrome 156 with the same NVIDIA VA-API flags reported
+`VaapiVideoDecoder` and `kIsPlatformVideoDecoder=true` for all 96 frames with
+no drops. The `p16-video-chrome` launcher also selected that path in an
+isolated profile. [Browser evidence](docs/evidence/n1x-media-20261118/browser-vaapi.md)
+includes the flags, negative controls and upstream references. Arch ARM
+Chromium 156 still selected `FFmpegVideoDecoder` at 1280×720 even with the
+extended flags. Other browser codecs, resolutions, sites and post-resume
+playback remain open.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.
