@@ -141,8 +141,11 @@ with matching `vermagic` and BTF. Versioned dependencies require an isolated
 display, suspend/resume and NVENC session/output tests.
 The [isolated-root staging procedure](docs/evidence/nvidia620-isolated-root-staging.md)
 pins the Btrfs snapshot, package, candidate UKI and rollback checks needed
-before a native 620 boot. It is a preparation record; the candidate root and
-UKI have not yet been created.
+before a native 620 boot. A [copied Pacman database transaction](docs/evidence/nvidia620-pacman-db-transaction-20261118.json)
+accepts the six-package 615 removal and four-package 620 installation with
+matched 620 versions, without changing the live root. File installation,
+hooks and UKI are outside that simulation; the candidate root and UKI have
+not yet been created.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

@@ -26,6 +26,15 @@ rechecked both archive signatures, all four pinned package hashes and
 versioned dependencies, all 13 module versions/vermagic/split BTF, the
 running 615 boundary and 839,901,184 free EFI bytes. It passed without
 installing or loading 620.
+A [fakeroot Pacman transaction simulation](nvidia620-pacman-db-transaction-20261118.json)
+then copied the live local and sync databases to a temporary root, removed
+the six version-bound 615 driver packages from that copy, and installed the
+four pinned 620 archives with `--dbonly --noscriptlet`. Pacman accepted the
+dependency transaction and the copied database ended with matched 620
+packages while the live 615 package versions stayed unchanged. This is a
+database-only check; it does not prove file conflict resolution, hook safety,
+module placement, the UKI or a boot. The repeatable simulator is
+[`simulate-nvidia620-pacman-transaction.py`](../../scripts/simulate-nvidia620-pacman-transaction.py).
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never
