@@ -121,9 +121,11 @@ firmware-framebuffer boot policy, early NVIDIA initramfs loading and module/UKI
 version checks. `cuda/vector-add.cu` and `scripts/check-cuda.sh` provide the
 project's arithmetic smoke test (`sm_121`); compiler/device compatibility is
 checked by CUDA rather than a BIOS-version restriction.
-Hardware video encode/decode has no complete qualification here. A bounded
-H.264 NVDEC smoke test is recorded in the media plan; CUDA or desktop rendering
-results do not establish codec support.
+Hardware video encode/decode remains only partly qualified. Bounded H.264,
+HEVC and AV1 VA-API/NVDEC decode, Vulkan Video encode, mpv playback and P16
+RGB camera use in Chromium WebRTC and OBS are recorded in the [media evidence](docs/evidence/n1x-media-20261118/README.md).
+The isolated NVENC FFmpeg candidate fails to open an encoder session on the
+current driver; Vulkan Video encode is a separate API.
 The [media support plan](missing_parts.md) defines the codec, video-effects and
 camera implementation and application-use gates.
 

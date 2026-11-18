@@ -1,0 +1,5 @@
+$ ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v libx264 -y /tmp/n1x-media-gh1etcv_/software-h264.mkv
+
+stdout:
+
+stderr:

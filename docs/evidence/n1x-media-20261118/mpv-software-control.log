@@ -1,0 +1,267 @@
+[   0.001][v][cplayer] mpv v0.41.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[   0.001][v][cplayer]  built on Aug 29 2026 23:03:44
+[   0.001][v][cplayer] libplacebo version: v7.360.1
+[   0.001][v][cplayer] FFmpeg version: n9.0.1 (runtime n9.0.2)
+[   0.001][v][cplayer] FFmpeg library versions:
+[   0.001][v][cplayer]    libavcodec      63.1.101 (runtime 63.1.102)
+[   0.001][v][cplayer]    libavdevice     63.1.101 (runtime 63.1.102)
+[   0.001][v][cplayer]    libavfilter     12.1.101 (runtime 12.1.102)
+[   0.001][v][cplayer]    libavformat     63.1.101 (runtime 63.1.102)
+[   0.001][v][cplayer]    libavutil       61.1.101 (runtime 61.1.102)
+[   0.001][v][cplayer]    libswresample   7.1.101 (runtime 7.1.102)
+[   0.001][v][cplayer]    libswscale      10.1.101 (runtime 10.1.102)
+[   0.001][v][cplayer] Configuration: -Dbuildtype=plain -Dprefix=/usr -Dlibexecdir=lib -Dsbindir=bin -Dauto_features=auto -Dwrap_mode=nodownload -Db_lto=false -Db_pie=true -Dpython.bytecompile=1 -Dlibmpv=true -Dgl-x11=enabled -Dcaca=disabled -Dcdda=enabled -Ddrm=enabled -Ddvbin=enabled -Ddvdnav=enabled -Dlibarchive=enabled -Dopenal=enabled -Dsdl2-audio=enabled -Dsdl2-video=enabled -Dsdl2-gamepad=enabled
+[   0.001][v][cplayer] List of enabled features: alsa build-date cdda cplugins cuda-hwaccel cuda-interop dmabuf-interop-gl dmabuf-wayland drm dvbin dvdnav egl egl-drm egl-wayland egl-x11 ffmpeg ffnvcodec gbm gl gl-x11 glibc-thread-name glob glob-posix gpl iconv jack javascript jpeg lcms2 libarchive libass libavdevice libbluray libdl libplacebo linux-fstatfs luajit memfd-create memrchr openal pipewire posix posix-shm ppoll pthread-condattr-setclock pulse rubberband rubberband-3 sdl2-audio sdl2-gamepad sdl2-video sixel sndio sndio-1-9 uchardet vaapi vaapi-drm vaapi-wayland vaapi-x11 vdpau vdpau-gl-x11 vector vk-khr-display vt.h vulkan wayland wayland-protocols-1-32 wayland-protocols-1-38 wayland-protocols-1-39 wayland-protocols-1-41 wayland-protocols-1-44 wayland-protocols-1-47 x11 x11-clipboard xv zimg zimg-st428 zlib
+[   0.001][v][cplayer] Command line options: '--no-config' '--hwdec=no' '--vo=null' '--no-audio' '--msg-level=vd=debug' '--log-file=mpv-software-control.log' 'test-pattern.mkv'
+[   0.002][v][cplayer] mpv v0.41.0 Copyright © 2000-2025 mpv/MPlayer/mplayer2 projects
+[   0.002][v][cplayer]  built on Aug 29 2026 23:03:44
+[   0.002][v][cplayer] libplacebo version: v7.360.1
+[   0.002][v][cplayer] FFmpeg version: n9.0.1 (runtime n9.0.2)
+[   0.002][v][cplayer] FFmpeg library versions:
+[   0.002][v][cplayer]    libavcodec      63.1.101 (runtime 63.1.102)
+[   0.002][v][cplayer]    libavdevice     63.1.101 (runtime 63.1.102)
+[   0.002][v][cplayer]    libavfilter     12.1.101 (runtime 12.1.102)
+[   0.002][v][cplayer]    libavformat     63.1.101 (runtime 63.1.102)
+[   0.002][v][cplayer]    libavutil       61.1.101 (runtime 61.1.102)
+[   0.002][v][cplayer]    libswresample   7.1.101 (runtime 7.1.102)
+[   0.002][v][cplayer]    libswscale      10.1.101 (runtime 10.1.102)
+[   0.002][v][cplayer] Configuration: -Dbuildtype=plain -Dprefix=/usr -Dlibexecdir=lib -Dsbindir=bin -Dauto_features=auto -Dwrap_mode=nodownload -Db_lto=false -Db_pie=true -Dpython.bytecompile=1 -Dlibmpv=true -Dgl-x11=enabled -Dcaca=disabled -Dcdda=enabled -Ddrm=enabled -Ddvbin=enabled -Ddvdnav=enabled -Dlibarchive=enabled -Dopenal=enabled -Dsdl2-audio=enabled -Dsdl2-video=enabled -Dsdl2-gamepad=enabled
+[   0.002][v][cplayer] List of enabled features: alsa build-date cdda cplugins cuda-hwaccel cuda-interop dmabuf-interop-gl dmabuf-wayland drm dvbin dvdnav egl egl-drm egl-wayland egl-x11 ffmpeg ffnvcodec gbm gl gl-x11 glibc-thread-name glob glob-posix gpl iconv jack javascript jpeg lcms2 libarchive libass libavdevice libbluray libdl libplacebo linux-fstatfs luajit memfd-create memrchr openal pipewire posix posix-shm ppoll pthread-condattr-setclock pulse rubberband rubberband-3 sdl2-audio sdl2-gamepad sdl2-video sixel sndio sndio-1-9 uchardet vaapi vaapi-drm vaapi-wayland vaapi-x11 vdpau vdpau-gl-x11 vector vk-khr-display vt.h vulkan wayland wayland-protocols-1-32 wayland-protocols-1-38 wayland-protocols-1-39 wayland-protocols-1-41 wayland-protocols-1-44 wayland-protocols-1-47 x11 x11-clipboard xv zimg zimg-st428 zlib
+[   0.002][d][global] home path: '' -> '-'
+[   0.002][d][global] user path: '~~home/' -> ''
+[   0.002][d][global] user path: '~~old_home/' -> ''
+[   0.002][v][cplayer] Setting option 'config' = 'no' (flags = 8)
+[   0.002][v][cplayer] Setting option 'hwdec' = 'no' (flags = 8)
+[   0.002][v][cplayer] Setting option 'vo' = 'null' (flags = 8)
+[   0.002][v][cplayer] Setting option 'audio' = 'no' (flags = 8)
+[   0.002][v][cplayer] Setting option 'msg-level' = 'vd=debug' (flags = 8)
+[   0.002][v][cplayer] Setting option 'log-file' = 'mpv-software-control.log' (flags = 8)
+[   0.002][d][osc] Loading lua script @osc.lua...
+[   0.002][d][ytdl_hook] Loading lua script @ytdl_hook.lua...
+[   0.002][d][stats] Loading lua script @stats.lua...
+[   0.002][d][console] Loading lua script @console.lua...
+[   0.002][d][auto_profiles] Loading lua script @auto_profiles.lua...
+[   0.002][d][select] Loading lua script @select.lua...
+[   0.003][d][stats] loading mp.defaults
+[   0.003][d][positioning] Loading lua script @positioning.lua...
+[   0.003][d][ytdl_hook] loading mp.defaults
+[   0.003][d][auto_profiles] loading mp.defaults
+[   0.003][d][commands] Loading lua script @commands.lua...
+[   0.003][d][osc] loading mp.defaults
+[   0.004][d][select] loading mp.defaults
+[   0.004][d][context_menu] Loading lua script @context_menu.lua...
+[   0.004][d][positioning] loading mp.defaults
+[   0.004][d][auto_profiles] loading @auto_profiles.lua
+[   0.005][d][stats] loading @stats.lua
+[   0.005][d][console] loading mp.defaults
+[   0.005][v][clipboard/wayland] Registered interface wl_seat at version 8
+[   0.005][v][clipboard/wayland] Registered interface ext_data_control_manager_v1 at version 1
+[   0.005][d][ytdl_hook] loading @ytdl_hook.lua
+[   0.005][d][context_menu] loading mp.defaults
+[   0.005][d][select] loading @select.lua
+[   0.005][v][clipboard] Initialized wayland clipboard backend.
+[   0.005][d][osc] loading @osc.lua
+[   0.005][v][cplayer] Waiting for scripts...
+[   0.005][d][commands] loading mp.defaults
+[   0.005][d][positioning] loading @positioning.lua
+[   0.005][d][context_menu] loading @context_menu.lua
+[   0.005][d][select] reading options for select
+[   0.005][d][select] script-opts/select.conf not found.
+[   0.005][d][select] lua-settings/select.conf not found.
+[   0.006][d][positioning] reading options for positioning
+[   0.006][d][positioning] script-opts/positioning.conf not found.
+[   0.006][d][positioning] lua-settings/positioning.conf not found.
+[   0.006][d][console] loading @console.lua
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_select", contents="", flags="default"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_positioning", contents="", flags="default"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_positioning", contents="", flags="force"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_positioning", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_select", contents="", flags="force"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_select", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][context_menu] reading options for context_menu
+[   0.006][d][context_menu] script-opts/context_menu.conf not found.
+[   0.006][d][context_menu] lua-settings/context_menu.conf not found.
+[   0.006][v][clipboard/wayland] Read 2863 bytes from the data offer fd
+[   0.006][d][stats] reading options for stats
+[   0.006][d][stats] script-opts/stats.conf not found.
+[   0.006][d][stats] lua-settings/stats.conf not found.
+[   0.006][d][ytdl_hook] reading options for ytdl_hook
+[   0.006][d][ytdl_hook] script-opts/ytdl_hook.conf not found.
+[   0.006][d][ytdl_hook] lua-settings/ytdl_hook.conf not found.
+[   0.006][v][clipboard/wayland] Read 1732 bytes from the data offer fd
+[   0.006][d][commands] loading @commands.lua
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_stats", contents="", flags="default"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.006][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_stats", contents="", flags="force"]
+[   0.006][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_stats", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][commands] reading options for commands
+[   0.007][d][commands] script-opts/commands.conf not found.
+[   0.007][d][commands] lua-settings/commands.conf not found.
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_commands", contents="", flags="default"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_commands", contents="", flags="force"]
+[   0.007][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_commands", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.007][d][auto_profiles] Destroying client handle...
+[   0.007][d][console] reading options for console
+[   0.007][d][console] script-opts/console.conf not found.
+[   0.007][d][console] lua-settings/console.conf not found.
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_console", contents="", flags="default"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_console", contents="", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_console", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="showhide", contents="mouse_move script-binding osc/__keybinding1\nmouse_leave script-binding osc/__keybinding2\n", flags="force"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="showhide_wc", contents="mouse_move script-binding osc/__keybinding3\nmouse_leave script-binding osc/__keybinding4\n", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="showhide", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="showhide_wc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.008][d][cplayer] Run command: define-section, flags=64, args=[name="input", contents="mbtn_left script-binding osc/__keybinding5\nmbtn_mid script-binding osc/__keybinding6\nmbtn_right script-binding osc/__keybinding7\nshift+mbtn_left script-binding osc/__keybinding8\nwheel_up script-binding osc/__keybinding9\nwheel_down script-binding osc/__keybinding10\nmbtn_left_dbl ignore\nshift+mbtn_left_dbl ignore\nmbtn_right_dbl ignore\n", flags="force"]
+[   0.008][d][cplayer] Run command: enable-section, flags=64, args=[name="input", flags=""]
+[   0.009][d][cplayer] Run command: define-section, flags=64, args=[name="window-controls", contents="mbtn_left script-binding osc/__keybinding11\n", flags="force"]
+[   0.009][d][cplayer] Run command: enable-section, flags=64, args=[name="window-controls", flags=""]
+[   0.009][d][osc] reading options for osc
+[   0.009][d][osc] script-opts/osc.conf not found.
+[   0.009][d][osc] lua-settings/osc.conf not found.
+[   0.009][v][cplayer] Set property: user-data/osc/visibility="auto" -> 1
+[   0.010][d][cplayer] Run command: disable-section, flags=64, args=[name="input"]
+[   0.010][d][cplayer] Run command: disable-section, flags=64, args=[name="window-controls"]
+[   0.010][v][cplayer] Set property: user-data/osc/margins={"l":0,"t":0,"b":0,"r":0} -> 1
+[   0.010][v][cplayer] Done loading scripts.
+[   0.010][d][global] state path: 'watch_later' -> '-'
+[   0.010][v][cplayer] Running hook: auto_profiles/on_before_start_file
+[   0.010][v][cplayer] Failed sending hook command auto_profiles/on_before_start_file. Removing hook.
+[   0.010][d][global] state path: 'watch_later' -> '-'
+[   0.010][v][cplayer] Running hook: auto_profiles/on_load
+[   0.010][v][cplayer] Failed sending hook command auto_profiles/on_load. Removing hook.
+[   0.010][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][cplayer] Running hook: ytdl_hook/on_load
+[   0.011][v][ytdl_hook] playlist hook
+[   0.011][v][cplayer] Set property: user-data/osc/margins={"l":0,"t":0,"b":0,"r":0} -> 1
+[   0.011][d][osc] osc_init
+[   0.011][v][ifo_dvdnav] Opening test-pattern.mkv
+[   0.011][v][bdmv/bluray] Opening test-pattern.mkv
+[   0.011][v][cplayer] Set property: user-data/osc/margins={"l":0,"t":0,"b":0,"r":0} -> 1
+[   0.011][d][osd/libass] ASS library version: 0x1705000 (runtime 0x1705000)
+[   0.011][v][osd/libass] libass API version: 0x1705000
+[   0.011][v][osd/libass] libass source: commit: 0.17.5-0-g4a05d8127f525943ebf45fdc6497c9e665947f0d
+[   0.011][v][file] Opening test-pattern.mkv
+[   0.011][d][file] resize stream to 131072 bytes, drop 0 bytes
+[   0.011][d][file] Stream opened successfully.
+[   0.011][v][demux] Trying demuxers for level=normal.
+[   0.011][d][demux] Trying demuxer: directory (force-level: normal)
+[   0.011][v][osd/libass] Shaper: FriBidi 1.0.16 (SIMPLE) HarfBuzz-ng 15.0.0 (COMPLEX)
+[   0.011][v][osd/libass] Setting up fonts...
+[   0.011][d][demux] Trying demuxer: disc (force-level: normal)
+[   0.011][d][demux] Trying demuxer: edl (force-level: normal)
+[   0.011][d][demux] Trying demuxer: cue (force-level: normal)
+[   0.011][d][demux] Trying demuxer: rawaudio (force-level: normal)
+[   0.011][d][demux] Trying demuxer: rawvideo (force-level: normal)
+[   0.011][d][demux] Trying demuxer: mkv (force-level: normal)
+[   0.011][d][mkv] Found the head...
+[   0.012][d][mkv] + a segment...
+[   0.012][d][mkv] Parsing seek head...
+[   0.012][d][mkv] |+ segment information...
+[   0.012][d][mkv] float 5000.000000
+[   0.012][d][mkv] | + muxing app: Lavf63.1.102
+[   0.012][d][mkv] | + writing app: Lavf63.1.102
+[   0.012][d][mkv] | + timecode scale: 1000000
+[   0.012][d][mkv] | + duration: 5.000s
+[   0.012][d][mkv] | + segment uid 10 ae 8e fe da 92 8b 60 93 b9 d9 0d 00 6b 48 3a
+[   0.012][d][mkv] |+ segment tracks...
+[   0.012][d][mkv] | + a track...
+[   0.012][d][mkv] |  + Track number: 1
+[   0.012][d][mkv] |  + Track type: Video
+[   0.012][d][mkv] |  + Video track
+[   0.012][d][mkv] |   + Pixel width: 640
+[   0.012][d][mkv] |   + Pixel height: 360
+[   0.012][d][mkv] |    + Levels: limited
+[   0.012][d][mkv] |  + Codec ID: V_MPEG4/ISO/AVC
+[   0.012][d][mkv] |  + CodecPrivate, length 47
+[   0.012][d][mkv] |  + Language: und
+[   0.012][d][mkv] |  + Default flag: 0
+[   0.012][d][mkv] |  + Default duration: 33.333ms ( = 30.000 fps)
+[   0.012][d][mkv] |+ found cluster
+[   0.012][v][mkv] Deferring reading cues.
+[   0.012][v][mkv] All headers are parsed!
+[   0.012][v][demux] Detected file format: Matroska
+[   0.012][v][cplayer] Opening done: test-pattern.mkv
+[   0.022][v][osd/libass] Using font provider fontconfig
+[   0.022][v][osd/libass] Done.
+[   0.025][v][find_files] Loading external files in .
+[   0.025][v][cplayer] Running hook: auto_profiles/on_preloaded
+[   0.025][v][cplayer] Failed sending hook command auto_profiles/on_preloaded. Removing hook.
+[   0.025][v][cplayer] Running hook: ytdl_hook/on_preloaded
+[   0.025][d][cplayer] Run command: define-section, flags=64, args=[name="input_osc", contents="", flags="default"]
+[   0.025][d][cplayer] Run command: enable-section, flags=64, args=[name="input_osc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.025][d][cplayer] Run command: define-section, flags=64, args=[name="input_forced_osc", contents="", flags="force"]
+[   0.025][d][cplayer] Run command: enable-section, flags=64, args=[name="input_forced_osc", flags="allow-hide-cursor+allow-vo-dragging"]
+[   0.025][v][mkv] select track 0
+[   0.025][i][cplayer] ● Video  --vid=1  (h264 640x360 30 fps)
+[   0.025][v][vd] Container reported FPS: 30.000000
+[   0.026][v][vd] Codec list:
+[   0.026][v][vd]     h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.026][v][vd]     h264_v4l2m2m (h264) - V4L2 mem2mem H.264 decoder wrapper
+[   0.026][v][vd]     h264_amf (h264) - H264 AMD AMF video decoder
+[   0.026][v][vd] Opening decoder h264
+[   0.026][v][vd] No hardware decoding requested.
+[   0.026][v][vd] Using software decoding.
+[   0.026][v][vd] Detected 20 logical cores.
+[   0.026][v][vd] Requesting 16 threads for decoding.
+[   0.028][d][ffmpeg/video] h264: Reinit context to 640x368, pix_fmt: yuv420p
+[   0.029][d][vd] DR parameter change to 640x386 yuv420p align=64
+[   0.029][d][vd] Allocating new (host-cached) DR image...
+[   0.029][d][vd] ...failed..
+[   0.029][v][vd] DR failed - disabling.
+[   0.030][v][vd] Selected decoder: h264 - H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10
+[   0.030][v][vf] User filter list:
+[   0.030][v][vf]   (empty)
+[   0.031][v][cplayer] Starting playback...
+[   0.031][d][ffmpeg/video] h264: Reinit context to 640x368, pix_fmt: yuv420p
+[   0.036][v][vd] Using software decoding.
+[   0.036][v][vd] Decoder format: 640x360 yuv420p auto/auto/auto/auto/auto CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vd] Using container aspect ratio.
+[   0.036][v][vf] [in] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vf] [userdeint] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vf] [userdeint] (disabled)
+[   0.036][v][vf] [autovflip] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vf] [autovflip] (disabled)
+[   0.036][v][vf] [autorotate] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vf] [autorotate] (disabled)
+[   0.036][v][vf] [convert] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][vf] [convert] (disabled)
+[   0.036][v][vf] [out] 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][i][cplayer] VO: [null] 640x360 yuv420p
+[   0.036][v][cplayer] VO: Description: Null video output
+[   0.036][v][vo/null] reconfig to 640x360 yuv420p bt.601/bt.709/bt.1886/limited/display CL=mpeg2/4/h264 crop=640x360+0+0 A=none
+[   0.036][v][cplayer] first video frame after restart shown
+[   0.036][d][cplayer] starting video playback
+[   0.036][v][cplayer] playback restart complete @ 0.000000, audio=eof, video=playing
+[   0.042][d][osc] osc_init
+[   0.043][v][cplayer] Set property: user-data/osc/margins={"l":0,"t":0,"b":0,"r":0} -> 1
+[   3.304][v][mkv] EOF reached.
+[   4.937][v][vf] filter input EOF
+[   4.937][v][vf] filter output EOF
+[   4.970][d][cplayer] video EOF (status=3)
+[   4.970][v][cplayer] video EOF reached
+[   4.970][d][cplayer] video EOF (status=4)
+[   4.970][v][cplayer] EOF code: 1
+[   4.970][d][vd] Uninit decoder.
+[   4.975][d][cplayer] Terminating demuxers...
+[   4.975][d][cplayer] Done terminating demuxers.
+[   4.975][v][cplayer] finished playback, success (reason 0)
+[   4.975][v][cplayer] Running hook: ytdl_hook/on_after_end_file
+[   5.004][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/ytdl/json-subprocess-result"]
+[   5.004][i][cplayer] Exiting... (End of file)
+[   5.004][d][osc] osc_init
+[   5.004][d][cplayer] Run command: del, flags=64, args=[name="user-data/mpv/console"]
+[   5.005][d][ytdl_hook] Destroying client handle...
+[   5.005][d][select] Destroying client handle...
+[   5.005][d][commands] Destroying client handle...
+[   5.005][d][positioning] Destroying client handle...
+[   5.006][d][console] Destroying client handle...
+[   5.006][d][stats] Destroying client handle...
+[   5.008][d][context_menu] Destroying client handle...
+[   5.009][v][cplayer] Set property: user-data/osc/margins={"l":0,"t":0,"b":0,"r":0} -> 1
+[   5.009][d][cplayer] Run command: del, flags=64, args=[name="user-data/osc"]
+[   5.010][d][osc] Destroying client handle...
+[   5.012][v][clipboard/wayland] Deregistering seat 0x1

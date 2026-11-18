@@ -1,0 +1,23 @@
+OBS 32.2.2-1, temporary isolated profile; RGB camera /dev/video0, audio sources muted.
+08:54:49.892: 	base resolution:   1280x720
+08:54:49.892: 	output resolution: 1280x720
+08:54:49.892: 	fps:               30/1
+08:54:52.193:     obs-x264.so
+08:54:52.198: 	- obs_x264 (x264)
+08:55:24.633: v4l2-input: Start capture from /dev/video0
+08:55:24.731: v4l2-input: Input: 0
+08:55:24.731: v4l2-input: Resolution: 1280x720
+08:55:24.731: v4l2-input: Pixelformat: MJPG
+08:55:24.731: v4l2-input: Linesize: 0 Bytes
+08:55:24.731: v4l2-input: Framerate: 30.00 fps
+08:55:24.732: v4l2-input: /dev/video0: select timeout set to 166666 (5x frame periods)
+08:55:24.805: User added source 'P16 RGB' (v4l2_input) to scene 'Scene'
+08:55:24.900: v4l2-input: /dev/video0: select timed out
+08:55:24.901: v4l2-input: /dev/video0: failed to log status
+08:55:46.843: [x264 encoder: 'simple_video_stream'] preset: veryfast
+08:55:46.843: [x264 encoder: 'simple_video_stream'] settings:
+08:55:46.871: ==== Recording Start ===============================================
+08:55:54.105: [ffmpeg muxer: 'simple_file_output'] Output of file '/tmp/n1x-obs-qualify/out/2026-11-18 08-55-46.mkv' stopped
+08:55:54.106: Output 'simple_file_output': Total frames output: 181
+08:55:54.107: ==== Recording Stop ================================================
+ffprobe: H.264 1280x720 30 fps, 180/180 frames; ffmpeg decode 180/180, YAVG 115.349..119.04, 861823 bytes. Temporary recording removed.

@@ -1,0 +1,63 @@
+$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i /tmp/n1x-media-gh1etcv_/vulkan-hevc.mkv -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+[vist#0:0/hevc @ 0xade1868a1ce0] Selecting decoder 'hevc' because of requested hwaccel method vaapi
+Input #0, matroska,webm, from '/tmp/n1x-media-gh1etcv_/vulkan-hevc.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 473 kb/s
+  Stream #0:0: Video: hevc (Main), 1 reference frame, yuv420p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 hevc_vulkan
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xade1868a4640] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xade1868c5070] Created video stream from input stream 0:0
+[VAAPI @ 0xade1868c5c90] libva: VA-API version 1.24.0
+[VAAPI @ 0xade1868c5c90] libva: User environment variable requested driver 'nvidia'
+[VAAPI @ 0xade1868c5c90] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
+[VAAPI @ 0xade1868c5c90] libva: Found init function __vaDriverInit_1_0
+[VAAPI @ 0xade1868c5c90] libva: va_openDriver() returns 0
+[VAAPI @ 0xade1868c5c90] Initialised VAAPI connection: version 1.24
+[VAAPI @ 0xade1868c5c90] VAAPI driver: VA-API NVDEC driver [direct backend].
+[VAAPI @ 0xade1868c5c90] Driver not found in known nonstandard list, using standard behaviour.
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (native) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xade1868c5070] Starting thread...
+[vf#0:0 @ 0xade1868c5770] Starting thread...
+[vist#0:0/hevc @ 0xade1868a1ce0] [dec:hevc @ 0xade1868a4d50] Starting thread...
+[in#0/matroska,webm @ 0xade1868a16e0] Starting thread...
+Press [q] to stop, [?] for help
+[graph -1 input from stream 0:0 @ 0xf076f80045d0] w:320 h:180 pixfmt:vaapi tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xf076f80045d0] video frame properties congruent with link at pts_time: 0
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, vaapi(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xade1868a4640] Starting thread...
+[in#0/matroska,webm @ 0xade1868a16e0] EOF while reading input
+[in#0/matroska,webm @ 0xade1868a16e0] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xade1868a1ce0] [dec:hevc @ 0xade1868a4d50] Decoder thread received EOF packet
+[vist#0:0/hevc @ 0xade1868a1ce0] [dec:hevc @ 0xade1868a4d50] Decoder returned EOF, finishing
+[vost#0:0/wrapped_avframe @ 0xade1868c5070] [enc:wrapped_avframe @ 0xade1868c5380] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xade1868c5070] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xade1868c5770] All consumers returned EOF
+[out#0/null @ 0xade1868a4640] All streams finished
+[out#0/null @ 0xade1868a4640] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xade1868c5770] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xade1868a1ce0] [dec:hevc @ 0xade1868a4d50] Terminating thread with return code 0 (success)
+[out#0/null @ 0xade1868a4640] Output file #0 (pipe:):
+[out#0/null @ 0xade1868a4640]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xade1868a4640]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xade1868a4640] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=  23x elapsed=0:00:00.13
+[in#0/matroska,webm @ 0xade1868a16e0] Input file #0 (/tmp/n1x-media-gh1etcv_/vulkan-hevc.mkv):
+[in#0/matroska,webm @ 0xade1868a16e0]   Input stream #0:0 (video): 30 packets read (176618 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xade1868a16e0]   Total: 30 packets (176618 bytes) demuxed
+[AVIOContext @ 0xade1868a9f60] Statistics: 177529 bytes read, 0 seeks
+
+Exiting with exit code 0

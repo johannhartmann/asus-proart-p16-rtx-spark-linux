@@ -1,0 +1,45 @@
+## mpv-vaapi.log
+[   0.004][v][cplayer] Command line options: '--no-config' '--hwdec=vaapi' '--vo=gpu-next' '--no-audio' '--msg-level=vd=debug' '--log-file=mpv-vaapi.log' 'test-pattern.mkv'
+[   0.085][v][vo/gpu-next/libplacebo]     GPU 0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) v1.4.351 (integrated)
+[   2.888][i][vd] Using hardware decoding (vaapi).
+[   2.934][i][cplayer] VO: [gpu-next] 640x360 vaapi[nv12]
+[   2.935][v][vo/gpu-next] Window size: 640x360 (Borders: l=0 t=0 r=0 b=0)
+[   2.935][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   2.946][v][vo/gpu-next] Window size: 1190x718 (Borders: l=0 t=0 r=0 b=0)
+[   2.946][v][vo/gpu-next] Video scale: 1.859375/1.858333
+[   3.226][v][vo/gpu-next] Window size: 640x360 (Borders: l=0 t=0 r=0 b=0)
+[   3.226][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   3.230][v][vo/gpu-next] Window size: 1400x960 (Borders: l=0 t=0 r=0 b=0)
+[   3.230][v][vo/gpu-next] Video scale: 2.187500/2.186111
+[   3.300][v][vo/gpu-next/libplacebo] Estimated source FPS: 29.940, display FPS: 30.075
+[   8.169][i][cplayer] Exiting... (End of file)
+## mpv-effects.log
+[   0.003][v][cplayer] Command line options: '--no-config' '--hwdec=vaapi' '--vo=gpu-next' '--gpu-api=vulkan' '--scale=ewa_lanczos' '--interpolation' '--tscale=oversample' '--video-sync=display-resample' '--no-audio' '--msg-level=all=info,vo/gpu-next=debug' '--log-file=docs/evidence/n1x-media-20261118/mpv-effects.log' '/tmp/n1x-player-eee8kjol/motion.mkv'
+[   0.103][v][vo/gpu-next/libplacebo]     GPU 0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) v1.4.351 (integrated)
+[   2.882][i][vd] Using hardware decoding (vaapi).
+[   2.901][i][cplayer] VO: [gpu-next] 320x180 vaapi[nv12]
+[   2.901][v][vo/gpu-next] Window size: 320x180 (Borders: l=0 t=0 r=0 b=0)
+[   2.901][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   2.913][v][vo/gpu-next] Window size: 1190x718 (Borders: l=0 t=0 r=0 b=0)
+[   2.914][v][vo/gpu-next] Video scale: 3.718750/3.716667
+[   3.205][v][vo/gpu-next] Window size: 320x180 (Borders: l=0 t=0 r=0 b=0)
+[   3.205][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   3.210][v][vo/gpu-next] Window size: 1400x960 (Borders: l=0 t=0 r=0 b=0)
+[   3.210][v][vo/gpu-next] Video scale: 4.375000/4.372222
+[   3.295][v][vo/gpu-next/libplacebo] Estimated source FPS: 23.952, display FPS: 120.482
+[   8.184][i][cplayer] Exiting... (End of file)
+## mpv-rgb-camera.log
+[   0.002][v][cplayer] Command line options: '--no-config' '--no-audio' '--frames=30' '--vo=gpu-next' '--demuxer-lavf-format=v4l2' '--demuxer-lavf-o=video_size=1280x720,input_format=mjpeg,framerate=30' '--log-file=docs/evidence/n1x-media-20261118/mpv-rgb-camera.log' 'av://v4l2:/dev/video0'
+[   0.347][i][cplayer] ● Video  --vid=1  (mjpeg 1280x720 30 fps)
+[   0.409][v][vo/gpu-next/libplacebo]     GPU 0: NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) v1.4.351 (integrated)
+[   2.437][i][cplayer] VO: [gpu-next] 1280x720 yuvj422p
+[   2.437][v][vo/gpu-next] Window size: 1280x720 (Borders: l=0 t=0 r=0 b=0)
+[   2.437][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   2.451][v][vo/gpu-next] Window size: 1190x718 (Borders: l=0 t=0 r=0 b=0)
+[   2.452][v][vo/gpu-next] Video scale: 0.929688/0.929167
+[   2.592][v][vo/gpu-next] Window size: 1280x720 (Borders: l=0 t=0 r=0 b=0)
+[   2.593][v][vo/gpu-next] Video scale: 1.000000/1.000000
+[   2.598][v][vo/gpu-next] Window size: 1400x960 (Borders: l=0 t=0 r=0 b=0)
+[   2.598][v][vo/gpu-next] Video scale: 1.093750/1.093056
+[   2.691][v][vo/gpu-next/libplacebo] Estimated source FPS: 30.475, display FPS: 30.308
+[   3.573][i][cplayer] Exiting... (End of file)

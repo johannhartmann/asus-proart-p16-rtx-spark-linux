@@ -34,11 +34,22 @@ cannot qualify that separate platform pipeline.
 
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
-| NVDEC | One short H.264 VA-API decode | Advertised format/profile cases tested where supported; a media player and a desktop application demonstrably use hardware decode |
-| NVENC | Vendor runtime library installed; FFmpeg lacks NVENC | A packaged Linux encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
-| GPU video effects | N1X capability and Windows SDK announcement | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR V4L2 nodes enumerate | Live capture, permissions/privacy, application use, and resume tested independently |
+| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit VA-API/NVDEC samples pass; mpv H.264 hardware playback passes | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
+| NVENC | Isolated ARM64 FFmpeg package built; NVENC session fails with error 21 on driver 615.78.08. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| GPU video effects | mpv/libplacebo Vulkan scaling and interpolation exercised in playback; proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
+
+### Implementation record, 18 November 2026
+
+The repeatable bounded corpus is [`scripts/check-n1x-media.py`](scripts/check-n1x-media.py),
+the isolated NVENC candidate is [`platform/video/PKGBUILD`](platform/video/PKGBUILD),
+and the [raw media evidence](docs/evidence/n1x-media-20261118/README.md)
+contains the machine record, codec outputs, camera results and normal-app
+playback/recording logs. The corpus exits nonzero while NVENC fails. A Vulkan
+Video encode result is recorded separately and must not be relabelled NVENC.
+The OBS camera recording used the existing V4L2 interface and the x264
+software encoder; it proves application camera use, not hardware encode.
 
 ## Common evidence and release gates
 

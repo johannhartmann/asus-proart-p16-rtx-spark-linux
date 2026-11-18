@@ -1,0 +1,156 @@
+{
+  "captured_at": "2026-11-18T08:04:52.412653+00:00",
+  "host": {
+    "bios": "H7607BA.300",
+    "kernel": "7.2.8-36-rtx-spark-npu",
+    "product": "ProArt P16 H7607BA"
+  },
+  "limits": [
+    "This command-line run does not test browser, OBS, visible playback, reboot or physical resume; application tests need separate evidence",
+    "Vulkan Video encode does not prove NVENC API session availability",
+    "Camera frame statistics do not establish image quality or face authentication"
+  ],
+  "results": {
+    "nvenc_h264": {
+      "reason": "NVENC failed (exit 187); see nvenc-h264.log",
+      "status": "fail"
+    },
+    "p16_ir": {
+      "device": "/dev/video2",
+      "format": "gray",
+      "frames": 15,
+      "note": "Frame statistics are not image-quality or privacy qualification",
+      "pixel_range": [
+        0,
+        255
+      ],
+      "rate": 15,
+      "size": "360x360",
+      "status": "pass",
+      "yavg_max": 111.316,
+      "yavg_min": 23.1779
+    },
+    "p16_rgb": {
+      "device": "/dev/video0",
+      "format": "mjpeg",
+      "frames": 30,
+      "note": "Frame statistics are not image-quality or privacy qualification",
+      "pixel_range": [
+        0,
+        255
+      ],
+      "rate": 30,
+      "size": "1280x720",
+      "status": "pass",
+      "yavg_max": 115.137,
+      "yavg_min": 108.035
+    },
+    "vaapi_av1_from_vulkan": {
+      "codec": "av1",
+      "frames": 30,
+      "hardware_evidence": "NVDEC direct backend and VA-API frames logged",
+      "status": "pass"
+    },
+    "vaapi_h264": {
+      "codec": "h264",
+      "frames": 30,
+      "hardware_evidence": "NVDEC direct backend and VA-API frames logged",
+      "status": "pass"
+    },
+    "vaapi_h264_from_vulkan": {
+      "codec": "h264",
+      "frames": 30,
+      "hardware_evidence": "NVDEC direct backend and VA-API frames logged",
+      "status": "pass"
+    },
+    "vaapi_hevc_from_vulkan": {
+      "codec": "hevc",
+      "frames": 30,
+      "hardware_evidence": "NVDEC direct backend and VA-API frames logged",
+      "status": "pass"
+    },
+    "vulkan_av1": {
+      "bytes": 179253,
+      "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
+      "sha256": "b14f2b38d1c30dba91772cb8a979e13c849d30275ce0ef7db1d129a0a7e3be0c",
+      "status": "pass",
+      "stream": {
+        "codec_name": "av1",
+        "height": 180,
+        "nb_read_frames": "30",
+        "width": 320
+      }
+    },
+    "vulkan_av1_10bit_roundtrip": {
+      "bytes": 269723,
+      "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
+      "sha256": "4b8d85dd4e19fc09d337d0d69f5c59c3546dcd8fb0e40251e900f161f4fa0184",
+      "status": "pass",
+      "stream": {
+        "codec_name": "av1",
+        "height": 180,
+        "nb_read_frames": "30",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main",
+        "width": 320
+      },
+      "vaapi_decode": {
+        "codec": "av1",
+        "frames": 30,
+        "hardware_evidence": "NVDEC direct backend and VA-API frames logged"
+      }
+    },
+    "vulkan_h264": {
+      "bytes": 119643,
+      "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
+      "sha256": "578a2cc6863ae381cee4d1aa3c799dca519f6829b12c5c04574d498139853e7f",
+      "status": "pass",
+      "stream": {
+        "codec_name": "h264",
+        "height": 180,
+        "nb_read_frames": "30",
+        "width": 320
+      }
+    },
+    "vulkan_hevc": {
+      "bytes": 177529,
+      "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
+      "sha256": "e817d773ab798d4ba445937b63af679ecbeba60b38de164cd763fb71bf84d8f1",
+      "status": "pass",
+      "stream": {
+        "codec_name": "hevc",
+        "height": 180,
+        "nb_read_frames": "30",
+        "width": 320
+      }
+    },
+    "vulkan_hevc_10bit_roundtrip": {
+      "bytes": 169556,
+      "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
+      "sha256": "94b8ff20cb834d95804d4bf03c19beebd8573635fa77ac43c65b9bf2ea717cce",
+      "status": "pass",
+      "stream": {
+        "codec_name": "hevc",
+        "height": 180,
+        "nb_read_frames": "30",
+        "pix_fmt": "yuv420p10le",
+        "profile": "Main 10",
+        "width": 320
+      },
+      "vaapi_decode": {
+        "codec": "hevc",
+        "frames": 30,
+        "hardware_evidence": "NVDEC direct backend and VA-API frames logged"
+      }
+    }
+  },
+  "software": {
+    "ffmpeg": "ffmpeg version n9.0.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "ffmpeg_package": "ffmpeg 2:9.0.2-2",
+    "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+    "libva_nvidia_package": "libva-nvidia-driver 0.0.18-1",
+    "nvenc_candidate_sha256": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+    "nvidia": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU), 615.78.08",
+    "x265_package": "x265 4.3-1"
+  }
+}

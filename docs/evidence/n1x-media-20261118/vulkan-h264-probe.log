@@ -1,0 +1,21 @@
+$ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,width,height,nb_read_frames -of json /tmp/n1x-media-gh1etcv_/vulkan-h264.mkv
+
+stdout:
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "h264",
+            "width": 320,
+            "height": 180,
+            "nb_read_frames": "30"
+        }
+    ]
+}
+
+stderr:

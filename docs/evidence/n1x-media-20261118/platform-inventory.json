@@ -1,0 +1,342 @@
+{
+  "schema": 1,
+  "captured_at": "2026-11-18T07:46:37.913204+00:00",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "architecture": "aarch64",
+  "device": {
+    "sys_vendor": "ASUS",
+    "product_name": "ProArt P16 H7607BA",
+    "board_name": "H7607BA",
+    "bios_version": "H7607BA.300"
+  },
+  "targets": {
+    "scp": [
+      {
+        "id": "NVDA8200:00",
+        "path": "\\_SB_.SCP0",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8200:00",
+            "driver": "n1x-scp",
+            "modalias": "acpi:NVDA8200:"
+          }
+        ]
+      }
+    ],
+    "pluton": [
+      {
+        "id": "NVDA8601:00",
+        "path": "\\_SB_.ROT1",
+        "status": null,
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8601:00",
+            "driver": "n1x-pluton",
+            "modalias": "acpi:NVDA8601:"
+          }
+        ]
+      }
+    ],
+    "dsp": [
+      {
+        "id": "NVDA8301:00",
+        "path": "\\_SB_.DSP1",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8301:00",
+            "driver": "n1x-adsp",
+            "modalias": "acpi:NVDA8301:"
+          }
+        ]
+      },
+      {
+        "id": "NVDA8302:00",
+        "path": "\\_SB_.DSP2",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8302:00",
+            "driver": "n1x-adsp",
+            "modalias": "acpi:NVDA8302:"
+          }
+        ]
+      },
+      {
+        "id": "NVDA8303:00",
+        "path": "\\_SB_.DSP3",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8303:00",
+            "driver": "n1x-adsp",
+            "modalias": "acpi:NVDA8303:"
+          }
+        ]
+      }
+    ],
+    "camera": [],
+    "sensorhub": [
+      {
+        "id": "MSFW1111:00",
+        "path": "\\_SB_.SENH",
+        "status": null,
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA0210:02/spi_master/spi2/spi-MSFW1111:00",
+            "driver": "spi_hid_acpi",
+            "modalias": "acpi:MSFW1111:PNP0C51:"
+          }
+        ]
+      }
+    ],
+    "telemetry": [
+      {
+        "id": "NVDA8810:00",
+        "path": "\\_SB_.MTEL",
+        "status": null,
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8810:00",
+            "driver": "spbm",
+            "modalias": "acpi:NVDA8810:"
+          }
+        ]
+      }
+    ],
+    "platform_control": [
+      {
+        "id": "NVDA0820:00",
+        "path": "\\_SB_.NPCF",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA0820:00",
+            "driver": null,
+            "modalias": "acpi:NVDA0820:"
+          }
+        ]
+      },
+      {
+        "id": "NVDA6210:00",
+        "path": "\\_SB_.PEPD",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA6210:00",
+            "driver": "mtk_pwrap",
+            "modalias": "acpi:NVDA6210:PNP0D80:"
+          }
+        ]
+      },
+      {
+        "id": "NVDA8400:00",
+        "path": "\\_SB_.SSPM",
+        "status": "15",
+        "acpi_driver": null,
+        "physical_nodes": [
+          {
+            "path": "/sys/devices/platform/NVDA8400:00",
+            "driver": "SSPM_CI",
+            "modalias": "acpi:NVDA8400:NVDA8400:"
+          }
+        ]
+      }
+    ]
+  },
+  "remoteproc": [],
+  "tpm": [
+    {
+      "id": "tpm0",
+      "path": "/sys/devices/platform/NTC0702:00/tpm/tpm0",
+      "name": null,
+      "state": null
+    }
+  ],
+  "video": [
+    {
+      "id": "video0",
+      "path": "/sys/devices/platform/NVDA8001:00/usb7/7-1/7-1:1.0/video4linux/video0",
+      "name": "ASUS FHD webcam: ASUS FHD webca",
+      "state": null
+    },
+    {
+      "id": "video1",
+      "path": "/sys/devices/platform/NVDA8001:00/usb7/7-1/7-1:1.0/video4linux/video1",
+      "name": "ASUS FHD webcam: ASUS FHD webca",
+      "state": null
+    },
+    {
+      "id": "video2",
+      "path": "/sys/devices/platform/NVDA8001:00/usb7/7-1/7-1:1.2/video4linux/video2",
+      "name": "ASUS FHD webcam: ASUS IR camera",
+      "state": null
+    },
+    {
+      "id": "video3",
+      "path": "/sys/devices/platform/NVDA8001:00/usb7/7-1/7-1:1.2/video4linux/video3",
+      "name": "ASUS FHD webcam: ASUS IR camera",
+      "state": null
+    },
+    {
+      "id": "video4",
+      "path": "/sys/devices/platform/NVDA8000:00/usb2/2-1/2-1.1/2-1.1:1.0/video4linux/video4",
+      "name": "Logitech StreamCam",
+      "state": null
+    },
+    {
+      "id": "video5",
+      "path": "/sys/devices/platform/NVDA8000:00/usb2/2-1/2-1.1/2-1.1:1.0/video4linux/video5",
+      "name": "Logitech StreamCam",
+      "state": null
+    }
+  ],
+  "hwmon": [
+    {
+      "name": "spbm_n1x",
+      "path": "/sys/devices/platform/NVDA8810:00/hwmon/hwmon7",
+      "readings": {
+        "power10": {
+          "label": "prereg",
+          "input": "5358000",
+          "cap": null
+        },
+        "power11": {
+          "label": "dc_input",
+          "input": "83749000",
+          "cap": null
+        },
+        "power12": {
+          "label": "pl1",
+          "input": "41444000",
+          "cap": "80000000"
+        },
+        "power13": {
+          "label": "pl2",
+          "input": "47505000",
+          "cap": "95000000"
+        },
+        "power14": {
+          "label": "syspl1",
+          "input": "81086000",
+          "cap": "126000000"
+        },
+        "power15": {
+          "label": "syspl2",
+          "input": "73351000",
+          "cap": "126000000"
+        },
+        "power1": {
+          "label": "sys_total",
+          "input": "81086000",
+          "cap": null
+        },
+        "power2": {
+          "label": "soc_pkg",
+          "input": "41444000",
+          "cap": null
+        },
+        "power3": {
+          "label": "sys_instant",
+          "input": "85253000",
+          "cap": null
+        },
+        "power4": {
+          "label": "pkg_instant",
+          "input": "47012000",
+          "cap": null
+        },
+        "power5": {
+          "label": "cpu_gpu",
+          "input": "36942000",
+          "cap": null
+        },
+        "power6": {
+          "label": "cpu_p",
+          "input": "25440000",
+          "cap": null
+        },
+        "power7": {
+          "label": "cpu_e",
+          "input": "2293000",
+          "cap": null
+        },
+        "power8": {
+          "label": "vcore",
+          "input": "4969000",
+          "cap": null
+        },
+        "power9": {
+          "label": "gpu",
+          "input": "8211000",
+          "cap": null
+        },
+        "temp1": {
+          "label": "soc",
+          "input": "65350",
+          "cap": null
+        },
+        "temp2": {
+          "label": "cpu_e_clu0",
+          "input": "62450",
+          "cap": null
+        },
+        "temp3": {
+          "label": "cpu_p_clu0",
+          "input": "64050",
+          "cap": null
+        },
+        "temp4": {
+          "label": "cpu_e_clu1",
+          "input": "63250",
+          "cap": null
+        },
+        "temp5": {
+          "label": "cpu_p_clu1",
+          "input": "65350",
+          "cap": null
+        },
+        "temp6": {
+          "label": "gpu",
+          "input": "61850",
+          "cap": null
+        },
+        "temp7": {
+          "label": "dla",
+          "input": "60850",
+          "cap": null
+        },
+        "temp8": {
+          "label": "uncore",
+          "input": "62450",
+          "cap": null
+        }
+      }
+    }
+  ],
+  "iio": [
+    {
+      "id": "iio:device0",
+      "path": "/sys/devices/platform/NVDA0210:02/spi_master/spi2/spi-MSFW1111:00/001C:0000:0100.0005/HID-SENSOR-200041.32.auto/iio:device0",
+      "name": "als",
+      "state": null
+    },
+    {
+      "id": "iio:device1",
+      "path": "/sys/devices/platform/NVDA8001:00/usb7/7-1/7-1:1.4/0003:636E:0BDB.0007/HID-SENSOR-200011.34.auto/iio:device1",
+      "name": "prox",
+      "state": null
+    }
+  ],
+  "acpi_tables": {}
+}

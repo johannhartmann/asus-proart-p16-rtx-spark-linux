@@ -1,0 +1,5 @@
+src/
+pkg/
+*.pkg.tar.*
+ffmpeg-*.tar.xz
+n*.tar.gz

@@ -1,0 +1,23 @@
+$ ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,profile,pix_fmt,width,height,nb_read_frames -of json /tmp/n1x-media-gh1etcv_/vulkan-av1-10bit.mkv
+
+stdout:
+{
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "av1",
+            "profile": "Main",
+            "width": 320,
+            "height": 180,
+            "pix_fmt": "yuv420p10le",
+            "nb_read_frames": "30"
+        }
+    ]
+}
+
+stderr:
