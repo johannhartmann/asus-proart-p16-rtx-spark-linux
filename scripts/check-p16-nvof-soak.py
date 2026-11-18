@@ -22,14 +22,15 @@ def video_stream(path):
     return json.loads(output.stdout)["streams"][0]
 
 
-def packet_timing(path):
+def frame_timing(path):
     output = run(["/usr/bin/ffprobe", "-v", "error", "-select_streams", "v:0",
-                  "-show_entries", "packet=pts_time", "-of", "csv=p=0", str(path)], 30)
+                  "-show_entries", "frame=best_effort_timestamp_time",
+                  "-of", "csv=p=0", str(path)], 30)
     timestamps = [float(line.strip().split(",")[0]) for line in
                   output.stdout.splitlines() if line.strip() and line.strip() != "N/A"]
     gaps = [later - earlier for earlier, later in zip(timestamps, timestamps[1:])]
     return {
-        "packets_with_pts": len(timestamps),
+        "frames_with_pts": len(timestamps),
         "first_pts_seconds": timestamps[0] if timestamps else None,
         "last_pts_seconds": timestamps[-1] if timestamps else None,
         "max_gap_seconds": round(max(gaps), 6) if gaps else None,
@@ -53,7 +54,7 @@ def main():
                       str(source)], args.seconds + 40)
         recorded_seconds = time.monotonic() - start
         source_stream = video_stream(source)
-        source_timing = packet_timing(source)
+        source_timing = frame_timing(source)
         source_frames = int(source_stream["nb_read_frames"])
         start = time.monotonic()
         export = run(["/usr/bin/p16-interpolate-video", str(source), str(exported),
@@ -70,7 +71,7 @@ def main():
             "record_elapsed_seconds": round(recorded_seconds, 3),
             "export_elapsed_seconds": round(export_seconds, 3),
             "source": source_stream,
-            "source_packet_timing": source_timing,
+            "source_frame_timing": source_timing,
             "output": output_stream,
             "nvof_pairs_logged": f"nvof_interpolated_pairs={source_frames - 1}" in
                 (export.stdout + export.stderr),
