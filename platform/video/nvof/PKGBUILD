@@ -1,19 +1,21 @@
 pkgname=p16-nvof-tools
 pkgver=0.1.0
-pkgrel=2
-pkgdesc='N1X Optical Flow Accelerator video analysis command'
+pkgrel=3
+pkgdesc='N1X Optical Flow Accelerator video analysis and frame interpolation commands'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('MIT' 'BSD-3-Clause')
 depends=('ffmpeg' 'nvidia-utils')
 makedepends=('cuda' 'gcc')
 _sdkcommit=edb50da3cf849840d680249aa6dbef248ebce2ca
-source=('p16-nvof-analyze.cpp' 'p16-optical-flow' 'README.md' 'LICENSE'
+source=('p16-nvof-analyze.cpp' 'p16-optical-flow' 'p16-interpolate-video'
+        'README.md' 'LICENSE'
         "nvOpticalFlowCommon.h::https://raw.githubusercontent.com/NVIDIA/NVIDIAOpticalFlowSDK/${_sdkcommit}/nvOpticalFlowCommon.h"
         "nvOpticalFlowCuda.h::https://raw.githubusercontent.com/NVIDIA/NVIDIAOpticalFlowSDK/${_sdkcommit}/nvOpticalFlowCuda.h")
-sha256sums=('6433ed50bd76a99f5942e43cc0a155124bc9eb0e723af25402da08081bb871a1'
+sha256sums=('8c0a96747d999d0c43624dd61501d1c018d268da810193db56eab52266f6611e'
             '7df80fea8bd8792445038fa305b5567082ddc396dc64dd333abc80beec7bc39a'
-            '6709bdc0e2d9fb37443698b3a9909f1c6bd8ec464f12291a8f4dbc2506a451c8'
+            'e9a5b40dbe6cdcc0fd57dc192a87e6b29b25bfdf9c46ef568ee573564959608e'
+            '923655836f3856e5ab364748a82ba479a4d46530bc2b2aab9c220fcbf16d36f2'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3'
             'a83f6045e5c470b35a6c50672f92e082b78d55752fe51cc20eb1a2738be05b9d'
             '07defc79637fb9893f2a06204972eaa6bcf9e5bea400c88440439ebaaa39f115')
@@ -25,12 +27,13 @@ build() {
 }
 
 check() {
-  bash -n "$srcdir/p16-optical-flow"
+  bash -n "$srcdir/p16-optical-flow" "$srcdir/p16-interpolate-video"
 }
 
 package() {
   install -Dm755 "$srcdir/p16-nvof-analyze" "$pkgdir/usr/bin/p16-nvof-analyze"
   install -Dm755 "$srcdir/p16-optical-flow" "$pkgdir/usr/bin/p16-optical-flow"
+  install -Dm755 "$srcdir/p16-interpolate-video" "$pkgdir/usr/bin/p16-interpolate-video"
   install -Dm644 "$srcdir/README.md" "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   sed -n '1,29p' "$srcdir/nvOpticalFlowCommon.h" > "$srcdir/SDK-LICENSE"

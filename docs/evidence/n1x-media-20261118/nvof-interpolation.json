@@ -1,0 +1,49 @@
+{
+  "package": "p16-nvof-tools 0.1.0-1",
+  "analyzerSha256": "f2e1ae3babcb2e83bd9f9e4980debd8c4ee9c951a412fda70d538782d1f958e0",
+  "wrapperSha256": "e9a5b40dbe6cdcc0fd57dc192a87e6b29b25bfdf9c46ef568ee573564959608e",
+  "controlled": {
+    "outputFrames": 3,
+    "sourceFramesPreserved": true,
+    "midpointMse": 0.0,
+    "crossfadeMse": 8239.184981856857,
+    "nvofPairsLogged": true
+  },
+  "timedAv": {
+    "video": {
+      "codec_name": "h264",
+      "width": 320,
+      "height": 180,
+      "avg_frame_rate": "48/1",
+      "nb_read_frames": "95"
+    },
+    "audio": {
+      "codec_name": "aac",
+      "avg_frame_rate": "0/0",
+      "nb_read_frames": "92"
+    },
+    "videoEndSeconds": 1.978,
+    "audioEndSeconds": 1.962,
+    "endOffsetSeconds": 0.016000000000000014,
+    "nvofPairsLogged": true,
+    "vulkanEncoderLogged": true
+  },
+  "liveCamera": {
+    "sourceFrames": "60",
+    "output": {
+      "codec_name": "h264",
+      "width": 320,
+      "height": 180,
+      "avg_frame_rate": "60/1",
+      "nb_read_frames": "119"
+    },
+    "nvofPairsLogged": true,
+    "vulkanEncoderLogged": true,
+    "mpvExit": 0,
+    "mpvVaapiDecode": true,
+    "mpvVulkanRenderer": true,
+    "mpvEof": true
+  },
+  "cameraPixelsRetained": false,
+  "pass": true
+}

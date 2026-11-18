@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <nvOpticalFlowCuda.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <iomanip>
@@ -130,18 +131,108 @@ static bool read_frame(std::vector<uint8_t> &frame) {
     return true;
 }
 
+static std::vector<uint8_t> grayscale(const std::vector<uint8_t> &rgb) {
+    std::vector<uint8_t> gray(rgb.size() / 3);
+    for (size_t i = 0; i < gray.size(); ++i)
+        gray[i] = (54 * rgb[3 * i] + 183 * rgb[3 * i + 1] +
+                   19 * rgb[3 * i + 2]) / 256;
+    return gray;
+}
+
+static double flow_component(const std::vector<NV_OF_FLOW_VECTOR> &flow,
+                             unsigned width, unsigned height,
+                             double x, double y, bool horizontal) {
+    const int fw = width / 4, fh = height / 4;
+    const double fx = std::clamp(x / 4.0 - 0.5, 0.0, double(fw - 1));
+    const double fy = std::clamp(y / 4.0 - 0.5, 0.0, double(fh - 1));
+    const int x0 = int(fx), y0 = int(fy);
+    const int x1 = std::min(x0 + 1, fw - 1), y1 = std::min(y0 + 1, fh - 1);
+    const double tx = fx - x0, ty = fy - y0;
+    const auto value = [&](int cx, int cy) {
+        const auto &v = flow[cy * fw + cx];
+        return (horizontal ? v.flowx : v.flowy) / 32.0;
+    };
+    const double top = value(x0, y0) * (1 - tx) + value(x1, y0) * tx;
+    const double bottom = value(x0, y1) * (1 - tx) + value(x1, y1) * tx;
+    return top * (1 - ty) + bottom * ty;
+}
+
+static double rgb_sample(const std::vector<uint8_t> &image,
+                         unsigned width, unsigned height,
+                         double x, double y, unsigned channel) {
+    x = std::clamp(x, 0.0, double(width - 1));
+    y = std::clamp(y, 0.0, double(height - 1));
+    const unsigned x0 = unsigned(x), y0 = unsigned(y);
+    const unsigned x1 = std::min(x0 + 1, width - 1);
+    const unsigned y1 = std::min(y0 + 1, height - 1);
+    const double tx = x - x0, ty = y - y0;
+    const auto at = [&](unsigned cx, unsigned cy) {
+        return double(image[(cy * width + cx) * 3 + channel]);
+    };
+    return ((1 - tx) * at(x0, y0) + tx * at(x1, y0)) * (1 - ty) +
+           ((1 - tx) * at(x0, y1) + tx * at(x1, y1)) * ty;
+}
+
+static int interpolate(unsigned width, unsigned height, unsigned max_pairs) {
+    std::vector<uint8_t> current(width * height * 3), next(current.size());
+    if (!read_frame(current)) throw std::runtime_error("no RGB input frames");
+    FlowEngine engine(width, height);
+    engine.upload(engine.input, grayscale(current));
+    unsigned pairs = 0;
+    while (pairs < max_pairs && read_frame(next)) {
+        engine.upload(engine.reference, grayscale(next));
+        const auto forward = engine.execute();
+        std::swap(engine.input, engine.reference);
+        const auto backward = engine.execute();
+        std::swap(engine.input, engine.reference);
+        std::vector<uint8_t> middle(current.size());
+        for (unsigned y = 0; y < height; ++y) {
+            for (unsigned x = 0; x < width; ++x) {
+                const double dx = flow_component(forward, width, height, x, y, true);
+                const double dy = flow_component(forward, width, height, x, y, false);
+                const double bx = flow_component(backward, width, height, x, y, true);
+                const double by = flow_component(backward, width, height, x, y, false);
+                for (unsigned c = 0; c < 3; ++c) {
+                    const double a = rgb_sample(current, width, height,
+                                                x - dx / 2, y - dy / 2, c);
+                    const double b = rgb_sample(next, width, height,
+                                                x - bx / 2, y - by / 2, c);
+                    middle[(y * width + x) * 3 + c] =
+                        uint8_t(std::clamp(std::lround((a + b) / 2), 0L, 255L));
+                }
+            }
+        }
+        std::cout.write(reinterpret_cast<const char *>(current.data()), current.size());
+        std::cout.write(reinterpret_cast<const char *>(middle.data()), middle.size());
+        if (!std::cout) throw std::runtime_error("cannot write interpolated frames");
+        ++pairs;
+        std::swap(engine.input, engine.reference);
+        std::swap(current, next);
+    }
+    if (!pairs) throw std::runtime_error("need at least two RGB frames");
+    std::cout.write(reinterpret_cast<const char *>(current.data()), current.size());
+    if (!std::cout) throw std::runtime_error("cannot write final frame");
+    std::cerr << "nvof_interpolated_pairs=" << pairs
+              << " output_frames=" << (2 * pairs + 1) << '\n';
+    return 0;
+}
+
 int main(int argc, char **argv) {
     try {
-        if (argc != 4) {
-            std::cerr << "Usage: p16-nvof-analyze WIDTH HEIGHT MAX_PAIRS < gray8.raw\n";
+        const bool interpolate_mode = argc > 1 && std::string(argv[1]) == "--interpolate";
+        if (argc != (interpolate_mode ? 5 : 4)) {
+            std::cerr << "Usage: p16-nvof-analyze [--interpolate] WIDTH HEIGHT MAX_PAIRS < raw frames\n";
             return 2;
         }
-        const unsigned width = std::stoul(argv[1]);
-        const unsigned height = std::stoul(argv[2]);
-        const unsigned max_pairs = std::stoul(argv[3]);
+        const int offset = interpolate_mode ? 1 : 0;
+        const unsigned width = std::stoul(argv[1 + offset]);
+        const unsigned height = std::stoul(argv[2 + offset]);
+        const unsigned max_pairs = std::stoul(argv[3 + offset]);
         if (width < 128 || height < 64 || width > 4096 || height > 4096 ||
-            width % 4 || height % 4 || max_pairs < 1 || max_pairs > 300)
+            width % 4 || height % 4 || max_pairs < 1 ||
+            max_pairs > (interpolate_mode ? 1000000u : 300u))
             throw std::runtime_error("invalid size or pair limit");
+        if (interpolate_mode) return interpolate(width, height, max_pairs);
         std::vector<uint8_t> current(width * height), next(width * height);
         if (!read_frame(current)) throw std::runtime_error("no input frames");
         FlowEngine engine(width, height);

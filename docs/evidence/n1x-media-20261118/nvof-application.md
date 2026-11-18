@@ -11,12 +11,13 @@ The package archive SHA256 is
 `02af31edfac3c9435cbc23bc3cfd12d21468f88b3d0256721b914e5e1226e06b`.
 The installed analyzer SHA256 is
 `6ec43f65de9e2ab90fcfaa8a6b2d6173adbcfb5299d676dc88d07972f874552e`.
-The subsequent `0.1.0-2` source revision buffers JSON until a complete frame
-pair succeeds; its archive SHA256 is
-`b1f801519518f430e7dfea67c7b2eb07a1b1e989dad05e929aab63309391a72f`.
-It was built and passed a synthetic translation and short-input error test,
-but is awaiting graphical authentication for installation. The live-camera
-evidence below remains tied to installed `0.1.0-1` until that update completes.
+The subsequent `0.1.0-3` source revision buffers JSON until a complete frame
+pair succeeds and adds midpoint video export. Its archive SHA256 is
+`ecda4eaf4aee77ebf05ad79ad02cad9002fe28ca1283e4fc307c800f56fd1875`.
+It was built and passed a synthetic translation, short-input error test and
+candidate export tests, but is awaiting graphical authentication for
+installation. The live-camera analysis evidence below remains tied to
+installed `0.1.0-1` until that update completes.
 
 The direct API probe established `NvOFAPICreateInstanceCuda`, CUDA context,
 NVOFA handle, supported output grids 1/2/4, session initialization, buffer
