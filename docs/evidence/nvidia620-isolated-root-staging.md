@@ -54,6 +54,15 @@ The normal database-only mode still passes. This extends the offline gate to
 real package payload extraction, but it is **not** an installation into the
 Btrfs candidate snapshot. Actual snapshot file replacement, hooks, module
 load, UKI and boot remain untested.
+A second [disposable transaction using Pacman's guest-system `--sysroot`
+option](nvidia620-pacman-sysroot-transaction-20261118.json) also passed:
+all four 620 packages have matching versions, all 4,281 archive file entries
+and 13 modules are present, and `pacman -Qkk` reports zero altered files.
+It leaves live 615 versions unchanged and emits no Pacman stderr. The partial
+test root uses a minimal Pacman configuration with signature checking disabled;
+the separate signed-archive preflight remains the signature gate. This test
+exercises the Pacman mode intended for the eventual mounted Btrfs candidate,
+but still does not exercise that actual snapshot, its full config or its UKI.
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never
@@ -75,7 +84,8 @@ that transaction. Its root-only `--stage --output NEW_MANIFEST` mode is
 prepared but has **not** been run. That mode takes an exclusive Pacman lock,
 mounts the Btrfs top level at a private `/run` path, creates `@nvidia620`
 only if absent, checks distinct subvolume IDs and the copied package database,
-unmounts safely, and compares EFI hashes, BootOrder, package versions and
+removes the **copied** Pacman lock from the candidate while retaining the live
+lock, unmounts safely, and compares EFI hashes, BootOrder, package versions and
 boot ID. Failed unmounts leave the private mountpoint intact for inspection;
 the helper never recursively removes a mounted filesystem. It does not
 install 620 packages, write EFI files, set BootNext or reboot.
@@ -131,6 +141,8 @@ Repeat the disposable payload check with:
 ```sh
 fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
   --extract-payload --output NEW_JSON_PATH
+fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
+  --extract-payload --sysroot-mode --output ANOTHER_NEW_JSON_PATH
 ```
 
 ## Batched native qualification

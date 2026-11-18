@@ -160,7 +160,11 @@ hooks and UKI are outside that database-only simulation. A
 extracted all 4,281 candidate files into a disposable partial root, found all
 13 kernel38 modules and passed `pacman -Qkk` for the four new packages with
 zero altered files; the live 615 versions stayed unchanged. It still does
-not test the actual snapshot, hooks or UKI. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
+not test the actual snapshot, hooks or UKI. A second
+[disposable `--sysroot` transaction](docs/evidence/nvidia620-pacman-sysroot-transaction-20261118.json)
+passed the same payload and `pacman -Qkk` gates using Pacman's intended
+mounted-guest mode; it used a minimal test config, so signed-archive
+verification remains a separate gate. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
 found 4,281 candidate files with zero unexpected package or unowned-path
 overlaps. The candidate root and UKI have not yet been created.
 The [snapshot helper](scripts/stage-nvidia620-snapshot.py) passes its

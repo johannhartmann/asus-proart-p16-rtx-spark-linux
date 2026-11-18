@@ -84,6 +84,17 @@ def snapshot_id(path):
     return int(match.group(1))
 
 
+def clear_candidate_db_lock(target):
+    # The host lock protects the snapshot operation, but its copied inode
+    # must not block later Pacman work inside the candidate.
+    candidate_lock = target / "var/lib/pacman/db.lck"
+    if not candidate_lock.is_file():
+        raise RuntimeError("snapshot did not contain the expected host Pacman lock")
+    candidate_lock.unlink()
+    if candidate_lock.exists():
+        raise RuntimeError("candidate Pacman lock removal failed")
+
+
 def plan():
     mount = root_mount()
     packages = package_versions()
@@ -155,6 +166,7 @@ def stage(state, output):
             target_id = snapshot_id(target)
             if target_id == source_id or not (target / "var/lib/pacman/local").is_dir():
                 raise RuntimeError("snapshot ID/database verification failed")
+            clear_candidate_db_lock(target)
         finally:
             if mounted:
                 # Never recursively clean a mountpoint if unmounting fails.
@@ -180,6 +192,7 @@ def stage(state, output):
                "efi_file_sha256_before": before_boot_files,
                "efi_file_sha256_after": after_boot_files,
                "package_transaction_executed": False,
+               "candidate_pacman_lock_removed": True,
                "boot_entry_created": False, "reboot_executed": False,
                "next_gate": "mount @nvidia620 privately, perform the isolated 620 package transaction and build/verify its distinct UKI"}
     output.parent.mkdir(parents=True, exist_ok=True)

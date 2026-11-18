@@ -63,7 +63,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--extract-payload", action="store_true",
                         help="also extract package files into the disposable root")
+    parser.add_argument("--sysroot-mode", action="store_true",
+                        help="exercise Pacman's mounted-guest --sysroot semantics")
     args = parser.parse_args()
+    if args.sysroot_mode and not args.extract_payload:
+        parser.error("--sysroot-mode requires --extract-payload")
     if not os.environ.get("FAKEROOTKEY"):
         parser.error("run as: fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py ...")
     if args.output.exists():
@@ -90,10 +94,20 @@ def main():
         (candidate / "etc/pacman.d/hooks").mkdir(parents=True)
         cache = candidate / "var/cache/pacman/pkg"
         cache.mkdir(parents=True)
-        base = ["/usr/bin/pacman", "--root", str(candidate), "--dbpath",
-                str(database), "--config", "/etc/pacman.conf",
-                "--cachedir", str(cache), "--hookdir", str(hookdir),
-                "--noscriptlet", "--noconfirm"]
+        if args.sysroot_mode:
+            # A partial disposable root lacks the live keyring/configuration;
+            # archive signatures and hashes are checked by the separate
+            # preflight. The real snapshot will use its copied Pacman config.
+            config = candidate / "etc/pacman.conf"
+            config.write_text("[options]\nArchitecture = aarch64\n"
+                              "SigLevel = Never\nLocalFileSigLevel = Never\n")
+            root_args = ["--sysroot", str(candidate), "--config",
+                         "/etc/pacman.conf"]
+        else:
+            root_args = ["--root", str(candidate), "--dbpath", str(database),
+                         "--config", "/etc/pacman.conf", "--cachedir",
+                         str(cache), "--hookdir", str(hookdir)]
+        base = ["/usr/bin/pacman", *root_args, "--noscriptlet", "--noconfirm"]
         if not args.extract_payload:
             base.append("--dbonly")
         steps = []
@@ -113,8 +127,8 @@ def main():
                           "unexpected_stderr": unexpected_stderr[:20]})
             if result.returncode:
                 break
-        candidate_versions = versions(["/usr/bin/pacman", "--root", str(candidate),
-                                       "--dbpath", str(database), "-Q", *LIVE_PACKAGES])
+        candidate_versions = versions(["/usr/bin/pacman", *root_args,
+                                       "-Q", *LIVE_PACKAGES])
         payload_audit = None
         if args.extract_payload and len(steps) == 2 and all(
                 step["exit_code"] == 0 for step in steps):
@@ -140,8 +154,8 @@ def main():
                              .rglob("*.ko"))
             payload_audit["extracted_module_count"] = len(modules)
             payload_audit["all_files_present"] &= len(modules) == 13
-            qkk = run(["/usr/bin/pacman", "--root", str(candidate),
-                       "--dbpath", str(database), "-Qkk", *EXPECTED], timeout=120)
+            qkk = run(["/usr/bin/pacman", *root_args, "-Qkk", *EXPECTED],
+                      timeout=120)
             payload_audit["pacman_qkk"] = {
                 "exit_code": qkk.returncode,
                 "stdout_tail": qkk.stdout[-2000:].replace(str(folder), "$TMPROOT"),
@@ -160,14 +174,17 @@ def main():
                    (payload_audit is not None and payload_audit["all_files_present"])))
     report = {"captured_at": datetime.now(timezone.utc).isoformat(),
               "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
-              "operation": ("fakeroot pacman transaction with payload extraction into disposable root"
+              "operation": ("fakeroot pacman --sysroot payload transaction on disposable root"
+                            if args.sysroot_mode else
+                            "fakeroot pacman transaction with payload extraction into disposable root"
                             if args.extract_payload else
                             "fakeroot pacman --dbonly transaction on copied local/sync database"),
+              "sysroot_mode": args.sysroot_mode,
               "live_before": live_before, "live_after": live_after,
               "candidate_versions": candidate_versions, "archive_inputs": archives,
               "steps": steps, "pass": passed,
               "payload_audit": payload_audit,
-              "limit": ("Disposable partial root only; actual Btrfs snapshot installation, ALPM hooks, module load, UKI and boot are untested."
+              "limit": ("Disposable partial root only; its minimal Pacman config disables signature checking, which is covered by separate archive preflight. Actual Btrfs snapshot installation, ALPM hooks, module load, UKI and boot are untested."
                         if args.extract_payload else
                         "Database dependency and conflict resolution only; file conflicts, hooks, modules, UKI and boot are not tested.")}
     args.output.parent.mkdir(parents=True, exist_ok=True)
