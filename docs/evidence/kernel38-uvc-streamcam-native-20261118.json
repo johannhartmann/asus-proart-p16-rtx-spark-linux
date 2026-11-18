@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-11-18T18:02:33.683711+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "device": "/dev/v4l/by-path/platform-NVDA8000:00-usb-0:1.1:1.0-video-index0",
+  "command": [
+    "ffmpeg",
+    "-hide_banner",
+    "-nostdin",
+    "-f",
+    "v4l2",
+    "-input_format",
+    "mjpeg",
+    "-framerate",
+    "30",
+    "-video_size",
+    "1920x1080",
+    "-i",
+    "/dev/v4l/by-path/platform-NVDA8000:00-usb-0:1.1:1.0-video-index0",
+    "-frames:v",
+    "60",
+    "-f",
+    "null",
+    "-"
+  ],
+  "exit_code": 0,
+  "frames": 60,
+  "new_kernel_warnings": [],
+  "trace_enabled": false,
+  "camera_pixels_retained": false,
+  "pass": true
+}

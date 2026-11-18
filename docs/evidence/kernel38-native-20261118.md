@@ -21,7 +21,11 @@ frames at 720p/30, 60 RGB frames at 1080p/30 and 30 IR frames at 360p/15.
 The pinned UVC fix capped the internal RGB URBs at `22 × 2,940 = 64,680`
 bytes, rounded to the 65,536-byte DMA limit. IR used 32 × 1,176 bytes,
 rounded to 40,960. No new DMA or other kernel warning occurred during those
-captures. External StreamCam and post-resume capture are separate gates.
+captures. A separate [external StreamCam check](kernel38-uvc-streamcam-native-20261118.json)
+captured 60 MJPEG frames at 1080p/30 on USB host `NVDA8000:00` without a new
+kernel warning. That check ran with UVC trace disabled, so the exact external
+URB allocation is still unmeasured on kernel38. Post-resume capture is a
+separate gate.
 
 The [installed NVENC check](n1x-media-20261118/installed-nvenc-kernel38.json)
 again failed H.264, HEVC and AV1 at session open with error 21 on the matched
