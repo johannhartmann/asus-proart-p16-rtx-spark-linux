@@ -20,6 +20,12 @@ the pinned DRM/PM/UVM DKMS patch package SHA256 is
 `23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023`.
 All five 620 modules have already built against the final kernel38 ABI with
 valid split BTF. These offline facts do not qualify 620 display or NVENC.
+The [consolidated preflight](nvidia620-staging-preflight-20261118.json), run by
+[`check-nvidia620-staging-inputs.py`](../../scripts/check-nvidia620-staging-inputs.py),
+rechecked both archive signatures, all four pinned package hashes and
+versioned dependencies, all 13 module versions/vermagic/split BTF, the
+running 615 boundary and 839,901,184 free EFI bytes. It passed without
+installing or loading 620.
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never

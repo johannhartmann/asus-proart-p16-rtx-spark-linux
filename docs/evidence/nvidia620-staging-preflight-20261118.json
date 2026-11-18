@@ -1,0 +1,93 @@
+{
+  "captured_at": "2026-11-18T18:23:10.041269+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "running_kernel": "7.2.8-38-rtx-spark-npu",
+  "running_nvidia_utils": "nvidia-utils 615.78.08-1",
+  "boot_order": "BootOrder: 0002,0001,2001,2002,2003",
+  "efi_free_bytes": 839901184,
+  "packages": {
+    "nvidia-utils": {
+      "path": "build/nvidia620-packages/nvidia-utils-620.70.06-1-aarch64.pkg.tar.xz",
+      "sha256": "bc4b8afd35bc14b963b4a2d5d123a76ca72bba3d56c8237ae44b1439ac2bd3da",
+      "sha256_expected": "bc4b8afd35bc14b963b4a2d5d123a76ca72bba3d56c8237ae44b1439ac2bd3da",
+      "sha256_match": true,
+      "package_name": "nvidia-utils",
+      "package_version": "620.70.06-1",
+      "dependencies": [
+        "libglvnd",
+        "egl-wayland",
+        "egl-wayland2",
+        "egl-gbm",
+        "egl-x11"
+      ],
+      "signed_by_archlinuxarm_build_system": true
+    },
+    "nvidia-open-dkms": {
+      "path": "build/nvidia620-packages/nvidia-open-dkms-620.70.06-1-aarch64.pkg.tar.xz",
+      "sha256": "e333f8744caa175bccca649b165ff5a31c94de6b7ca573364a0106231351af92",
+      "sha256_expected": "e333f8744caa175bccca649b165ff5a31c94de6b7ca573364a0106231351af92",
+      "sha256_match": true,
+      "package_name": "nvidia-open-dkms",
+      "package_version": "620.70.06-1",
+      "dependencies": [
+        "dkms",
+        "nvidia-utils=620.70.06"
+      ],
+      "signed_by_archlinuxarm_build_system": true
+    },
+    "n1x-nvidia-drm-fix-620": {
+      "path": "build/nvidia620-packages/n1x-nvidia-drm-fix-620-620.70.06-1-any.pkg.tar.xz",
+      "sha256": "23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023",
+      "sha256_expected": "23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023",
+      "sha256_match": true,
+      "package_name": "n1x-nvidia-drm-fix-620",
+      "package_version": "620.70.06-1",
+      "dependencies": [
+        "dkms",
+        "nvidia-open-dkms=620.70.06"
+      ]
+    },
+    "linux-p16-platform-38-drivers-nvidia620": {
+      "path": "build/uvc-kernel38-drivers620-package-20261118/linux-p16-platform-38-drivers-nvidia620-7.2.8-38-aarch64.pkg.tar.xz",
+      "sha256": "2f669e17dc68f4f3227c1e9e2a4c54405c8e54c72eeb2bc4d89982cdb77a6232",
+      "sha256_expected": "2f669e17dc68f4f3227c1e9e2a4c54405c8e54c72eeb2bc4d89982cdb77a6232",
+      "sha256_match": true,
+      "package_name": "linux-p16-platform-38-drivers-nvidia620",
+      "package_version": "7.2.8-38",
+      "dependencies": [
+        "linux-p16-platform-38=7.2.8-38",
+        "nvidia-utils=620.70.06"
+      ]
+    }
+  },
+  "versioned_dependencies_match": true,
+  "driver_module_count": 13,
+  "nvidia_module_versions": {
+    "nvidia-drm.ko": "620.70.06",
+    "nvidia-modeset.ko": "620.70.06",
+    "nvidia-peermem.ko": "620.70.06",
+    "nvidia-uvm.ko": "620.70.06",
+    "nvidia.ko": "620.70.06"
+  },
+  "module_vermagic": {
+    "hid-sensor-als.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "n1x_adsp.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "n1x_npu_bootstrap.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "n1x_pluton.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "n1x_scp.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "nvidia-drm.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "nvidia-modeset.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "nvidia-peermem.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "nvidia-uvm.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "nvidia.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "spbm.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "spi-hid-acpi.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64",
+    "spi-hid.ko": "7.2.8-38-rtx-spark-npu SMP preempt mod_unload modversions aarch64"
+  },
+  "btf": {
+    "modules_checked": 13,
+    "modules_with_btf": 13,
+    "kernel_btf_sha256": "91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768"
+  },
+  "pass": true
+}
