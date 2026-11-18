@@ -25,6 +25,7 @@ retained.
 | Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
 | Interactive A/V playback | Pass for a bounded H.264/AAC fixture | [`av-playback.json`](av-playback.json) and `av-playback-mpv.log.gz` show the installed player selecting VA-API decode, Vulkan `gpu-next` output and PipeWire audio. IPC drove forward and backward seek, pause, resume and EOF. The sampled audio/video clock difference during playback was at most 22 ms. This does not establish perceived lip sync or a long-duration stability result. |
 | NVENC API | Blocked for H.264, HEVC and AV1 | The isolated [FFmpeg package](../../../platform/video/README.md) compiles all three encoders, but each `nvenc-*.log` records `OpenEncodeSessionEx failed: incompatible client key (21)` on the installed driver. The [API-version comparison](nvenc-api-version-compare.json) repeats all three probes with codec headers 12.2 and 13.1; both fail at session creation. The independent [direct C probe](nvenc-direct-session.json) creates the API function table but also gets status 21 opening a CUDA/NVENC session with either header. No NVENC output was produced. |
+| Installed NVENC check | Blocked for H.264, HEVC and AV1 | [`installed-nvenc/installed-nvenc.json`](installed-nvenc/installed-nvenc.json) and its three codec logs repeat the session probe with `/usr/bin/ffmpeg-n1x` from the installed 9.0.2-4 package. Every codec exits 187 at `OpenEncodeSessionEx` error 21. The probe exits nonzero by design when the hardware encoder is unavailable. |
 | Desktop playback | Pass for one H.264 sample | `mpv-vaapi.log.gz` records hardware decode, libplacebo `gpu-next` output and EOF; `mpv-software-control.log` records intentional software decode. Key lines from the full mpv logs are in `mpv-summary.log`. |
 | Vulkan scaling and frame mixing | Application path exercised | `mpv-effects.log.gz` records NVIDIA Vulkan/libplacebo, `ewa_lanczos`, interpolation, 320×180 source scaled to a 1190×718 and then 1400×960 Wayland window, and EOF. It does not establish AI super-resolution, generated motion frames, HDR or image-quality acceptance. |
 | Desktop HDR output | Open | [`hdr-display-state.log`](hdr-display-state.log) records both connected outputs in Hyprland's `srgb` preset, default DRM Colorspace and no active HDR metadata. This session cannot qualify an SDR-to-HDR playback path or NVIDIA TrueHDR. |
@@ -86,6 +87,12 @@ python3 scripts/check-p16-camera-contention.py \
 The direct probe deliberately exits nonzero when the encoder session fails.
 Its logs show API discovery and function-table creation succeeding before
 status 21. The two header versions use the same source file and runtime driver.
+Repeat the installed package encoder check with:
+
+```sh
+python3 scripts/check-installed-nvenc.py \
+  --output-dir docs/evidence/n1x-media-20261118/installed-nvenc
+```
 
 [`vainfo-nvidia.log`](vainfo-nvidia.log) records the VA-API profile inventory.
 The `libva-utils 2.24.0-1` ARM64 package was extracted without installation;

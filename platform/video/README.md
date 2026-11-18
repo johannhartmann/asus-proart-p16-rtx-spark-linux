@@ -29,6 +29,8 @@ is retained. The system FFmpeg's Vulkan Video encoders successfully produced
 H.264, HEVC, and AV1 on this machine; they are a separate Linux API and do not
 establish that the NVENC API works. Keep this candidate isolated pending a
 driver/API fix and full end-user recording qualification.
+The [installed NVENC check](../../docs/evidence/n1x-media-20261118/installed-nvenc/installed-nvenc.json)
+confirms error 21 for H.264, HEVC and AV1 with `/usr/bin/ffmpeg-n1x`.
 
 The selected configure flags keep core FFmpeg codecs and link the existing
 system x264, x265 and libvpx libraries for test fixtures. Other distribution

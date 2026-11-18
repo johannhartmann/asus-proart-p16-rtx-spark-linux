@@ -91,6 +91,10 @@ The [NVENC API-version comparison](docs/evidence/n1x-media-20261118/nvenc-api-ve
 uses identical FFmpeg 9.0.2 sources with pinned NVIDIA codec headers 12.2 and
 13.1. All three NVENC codecs fail at `OpenEncodeSessionEx` with error 21 on
 both builds; a header downgrade alone does not enable the session.
+The [installed binary check](docs/evidence/n1x-media-20261118/installed-nvenc/installed-nvenc.json)
+repeats H.264, HEVC and AV1 through `/usr/bin/ffmpeg-n1x` from package
+9.0.2-4. All three still fail at session creation with error 21; installation
+did not change the NVENC result.
 An independent [CUDA/NVENC C probe](scripts/probe-nvenc-session.c) also reaches
 `NvEncodeAPICreateInstance` successfully with API 12.2 and 13.1, but
 `NvEncOpenEncodeSessionEx` returns 21 for both. This reproduces the failure
