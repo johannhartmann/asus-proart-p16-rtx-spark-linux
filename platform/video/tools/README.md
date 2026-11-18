@@ -46,10 +46,15 @@ on this P16. It uses a dedicated profile in
 `${XDG_DATA_HOME:-$HOME/.local/share}/p16-video-chrome` so an already running
 Chrome instance cannot silently discard the GPU flags. Set
 `P16_CHROME_PROFILE` to choose another profile, or pass `--user-data-dir`.
-Google Chrome is optional for the other media commands. The bounded H.264
-1280×720 test played 96 frames with `kIsPlatformVideoDecoder=true`; a 320×180
-fixture and Arch ARM Chromium 156 fell back to software. Other codecs, sites,
-resolutions and long playback still need qualification.
+Google Chrome is optional for the other media commands. Bounded 1280×720
+H.264, VP9 and AV1 tests each played 96 frames with `VaapiVideoDecoder` and
+`kIsPlatformVideoDecoder=true`. A 20-second AV1 repeat played 480 frames with
+zero drops. A 320×180 H.264 fixture and Arch ARM Chromium 156 fell back to
+software. An NVRM allocation warning occurred during the first short AV1
+run; subsequent short and 20-second runs had no concurrent warning. Real
+sites, other profiles and resolutions, hours-long playback and resume still
+need qualification. The [browser record](../../../docs/evidence/n1x-media-20261118/browser-vaapi.md)
+contains the exact observations.
 
 `p16-camera-privacy status|off|on` controls Linux USB authorization for the
 internal ASUS RGB/IR camera only. The privileged helper verifies the P16 ACPI

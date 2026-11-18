@@ -119,13 +119,15 @@ second Linux media framework's Vulkan hardware encoder in a real recording,
 but does not change the NVENC API or OBS failure.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback, on-demand HDR10 output and P16 RGB/Vulkan recording
-commands without replacing system codecs. Version 0.1.0-5 is installed on the
+commands without replacing system codecs. Version 0.1.0-6 is installed on the
 reference P16: the installed
 mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
 installed recording command produced a 60-frame H.264 file from the live RGB
 camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
-NVENC, OBS hardware recording or power-management gates.
+NVENC, OBS hardware recording or power-management gates. Revision 0.1.0-6
+updates the packaged browser documentation after the VP9/AV1 tests; command
+payloads match the prior installed release.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;
