@@ -178,6 +178,10 @@ The [candidate UKI helper](scripts/stage-nvidia620-uki.py) is prepared to
 build and verify a distinct kernel38/620 image inside that candidate root
 without writing EFI or BootNext; it still needs a passing package-stage
 receipt and a privileged native run before any boot entry can be created.
+The [EFI entry helper](scripts/stage-nvidia620-efi.py) is also prepared. It
+requires the verified UKI receipt, stages a distinct image and uses
+`efibootmgr -C` so the 620 entry stays outside the default BootOrder; its
+privileged mode has not run and BootNext remains unset.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

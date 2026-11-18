@@ -176,6 +176,24 @@ is still pending and the `@nvidia620` snapshot has not been created.
    as the verified candidate. Create a direct UEFI entry for that distinct
    filename, preserving Limine first and kernel36 as the default. Record the
    final BootOrder and all rollback hashes. Remove temporary mounts cleanly.
+   The [EFI stage helper](../../scripts/stage-nvidia620-efi.py) requires the
+   passing UKI receipt and matching live rollback hashes, verifies the
+   candidate subvolume still exists with the same 620 packages, kernel and
+   NVIDIA module hashes, then copies the exact image to a new EFI filename.
+   `efibootmgr -C` creates an active entry **outside BootOrder**;
+   the helper checks that Limine's order and BootNext stay unchanged and
+   records the result. This root-only mode is prepared but has not run. It
+   must run only after the prior receipts pass:
+
+   ```sh
+   pkexec --disable-internal-agent /usr/bin/python3 \
+     /home/johann/p16/p16rtx_linux/scripts/stage-nvidia620-efi.py \
+     --uki-stage-dir /home/johann/p16/nvidia620-uki-stage-NEW \
+     --output /home/johann/p16/p16rtx_linux/docs/evidence/nvidia620-candidate-efi-NEW.json
+   ```
+
+   This does not select a next boot. The resulting UEFI entry is available
+   for the later attended 620 qualification after the 615 boot is complete.
 
 Any failed package, hash, command-line or image check stops before EFI entry
 creation. The candidate snapshot can then be discarded without affecting
