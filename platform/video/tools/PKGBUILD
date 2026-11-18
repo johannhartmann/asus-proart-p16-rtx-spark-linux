@@ -1,23 +1,26 @@
 pkgname=p16-media-tools
 pkgver=0.1.0
-pkgrel=1
-pkgdesc='P16 NVIDIA video playback and Vulkan camera recording commands'
+pkgrel=2
+pkgdesc='P16 NVIDIA video playback, HDR output and Vulkan camera recording commands'
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('MIT')
-depends=('ffmpeg' 'mpv' 'libva-nvidia-driver' 'nvidia-utils')
-source=('p16-video-play' 'p16-record-camera-vulkan' 'README.md' 'LICENSE')
+depends=('ffmpeg' 'mpv' 'hyprland' 'python' 'libva-nvidia-driver' 'nvidia-utils')
+source=('p16-video-play' 'p16-hdr-play' 'p16-record-camera-vulkan' 'README.md' 'LICENSE')
 sha256sums=('fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688'
+            '291aea39c5ed3cadba150bfe09a2f42f60290e6f959518611f312e8aa942d92e'
             'b5b4cc38fd32929719c645aa88b1974a6f0abd062888df1c5df6ad45ca21a6f4'
-            'f8c8d0ce211b2bbba9f969ef3eac24da6870e590203c4af853edd52846796508'
+            '664fb02d30d4bf6cf669dce34d0628dd1c1a81d46395050d46fb0c3fe39e5f9d'
             '213e4f92de2bfb95c95fc90aa94a5378e92a7c3bdf1d2b22768da3fa9068b3b3')
 
 check() {
   bash -n "$srcdir/p16-video-play" "$srcdir/p16-record-camera-vulkan"
+  python -m py_compile "$srcdir/p16-hdr-play"
 }
 
 package() {
   install -Dm755 "$srcdir/p16-video-play" "$pkgdir/usr/bin/p16-video-play"
+  install -Dm755 "$srcdir/p16-hdr-play" "$pkgdir/usr/bin/p16-hdr-play"
   install -Dm755 "$srcdir/p16-record-camera-vulkan" \
     "$pkgdir/usr/bin/p16-record-camera-vulkan"
   install -Dm644 "$srcdir/README.md" \

@@ -11,9 +11,18 @@ For HEVC 4:4:4 material on this P16, use
 selected Vulkan Video decode with `nv24`, `p410` and `p412` renderer surfaces.
 The default VA-API path played the 12-bit fixture but reported a `yuv444p`
 surface, so its 12-bit preservation is unqualified. HEVC 4:2:2 playback
-fell back to software with both tested desktop paths; the separate CUVID
-command-line candidate decoded it correctly. These raw fixture tests do not
-establish HDR display output or audio sync.
+falls back to software in mpv; the installed `ffplay-n1x -enable_vulkan`
+uses CUVID plus libplacebo/Vulkan without observed chroma downsampling.
+
+`p16-hdr-play HDR10_HEVC_FILE [mpv options...]` plays local HEVC files with
+PQ transfer and BT.2020 primaries on the internal P16 OLED. It temporarily
+sets the display to 10-bit HDR, uses mpv's Vulkan decoder and HDR colorspace
+hint, and restores the Omarchy monitor configuration when playback ends.
+A watchdog also restores SDR if the launcher is killed. Only one instance
+can run at a time. The output path was verified with a real HDR10 stream,
+including nonzero DRM HDR metadata; visual luminance and color accuracy
+remain unmeasured. The external Samsung U28E590 has no HDR EDID support.
+Use `p16-video-play` for ordinary SDR playback.
 
 `p16-record-camera-vulkan SECONDS OUTPUT.mkv` records the internal P16 RGB
 camera through V4L2 and the NVIDIA Vulkan Video H.264 encoder. It records

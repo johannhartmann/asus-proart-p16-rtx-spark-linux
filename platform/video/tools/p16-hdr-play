@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""Play HDR10 HEVC on the P16 OLED with a temporary Hyprland HDR mode."""
+
+import fcntl
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+
+PANEL = "Samsung Display Corp. ATNA60HC05-0"
+OUTPUT = "eDP-1"
+
+
+def run(*args):
+    return subprocess.run(args, check=True, text=True, capture_output=True)
+
+
+def watchdog(fd):
+    # A pipe closes even after SIGKILL; restore the display if the parent dies.
+    mpv_pid = None
+    clean = False
+    with os.fdopen(fd) as pipe:
+        for line in pipe:
+            if line.startswith("MPV "):
+                mpv_pid = int(line.split()[1])
+            elif line == "CLEAN\n":
+                clean = True
+    if not clean:
+        if mpv_pid:
+            try:
+                os.killpg(mpv_pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        subprocess.run(("/usr/bin/hyprctl", "reload"), capture_output=True)
+
+
+def main():
+    if len(sys.argv) == 3 and sys.argv[1] == "--_watchdog":
+        watchdog(int(sys.argv[2]))
+        return 0
+    if len(sys.argv) < 2 or sys.argv[1].startswith("-"):
+        print("Usage: p16-hdr-play HDR10_HEVC_FILE [mpv options...]", file=sys.stderr)
+        return 2
+    media = sys.argv[1]
+    if not Path(media).is_file():
+        print(f"Not a local file: {media}", file=sys.stderr)
+        return 2
+    streams = json.loads(run("/usr/bin/ffprobe", "-v", "error", "-select_streams", "v:0",
+                             "-show_entries", "stream=codec_name,color_transfer,color_primaries",
+                             "-of", "json", media).stdout).get("streams", [])
+    if not streams or not all((streams[0].get("codec_name") == "hevc",
+                               streams[0].get("color_transfer") == "smpte2084",
+                               streams[0].get("color_primaries") == "bt2020")):
+        print("Expected an HEVC HDR10 video with PQ transfer and BT.2020 primaries", file=sys.stderr)
+        return 2
+    if Path("/sys/class/dmi/id/product_name").read_text().strip() != "ProArt P16 H7607BA":
+        print("This HDR mode is qualified only on the ASUS ProArt P16 H7607BA", file=sys.stderr)
+        return 2
+    monitors = json.loads(run("/usr/bin/hyprctl", "monitors", "-j").stdout)
+    panel = next((m for m in monitors if m["name"] == OUTPUT and m["description"] == PANEL), None)
+    if panel is None:
+        print("The qualified P16 internal OLED is not connected", file=sys.stderr)
+        return 2
+    if panel.get("colorManagementPreset") != "srgb":
+        print("The internal display is already in a non-SDR mode; leaving it untouched", file=sys.stderr)
+        return 2
+    lock_path = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")) / "p16-hdr-play.lock"
+    with lock_path.open("w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print("Another p16-hdr-play session is running", file=sys.stderr)
+            return 2
+        read_fd, write_fd = os.pipe()
+        guard = subprocess.Popen((sys.executable, __file__, "--_watchdog", str(read_fd)),
+                                 pass_fds=(read_fd,), stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        os.close(read_fd)
+        mpv = None
+        restored = False
+        try:
+            mode = f'{panel["width"]}x{panel["height"]}@{panel["refreshRate"]:g}'
+            position = f'{panel["x"]}x{panel["y"]}'
+            scale = panel["scale"]
+            lua = (f'hl.monitor({{ output = "{OUTPUT}", mode = "{mode}", '
+                   f'position = "{position}", scale = {scale:g}, bitdepth = 10, cm = "hdr" }})')
+            run("/usr/bin/hyprctl", "eval", lua)
+            active = json.loads(run("/usr/bin/hyprctl", "monitors", "-j").stdout)
+            hdr = next(m for m in active if m["name"] == OUTPUT)
+            if hdr.get("colorManagementPreset") != "hdr" or hdr.get("currentFormat") != "XBGR2101010":
+                raise RuntimeError("Hyprland did not activate the expected 10-bit HDR mode")
+            mpv = subprocess.Popen(("/usr/bin/mpv", "--no-config", "--vo=gpu-next",
+                                    "--gpu-api=vulkan", "--hwdec=hevc-vulkan",
+                                    "--target-colorspace-hint=yes", "--fs=yes",
+                                    f"--fs-screen-name={OUTPUT}", media, *sys.argv[2:]),
+                                   start_new_session=True)
+            os.write(write_fd, f"MPV {mpv.pid}\n".encode())
+            return mpv.wait()
+        finally:
+            if mpv and mpv.poll() is None:
+                os.killpg(mpv.pid, signal.SIGTERM)
+                try:
+                    mpv.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    os.killpg(mpv.pid, signal.SIGKILL)
+                    mpv.wait()
+            try:
+                run("/usr/bin/hyprctl", "reload")
+                restored = True
+            finally:
+                if restored:
+                    os.write(write_fd, b"CLEAN\n")
+                os.close(write_fd)
+                guard.wait(timeout=5)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (OSError, subprocess.CalledProcessError, RuntimeError, ValueError, KeyError) as error:
+        print(f"p16-hdr-play: {error}", file=sys.stderr)
+        sys.exit(1)

@@ -1,0 +1,42 @@
+{
+  "before": {
+    "monitor": {
+      "name": "eDP-1",
+      "description": "Samsung Display Corp. ATNA60HC05-0",
+      "currentFormat": "XRGB8888",
+      "colorManagementPreset": "srgb"
+    },
+    "drmColorspace": 0,
+    "drmHdrMetadataHex": "0000000000000000000000000000000000000000000000000000000000000000",
+    "drmHdrMetadataNonzero": false
+  },
+  "during": {
+    "monitor": {
+      "name": "eDP-1",
+      "description": "Samsung Display Corp. ATNA60HC05-0",
+      "currentFormat": "XBGR2101010",
+      "colorManagementPreset": "hdr"
+    },
+    "drmColorspace": 9,
+    "drmHdrMetadataHex": "000000000200488a08393421aa9b9619fc08133d4240400602004006be020000",
+    "drmHdrMetadataNonzero": true
+  },
+  "mpvPidsBeforeKill": [
+    3963802
+  ],
+  "launcherExit": -9,
+  "after": {
+    "monitor": {
+      "name": "eDP-1",
+      "description": "Samsung Display Corp. ATNA60HC05-0",
+      "currentFormat": "XRGB8888",
+      "colorManagementPreset": "srgb"
+    },
+    "drmColorspace": 0,
+    "drmHdrMetadataHex": "0000000000000000000000000000000000000000000000000000000000000000",
+    "drmHdrMetadataNonzero": false
+  },
+  "mpvPidsAfterRecovery": [],
+  "hyprlandConfigErrors": "",
+  "pass": true
+}
