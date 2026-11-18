@@ -1,0 +1,23 @@
+pkgname=n1x-nvidia-drm-fix-620
+pkgver=620.70.06
+pkgrel=1
+pkgdesc='NVIDIA 620 DRM, PM notifier and UVM corrections for RTX Spark'
+arch=('any')
+url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
+license=('MIT')
+depends=('dkms' 'nvidia-open-dkms=620.70.06')
+conflicts=('n1x-nvidia-drm-fix')
+backup=('etc/dkms/nvidia-620.70.06.conf')
+source=('nvidia-620.70.06.conf' 'nvidia-drm-colorspace-deadlock.patch' 'nvidia-pm-notifier-owner.patch' 'nvidia-uvm-pm-lock-order.patch' 'LICENSE')
+sha256sums=('001aa8ff44d7a3b621a464a7551d05d04f02c341d66856aad24b4f8ebc36a296' '25c4ac9d1bfbb4047a4fddc400bf18de16aebfb68dcbc8fb2cc63557435d9308' '97f56fa1500c9926cfb815d73476ede5b81ec653837da716c7259a1ec748800d' 'd7f38f390c1ee867d83638e6919eb22218efb5163efb6eb71dc0c1b727646cda' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
+
+package() {
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$srcdir/nvidia-620.70.06.conf" "$pkgdir/etc/dkms/nvidia-620.70.06.conf"
+  install -Dm644 "$srcdir/nvidia-drm-colorspace-deadlock.patch" \
+    "$pkgdir/etc/dkms/nvidia/patches/nvidia-drm-colorspace-deadlock.patch"
+  install -Dm644 "$srcdir/nvidia-pm-notifier-owner.patch" \
+    "$pkgdir/etc/dkms/nvidia/patches/nvidia-pm-notifier-owner.patch"
+  install -Dm644 "$srcdir/nvidia-uvm-pm-lock-order.patch" \
+    "$pkgdir/etc/dkms/nvidia/patches/nvidia-uvm-pm-lock-order.patch"
+}

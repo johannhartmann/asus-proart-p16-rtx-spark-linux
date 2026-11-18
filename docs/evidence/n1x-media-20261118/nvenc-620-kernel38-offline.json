@@ -50,5 +50,11 @@
   "modules_installed": false,
   "userspace_installed": false,
   "host_modules_loaded": false,
-  "native_nvenc_qualified": false
+  "native_nvenc_qualified": false,
+  "candidate_packages": {
+    "linux-p16-platform-38-drivers-nvidia620-7.2.8-38-aarch64.pkg.tar.xz": "2f669e17dc68f4f3227c1e9e2a4c54405c8e54c72eeb2bc4d89982cdb77a6232",
+    "n1x-nvidia-drm-fix-620-620.70.06-1-any.pkg.tar.xz": "23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023"
+  },
+  "driver_package_provenance_sha256": "3cdd951758c5720aedbc5b66994b08ab46b57c30dbae648ce9b66c5972e4a651",
+  "candidate_packages_installed": false
 }

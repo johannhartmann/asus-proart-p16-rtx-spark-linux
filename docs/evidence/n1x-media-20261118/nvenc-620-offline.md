@@ -105,3 +105,15 @@ The modules have **not** been loaded or installed. A native test still needs
 the signed 620 userspace and firmware in an isolated root/boot candidate and
 must preserve a bootable 615 root. The build establishes ABI compatibility
 with kernel38, not an NVENC session or display result.
+
+An alternative `linux-p16-platform-38-drivers-nvidia620` package now combines
+those five modules with the eight independently qualified P16 platform
+modules. Its package SHA256 is
+`2f669e17dc68f4f3227c1e9e2a4c54405c8e54c72eeb2bc4d89982cdb77a6232`;
+all 13 archived module hashes and the exact `nvidia-utils=620.70.06`
+dependency passed package inspection. A separate
+[`n1x-nvidia-drm-fix-620`](../../../platform/nvidia/620/README.md) DKMS patch
+package (SHA256
+`23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023`)
+pins the three same patches to version 620.70.06. Both packages remain
+uninstalled; their build alone does not qualify the 620 runtime.
