@@ -30,6 +30,8 @@ def request(connection, file, command, request_id):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--direct-demux", action="store_true",
+                        help="disable mpv's demux thread and cache to test V4L2 close")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
@@ -40,6 +42,7 @@ def main():
         "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
         "kernel": Path("/proc/sys/kernel/osrelease").read_text().strip(),
         "camera": CAMERA,
+        "direct_demux": args.direct_demux,
         "mpv_version": subprocess.run(["/usr/bin/mpv", "--version"],
                                       capture_output=True, text=True,
                                       check=True).stdout.splitlines()[0],
@@ -53,8 +56,10 @@ def main():
                    "--gpu-api=vulkan", "--hwdec=no", "--profile=low-latency",
                    "--demuxer-lavf-format=v4l2",
                    "--demuxer-lavf-o=video_size=360x360,input_format=gray,framerate=15",
-                   f"--input-ipc-server={ipc}", f"--log-file={log}",
-                   f"av://v4l2:{CAMERA}"]
+                   f"--input-ipc-server={ipc}", f"--log-file={log}"]
+        if args.direct_demux:
+            command += ["--demuxer-thread=no", "--cache=no"]
+        command += [f"av://v4l2:{CAMERA}"]
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True)
         stdout = ""

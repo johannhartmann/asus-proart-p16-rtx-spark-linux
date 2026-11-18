@@ -344,9 +344,11 @@ The [installed mpv IR preview check](docs/evidence/n1x-media-20261118/ir-mpv-pre
 opens the separate 360×360 GREY camera through V4L2 and renders it in a
 Wayland/Vulkan window. Nine positive playback-time samples advance by 1.599
 seconds, the process exits normally through IPC, and a new FFmpeg capture
-reopens the camera. Mpv logs a V4L2 owned-buffer warning and 17 QBUF attempts
-after close; the successful reopen prevents treating that as a stuck device,
-but the clean-shutdown gate is open. No IR pixels or recording are retained.
+reopens the camera. Mpv logs a V4L2 owned-buffer warning but no QBUF bad-fd
+line in this verified standard run. A [direct-demux repeat](docs/evidence/n1x-media-20261118/ir-mpv-preview-direct-demux-kernel38.json)
+retains the warning and logs two QBUF lines. Both runs reopen the camera, so
+the device is not left stuck; the clean-shutdown gate remains open. No IR
+pixels or recording are retained.
 This is a usable preview path, not biometric face-authentication support or
 subjective image-quality acceptance.
 The [StreamCam UVC trace](docs/evidence/n1x-media-20261118/uvc-streamcam-urb-size-current-boot.json)
