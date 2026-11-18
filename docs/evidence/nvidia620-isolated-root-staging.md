@@ -56,12 +56,17 @@ staging.
    No host module is installed or loaded during this step.
 4. Build a candidate kernel38 UKI from the snapshot with its
    installed `mkinitcpio` configuration and exact kernel release. Start from
-   the verified audio-enabled kernel38 command line, replace only
-   `rootflags=subvol=@` with `rootflags=subvol=@nvidia620`, and assert the
-   substitution occurs exactly once. Keep the DSP flags and SOF blacklist.
+   the verified audio-enabled kernel38 UKI and derive its candidate command
+   line with [`prepare-nvidia620-cmdline.py`](../../scripts/prepare-nvidia620-cmdline.py).
+   It replaces only `rootflags=subvol=@` with
+   `rootflags=subvol=@nvidia620`, requiring exactly one replacement and
+   preserving the DSP flags and SOF blacklist.
    Check embedded kernel, initramfs 620 modules, SPI HID bytes, BTF and ACPI
    policy with the candidate root's platform verifier. Verify the UKI
-   command line independently before copying it to a **new** EFI filename.
+   command line independently with
+   `verify-dsp-boot-cmdline.py --root-subvolume @nvidia620` before copying it
+   to a **new** EFI filename. That verifier rejects both a lingering
+   `rootflags=subvol=@` token and duplicate rootflags.
 5. Check that the copied UKI fits the EFI partition and has the same SHA256
    as the verified candidate. Create a direct UEFI entry for that distinct
    filename, preserving Limine first and kernel36 as the default. Record the
