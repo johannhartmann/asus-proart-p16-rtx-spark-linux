@@ -48,3 +48,14 @@ patch. Its extracted binary again matches all 30 software frames for
 [10-bit](hevc44410-vaapi-q416-package7-kernel38.json) and
 [12-bit](hevc44412-vaapi-q416-package7-kernel38.json) input. The installed
 package is still 9.0.2-5 while graphical authentication is pending.
+
+The separate [8-bit 4:4:4 VA-API readback](hevc4448-vaapi-readback-kernel38.json)
+uses the installed distribution FFmpeg, the installed x265 8-bit encoder,
+and a 30-frame HEVC RExt `yuv444p` fixture. All 5,184,000 decoded bytes
+match software output. The log checks select NVIDIA's direct VA-API backend
+and `vaapi` frames. The [source](hevc4448-vaapi-readback-kernel38-source.log),
+[encode](hevc4448-vaapi-readback-kernel38-encode.log),
+[software](hevc4448-vaapi-readback-kernel38-software.log) and
+[VA-API](hevc4448-vaapi-readback-kernel38-vaapi.log) command logs are retained
+without the temporary pixels. This 8-bit case does not depend on Q416 or
+the isolated FFmpeg package.

@@ -79,8 +79,10 @@ specifically enables correct FFmpeg 16-bit VA-API readback. Extracted package
 installation and installed-package readback remain pending. Physical display
 precision, color accuracy and zero-copy behavior remain unmeasured.
 The [VA-API capability query](docs/evidence/n1x-media-20261118/vainfo-nvidia.log)
-lists Main12 and Main444 8/10/12-bit decode entrypoints; other advertised
-profiles still need their own output tests.
+lists Main12 and Main444 8/10/12-bit decode entrypoints. The installed
+distribution FFmpeg's [8-bit Main444 VA-API readback](docs/evidence/n1x-media-20261118/hevc4448-vaapi-readback-kernel38.json)
+matches all 30 software frames byte-for-byte. Other advertised profiles
+still need their own output tests.
 The [HEVC pro-format matrix](docs/evidence/n1x-media-20261118/hevc-pro-matrix.json)
 also verifies 4:4:4 8/10-bit hardware playback (`nv24`/`p410`) and direct CUVID
 pixel equality for 4:2:2 8/10/12-bit. VA-API has no 4:2:2 entrypoint here;

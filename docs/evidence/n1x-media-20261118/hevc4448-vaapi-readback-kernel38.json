@@ -1,0 +1,36 @@
+{
+  "captured_at": "2026-11-18T19:58:14.539054+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "libva_package": "libva-nvidia-driver 0.0.18-1",
+  "ffmpeg_package": "ffmpeg 2:9.0.2-2",
+  "ffmpeg_path": "/usr/bin/ffmpeg",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "x265_path": "/usr/bin/x265",
+  "x265_sha256": "8725bcdbe1669a3210be2d336ec454cd6c1d2c1eed4909b51fe3111c17b7bbf3",
+  "fixture": {
+    "codec_name": "hevc",
+    "profile": "Rext",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuv444p",
+    "nb_read_frames": "30"
+  },
+  "fixture_sha256": "7a7fd8f9f7c76a73c36f25095d5207b145415a25ec37ce5991c7bb585ad96555",
+  "expected_output_bytes": 5184000,
+  "software_sha256": "2f5cc3a2bc6a3fb68fb097a8be42d3f4d3a0134dc1a08b721aec51c6050607eb",
+  "vaapi_sha256": "2f5cc3a2bc6a3fb68fb097a8be42d3f4d3a0134dc1a08b721aec51c6050607eb",
+  "checks": {
+    "fixture_profile": true,
+    "software_bytes": true,
+    "vaapi_bytes": true,
+    "pixels_equal": true,
+    "vaapi_direct_backend": true,
+    "vaapi_surface": true,
+    "software_frames_logged": true,
+    "vaapi_frames_logged": true
+  },
+  "pass": true,
+  "temporary_pixels_retained": false
+}
