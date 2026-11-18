@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-18T08:29:50.398021+00:00",
+  "captured_at": "2026-11-18T08:53:42.932190+00:00",
   "host": {
     "bios": "H7607BA.300",
     "kernel": "7.2.8-36-rtx-spark-npu",
@@ -49,7 +49,7 @@
     },
     "mjpeg_legacy_fixture": {
       "bytes": 189843,
-      "sha256": "bad8d7d19f5d149055bd4642cea148a3e0089660f65ec05fa2cd4d4f9b1b74dc",
+      "sha256": "c52f199a2f572c6f81234e5dfb0207352372e7f0c9c2a8a94c299c5f807da556",
       "status": "pass",
       "stream": {
         "codec_name": "mjpeg",
@@ -73,7 +73,7 @@
     },
     "mpeg2_legacy_fixture": {
       "bytes": 153110,
-      "sha256": "f1d93e3cfa478779c5da77004ae82e81f1135ce4b6f3a5538852a4fa3b4dd6cd",
+      "sha256": "6a2badfaeeaca5a167207842f415d7bc465da757d56991a1ff91894c4ac2f971",
       "status": "pass",
       "stream": {
         "codec_name": "mpeg2video",
@@ -92,8 +92,16 @@
       "hardware_evidence": "NVDEC direct backend and VA-API frames logged",
       "status": "pass"
     },
+    "nvenc_av1": {
+      "reason": "av1 NVENC failed (exit 187); see nvenc-av1.log",
+      "status": "fail"
+    },
     "nvenc_h264": {
-      "reason": "NVENC failed (exit 187); see nvenc-h264.log",
+      "reason": "h264 NVENC failed (exit 187); see nvenc-h264.log",
+      "status": "fail"
+    },
+    "nvenc_hevc": {
+      "reason": "hevc NVENC failed (exit 187); see nvenc-hevc.log",
       "status": "fail"
     },
     "p16_ir": {
@@ -108,8 +116,8 @@
       "rate": 15,
       "size": "360x360",
       "status": "pass",
-      "yavg_max": 88.3164,
-      "yavg_min": 5.4867
+      "yavg_max": 84.6897,
+      "yavg_min": 2.07024
     },
     "p16_rgb": {
       "device": "/dev/video0",
@@ -123,15 +131,15 @@
       "rate": 30,
       "size": "1280x720",
       "status": "pass",
-      "yavg_max": 123.336,
-      "yavg_min": 104.121
+      "yavg_max": 127.469,
+      "yavg_min": 92.8209
     },
     "p16_rgb_vulkan_record": {
-      "bytes": 2509533,
+      "bytes": 4004308,
       "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264",
-      "mean_max": 120.58,
-      "mean_min": 110.553,
-      "sha256": "8bcf3171e9cf1f68d3fef953d93dd30bdfdff9ecd1497e4611540616f2ca1bbc",
+      "mean_max": 142.276,
+      "mean_min": 116.669,
+      "sha256": "425c0d586288d429968934486407ac7639c014ee837ac72bcccb69626f053361",
       "status": "pass",
       "stream": {
         "avg_frame_rate": "30/1",
@@ -173,7 +181,7 @@
     },
     "vp8_legacy_fixture": {
       "bytes": 61385,
-      "sha256": "4774866b1c35402613d1d0d93a98fcacf3b9b4e9dee7ba37413059fff2ef5e52",
+      "sha256": "a84c851892f787772da2be0d877ff3a431797fc8198038619807cc3f3fe75aba",
       "status": "pass",
       "stream": {
         "codec_name": "vp8",
@@ -197,7 +205,7 @@
     },
     "vp9_10bit_fixture": {
       "bytes": 70973,
-      "sha256": "e7b56e336818721a50ed1c956ddbd758bc62c125ac037f11499fe22d2524ebbc",
+      "sha256": "fee14ad27d375c1efe2751a5fe70d026320c67b2c4ef032538fb2c983222bd31",
       "status": "pass",
       "stream": {
         "codec_name": "vp9",
@@ -222,7 +230,7 @@
     },
     "vp9_12bit_fixture": {
       "bytes": 72680,
-      "sha256": "a442382e230bb5949d8e4b4856223c5dd70a9c54bbcccf2244dd81ca579c88ee",
+      "sha256": "5bbbd27702493ddf68f09718e4e1480754e4be059cdf310b0847cda96b5cd35d",
       "status": "pass",
       "stream": {
         "codec_name": "vp9",
@@ -247,7 +255,7 @@
     },
     "vp9_8bit_fixture": {
       "bytes": 70217,
-      "sha256": "5294cebe3b73afd9506202a383490b9bd8cc57d5e8894b88a9084e55b34edc72",
+      "sha256": "669295a36ed2dfe9d4d1a2b9a109f1e2530e3afd671b79fb2dd2793fabb27d34",
       "status": "pass",
       "stream": {
         "codec_name": "vp9",
@@ -267,7 +275,7 @@
     "vulkan_av1": {
       "bytes": 179253,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "c5362331c1170cc0d9185c98172c3895a6a59e41e55e532f5461c9ff945b7cd9",
+      "sha256": "8158b837bccef49705c392dda74965f96d916b8fc4aa3649d693040f5689c7c8",
       "status": "pass",
       "stream": {
         "codec_name": "av1",
@@ -279,7 +287,7 @@
     "vulkan_av1_10bit_roundtrip": {
       "bytes": 269723,
       "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
-      "sha256": "2598f02f15fdbf4a307b3700931ab3edb8f3d65e67e6cb989dc0407cf37e8ff0",
+      "sha256": "d8cb21e4e41f315986c88382957d7ace71195ce666da0cea57ea5449ef781f85",
       "status": "pass",
       "stream": {
         "codec_name": "av1",
@@ -298,7 +306,7 @@
     "vulkan_h264": {
       "bytes": 119643,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "56a23c80a7eb6f0f1ddf9510abab2c55383a46b31be0b5887297a4916b5e8eb7",
+      "sha256": "845fbe9512a8a9288ca672ac25eb9471d1caac02be4cb6705433cb9d69395f61",
       "status": "pass",
       "stream": {
         "codec_name": "h264",
@@ -310,7 +318,7 @@
     "vulkan_hevc": {
       "bytes": 177529,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "160cff739f66ce6804cdad6a2b592eb5a4e581c74aa906d63e7166a4319cc19c",
+      "sha256": "c603bcd97222f2dbd85931a184ae7e133344436006139bc6324a53433a0b5448",
       "status": "pass",
       "stream": {
         "codec_name": "hevc",
@@ -322,7 +330,7 @@
     "vulkan_hevc_10bit_roundtrip": {
       "bytes": 169556,
       "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
-      "sha256": "b0f2758a50ebe52cd64e1a1e79f7ddfa313971d5c5e3b84cfc3acb6dcf3e6750",
+      "sha256": "09f69a36413f0115c1c2fd619ab5f42f546d2c6b400073e38683fde18b463ce9",
       "status": "pass",
       "stream": {
         "codec_name": "hevc",

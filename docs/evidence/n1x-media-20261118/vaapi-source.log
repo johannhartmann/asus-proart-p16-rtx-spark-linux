@@ -1,4 +1,4 @@
-$ ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v libx264 -y /tmp/n1x-media-d82lw7wc/software-h264.mkv
+$ ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v libx264 -y /tmp/n1x-media-k83u0iws/software-h264.mkv
 
 stdout:
 

@@ -333,16 +333,17 @@ def camera_vulkan_record(ffmpeg, ffprobe, work, evidence):
             "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264"}
 
 
-def nvenc_candidate(ffmpeg, evidence):
+def nvenc_candidate(ffmpeg, codec, evidence):
+    label = f"nvenc-{codec}"
     result = command(
         [ffmpeg, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
          "-i", "testsrc2=size=320x180:rate=10", "-frames:v", "10",
-         "-c:v", "h264_nvenc", "-f", "null", "-"],
-        "nvenc-h264", evidence,
+         "-c:v", f"{codec}_nvenc", "-f", "null", "-"], label, evidence,
     )
     require(result.returncode == 0 and re.search(r"frame=\s*10\b", result.stderr),
-            f"NVENC failed (exit {result.returncode}); see nvenc-h264.log")
-    return {"frames": 10, "hardware_evidence": "NVENC session and frames completed"}
+            f"{codec} NVENC failed (exit {result.returncode}); see {label}.log")
+    return {"frames": 10, "codec": codec,
+            "hardware_evidence": "NVENC session and frames completed"}
 
 
 def cuvid_candidate(ffmpeg, codec, source, evidence, label):
@@ -474,8 +475,10 @@ def main():
                                args.nvenc_candidate, codec,
                                work / f"{codec}-legacy.{extension}", args.output_dir,
                                f"cuvid-{codec}-legacy"))
-            record(report["results"], "nvenc_h264",
-                   lambda: nvenc_candidate(args.nvenc_candidate, args.output_dir))
+            for codec in CODECS:
+                record(report["results"], f"nvenc_{codec}",
+                       lambda codec=codec: nvenc_candidate(
+                           args.nvenc_candidate, codec, args.output_dir))
     path = args.output_dir / "result.json"
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(path)

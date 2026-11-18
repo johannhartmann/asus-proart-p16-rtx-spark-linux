@@ -1,0 +1,47 @@
+{
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "driver": "615.78.08",
+  "ffmpeg": "9.0.2",
+  "source_ffmpeg_sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+  "builds": [
+    {
+      "nv_codec_headers": "n13.1.15.0",
+      "headers_archive_sha256": "2255bc74d038b95aa4be30f5f66322c2176acbdb90ada1851db6993536fbeaf7",
+      "binary_sha256": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+      "results": {
+        "h264": "OpenEncodeSessionEx error 21; 0 frames",
+        "hevc": "OpenEncodeSessionEx error 21; 0 frames",
+        "av1": "OpenEncodeSessionEx error 21; 0 frames"
+      }
+    },
+    {
+      "nv_codec_headers": "n12.2.72.0",
+      "headers_archive_sha256": "dbeaec433d93b850714760282f1d0992b1254fc3b5a6cb7d76fc1340a1e47563",
+      "binary_sha256": "9bf9003b74d537b9f4e0e2f139aa5d8ee06822d4fc262b06472700e0ccef3b09",
+      "results": {
+        "h264": "OpenEncodeSessionEx error 21; 0 frames",
+        "hevc": "OpenEncodeSessionEx error 21; 0 frames",
+        "av1": "OpenEncodeSessionEx error 21; 0 frames"
+      },
+      "configure_flags": [
+        "--disable-shared",
+        "--enable-static",
+        "--enable-nvenc",
+        "--enable-nvdec",
+        "--enable-cuvid",
+        "--enable-cuda-llvm",
+        "--disable-doc",
+        "--disable-ffplay",
+        "--disable-ffprobe"
+      ],
+      "scope": "isolated scratch build, not installed"
+    }
+  ],
+  "interpretation": "API 12.2 versus 13.1 header change did not remove the session error. Driver/API enablement remains unqualified; no NVENC output was generated.",
+  "source_urls": [
+    "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+    "https://github.com/FFmpeg/nv-codec-headers/archive/refs/tags/n13.1.15.0.tar.gz",
+    "https://github.com/FFmpeg/nv-codec-headers/archive/refs/tags/n12.2.72.0.tar.gz"
+  ]
+}

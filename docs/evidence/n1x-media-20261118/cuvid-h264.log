@@ -1,10 +1,10 @@
-$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v h264_cuvid -i /tmp/n1x-media-d82lw7wc/vulkan-h264.mkv -frames:v 30 -f null -
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v h264_cuvid -i /tmp/n1x-media-k83u0iws/vulkan-h264.mkv -frames:v 30 -f null -
 
 stdout:
 
 stderr:
-[h264 @ 0xbc9cb5a7c2b0] Reinit context to 320x192, pix_fmt: yuv420p
-Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv':
+[h264 @ 0xc27c247b32b0] Reinit context to 320x192, pix_fmt: yuv420p
+Input #0, matroska,webm, from '/tmp/n1x-media-k83u0iws/vulkan-h264.mkv':
   Metadata:
     ENCODER         : Lavf63.1.102
   Duration: 00:00:03.00, start: 0.000000, bitrate: 319 kb/s
@@ -12,22 +12,22 @@ Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv':
     Metadata:
       ENCODER         : Lavc63.1.102 h264_vulkan
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xbc9cb5afe4b0] No explicit maps, mapping streams automatically...
-[vost#0:0/wrapped_avframe @ 0xbc9cb5afe580] Created video stream from input stream 0:0
-[h264_cuvid @ 0xbc9cb5aa4720] CUVID capabilities for h264_cuvid:
-[h264_cuvid @ 0xbc9cb5aa4720] 8 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
-[h264_cuvid @ 0xbc9cb5aa4720] 10 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
-[h264_cuvid @ 0xbc9cb5aa4720] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[out#0/null @ 0xc27c247e05b0] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xc27c247e0680] Created video stream from input stream 0:0
+[h264_cuvid @ 0xc27c247df240] CUVID capabilities for h264_cuvid:
+[h264_cuvid @ 0xc27c247df240] 8 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
+[h264_cuvid @ 0xc27c247df240] 10 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
+[h264_cuvid @ 0xc27c247df240] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
 Stream mapping:
   Stream #0:0 -> #0:0 (h264 (h264_cuvid) -> wrapped_avframe (native))
-[vost#0:0/wrapped_avframe @ 0xbc9cb5afe580] Starting thread...
-[vf#0:0 @ 0xbc9cb5afedf0] Starting thread...
-[vist#0:0/h264 @ 0xbc9cb5a7d8a0] [dec:h264_cuvid @ 0xbc9cb5aa44f0] Starting thread...
-[in#0/matroska,webm @ 0xbc9cb5a79ea0] Starting thread...
+[vost#0:0/wrapped_avframe @ 0xc27c247e0680] Starting thread...
+[vf#0:0 @ 0xc27c247e0ef0] Starting thread...
+[vist#0:0/h264 @ 0xc27c247b48a0] [dec:h264_cuvid @ 0xc27c247df010] Starting thread...
+[in#0/matroska,webm @ 0xc27c247b0ea0] Starting thread...
 Press [q] to stop, [?] for help
-[h264_cuvid @ 0xbc9cb5aa4720] Formats: Original: nv12 | HW: nv12 | SW: nv12
-[graph -1 input from stream 0:0 @ 0xf69320003020] w:320 h:180 pixfmt:nv12 tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
-[graph -1 input from stream 0:0 @ 0xf69320003020] video frame properties congruent with link at pts_time: 0
+[h264_cuvid @ 0xc27c247df240] Formats: Original: nv12 | HW: nv12 | SW: nv12
+[graph -1 input from stream 0:0 @ 0xe1c9cc003020] w:320 h:180 pixfmt:nv12 tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xe1c9cc003020] video frame properties congruent with link at pts_time: 0
 Output #0, null, to 'pipe:':
   Metadata:
     encoder         : Lavf63.1.102
@@ -35,26 +35,26 @@ Output #0, null, to 'pipe:':
     Metadata:
       encoder         : Lavc63.1.102 wrapped_avframe
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xbc9cb5afe4b0] Starting thread...
-[in#0/matroska,webm @ 0xbc9cb5a79ea0] EOF while reading input
-[in#0/matroska,webm @ 0xbc9cb5a79ea0] Terminating thread with return code 0 (success)
-[vist#0:0/h264 @ 0xbc9cb5a7d8a0] [dec:h264_cuvid @ 0xbc9cb5aa44f0] Decoder thread received EOF packet
-[vist#0:0/h264 @ 0xbc9cb5a7d8a0] [dec:h264_cuvid @ 0xbc9cb5aa44f0] Decoder returned EOF, finishing
-[vf#0:0 @ 0xbc9cb5afedf0] All consumers returned EOF
-[vost#0:0/wrapped_avframe @ 0xbc9cb5afe580] [enc:wrapped_avframe @ 0xbc9cb5a7e060] Encoder thread received EOF
-[vost#0:0/wrapped_avframe @ 0xbc9cb5afe580] Terminating thread with return code 0 (success)
-[out#0/null @ 0xbc9cb5afe4b0] All streams finished
-[out#0/null @ 0xbc9cb5afe4b0] Terminating thread with return code 0 (success)
-[vf#0:0 @ 0xbc9cb5afedf0] Terminating thread with return code 0 (success)
-[vist#0:0/h264 @ 0xbc9cb5a7d8a0] [dec:h264_cuvid @ 0xbc9cb5aa44f0] Terminating thread with return code 0 (success)
-[out#0/null @ 0xbc9cb5afe4b0] Output file #0 (pipe:):
-[out#0/null @ 0xbc9cb5afe4b0]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
-[out#0/null @ 0xbc9cb5afe4b0]   Total: 30 packets (12720 bytes) muxed
-[out#0/null @ 0xbc9cb5afe4b0] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
-frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=15.7x elapsed=0:00:00.19
-[in#0/matroska,webm @ 0xbc9cb5a79ea0] Input file #0 (/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv):
-[in#0/matroska,webm @ 0xbc9cb5a79ea0]   Input stream #0:0 (video): 30 packets read (118807 bytes); 30 frames decoded; 0 decode errors;
-[in#0/matroska,webm @ 0xbc9cb5a79ea0]   Total: 30 packets (118807 bytes) demuxed
-[AVIOContext @ 0xbc9cb5a82b80] Statistics: 119643 bytes read, 0 seeks
+[out#0/null @ 0xc27c247e05b0] Starting thread...
+[in#0/matroska,webm @ 0xc27c247b0ea0] EOF while reading input
+[in#0/matroska,webm @ 0xc27c247b0ea0] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc27c247b48a0] [dec:h264_cuvid @ 0xc27c247df010] Decoder thread received EOF packet
+[vist#0:0/h264 @ 0xc27c247b48a0] [dec:h264_cuvid @ 0xc27c247df010] Decoder returned EOF, finishing
+[vf#0:0 @ 0xc27c247e0ef0] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xc27c247e0680] [enc:wrapped_avframe @ 0xc27c247b5060] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xc27c247e0680] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc27c247e05b0] All streams finished
+[out#0/null @ 0xc27c247e05b0] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xc27c247e0ef0] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc27c247b48a0] [dec:h264_cuvid @ 0xc27c247df010] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc27c247e05b0] Output file #0 (pipe:):
+[out#0/null @ 0xc27c247e05b0]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xc27c247e05b0]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xc27c247e05b0] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=15.9x elapsed=0:00:00.18
+[in#0/matroska,webm @ 0xc27c247b0ea0] Input file #0 (/tmp/n1x-media-k83u0iws/vulkan-h264.mkv):
+[in#0/matroska,webm @ 0xc27c247b0ea0]   Input stream #0:0 (video): 30 packets read (118807 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xc27c247b0ea0]   Total: 30 packets (118807 bytes) demuxed
+[AVIOContext @ 0xc27c247b9b80] Statistics: 119643 bytes read, 0 seeks
 
 Exiting with exit code 0

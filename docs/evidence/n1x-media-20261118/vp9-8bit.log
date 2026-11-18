@@ -1,4 +1,4 @@
-$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -vf format=yuv420p -c:v libvpx-vp9 -deadline realtime -cpu-used 8 -b:v 0 -crf 30 -y /tmp/n1x-media-d82lw7wc/vp9-8bit.webm
+$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -vf format=yuv420p -c:v libvpx-vp9 -deadline realtime -cpu-used 8 -b:v 0 -crf 30 -y /tmp/n1x-media-k83u0iws/vp9-8bit.webm
 
 stdout:
 
@@ -9,8 +9,8 @@ Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
 Stream mapping:
   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> vp9 (libvpx-vp9))
 Press [q] to stop, [?] for help
-[libvpx-vp9 @ 0xaca444c8b210] v1.17.0
-Output #0, webm, to '/tmp/n1x-media-d82lw7wc/vp9-8bit.webm':
+[libvpx-vp9 @ 0xb1192faef210] v1.17.0
+Output #0, webm, to '/tmp/n1x-media-k83u0iws/vp9-8bit.webm':
   Metadata:
     encoder         : Lavf63.1.102
   Stream #0:0: Video: vp9, yuv420p(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 10 fps, 1k tbn
@@ -18,5 +18,5 @@ Output #0, webm, to '/tmp/n1x-media-d82lw7wc/vp9-8bit.webm':
       encoder         : Lavc63.1.102 libvpx-vp9
     Side data:
       CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
-[out#0/webm @ 0xaca444c8a870] video:68KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.047648%
-frame=   30 fps=0.0 q=30.0 Lsize=      69KiB time=00:00:03.00 bitrate= 187.2kbits/s speed=44.2x elapsed=0:00:00.06
+[out#0/webm @ 0xb1192faee870] video:68KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.047648%
+frame=   30 fps=0.0 q=30.0 Lsize=      69KiB time=00:00:03.00 bitrate= 187.2kbits/s speed=64.6x elapsed=0:00:00.04

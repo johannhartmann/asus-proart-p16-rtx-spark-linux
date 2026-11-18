@@ -1,4 +1,4 @@
-$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v libvpx -y /tmp/n1x-media-d82lw7wc/vp8-legacy.webm
+$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v libvpx -y /tmp/n1x-media-k83u0iws/vp8-legacy.webm
 
 stdout:
 
@@ -9,9 +9,9 @@ Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
 Stream mapping:
   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> vp8 (libvpx))
 Press [q] to stop, [?] for help
-[libvpx @ 0xbf3373bdc190] v1.17.0
-[libvpx @ 0xbf3373bdc190] Neither bitrate nor constrained quality specified, using default CRF of 32 and bitrate of 256kbit/sec
-Output #0, webm, to '/tmp/n1x-media-d82lw7wc/vp8-legacy.webm':
+[libvpx @ 0xc04670842190] v1.17.0
+[libvpx @ 0xc04670842190] Neither bitrate nor constrained quality specified, using default CRF of 32 and bitrate of 256kbit/sec
+Output #0, webm, to '/tmp/n1x-media-k83u0iws/vp8-legacy.webm':
   Metadata:
     encoder         : Lavf63.1.102
   Stream #0:0: Video: vp8, yuv420p(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 256 kb/s, 10 fps, 1k tbn
@@ -19,5 +19,5 @@ Output #0, webm, to '/tmp/n1x-media-d82lw7wc/vp8-legacy.webm':
       encoder         : Lavc63.1.102 libvpx
     Side data:
       CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
-[out#0/webm @ 0xbf3373bdb7f0] video:59KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.193518%
-frame=   30 fps=0.0 q=32.0 Lsize=      60KiB time=00:00:03.00 bitrate= 163.7kbits/s speed=36.1x elapsed=0:00:00.08
+[out#0/webm @ 0xc046708417f0] video:59KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.193518%
+frame=   30 fps=0.0 q=32.0 Lsize=      60KiB time=00:00:03.00 bitrate= 163.7kbits/s speed=31.7x elapsed=0:00:00.09

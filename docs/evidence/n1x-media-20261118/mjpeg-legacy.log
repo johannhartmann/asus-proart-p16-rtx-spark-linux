@@ -1,4 +1,4 @@
-$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v mjpeg -y /tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv
+$ ffmpeg -hide_banner -loglevel info -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -c:v mjpeg -y /tmp/n1x-media-k83u0iws/mjpeg-legacy.mkv
 
 stdout:
 
@@ -9,7 +9,7 @@ Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
 Stream mapping:
   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> mjpeg (native))
 Press [q] to stop, [?] for help
-Output #0, matroska, to '/tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv':
+Output #0, matroska, to '/tmp/n1x-media-k83u0iws/mjpeg-legacy.mkv':
   Metadata:
     encoder         : Lavf63.1.102
   Stream #0:0: Video: mjpeg (MJPG / 0x47504A4D), yuv420p(pc, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 1k tbn
@@ -17,5 +17,5 @@ Output #0, matroska, to '/tmp/n1x-media-d82lw7wc/mjpeg-legacy.mkv':
       encoder         : Lavc63.1.102 mjpeg
     Side data:
       CPB properties: bitrate max/min/avg: 0/0/200000 buffer size: 0 vbv_delay: N/A
-[out#0/matroska @ 0xbbfd4c4a37f0] video:184KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.924489%
-frame=   30 fps=0.0 q=23.0 Lsize=     185KiB time=00:00:03.00 bitrate= 506.2kbits/s speed= 122x elapsed=0:00:00.02
+[out#0/matroska @ 0xad6967b5e7f0] video:184KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.924489%
+frame=   30 fps=0.0 q=23.0 Lsize=     185KiB time=00:00:03.00 bitrate= 506.2kbits/s speed= 147x elapsed=0:00:00.02

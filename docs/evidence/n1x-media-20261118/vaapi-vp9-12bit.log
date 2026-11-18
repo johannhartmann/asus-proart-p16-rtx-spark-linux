@@ -1,10 +1,10 @@
-$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i /tmp/n1x-media-d82lw7wc/vp9-12bit.webm -frames:v 30 -f null -
+$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i /tmp/n1x-media-k83u0iws/vp9-12bit.webm -frames:v 30 -f null -
 
 stdout:
 
 stderr:
-[vist#0:0/vp9 @ 0xc90c4f37dce0] Selecting decoder 'vp9' because of requested hwaccel method vaapi
-Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vp9-12bit.webm':
+[vist#0:0/vp9 @ 0xbde0b9240ce0] Selecting decoder 'vp9' because of requested hwaccel method vaapi
+Input #0, matroska,webm, from '/tmp/n1x-media-k83u0iws/vp9-12bit.webm':
   Metadata:
     ENCODER         : Lavf63.1.102
   Duration: 00:00:03.00, start: 0.000000, bitrate: 193 kb/s
@@ -12,25 +12,25 @@ Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vp9-12bit.webm':
     Metadata:
       ENCODER         : Lavc63.1.102 libvpx-vp9
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xc90c4f385c90] No explicit maps, mapping streams automatically...
-[vost#0:0/wrapped_avframe @ 0xc90c4f3800c0] Created video stream from input stream 0:0
-[VAAPI @ 0xc90c4f385ec0] libva: VA-API version 1.24.0
-[VAAPI @ 0xc90c4f385ec0] libva: User environment variable requested driver 'nvidia'
-[VAAPI @ 0xc90c4f385ec0] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
-[VAAPI @ 0xc90c4f385ec0] libva: Found init function __vaDriverInit_1_0
-[VAAPI @ 0xc90c4f385ec0] libva: va_openDriver() returns 0
-[VAAPI @ 0xc90c4f385ec0] Initialised VAAPI connection: version 1.24
-[VAAPI @ 0xc90c4f385ec0] VAAPI driver: VA-API NVDEC driver [direct backend].
-[VAAPI @ 0xc90c4f385ec0] Driver not found in known nonstandard list, using standard behaviour.
+[out#0/null @ 0xbde0b9248c90] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xbde0b92430c0] Created video stream from input stream 0:0
+[VAAPI @ 0xbde0b9248ec0] libva: VA-API version 1.24.0
+[VAAPI @ 0xbde0b9248ec0] libva: User environment variable requested driver 'nvidia'
+[VAAPI @ 0xbde0b9248ec0] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
+[VAAPI @ 0xbde0b9248ec0] libva: Found init function __vaDriverInit_1_0
+[VAAPI @ 0xbde0b9248ec0] libva: va_openDriver() returns 0
+[VAAPI @ 0xbde0b9248ec0] Initialised VAAPI connection: version 1.24
+[VAAPI @ 0xbde0b9248ec0] VAAPI driver: VA-API NVDEC driver [direct backend].
+[VAAPI @ 0xbde0b9248ec0] Driver not found in known nonstandard list, using standard behaviour.
 Stream mapping:
   Stream #0:0 -> #0:0 (vp9 (native) -> wrapped_avframe (native))
-[vost#0:0/wrapped_avframe @ 0xc90c4f3800c0] Starting thread...
-[vf#0:0 @ 0xc90c4f380740] Starting thread...
-[vist#0:0/vp9 @ 0xc90c4f37dce0] [dec:vp9 @ 0xc90c4f384f80] Starting thread...
-[in#0/matroska,webm @ 0xc90c4f37d6e0] Starting thread...
+[vost#0:0/wrapped_avframe @ 0xbde0b92430c0] Starting thread...
+[vf#0:0 @ 0xbde0b9243740] Starting thread...
+[vist#0:0/vp9 @ 0xbde0b9240ce0] [dec:vp9 @ 0xbde0b9247f80] Starting thread...
+[in#0/matroska,webm @ 0xbde0b92406e0] Starting thread...
 Press [q] to stop, [?] for help
-[graph -1 input from stream 0:0 @ 0xeb52040045d0] w:320 h:180 pixfmt:vaapi tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
-[graph -1 input from stream 0:0 @ 0xeb52040045d0] video frame properties congruent with link at pts_time: 0
+[graph -1 input from stream 0:0 @ 0xfea6ec0045d0] w:320 h:180 pixfmt:vaapi tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xfea6ec0045d0] video frame properties congruent with link at pts_time: 0
 Output #0, null, to 'pipe:':
   Metadata:
     encoder         : Lavf63.1.102
@@ -38,26 +38,26 @@ Output #0, null, to 'pipe:':
     Metadata:
       encoder         : Lavc63.1.102 wrapped_avframe
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xc90c4f385c90] Starting thread...
-[in#0/matroska,webm @ 0xc90c4f37d6e0] EOF while reading input
-[in#0/matroska,webm @ 0xc90c4f37d6e0] Terminating thread with return code 0 (success)
-[vist#0:0/vp9 @ 0xc90c4f37dce0] [dec:vp9 @ 0xc90c4f384f80] Decoder thread received EOF packet
-[vist#0:0/vp9 @ 0xc90c4f37dce0] [dec:vp9 @ 0xc90c4f384f80] Decoder returned EOF, finishing
-[vost#0:0/wrapped_avframe @ 0xc90c4f3800c0] [enc:wrapped_avframe @ 0xc90c4f380350] Encoder thread received EOF
-[vost#0:0/wrapped_avframe @ 0xc90c4f3800c0] Terminating thread with return code 0 (success)
-[vf#0:0 @ 0xc90c4f380740] All consumers returned EOF
-[out#0/null @ 0xc90c4f385c90] All streams finished
-[out#0/null @ 0xc90c4f385c90] Terminating thread with return code 0 (success)
-[vf#0:0 @ 0xc90c4f380740] Terminating thread with return code 0 (success)
-[vist#0:0/vp9 @ 0xc90c4f37dce0] [dec:vp9 @ 0xc90c4f384f80] Terminating thread with return code 0 (success)
-[out#0/null @ 0xc90c4f385c90] Output file #0 (pipe:):
-[out#0/null @ 0xc90c4f385c90]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
-[out#0/null @ 0xc90c4f385c90]   Total: 30 packets (12720 bytes) muxed
-[out#0/null @ 0xc90c4f385c90] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
-frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=12.4x elapsed=0:00:00.24
-[in#0/matroska,webm @ 0xc90c4f37d6e0] Input file #0 (/tmp/n1x-media-d82lw7wc/vp9-12bit.webm):
-[in#0/matroska,webm @ 0xc90c4f37d6e0]   Input stream #0:0 (video): 30 packets read (71952 bytes); 30 frames decoded; 0 decode errors;
-[in#0/matroska,webm @ 0xc90c4f37d6e0]   Total: 30 packets (71952 bytes) demuxed
-[AVIOContext @ 0xc90c4f385f60] Statistics: 72680 bytes read, 0 seeks
+[out#0/null @ 0xbde0b9248c90] Starting thread...
+[in#0/matroska,webm @ 0xbde0b92406e0] EOF while reading input
+[in#0/matroska,webm @ 0xbde0b92406e0] Terminating thread with return code 0 (success)
+[vist#0:0/vp9 @ 0xbde0b9240ce0] [dec:vp9 @ 0xbde0b9247f80] Decoder thread received EOF packet
+[vist#0:0/vp9 @ 0xbde0b9240ce0] [dec:vp9 @ 0xbde0b9247f80] Decoder returned EOF, finishing
+[vf#0:0 @ 0xbde0b9243740] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xbde0b92430c0] [enc:wrapped_avframe @ 0xbde0b9243350] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xbde0b92430c0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xbde0b9248c90] All streams finished
+[out#0/null @ 0xbde0b9248c90] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xbde0b9243740] Terminating thread with return code 0 (success)
+[vist#0:0/vp9 @ 0xbde0b9240ce0] [dec:vp9 @ 0xbde0b9247f80] Terminating thread with return code 0 (success)
+[out#0/null @ 0xbde0b9248c90] Output file #0 (pipe:):
+[out#0/null @ 0xbde0b9248c90]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xbde0b9248c90]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xbde0b9248c90] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=9.07x elapsed=0:00:00.33
+[in#0/matroska,webm @ 0xbde0b92406e0] Input file #0 (/tmp/n1x-media-k83u0iws/vp9-12bit.webm):
+[in#0/matroska,webm @ 0xbde0b92406e0]   Input stream #0:0 (video): 30 packets read (71952 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xbde0b92406e0]   Total: 30 packets (71952 bytes) demuxed
+[AVIOContext @ 0xbde0b9248f60] Statistics: 72680 bytes read, 0 seeks
 
 Exiting with exit code 0

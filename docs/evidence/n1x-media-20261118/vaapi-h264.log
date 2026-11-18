@@ -1,11 +1,11 @@
-$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i /tmp/n1x-media-d82lw7wc/vulkan-h264.mkv -frames:v 30 -f null -
+$ ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i /tmp/n1x-media-k83u0iws/vulkan-h264.mkv -frames:v 30 -f null -
 
 stdout:
 
 stderr:
-[h264 @ 0xb084c4a7e4b0] Reinit context to 320x192, pix_fmt: yuv420p
-[vist#0:0/h264 @ 0xb084c4a7cce0] Selecting decoder 'h264' because of requested hwaccel method vaapi
-Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv':
+[h264 @ 0xb646200954b0] Reinit context to 320x192, pix_fmt: yuv420p
+[vist#0:0/h264 @ 0xb64620093ce0] Selecting decoder 'h264' because of requested hwaccel method vaapi
+Input #0, matroska,webm, from '/tmp/n1x-media-k83u0iws/vulkan-h264.mkv':
   Metadata:
     ENCODER         : Lavf63.1.102
   Duration: 00:00:03.00, start: 0.000000, bitrate: 319 kb/s
@@ -13,26 +13,26 @@ Input #0, matroska,webm, from '/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv':
     Metadata:
       ENCODER         : Lavc63.1.102 h264_vulkan
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xb084c4a7fa30] No explicit maps, mapping streams automatically...
-[vost#0:0/wrapped_avframe @ 0xb084c4b00650] Created video stream from input stream 0:0
-[VAAPI @ 0xb084c4ad0e50] libva: VA-API version 1.24.0
-[VAAPI @ 0xb084c4ad0e50] libva: User environment variable requested driver 'nvidia'
-[VAAPI @ 0xb084c4ad0e50] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
-[VAAPI @ 0xb084c4ad0e50] libva: Found init function __vaDriverInit_1_0
-[VAAPI @ 0xb084c4ad0e50] libva: va_openDriver() returns 0
-[VAAPI @ 0xb084c4ad0e50] Initialised VAAPI connection: version 1.24
-[VAAPI @ 0xb084c4ad0e50] VAAPI driver: VA-API NVDEC driver [direct backend].
-[VAAPI @ 0xb084c4ad0e50] Driver not found in known nonstandard list, using standard behaviour.
+[out#0/null @ 0xb64620096a30] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xb64620117650] Created video stream from input stream 0:0
+[VAAPI @ 0xb646200e7e50] libva: VA-API version 1.24.0
+[VAAPI @ 0xb646200e7e50] libva: User environment variable requested driver 'nvidia'
+[VAAPI @ 0xb646200e7e50] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
+[VAAPI @ 0xb646200e7e50] libva: Found init function __vaDriverInit_1_0
+[VAAPI @ 0xb646200e7e50] libva: va_openDriver() returns 0
+[VAAPI @ 0xb646200e7e50] Initialised VAAPI connection: version 1.24
+[VAAPI @ 0xb646200e7e50] VAAPI driver: VA-API NVDEC driver [direct backend].
+[VAAPI @ 0xb646200e7e50] Driver not found in known nonstandard list, using standard behaviour.
 Stream mapping:
   Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
-[vost#0:0/wrapped_avframe @ 0xb084c4b00650] Starting thread...
-[vf#0:0 @ 0xb084c4b00f30] Starting thread...
-[vist#0:0/h264 @ 0xb084c4a7cce0] [dec:h264 @ 0xb084c4aa6150] Starting thread...
-[in#0/matroska,webm @ 0xb084c4a7c6e0] Starting thread...
+[vost#0:0/wrapped_avframe @ 0xb64620117650] Starting thread...
+[vf#0:0 @ 0xb64620117f30] Starting thread...
+[vist#0:0/h264 @ 0xb64620093ce0] [dec:h264 @ 0xb646200bd150] Starting thread...
+[in#0/matroska,webm @ 0xb646200936e0] Starting thread...
 Press [q] to stop, [?] for help
-[h264 @ 0xb084c57bb730] Reinit context to 320x192, pix_fmt: vaapi
-[graph -1 input from stream 0:0 @ 0xe166e40045d0] w:320 h:180 pixfmt:vaapi tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
-[graph -1 input from stream 0:0 @ 0xe166e40045d0] video frame properties congruent with link at pts_time: 0
+[h264 @ 0xb64620df5e00] Reinit context to 320x192, pix_fmt: vaapi
+[graph -1 input from stream 0:0 @ 0xe2abb00045d0] w:320 h:180 pixfmt:vaapi tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xe2abb00045d0] video frame properties congruent with link at pts_time: 0
 Output #0, null, to 'pipe:':
   Metadata:
     encoder         : Lavf63.1.102
@@ -40,26 +40,26 @@ Output #0, null, to 'pipe:':
     Metadata:
       encoder         : Lavc63.1.102 wrapped_avframe
       DURATION        : 00:00:03.000000000
-[out#0/null @ 0xb084c4a7fa30] Starting thread...
-[in#0/matroska,webm @ 0xb084c4a7c6e0] EOF while reading input
-[in#0/matroska,webm @ 0xb084c4a7c6e0] Terminating thread with return code 0 (success)
-[vist#0:0/h264 @ 0xb084c4a7cce0] [dec:h264 @ 0xb084c4aa6150] Decoder thread received EOF packet
-[vist#0:0/h264 @ 0xb084c4a7cce0] [dec:h264 @ 0xb084c4aa6150] Decoder returned EOF, finishing
-[vost#0:0/wrapped_avframe @ 0xb084c4b00650] [enc:wrapped_avframe @ 0xb084c4a801f0] Encoder thread received EOF
-[vost#0:0/wrapped_avframe @ 0xb084c4b00650] Terminating thread with return code 0 (success)
-[vf#0:0 @ 0xb084c4b00f30] All consumers returned EOF
-[out#0/null @ 0xb084c4a7fa30] All streams finished
-[out#0/null @ 0xb084c4a7fa30] Terminating thread with return code 0 (success)
-[vf#0:0 @ 0xb084c4b00f30] Terminating thread with return code 0 (success)
-[vist#0:0/h264 @ 0xb084c4a7cce0] [dec:h264 @ 0xb084c4aa6150] Terminating thread with return code 0 (success)
-[out#0/null @ 0xb084c4a7fa30] Output file #0 (pipe:):
-[out#0/null @ 0xb084c4a7fa30]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
-[out#0/null @ 0xb084c4a7fa30]   Total: 30 packets (12720 bytes) muxed
-[out#0/null @ 0xb084c4a7fa30] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
-frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=  21x elapsed=0:00:00.14
-[in#0/matroska,webm @ 0xb084c4a7c6e0] Input file #0 (/tmp/n1x-media-d82lw7wc/vulkan-h264.mkv):
-[in#0/matroska,webm @ 0xb084c4a7c6e0]   Input stream #0:0 (video): 30 packets read (118807 bytes); 30 frames decoded; 0 decode errors;
-[in#0/matroska,webm @ 0xb084c4a7c6e0]   Total: 30 packets (118807 bytes) demuxed
-[AVIOContext @ 0xb084c4a84f60] Statistics: 119643 bytes read, 0 seeks
+[out#0/null @ 0xb64620096a30] Starting thread...
+[in#0/matroska,webm @ 0xb646200936e0] EOF while reading input
+[in#0/matroska,webm @ 0xb646200936e0] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xb64620093ce0] [dec:h264 @ 0xb646200bd150] Decoder thread received EOF packet
+[vist#0:0/h264 @ 0xb64620093ce0] [dec:h264 @ 0xb646200bd150] Decoder returned EOF, finishing
+[vf#0:0 @ 0xb64620117f30] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xb64620117650] [enc:wrapped_avframe @ 0xb646200971f0] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xb64620117650] Terminating thread with return code 0 (success)
+[out#0/null @ 0xb64620096a30] All streams finished
+[out#0/null @ 0xb64620096a30] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xb64620117f30] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xb64620093ce0] [dec:h264 @ 0xb646200bd150] Terminating thread with return code 0 (success)
+[out#0/null @ 0xb64620096a30] Output file #0 (pipe:):
+[out#0/null @ 0xb64620096a30]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xb64620096a30]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xb64620096a30] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=22.1x elapsed=0:00:00.13
+[in#0/matroska,webm @ 0xb646200936e0] Input file #0 (/tmp/n1x-media-k83u0iws/vulkan-h264.mkv):
+[in#0/matroska,webm @ 0xb646200936e0]   Input stream #0:0 (video): 30 packets read (118807 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xb646200936e0]   Total: 30 packets (118807 bytes) demuxed
+[AVIOContext @ 0xb6462009bf60] Statistics: 119643 bytes read, 0 seeks
 
 Exiting with exit code 0
