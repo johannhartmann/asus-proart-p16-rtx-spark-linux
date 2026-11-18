@@ -174,6 +174,10 @@ mode has not been run.
 The [candidate package-stage helper](scripts/stage-nvidia620-packages.py)
 is prepared with `pacman --sysroot`, candidate-only hook masking, explicit
 `depmod`, and live-package/EFI checks; its root stage mode has not run.
+The [candidate UKI helper](scripts/stage-nvidia620-uki.py) is prepared to
+build and verify a distinct kernel38/620 image inside that candidate root
+without writing EFI or BootNext; it still needs a passing package-stage
+receipt and a privileged native run before any boot entry can be created.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

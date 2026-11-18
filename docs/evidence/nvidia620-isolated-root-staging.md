@@ -151,6 +151,27 @@ is still pending and the `@nvidia620` snapshot has not been created.
    `verify-dsp-boot-cmdline.py --root-subvolume @nvidia620` before copying it
    to a **new** EFI filename. That verifier rejects both a lingering
    `rootflags=subvol=@` token and duplicate rootflags.
+   The [candidate UKI staging helper](../../scripts/stage-nvidia620-uki.py)
+   now performs this build in a privately mounted candidate root. It requires
+   the passing package-stage receipt, checks the source kernel38/615 UKI and
+   DSP flags, runs `mkinitcpio --nopost` inside `@nvidia620`, then checks the
+   resulting 620 module payload, platform verifier and exact candidate root
+   command line. It publishes the verified image and a receipt to a **new
+   directory outside EFI**. Its privileged mode has not run yet; the package
+   stage and graphical media-package authentication are still pending. After
+   those stages pass, invoke it with the actual package receipt and a new
+   output directory:
+
+   ```sh
+   pkexec --disable-internal-agent /usr/bin/python3 \
+     /home/johann/p16/p16rtx_linux/scripts/stage-nvidia620-uki.py \
+     --package-receipt /home/johann/p16/p16rtx_linux/docs/evidence/nvidia620-candidate-packages-NEW.json \
+     --output-dir /home/johann/p16/nvidia620-uki-stage-NEW
+   ```
+
+   A build or verification failure leaves EFI and BootNext untouched. A
+   private unmount failure leaves its `/run` mountpoint intact for inspection
+   rather than recursively removing a mounted snapshot.
 5. Check that the copied UKI fits the EFI partition and has the same SHA256
    as the verified candidate. Create a direct UEFI entry for that distinct
    filename, preserving Limine first and kernel36 as the default. Record the
