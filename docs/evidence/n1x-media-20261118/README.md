@@ -230,6 +230,14 @@ decision for an unregistered app ID was removed before this test. No camera
 pixels were saved. A sandboxed application and post-resume capture still need
 their own tests.
 
+Later [kernel37 native evidence](../kernel37-native-20261118.md) found a
+94,208/65,536-byte DMA-debug warning on the internal camera's XHCI host. A
+[live UVC candidate](uvc-dma-live-kernel37.md) capped its RGB URBs and passed
+RGB, IR and GStreamer/Vulkan capture without a new warning; a fresh patched
+boot remains open. The [120-second NVOFA concurrent-load run](nvof-120s-concurrent-build.md)
+exported every captured pair but recorded eight fewer source frames than its
+exact cadence gate requires.
+
 Still open: NVENC API session on a supported driver; full codec/profile and
 advanced encode matrix, including 12-bit hardware encoding (the installed
 Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log));

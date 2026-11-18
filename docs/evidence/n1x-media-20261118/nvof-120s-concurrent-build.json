@@ -1,0 +1,34 @@
+{
+  "package": "p16-nvof-tools 0.1.0-4",
+  "camera_record_command": "/usr/bin/p16-record-camera-vulkan",
+  "export_command": "/usr/bin/p16-interpolate-video",
+  "requested_camera_seconds": 120,
+  "record_elapsed_seconds": 122.417,
+  "export_elapsed_seconds": 204.914,
+  "source": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "30/1",
+    "nb_read_frames": "3592"
+  },
+  "output": {
+    "codec_name": "h264",
+    "width": 1280,
+    "height": 720,
+    "avg_frame_rate": "60/1",
+    "nb_read_frames": "7183"
+  },
+  "nvof_pairs_logged": true,
+  "vulkan_encoder_logged": true,
+  "independent_decode_exit_code": 0,
+  "camera_pixels_retained": false,
+  "pass": false,
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-37-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "boot_id": "add4e65c-7804-4e34-a887-b8646b467db3",
+  "uvc_candidate_module_sha256": "d1cd8e6db2b2c7f4c597c4410003cf38a386625cc5109883132ab662cffd4545",
+  "concurrent_load": "linux-p16-platform-38 clean kernel compilation with MAKEFLAGS=-j8",
+  "new_kernel_warning_lines": 0
+}

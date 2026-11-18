@@ -54,6 +54,11 @@ The original-module fresh-boot reproduction and live candidate comparison are
 complete. Next integrate the patch into a new kernel build and check a fresh
 boot, external StreamCam capture when attached, and post-resume operation.
 Keep the XHCI segment limit truthful.
+The repeatable [P16 DMA capture check](../../../scripts/check-p16-uvc-dma.py)
+requires UVC trace bit 1024, runs RGB 720p/1080p and IR capture, then checks
+page-rounded URB sizes and new kernel warnings. Its caller restores the trace
+setting afterward. The existing native live record used the same captures
+before this script was added.
 
 This boot also has a distinct NVIDIA UVM Lockdep warning from 17 November
 16:47:15. A physical suspend test performed now would not provide a clean

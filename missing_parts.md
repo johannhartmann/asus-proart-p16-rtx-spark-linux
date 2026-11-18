@@ -8,15 +8,16 @@ firmware, kernel, NVIDIA driver, userspace build, and application version.
 
 ## Baseline and scope (18 November 2026)
 
-The reference machine is the ASUS ProArt P16 H7607BA, 20-core RTX Spark N1X,
-running `7.2.8-36-rtx-spark-npu` and NVIDIA `615.78.08`. NVIDIA's [N1X codec
+The reference machine is the ASUS ProArt P16 H7607BA, 20-core RTX Spark N1X.
+The initial media baseline used `7.2.8-36-rtx-spark-npu` and NVIDIA
+`615.78.08`; the current native kernel37 result is recorded below. NVIDIA's [N1X codec
 matrix](https://developer.nvidia.com/video-encode-decode-support-matrix) lists
 one ninth-generation NVENC, one sixth-generation NVDEC, up to 12 concurrent
 encode sessions, H.264/HEVC/AV1 encoding, and a much broader decode/profile
 matrix. That is a hardware capability list, not Linux qualification.
 
 On this P16, `/dev/video0`–`3` are the internal ASUS RGB/IR USB cameras;
-`/dev/video4`–`5` belong to an attached Logitech StreamCam. None is an NVENC
+`/dev/video4`–`5` belong to a Logitech StreamCam when attached. None is an NVENC
 or NVDEC node. `libnvidia-encode.so`, `libnvcuvid.so`, and
 `libva-nvidia-driver` are installed. The current distribution FFmpeg has VA-API
 but no `*_nvenc` encoders or `*_cuvid` decoders. A bounded H.264 VA-API/NVDEC
@@ -36,7 +37,7 @@ cannot qualify that separate platform pipeline.
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. Explicit AV1 Vulkan rate control produced corrupt 720p output despite encoder success; default options decoded correctly | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
-| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
+| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. A 120-second run during kernel compilation missed eight input frames but exported every captured pair correctly. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), OBS recording through x264 and through an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Fresh kernel37 RGB capture exposed a 94,208/65,536-byte DMA-debug warning on the internal camera's `NVDA8001:00` host; the earlier 98,304-byte warning was on the external StreamCam's `NVDA8000:00` host. | Electronic privacy/LED behavior, warning-free UVC allocation, and post-resume capture tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
@@ -408,6 +409,10 @@ A [20-second installed-camera export](docs/evidence/n1x-media-20261118/nvof-20s-
 then processed 600 live source frames into 1199 H.264 1280×720/60 fps frames
 in 33 seconds, with independent full-stream decoding and no new kernel GPU or
 IOMMU faults. Temporary footage was deleted. Hours-long runs remain open.
+The [120-second concurrent-build stress](docs/evidence/n1x-media-20261118/nvof-120s-concurrent-build.md)
+recorded 3,592 of the expected 3,600 source frames; NVOFA and Vulkan exported
+all 7,183 corresponding frames, but the exact capture-cadence gate failed.
+A repeat without build load is required before calling the longer path stable.
 
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.
