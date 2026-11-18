@@ -1,0 +1,7 @@
+Read-only DRM/compositor state; no HDR mode was enabled during tests.
+eDP-1: Samsung Display Corp. ATNA60HC05-0; 3840x2400@120.0Hz; colorManagementPreset=srgb; hdr=None
+DP-1: Samsung Electric Company U28E590 HTPJ202338; 3840x2160@30.0Hz; colorManagementPreset=srgb; hdr=None
+eDP-1 Colorspace: value: 0
+eDP-1 HDR_OUTPUT_METADATA: value:
+DP-1 Colorspace: value: 0
+DP-1 HDR_OUTPUT_METADATA: value:
