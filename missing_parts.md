@@ -171,6 +171,9 @@ The [snapshot helper](scripts/stage-nvidia620-snapshot.py) passes its
 read-only Btrfs/EFI/package preflight but currently refuses staging while
 the graphical media-package transaction waits. Its privileged snapshot
 mode has not been run.
+The [candidate package-stage helper](scripts/stage-nvidia620-packages.py)
+is prepared with `pacman --sysroot`, candidate-only hook masking, explicit
+`depmod`, and live-package/EFI checks; its root stage mode has not run.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

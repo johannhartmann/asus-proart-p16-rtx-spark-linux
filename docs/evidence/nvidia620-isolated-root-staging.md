@@ -90,6 +90,22 @@ boot ID. Failed unmounts leave the private mountpoint intact for inspection;
 the helper never recursively removes a mounted filesystem. It does not
 install 620 packages, write EFI files, set BootNext or reboot.
 
+The [candidate package-stage helper](../../scripts/stage-nvidia620-packages.py)
+now has a read-only default plan and a root-only `--stage` mode for an
+**existing** `@nvidia620` snapshot. It rechecks pinned archive hashes and
+the signed-archive/module/EFI preflight, takes the host Pacman lock, mounts
+only the candidate at a private `/run` path, and verifies that its database
+is still 615 and its `/boot` is not mounted. It refuses package-owned hooks
+before masking both candidate hook directories; the isolated `pacman
+--sysroot` removal/install runs with scriptlets disabled. It then checks
+candidate package files with `pacman -Qkk`, requires 13 kernel38 modules and
+runs `depmod -b` for the candidate. Finally it unmounts safely and compares
+the live package versions, EFI hashes, BootOrder and boot ID against the
+pre-stage state. It does not create a UKI, set a boot entry or reboot.
+The helper's read-only plan and unprivileged refusal have been checked; its
+privileged mode has **not** run, because the media-package Polkit transaction
+is still pending and the `@nvidia620` snapshot has not been created.
+
 1. Mount the Btrfs top level (`subvolid=5`) at a private root-only directory
    and take a writable point-in-time snapshot of `@` named `@nvidia620`.
    Mount that snapshot at a second private directory. Verify its Btrfs
@@ -97,7 +113,8 @@ install 620 packages, write EFI files, set BootNext or reboot.
    own `/var/lib/pacman`, never `/var/lib/pacman` on the running root. The
    separate home, log and pacman-cache subvolumes stay unmounted there.
 2. Keep the candidate's `/boot` unmounted during package transactions. Use
-   `pacman --sysroot` with local archives copied inside the candidate. Mask
+   `pacman --sysroot` with the hash-checked local archives passed by absolute
+   host path; Pacman does not rewrite package target paths for `--sysroot`. Mask
    both candidate ALPM hook directories during the transaction so generic
    DKMS/mkinitcpio and Limine hooks cannot touch shared EFI state; restore
    the directories afterward. Disable package scriptlets for the isolated
@@ -113,6 +130,14 @@ install 620 packages, write EFI files, set BootNext or reboot.
    install must leave exactly one file per module. Run `depmod` explicitly
    for kernel38 before image construction because ALPM hooks were masked.
    No host module is installed or loaded during this step.
+   After the snapshot exists and the live package transaction is complete,
+   run the prepared helper with a new receipt path:
+
+   ```sh
+   pkexec --disable-internal-agent /usr/bin/python3 \
+     /home/johann/p16/p16rtx_linux/scripts/stage-nvidia620-packages.py \
+     --stage --output /home/johann/p16/p16rtx_linux/docs/evidence/nvidia620-candidate-packages-NEW.json
+   ```
 4. Build a candidate kernel38 UKI from the snapshot with its
    installed `mkinitcpio` configuration and exact kernel release. Start from
    the verified audio-enabled kernel38 UKI and derive its candidate command
