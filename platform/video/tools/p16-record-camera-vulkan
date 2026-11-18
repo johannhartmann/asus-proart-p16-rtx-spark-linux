@@ -51,7 +51,8 @@ command=(/usr/bin/ffmpeg -hide_banner
   -vf format=nv12,hwupload -c:v "$codec")
 if [[ $codec == av1_vulkan ]]; then
   # The default 1/30 encoder time base repeats packet PTS on this camera.
-  command+=(-enc_time_base 1/1000000)
+  # Inter-frame AV1 output drifts badly on N1X/615 although both decoders accept it.
+  command+=(-enc_time_base 1/1000000 -g 1)
 fi
 command+=(-fps_mode passthrough -an
   -f matroska -n "$output")

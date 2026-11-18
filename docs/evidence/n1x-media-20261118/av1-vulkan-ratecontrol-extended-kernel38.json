@@ -1,0 +1,261 @@
+{
+  "captured_at": "2026-11-18T21:08:58.771276+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "ffmpeg": "/usr/bin/ffmpeg",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "aomdec_sha256": "647f782b3ea4c10bf5fc3d9499056f288e10c951cbce481270e89bf717e6053c",
+  "fixture": "testsrc2 1280x720/24, 24 frames, NV12",
+  "extended_only": true,
+  "cases": {
+    "default": {
+      "options": [],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 1225475,
+      "encoded_sha256": "027c7c5a29b29b1731cb818a6ac98c88b5e9b1877f3651822f9e3f41827677d6",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xac8218f61c50]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "bitrate_5m": {
+      "options": [
+        "-b:v",
+        "5M"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 784760,
+      "encoded_sha256": "5f3251161af34d8ce966345fd468a64e2ee8821cdfd50bbe81152759e01af4e9",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xb62555756c60]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 69,
+          "decoded_frames": 0,
+          "error_lines": [
+            "[libdav1d @ 0xc06e55fff2e0] Error parsing frame header",
+            "[libdav1d @ 0xc06e55fff2e0] Error parsing OBU data",
+            "[libdav1d @ 0xc06e55fff2e0] Error parsing frame header",
+            "[libdav1d @ 0xc06e55fff2e0] Error parsing OBU data",
+            "[vist#0:0/av1 @ 0xc06e55ffebc0] [dec:libdav1d @ 0xc06e560010f0] Error submitting packet to decoder: Invalid data found when processing input",
+            "[vist#0:0/av1 @ 0xc06e55ffebc0] [dec:libdav1d @ 0xc06e560010f0] Error submitting packet to decoder: Cannot allocate memory"
+          ],
+          "pass": false
+        },
+        "libaom": {
+          "exit_code": 1,
+          "decoded_frames": null,
+          "error_lines": [
+            "Warning: Failed to decode frame 1: Corrupt frame detected",
+            "Warning: Additional information: Failed to decode tile data"
+          ],
+          "pass": false
+        }
+      },
+      "bitstream_pass": false
+    },
+    "bitrate_10m": {
+      "options": [
+        "-b:v",
+        "10M"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 985125,
+      "encoded_sha256": "623b61bd271c550b34e60b9ca8aecfd294084faa0aea4558f0ffc4aa3251478c",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xc3b22836ac60]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "bitrate_20m": {
+      "options": [
+        "-b:v",
+        "20M"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 1032849,
+      "encoded_sha256": "4a4658a7a8fdb9d7ef2fdb6ddba24f5be3929e0ad344ba21dcef03da468f3126",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xb48e39dc5c60]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "bitrate_40m": {
+      "options": [
+        "-b:v",
+        "40M"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 1097528,
+      "encoded_sha256": "48412c7eef786008206e3bdd028e5479f24642f0bad25da58b54c963c88c3f47",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xac62f6e50c60]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "cqp_15": {
+      "options": [
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "15"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 871105,
+      "encoded_sha256": "2513f7aa0405bc772a74ce4d8a22b14d0b191c30876e1aa8fbea1034f4367808",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xc8be6e218d10]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "cqp_20": {
+      "options": [
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "20"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 794867,
+      "encoded_sha256": "eafb301297a5d59ffe1044cdf3bdb51e9cde96b90589e1389ccd517b436be86b",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xbe43228b0d10]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    },
+    "cqp_25": {
+      "options": [
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "25"
+      ],
+      "encode_exit_code": 0,
+      "n1x_vulkan_device_logged": true,
+      "encoded_bytes": 756897,
+      "encoded_sha256": "58ab9bddbadc3b2701eb67d9910399db661e944fb751a76c223d04121a58ab9b",
+      "encode_error_lines": [
+        "[in#0/lavfi @ 0xbc3f28276d10]   Input stream #0:0 (video): 37 packets read (15688 bytes); 28 frames decoded; 0 decode errors;"
+      ],
+      "decoders": {
+        "libdav1d": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        },
+        "libaom": {
+          "exit_code": 0,
+          "decoded_frames": 24,
+          "error_lines": [],
+          "pass": true
+        }
+      },
+      "bitstream_pass": true
+    }
+  },
+  "passing_modes": [
+    "default",
+    "bitrate_10m",
+    "bitrate_20m",
+    "bitrate_40m",
+    "cqp_15",
+    "cqp_20",
+    "cqp_25"
+  ],
+  "baseline_pass": true,
+  "temporary_pixels_or_bitstreams_retained": false
+}

@@ -36,7 +36,7 @@ cannot qualify that separate platform pipeline.
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit plus H.264 High 4:2:2 8/10-bit CUVID pixels match software; H.264 High 4:4:4 8/10-bit is explicitly unsupported by CUVID; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
-| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. A 60-real-frame RGB camera → Vulkan Video AV1 capture passes independent libdav1d/libaom decode; 30 fps requires temporarily disabling the camera's dynamic exposure frame rate on this run. A two-decoder AV1 Vulkan matrix confirms that default and selected quality/tune options decode, while 2 Mbit/s and CQP 30 produce corrupt 720p output despite encoder success | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. AV1 Vulkan default/inter-frame output decodes but has severe synthetic picture-quality drift; 10–40 Mbit/s targets also fail delayed decode in 30-second camera runs. An all-intra AV1 candidate gives 63.74 dB synthetic PSNR and 905/905 independently decoded real camera frames from an extracted package; installation remains pending. This does not change the NVENC error. | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Four 120-second runs missed eight, 14, four and 15 camera input frames respectively, while exporting every captured pair correctly. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), OBS recording through x264 and through an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Kernel37 exposed overlarge internal and external UVC DMA allocations; native kernel38 caps internal RGB allocations at 65,536 bytes with clean RGB/IR capture. External StreamCam capture also passed 60 frames without a new warning; its kernel38 URB size still needs a trace. | Electronic privacy/LED behavior, warning-free UVC allocation on both hosts, and post-resume capture tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
@@ -215,8 +215,11 @@ and libaom. `-fps_mode passthrough` was required to avoid FFmpeg duplicating
 slow camera frames. With the camera's original dynamic exposure frame-rate
 setting, 60 input frames spanned 5.9 seconds; temporarily disabling that
 control yielded a 1.967-second PTS span, then restored its original value.
-This is a bounded default-rate-control Vulkan Video result, not an NVENC or
-sustained 30 fps application result; explicit AV1 bitrate/CQP failures remain.
+This is a bounded default-rate-control Vulkan Video bitstream result, not an
+NVENC or visually qualified application result. Longer camera runs found
+delayed decode failure at explicit 10–40 Mbit/s targets. A frame-aligned
+quality test found severe inter-frame AV1 drift despite complete decode;
+an all-intra GOP removes it on this driver. The exact fault layer remains open.
 The installed [`p16-record-obs-vulkan`](platform/video/tools/README.md) bridge
 instead receives OBS's raw NUT output through a private Linux FIFO and uses
 FFmpeg's explicit Vulkan device and `hwupload` path. A real camera plus a
@@ -252,8 +255,15 @@ Package candidate 0.1.0-10 uses the camera's microsecond encoder time base;
 its 30-second run has 905 strictly increasing packets, 905 distinct libdav1d
 frames, 905 libaom frames and restored camera control. FFmpeg read one
 additional input frame at the `-t 30` boundary, so strict retention of every
-read input is not claimed. The candidate still requires installation and a
-repeat through `/usr/bin/p16-record-camera-vulkan`.
+read input is not claimed. The [frame-aligned quality and real-camera
+tests](docs/evidence/n1x-media-20261118/av1-vulkan-ratecontrol.md#longer-real-camera-and-visual-quality-gates)
+then exposed severe inter-frame AV1 quality drift. Candidate 0.1.0-11 adds
+all-intra GOP 1 only for AV1; its exact extracted package command produced
+905 monotonic camera frames and both libdav1d and libaom decoded all 905.
+Synthetic PSNR rose from 19.81 dB at the default GOP to 63.74 dB all-intra.
+The candidate still requires installation and a repeat through
+`/usr/bin/p16-record-camera-vulkan`; subjective quality and post-resume use
+remain open.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;

@@ -23,6 +23,15 @@ CASES = {
     "tune_hq": ["-tune", "hq"],
     "usage_record": ["-usage", "record"],
 }
+EXTENDED = {
+    "bitrate_5m": ["-b:v", "5M"],
+    "bitrate_10m": ["-b:v", "10M"],
+    "bitrate_20m": ["-b:v", "20M"],
+    "bitrate_40m": ["-b:v", "40M"],
+    "cqp_15": ["-rc_mode", "cqp", "-qp", "15"],
+    "cqp_20": ["-rc_mode", "cqp", "-qp", "20"],
+    "cqp_25": ["-rc_mode", "cqp", "-qp", "25"],
+}
 FRAMES = 24
 
 
@@ -63,14 +72,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ffmpeg", default="/usr/bin/ffmpeg")
+    parser.add_argument("--extended-only", action="store_true",
+                        help="run the baseline and additional bitrate/CQP cases")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
     ffmpeg = str(Path(args.ffmpeg).resolve(strict=True))
+    cases = {"default": CASES["default"], **EXTENDED} if args.extended_only else CASES
     results = {}
     with tempfile.TemporaryDirectory(prefix="p16-av1-vulkan-rc-matrix-") as folder:
         work = Path(folder)
-        for name, options in CASES.items():
+        for name, options in cases.items():
             bitstream = work / f"{name}.ivf"
             encoded = run([
                 ffmpeg, "-hide_banner", "-loglevel", "verbose",
@@ -110,6 +122,7 @@ def main():
         "ffmpeg_sha256": sha256(Path(ffmpeg)),
         "aomdec_sha256": sha256(Path("/usr/bin/aomdec")),
         "fixture": "testsrc2 1280x720/24, 24 frames, NV12",
+        "extended_only": args.extended_only,
         "cases": results,
         "passing_modes": [name for name, case in results.items() if case["bitstream_pass"]],
         "baseline_pass": results["default"]["bitstream_pass"],

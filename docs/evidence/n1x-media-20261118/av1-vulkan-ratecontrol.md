@@ -1,4 +1,4 @@
-# AV1 Vulkan Video explicit rate-control failure
+# AV1 Vulkan Video rate control and picture fidelity
 
 The [bounded 720p comparison](av1-vulkan-ratecontrol.json) runs the
 distribution FFmpeg 9.0.2-2 and NVIDIA driver 615.78.08 `av1_vulkan` encoder
@@ -50,3 +50,44 @@ mode result to 60 distinct 1280×720 camera frames with full libdav1d and
 libaom decode. Its temporary fixed-rate V4L2 setting produced a bounded
 1.967-second span for 60 frames and was restored. It does not repair or
 requalify the corrupt explicit bitrate and CQP 30 cases above.
+
+## Longer real-camera and visual-quality gates
+
+The [extended 24-frame matrix](av1-vulkan-ratecontrol-extended-kernel38.json)
+passes 10, 20 and 40 Mbit/s targets and CQP 15, 20 and 25 with both decoders;
+5 Mbit/s fails. Those short passes do **not** predict longer behavior. At 30
+seconds, real-camera [10 Mbit/s](camera-av1-10m-30s-kernel38.json),
+[20 Mbit/s](camera-av1-20m-30s-kernel38.json), and
+[40 Mbit/s](camera-av1-40m-30s-kernel38.json) outputs have 903–905 monotonic
+packets but only 300–605 frames decode. Encoder success and valid packet PTS
+therefore cannot qualify these bitrate controls. CQP 20 and 25 each pass a
+[30-second](camera-av1-cqp20-30s-kernel38.json)
+[camera run](camera-av1-cqp25-30s-kernel38.json); CQP 25 also passes
+[120 seconds](camera-av1-cqp25-120s-kernel38.json) with 3618/3618 frames from
+both decoders and no packet gap over 50 ms. These are bitstream and timing
+results, not visual-quality acceptance.
+
+The repeatable [frame-aligned quality probe](../../../scripts/check-vulkan-encode-quality.py)
+uses one 120-frame NV12 source, independently decodes every output to raw
+NV12, verifies exact byte counts and compares frames by index. The
+[kernel38/615 result](vulkan-encode-quality-gop-kernel38.json) is sharply
+codec-specific:
+
+| Encoder and GOP | PSNR against exact source | Encoded bytes |
+| --- | ---: | ---: |
+| x264 CRF 18 reference | 46.86 dB | 2.19 MB |
+| H.264 Vulkan default | 54.26 dB | 4.08 MB |
+| HEVC Vulkan default | 67.52 dB | 7.16 MB |
+| AV1 Vulkan default | 19.81 dB | 6.07 MB |
+| AV1 Vulkan GOP 30 / 10 | 24.33 / 28.22 dB | 6.15 / 6.37 MB |
+| AV1 Vulkan all-intra, GOP 1 | 63.74 dB | 9.44 MB |
+| AV1 Vulkan CQP 25 / 15, GOP 30 | 24.94 / 24.29 dB | 3.72 / 4.34 MB |
+
+AV1 frame 1 is near lossless but inter frames deteriorate within each GOP;
+the default GOP's last frame is 14.74 dB. More frequent keyframes reset the
+drift, while lowering QP does not reliably improve it. The precise fault
+layer remains undetermined. Until fixed, the P16 AV1 recorder uses GOP 1:
+its [30-second real-camera run](camera-av1-intra-30s-kernel38.json) independently
+decodes 905/905 frames with each decoder, restores the camera control and
+occupies 305 MB versus 277 MB for the previous default-GOP recording.
+Subjective camera-picture acceptance and post-resume use remain open.

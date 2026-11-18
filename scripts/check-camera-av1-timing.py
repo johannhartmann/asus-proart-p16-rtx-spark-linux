@@ -39,6 +39,12 @@ def main():
                         choices=("default", "1/1000000"))
     parser.add_argument("--recorder", type=Path,
                         help="test an extracted or installed p16-record-camera-vulkan command")
+    parser.add_argument("--bitrate", choices=("5M", "10M", "20M", "40M"),
+                        help="direct FFmpeg only; test one explicit AV1 bitrate")
+    parser.add_argument("--qp", type=int, choices=(10, 15, 20, 25, 30),
+                        help="direct FFmpeg only; test one explicit AV1 CQP")
+    parser.add_argument("--gop", type=int, choices=(1, 10, 30),
+                        help="direct FFmpeg only; test AV1 keyframe spacing")
     args = parser.parse_args()
     if args.seconds < 2 or args.seconds > 120:
         parser.error("--seconds must be from 2 to 120")
@@ -48,6 +54,10 @@ def main():
         parser.error("internal P16 RGB camera is unavailable")
     if args.recorder and not args.recorder.is_file():
         parser.error("recorder executable is unavailable")
+    if args.recorder and (args.bitrate or args.qp is not None or args.gop):
+        parser.error("the packaged recorder does not expose AV1 rate control")
+    if args.bitrate and args.qp is not None:
+        parser.error("choose either bitrate or CQP")
     report = {"captured_at": datetime.now(timezone.utc).isoformat(),
               "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
               "kernel": Path("/proc/sys/kernel/osrelease").read_text().strip(),
@@ -56,14 +66,18 @@ def main():
               "ffmpeg_sha256": COMMON.digest("/usr/bin/ffmpeg"),
               "requested_seconds": args.seconds,
               "encoder_timebase": args.encoder_timebase,
+              "bitrate_option": args.bitrate,
+              "qp_option": args.qp,
+              "gop_option": args.gop,
               "camera": COMMON.CAMERA,
               "camera_pixels_or_recording_retained": False,
-              "default_av1_rate_control": True}
+              "default_av1_rate_control": args.bitrate is None and args.qp is None}
     if args.recorder:
         report["recorder_sha256"] = COMMON.digest(args.recorder)
         report["recorder_manages_fixed_fps"] = True
         report["recorder_microsecond_timebase_option"] = (
             "-enc_time_base 1/1000000" in args.recorder.read_text())
+        report["recorder_all_intra_option"] = "-g 1" in args.recorder.read_text()
         report["encoder_timebase"] = "recorder-defined"
     with COMMON.camera_framerate(not args.recorder) as control, \
             tempfile.TemporaryDirectory(prefix="p16-camera-av1-timing-") as directory:
@@ -86,6 +100,12 @@ def main():
                        "-c:v", "av1_vulkan"]
             if args.encoder_timebase != "default":
                 command.extend(("-enc_time_base", args.encoder_timebase))
+            if args.bitrate:
+                command.extend(("-b:v", args.bitrate))
+            if args.qp is not None:
+                command.extend(("-rc_mode", "cqp", "-qp", str(args.qp)))
+            if args.gop:
+                command.extend(("-g", str(args.gop)))
             command.extend(("-fps_mode", "passthrough", "-f", "matroska",
                             "-n", str(video)))
             env = None
@@ -172,6 +192,8 @@ def main():
     if args.recorder:
         report["checks"]["recorder_microsecond_timebase_option"] = (
             report["recorder_microsecond_timebase_option"])
+        report["checks"]["recorder_all_intra_option"] = (
+            report["recorder_all_intra_option"])
     report["pass"] = all(report["checks"].values())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")

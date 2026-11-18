@@ -1,0 +1,239 @@
+{
+  "captured_at": "2026-11-18T21:24:51.845754+00:00",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "driver": "615.78.08",
+  "fixture": "testsrc2 1280x720/30, 120 frames, one shared NV12 raw source",
+  "results": {
+    "x264_crf18": {
+      "options": [
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "18"
+      ],
+      "encoded_bytes": 2191918,
+      "psnr_average_db": 46.858005,
+      "psnr_min_frame_db": 45.82,
+      "psnr_min_frame_number": 119,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 49.71,
+        "10": 48.17,
+        "30": 48.18,
+        "31": 46.25,
+        "60": 46.46,
+        "61": 46.35,
+        "90": 48.42,
+        "91": 46.26,
+        "120": 46.23
+      },
+      "psnr_frame_count": 120
+    },
+    "h264_vulkan_default": {
+      "options": [
+        "-c:v",
+        "h264_vulkan"
+      ],
+      "encoded_bytes": 4082746,
+      "psnr_average_db": 54.264602,
+      "psnr_min_frame_db": 54.02,
+      "psnr_min_frame_number": 115,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 55.65,
+        "10": 54.34,
+        "30": 54.45,
+        "31": 54.45,
+        "60": 54.31,
+        "61": 54.31,
+        "90": 54.16,
+        "91": 54.2,
+        "120": 54.18
+      },
+      "psnr_frame_count": 120
+    },
+    "hevc_vulkan_default": {
+      "options": [
+        "-c:v",
+        "hevc_vulkan"
+      ],
+      "encoded_bytes": 7157790,
+      "psnr_average_db": 67.523406,
+      "psnr_min_frame_db": 48.57,
+      "psnr_min_frame_number": 1,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 48.57,
+        "10": 71.94,
+        "30": 72.26,
+        "31": 72.21,
+        "60": 72.16,
+        "61": 72.08,
+        "90": 71.93,
+        "91": 71.88,
+        "120": 72.01
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_default": {
+      "options": [
+        "-c:v",
+        "av1_vulkan"
+      ],
+      "encoded_bytes": 6071389,
+      "psnr_average_db": 19.812158,
+      "psnr_min_frame_db": 14.74,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 115,
+      "psnr_frame_db": {
+        "1": 64.64,
+        "10": 26.1,
+        "30": 25.15,
+        "31": 24.64,
+        "60": 21.05,
+        "61": 21.37,
+        "90": 17.97,
+        "91": 18.09,
+        "120": 14.74
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_default_g1": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "1"
+      ],
+      "encoded_bytes": 9436381,
+      "psnr_average_db": 63.741161,
+      "psnr_min_frame_db": 62.66,
+      "psnr_min_frame_number": 61,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 64.64,
+        "10": 64.28,
+        "30": 63.62,
+        "31": 63.76,
+        "60": 63.51,
+        "61": 62.66,
+        "90": 63.17,
+        "91": 63.55,
+        "120": 64.3
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_default_g10": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "10"
+      ],
+      "encoded_bytes": 6366251,
+      "psnr_average_db": 28.220703,
+      "psnr_min_frame_db": 22.78,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 63,
+      "psnr_frame_db": {
+        "1": 64.64,
+        "10": 26.1,
+        "30": 26.62,
+        "31": 63.76,
+        "60": 27.61,
+        "61": 62.66,
+        "90": 26.4,
+        "91": 63.55,
+        "120": 22.78
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_default_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 6146514,
+      "psnr_average_db": 24.333205,
+      "psnr_min_frame_db": 17.71,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 100,
+      "psnr_frame_db": {
+        "1": 64.64,
+        "10": 26.1,
+        "30": 24.49,
+        "31": 63.76,
+        "60": 22.8,
+        "61": 62.66,
+        "90": 21.21,
+        "91": 63.55,
+        "120": 17.71
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_cqp25_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "25",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 3720900,
+      "psnr_average_db": 24.943335,
+      "psnr_min_frame_db": 17.79,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 100,
+      "psnr_frame_db": {
+        "1": 58.39,
+        "10": 25.28,
+        "30": 25.53,
+        "31": 58.22,
+        "60": 24.57,
+        "61": 57.93,
+        "90": 22.76,
+        "91": 58.07,
+        "120": 17.79
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_cqp15_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "15",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 4341482,
+      "psnr_average_db": 24.288881,
+      "psnr_min_frame_db": 17.0,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 99,
+      "psnr_frame_db": {
+        "1": 60.5,
+        "10": 25.38,
+        "30": 24.49,
+        "31": 60.2,
+        "60": 24.75,
+        "61": 59.69,
+        "90": 21.49,
+        "91": 60.02,
+        "120": 17.0
+      },
+      "psnr_frame_count": 120
+    }
+  },
+  "temporary_source_and_bitstreams_retained": false
+}

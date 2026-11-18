@@ -88,6 +88,33 @@ package archive SHA256 is `71ca01e4c88284f0de7baa19787a0526a656d8f9eb71b79a7abfa
 This is an extracted package, **not yet installed**; sustained quality,
 A/V sync, post-resume use and strict all-input retention remain open.
 
+## All-intra quality correction
+
+Complete decode does not prove picture fidelity. The
+[frame-aligned quality comparison](av1-vulkan-ratecontrol.md#longer-real-camera-and-visual-quality-gates)
+finds severe AV1 inter-frame drift on kernel38/driver 615.78.08; H.264 and
+HEVC Vulkan outputs from the same source do not show it. AV1 GOP 1 yields
+63.74 dB PSNR over 120 synthetic frames versus 19.81 dB at the default GOP.
+
+The [direct 30-second all-intra camera run](camera-av1-intra-30s-kernel38.json)
+encoded 905 packets from 906 read frames, with strictly increasing timestamps
+over 29.988 seconds and no gap above 50 ms. Libdav1d and libaom each decoded
+all 905 frames; the camera control returned to its original value. The one
+extra input frame at the `-t 30` boundary remains outside strict retention.
+The output occupied 305 MB, about 10% above the 277 MB default-GOP run for
+this camera scene.
+
+`p16-media-tools 0.1.0-11` adds `-g 1` only for its AV1 mode while retaining
+the microsecond encoder time base. The [extracted-package 30-second
+test](camera-av1-packaged-intra-30s-kernel38.json) passes the same camera and
+two-decoder gate: 905 monotonic packets, 905 distinct libdav1d frames and
+905 libaom frames. The camera control reads `1` before and after the command;
+the report does not independently sample it while the recorder runs. The
+package archive SHA256 is
+`77f002fc08aa8d284d3262639dbf29918ec796f56677f2dd41a7aa95c9bf340f`.
+The package is not yet installed. This is a version-specific quality workaround, with
+subjective camera-picture acceptance, A/V sync and post-resume use open.
+
 Repeat the timing gate with a new report path:
 
 ```sh

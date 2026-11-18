@@ -37,8 +37,8 @@ automatic low-light exposure from lowering the camera frame rate, but may
 produce a darker picture. The default leaves the camera's exposure policy
 alone. The option does not guarantee a lossless stream; check frame timestamps
 and corruption warnings for long recordings.
-Use `--av1` before `SECONDS` to select `av1_vulkan` with its default rate
-control. The camera input and output use passthrough timestamps so FFmpeg
+Use `--av1` before `SECONDS` to select `av1_vulkan` with default rate
+control and an all-intra GOP (`-g 1`). The camera input and output use passthrough timestamps so FFmpeg
 does not manufacture extra frames when low-light exposure reduces the true
 camera rate. On kernel38/615, a bounded 60-real-frame AV1 camera capture
 passed full libdav1d and libaom decode; the [record](../../../docs/evidence/n1x-media-20261118/camera-av1-vulkan.md)
@@ -49,9 +49,14 @@ container timestamps at FFmpeg's default 30 Hz encoder time base; the
 microsecond setting produced strictly increasing timestamps and complete
 decode with two software decoders. One camera frame read at the `-t 30`
 boundary was not encoded, so that timed run does not prove strict retention
-of every dequeued input frame. Explicit AV1 bitrate and CQP 30 controls have
-produced corrupt output
-on this stack and are not exposed by this command. AV1 recording here uses
+of every dequeued input frame. A frame-aligned synthetic quality test found
+severe inter-frame quality drift with AV1 GOP 10 or longer on driver 615.78.08;
+all-intra output scored 63.7 dB PSNR against the exact source and independently
+decoded 905/905 real camera frames over 30 seconds. That run used 305 MB versus
+277 MB for the default GOP, so plan storage accordingly. Explicit AV1 bitrates
+of 10–40 Mbit/s produced delayed decode failures in 30-second camera runs;
+CQP 30 also corrupted short output. These controls are not exposed. The
+all-intra workaround is qualified on this kernel/driver only. AV1 recording here uses
 Vulkan Video, not the NVENC API.
 
 `p16-record-camera-gstreamer SECONDS OUTPUT.h264` records the same live camera
