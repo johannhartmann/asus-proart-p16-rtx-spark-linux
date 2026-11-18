@@ -1,0 +1,23 @@
+{
+  "package": "p16-media-tools 0.1.0-3",
+  "recorderSha256": "701188cca4dfbc4d0cbf9fd431a44b90901bca830e05c5c7784be4e1005a36b8",
+  "recordingSha256": "bc5a08c75e855e7b5824eb0dbf16aa5e6ff974009e337c45c42fb4b53cfadbe1",
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "profile": "Constrained Baseline",
+        "width": 1280,
+        "height": 720,
+        "nb_read_frames": "60"
+      }
+    ]
+  },
+  "decodedFrameHashes": 60,
+  "uniqueDownscaledFrameHashes": 60,
+  "gstreamerVulkanEncoder": true,
+  "recordingRetained": false,
+  "pass": true
+}

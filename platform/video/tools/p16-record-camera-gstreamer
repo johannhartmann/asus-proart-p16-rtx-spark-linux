@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 2 )); then
+  echo 'Usage: p16-record-camera-gstreamer SECONDS OUTPUT.h264' >&2
+  exit 2
+fi
+
+duration=$1
+output=$2
+if [[ ! $duration =~ ^[0-9]+$ ]] || (( duration < 1 || duration > 3600 )); then
+  echo 'SECONDS must be an integer from 1 to 3600' >&2
+  exit 2
+fi
+if [[ -e $output ]]; then
+  echo "Output already exists: $output" >&2
+  exit 2
+fi
+
+device=${P16_RGB_DEVICE:-/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0}
+if [[ ! -e $device ]]; then
+  echo "P16 RGB camera not available: $device" >&2
+  exit 1
+fi
+
+frames=$((duration * 30))
+temporary=$(mktemp "${output}.partial.XXXXXX")
+trap 'rm -f -- "$temporary"' EXIT
+/usr/bin/ffmpeg -hide_banner -loglevel error \
+  -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30 \
+  -i "$device" -frames:v "$frames" -vf format=nv12 -f rawvideo - | \
+  /usr/bin/gst-launch-1.0 -e -v fdsrc fd=0 ! \
+  rawvideoparse format=nv12 width=1280 height=720 framerate=30/1 ! \
+  vulkanupload ! 'video/x-raw(memory:VulkanImage),format=NV12' ! \
+  vulkanh264enc ! h264parse ! filesink "location=$temporary"
+ln -- "$temporary" "$output"

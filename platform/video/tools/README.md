@@ -31,6 +31,15 @@ path is the P16 internal USB port's stable V4L2 `by-path` link; override it
 with `P16_RGB_DEVICE` if device enumeration changes. The command does not
 implement audio capture, camera privacy control, OBS integration or NVENC.
 
+`p16-record-camera-gstreamer SECONDS OUTPUT.h264` records the same live camera
+through GStreamer's `vulkanh264enc`. FFmpeg reads and converts the camera's
+MJPEG input; `rawvideoparse` and `vulkanupload` hand NV12 frames to the
+NVIDIA Vulkan Video encoder. The output is an elementary H.264 video stream
+without audio or container timestamps. The command refuses to overwrite an
+existing file and removes partial output on failure. A 60-frame camera run
+was independently decoded and checked for changing frames. This is another
+standard Linux Vulkan Video API path, not NVENC or OBS integration.
+
 These commands use distribution mpv and FFmpeg. The [media evidence](../../../docs/evidence/n1x-media-20261118/README.md)
 records the exact machine and driver qualification. They should be installed
 only on the tested P16 model or after checking equivalent hardware paths on

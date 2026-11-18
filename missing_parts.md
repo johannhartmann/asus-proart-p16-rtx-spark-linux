@@ -35,7 +35,7 @@ cannot qualify that separate platform pipeline.
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling, while mpv 4:2:2 and Chromium/Chrome H.264 fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
-| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API, including a 60-frame real RGB camera recording in FFmpeg | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED also carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata; SDR restores after playback and even launcher SIGKILL. Proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
@@ -109,9 +109,17 @@ A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
 H.264 hardware encode and independently verified 60 frames. OBS's advanced
 FFmpeg output failed to open `h264_vulkan` with `Invalid argument`; its hardware
 recording gate remains open. Neither Vulkan result proves NVENC API use.
+GStreamer 1.28.8 exposes `vulkanh264enc` for the N1X. The installed
+`p16-record-camera-gstreamer` command connects the P16's real MJPEG camera
+through FFmpeg's MJPEG decode and NV12 conversion to GStreamer's `rawvideoparse`,
+`vulkanupload` and `vulkanh264enc`. The [installed test](scripts/check-p16-gstreamer-camera.py)
+independently decoded 60 H.264 1280×720 frames; all 60 downscaled frame hashes
+were distinct. The elementary stream was then deleted. This qualifies a
+second Linux media framework's Vulkan hardware encoder in a real recording,
+but does not change the NVENC API or OBS failure.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback, on-demand HDR10 output and P16 RGB/Vulkan recording
-commands without replacing system codecs. Version 0.1.0-2 is installed on the
+commands without replacing system codecs. Version 0.1.0-3 is installed on the
 reference P16: the installed
 mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
 installed recording command produced a 60-frame H.264 file from the live RGB
