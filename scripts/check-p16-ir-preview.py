@@ -34,6 +34,8 @@ def main():
                         help="disable mpv's demux thread and cache to test V4L2 close")
     parser.add_argument("--renderer", choices=("gpu-next", "wlshm"),
                         default="gpu-next", help="Wayland renderer for close comparison")
+    parser.add_argument("--stop-before-quit", action="store_true",
+                        help="release the demuxer through IPC before terminating mpv")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
@@ -46,6 +48,7 @@ def main():
         "camera": CAMERA,
         "direct_demux": args.direct_demux,
         "renderer": args.renderer,
+        "stop_before_quit": args.stop_before_quit,
         "mpv_version": subprocess.run(["/usr/bin/mpv", "--version"],
                                       capture_output=True, text=True,
                                       check=True).stdout.splitlines()[0],
@@ -64,6 +67,8 @@ def main():
             command += ["--gpu-api=vulkan"]
         if args.direct_demux:
             command += ["--demuxer-thread=no", "--cache=no"]
+        if args.stop_before_quit:
+            command += ["--idle=yes"]
         command += [f"av://v4l2:{CAMERA}"]
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True)
@@ -97,6 +102,9 @@ def main():
                         time.sleep(0.2)
                     report["video_params"] = params
                     report["time_pos_samples"] = [round(value, 3) for value in values]
+                    if args.stop_before_quit:
+                        report["stop_reply"] = request(connection, file, ["stop"], 1000)
+                        time.sleep(0.5)
                     request(connection, file, ["quit"], 1001)
                 finally:
                     file.close()

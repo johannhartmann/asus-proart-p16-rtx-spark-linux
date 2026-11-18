@@ -375,7 +375,12 @@ line in this verified standard run. A [direct-demux repeat](docs/evidence/n1x-me
 retains the warning and logs two QBUF lines. Both runs reopen the camera, so
 the device is not left stuck. A [Wayland SHM renderer repeat](docs/evidence/n1x-media-20261118/ir-mpv-preview-wlshm-kernel38.json)
 also retains the warning with zero QBUF lines, so it is not specific to
-Vulkan output. The clean-shutdown gate remains open. No IR
+Vulkan output. An [explicit mpv stop-before-quit repeat and independent
+V4L2 close controls](docs/evidence/n1x-media-20261118/ir-preview-close-kernel38.md)
+show that mpv still warns after `stop`, while `v4l2-ctl`, a bounded FFmpeg
+capture and SIGINT-interrupted FFmpeg all close without the warning. This narrows
+the open issue to mpv's live-stream close path on this boot; it does not prove
+the kernel is fault-free. The clean-shutdown gate remains open. No IR
 pixels or recording are retained.
 This is a usable preview path, not biometric face-authentication support or
 subjective image-quality acceptance.
