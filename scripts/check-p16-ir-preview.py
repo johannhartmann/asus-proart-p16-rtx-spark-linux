@@ -36,6 +36,10 @@ def main():
                         default="gpu-next", help="Wayland renderer for close comparison")
     parser.add_argument("--stop-before-quit", action="store_true",
                         help="release the demuxer through IPC before terminating mpv")
+    parser.add_argument("--no-demuxer-donate-buffer", action="store_true",
+                        help="copy demuxed packets instead of donating their buffers")
+    parser.add_argument("--no-lavc-dr", action="store_true",
+                        help="disable libavcodec direct rendering for the raw IR stream")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
@@ -49,6 +53,8 @@ def main():
         "direct_demux": args.direct_demux,
         "renderer": args.renderer,
         "stop_before_quit": args.stop_before_quit,
+        "demuxer_donate_buffer": not args.no_demuxer_donate_buffer,
+        "lavc_direct_rendering": not args.no_lavc_dr,
         "mpv_version": subprocess.run(["/usr/bin/mpv", "--version"],
                                       capture_output=True, text=True,
                                       check=True).stdout.splitlines()[0],
@@ -69,6 +75,10 @@ def main():
             command += ["--demuxer-thread=no", "--cache=no"]
         if args.stop_before_quit:
             command += ["--idle=yes"]
+        if args.no_demuxer_donate_buffer:
+            command += ["--demuxer-donate-buffer=no"]
+        if args.no_lavc_dr:
+            command += ["--vd-lavc-dr=no"]
         command += [f"av://v4l2:{CAMERA}"]
         process = subprocess.Popen(command, stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT, text=True)

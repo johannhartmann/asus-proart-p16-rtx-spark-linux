@@ -379,7 +379,10 @@ Vulkan output. An [explicit mpv stop-before-quit repeat and independent
 V4L2 close controls](docs/evidence/n1x-media-20261118/ir-preview-close-kernel38.md)
 show that mpv still warns after `stop`, while `v4l2-ctl`, a bounded FFmpeg
 capture and SIGINT-interrupted FFmpeg all close without the warning. This narrows
-the open issue to mpv's live-stream close path on this boot; it does not prove
+the open issue to mpv's live-stream close path on this boot. Disabling mpv's
+demuxer buffer donation or libavcodec direct rendering also retains the
+warning. FFmpeg's V4L2 source emits it when mmap packets are still referenced
+at close; the exact retaining mpv stage is unproven. This does not prove
 the kernel is fault-free. The clean-shutdown gate remains open. No IR
 pixels or recording are retained.
 This is a usable preview path, not biometric face-authentication support or
