@@ -117,6 +117,12 @@ It does not load a 620 module or replace the 615 userspace/firmware stack.
 The next driver-version test needs a matched 620 module, firmware and userspace
 installation with a proven 615 rollback boot, followed by native display,
 suspend/resume and NVENC session/output tests.
+A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
+`mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
+cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning
+with the original Image and keep Lockdep active with a small kernel-core
+correction. The patched Image has not replaced the running kernel; real GPU,
+media and post-resume use still require a separately packaged native boot.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

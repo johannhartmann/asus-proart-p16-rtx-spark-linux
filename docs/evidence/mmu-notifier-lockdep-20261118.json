@@ -1,0 +1,49 @@
+{
+  "date": "2026-11-18",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "running_kernel": "7.2.8-36-rtx-spark-npu",
+  "running_nvidia": "615.78.08",
+  "patch_sha256": "7ea8104853bc880a37598967fd3a5f1f1e735d385d1adfa5a85a03a77e4c21ac",
+  "original_mmu_notifier_c_sha256": "4b9d23f95fdd39e6bbc9c07931d26f6af727ffd5e6b4e679ea6969feff97daab",
+  "patched_mmu_notifier_c_sha256": "8a86bdfdc290cfe26531e1864dedefc82974e55ef80fa1e04fcd1dfa0da75f6a",
+  "cases": {
+    "original": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "pre_register": true,
+      "expected_warning": true,
+      "image_sha256": "0eb603b50c077fa1d51e16958ba55f7503f2332daa765ddb8149d72ba1c0b3fa",
+      "module_sha256": "381585b2eac090963e999cfa74b361831f7f7951fce50f7ff8390909051288a8",
+      "host_modules_loaded": false,
+      "host_pm_requested": false,
+      "warning_count": 1,
+      "seconds": 10.299211781995837
+    },
+    "fixed": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "pre_register": true,
+      "expected_warning": false,
+      "image_sha256": "d99b5ea47fac45265c39ecc07803eae702f8a0245d426169ef2d27cef8374de6",
+      "module_sha256": "381585b2eac090963e999cfa74b361831f7f7951fce50f7ff8390909051288a8",
+      "host_modules_loaded": false,
+      "host_pm_requested": false,
+      "warning_count": 0,
+      "seconds": 10.205498640003498
+    },
+    "fallback": {
+      "passed": true,
+      "kernel": "7.2.8-36-rtx-spark-npu",
+      "pre_register": false,
+      "expected_warning": false,
+      "image_sha256": "d99b5ea47fac45265c39ecc07803eae702f8a0245d426169ef2d27cef8374de6",
+      "module_sha256": "381585b2eac090963e999cfa74b361831f7f7951fce50f7ff8390909051288a8",
+      "host_modules_loaded": false,
+      "host_pm_requested": false,
+      "warning_count": 0,
+      "seconds": 10.292296302010072
+    }
+  },
+  "live_kernel_changed": false,
+  "physical_gpu_tested": false
+}

@@ -1308,6 +1308,11 @@ source+=('pciehp-reset-lock-order.patch')
 sha256sums+=('de91e3c4b6ee968c802ce3c71a099f1ddae629b3322fbb1ac807f3f3deeeb09c')
 b2sums+=('fb5665c70a785519b6ed7563cb1dd46ded43245148f97dac39d0c76472fc169eca0c9e3986bb91bcd0235228e101839dbc6ff92ae727b5a556be87fd6c6563d3')
 
+# Preserve Lockdep on UVM's pre-registered MMU interval notifier path.
+source+=('mmu-interval-notifier-might-lock.patch')
+sha256sums+=('7ea8104853bc880a37598967fd3a5f1f1e735d385d1adfa5a85a03a77e4c21ac')
+b2sums+=('c0fdf33e39e16471123427aa1bc9f711eba9df7029b11386a5c773bd5b71eed9bb460019260bfe770469a85cb27ed5b218af7e4d9816e23c2f49c290b42e2989')
+
 # https://www.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc
 
 export KBUILD_BUILD_HOST=omarchy

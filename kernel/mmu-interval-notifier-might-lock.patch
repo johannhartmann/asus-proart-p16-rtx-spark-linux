@@ -1,0 +1,36 @@
+From: Johann Hartmann <johann@mayflower.de>
+Subject: [PATCH] mm/mmu_notifier: probe mmap_lock only when insertion may register
+
+mmu_interval_notifier_insert() can be called with mmap_lock held for read
+after the caller has initialized the interval notifier subscriptions under
+the write lock. NVIDIA UVM uses this pattern when creating HMM VA blocks.
+
+The unconditional might_lock() models a possible mmap write-lock acquisition
+even when the subscription tree already exists and no such acquisition can
+occur. With PROVE_LOCKING, a real read-lock holder gets a recursive-locking
+warning and further Lockdep validation is disabled.
+
+Keep the check on the path that calls mmu_notifier_register(), where that
+function can acquire mmap_lock. The existing smp_load_acquire and registration
+decision remain unchanged.
+
+Signed-off-by: Johann Hartmann <johann@mayflower.de>
+---
+ mm/mmu_notifier.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/mm/mmu_notifier.c
++++ b/mm/mmu_notifier.c
+@@ -1024,10 +1024,11 @@ int mmu_interval_notifier_insert(struct mmu_interval_notifier *interval_sub,
+ 	int ret;
+ 
+ 	WARN_ON_ONCE(ops->invalidate_start && !ops->invalidate_finish);
+-	might_lock(&mm->mmap_lock);
+ 
+ 	subscriptions = smp_load_acquire(&mm->notifier_subscriptions);
+ 	if (!subscriptions || !subscriptions->has_itree) {
++		/* Registration below may acquire mmap_lock for write. */
++		might_lock(&mm->mmap_lock);
+ 		ret = mmu_notifier_register(NULL, mm);
+ 		if (ret)
+ 			return ret;

@@ -24,6 +24,15 @@ physical retention with those allocations alive are separate qualification
 scopes. The old intermittent first-START `EBUSY` was not reproduced; its precise
 historical cause remains unproven.
 
+On 17 November at 16:47:15, a later CUDA/UVM HMM fault on the same running
+kernel36 boot reported recursive `mmap_lock` acquisition in
+`mmu_interval_notifier_insert()`. The [18 November isolated regression](evidence/mmu-notifier-lockdep-20261118.md)
+reproduces the Lockdep warning and its disabling effect with the original
+Image. A small kernel-core candidate keeps Lockdep active in EFI/KVM while
+retaining the normal registration path. This is not a native qualification:
+the running kernel and NVIDIA modules are still the earlier kernel36/615
+bundle, and post-warning sleep tests cannot count as clean Lockdep passes.
+
 The retained-context collector initially targeted compiler-renamed symbols and
 stopped before hardware activity. Its corrected run completed both hardware
 cycles, then incorrectly required idle audio during final cleanup. A separate
