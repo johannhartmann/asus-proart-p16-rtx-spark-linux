@@ -56,8 +56,11 @@ An isolated x265 4.3 build generated a valid 12-bit HEVC RExt fixture.
 frames with pixel hashes matching software decode and 30 VA-API hardware
 frames. The installed `p16-video-play` command reaches VA-API `p012` output
 through `gpu-next` and finishes the bounded stream. The raw fixture has no
-timestamps, so frame pacing and audio sync remain unqualified. VA-API frame
-readback also remains unqualified.
+timestamps, so frame pacing and audio sync remain unqualified. A separate
+[12-bit VA-API readback](docs/evidence/n1x-media-20261118/hevc12-vaapi-readback-kernel38.md)
+now downloads 30 `p012le` hardware frames with `-threads 1` and finds every
+output byte equal to software decode. Default-thread readback stalled after
+seven frames; that path remains open.
 The same test now covers HEVC 4:4:4 12-bit: CUVID again matches all software
 frame hashes, VA-API decodes 30 frames, and installed mpv reaches EOF with
 explicit Vulkan Video decode and a `p412` renderer surface. Default VA-API

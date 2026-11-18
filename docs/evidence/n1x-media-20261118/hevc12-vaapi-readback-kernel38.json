@@ -1,0 +1,32 @@
+{
+  "captured_at": "2026-11-18T18:30:26.181527+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "libva_package": "libva-nvidia-driver 0.0.18-1",
+  "ffmpeg_package": "ffmpeg 2:9.0.2-2",
+  "x265_12_sha256": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "fixture": {
+    "codec_name": "hevc",
+    "profile": "Rext",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuv420p12le"
+  },
+  "fixture_sha256": "2368975bf70e47d9694b8ee9cf7defe30a1bff573dd526a67bdc9ee92d0c235f",
+  "output_pixel_format": "p012le",
+  "frames": 30,
+  "expected_output_bytes": 5184000,
+  "software_output_bytes": 5184000,
+  "vaapi_output_bytes": 5184000,
+  "software_sha256": "ba6efcb8a9975bb46ab41d40ae7de1e1e08c94ee40bd47964787ba6d2fb23efb",
+  "vaapi_sha256": "ba6efcb8a9975bb46ab41d40ae7de1e1e08c94ee40bd47964787ba6d2fb23efb",
+  "pixels_equal": true,
+  "nvidia_vaapi_direct_backend_logged": true,
+  "vaapi_surface_logged": true,
+  "zero_decode_errors_logged": true,
+  "decoder_threads": 1,
+  "camera_or_fixture_pixels_retained": false,
+  "pass": true
+}
