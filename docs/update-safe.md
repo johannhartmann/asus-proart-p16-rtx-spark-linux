@@ -4,6 +4,13 @@ Use the kernel/header and DKMS packages together. Keep a tested recovery UKI
 and its BLAKE2b-pinned Limine entry before updating a candidate. Existing
 recovery images are not rebuilt by the managed-kernel wrapper.
 
+The platform candidate builder stages its NPU provider from the hash-pinned
+`platform/dsp/provider/npu-source.tar.gz` receipt, checking every member and
+the client header. The companion NPU repository can advance independently;
+new provider code enters a candidate only after refreshing and reviewing that
+package snapshot. This keeps a kernel-only candidate on the previously
+qualified provider source.
+
 ## Boot-partition retention
 
 Keep the running/default kernel, the next candidate and one tested recovery

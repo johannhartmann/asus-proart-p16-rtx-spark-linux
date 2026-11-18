@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tarfile
 
 ROOT = Path(__file__).resolve().parents[1]
-NPU = ROOT.parent / 'n1x-lab/npu'
 FILES = {
     'dsp/validation': ('n1x_adsp_route_check.c', 'n1x_adsp_primary_check.c',
                        'n1x_adsp_task_check.c', 'Kbuild'),
@@ -66,6 +66,44 @@ def copy_input(source, target, recorded, output):
     recorded[str(target.relative_to(output))] = hashlib.sha256(raw).hexdigest()
 
 
+def copy_provider_snapshot(output, inputs):
+    """Stage the exact provider source already packaged for this platform."""
+    provider = ROOT / 'platform/dsp/provider'
+    receipt = json.loads((provider / 'receipt.json').read_text())
+    archive = provider / 'npu-source.tar.gz'
+    expected_archive = receipt['sources']['npu-source.tar.gz']
+    if digest(archive) != expected_archive:
+        raise RuntimeError('Provider archive differs from its package receipt')
+
+    expected = {'npu-source/' + name: sha
+                for name, sha in receipt['snapshot']['files'].items()}
+    expected['npu-source/snapshot.json'] = None
+    with tarfile.open(archive, 'r:gz') as bundle:
+        members = bundle.getmembers()
+        if {member.name for member in members} != set(expected) or len(members) != len(expected):
+            raise RuntimeError('Provider archive member set differs from its receipt')
+        for member in members:
+            if not member.isfile():
+                raise RuntimeError('Provider archive contains a non-file member: ' + member.name)
+            raw = bundle.extractfile(member).read()
+            if member.name == 'npu-source/snapshot.json':
+                if json.loads(raw) != receipt['snapshot']:
+                    raise RuntimeError('Provider embedded snapshot differs from its receipt')
+                continue
+            name = member.name.removeprefix('npu-source/')
+            if hashlib.sha256(raw).hexdigest() != expected[member.name]:
+                raise RuntimeError('Provider source differs from its package snapshot: ' + name)
+            if name == 'include/n1x_sroot_client.h' and raw != (
+                    ROOT / 'platform/dsp/n1x_sroot_client.h').read_bytes():
+                raise RuntimeError('Provider/client header mismatch')
+            target = output / 'provider' / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+            target.chmod(0o644)
+            inputs[str(target.relative_to(output))] = expected[member.name]
+    return receipt['snapshot']['base_commit'], expected_archive
+
+
 def stage(args):
     parent = args.kernel_candidate.resolve(strict=True)
     kernel_manifest = json.loads((parent / 'manifest.json').read_text())
@@ -83,12 +121,7 @@ def stage(args):
             copy_input(ROOT / 'platform' / kind / name, output / kind / name, inputs, output)
     copy_input(ROOT / 'platform/dsp/afe/mt8901-afe-sram.h',
                output / 'dsp/mt8901-afe-sram.h', inputs, output)
-    receipt = json.loads((ROOT / 'platform/dsp/provider/receipt.json').read_text())
-    for name, expected in receipt['snapshot']['files'].items():
-        source = NPU / name
-        if digest(source) != expected:
-            raise RuntimeError('Provider source differs from its package snapshot: ' + name)
-        copy_input(source, output / 'provider' / name, inputs, output)
+    provider_commit, provider_archive_sha256 = copy_provider_snapshot(output, inputs)
     hwmon = args.hwmon_source.resolve(strict=True)
     hwmon_patch = ROOT / 'platform/hwmon/n1x-platform.patch'
     actual_patch = subprocess.check_output(['git', 'diff', '--binary', 'HEAD'], cwd=hwmon)
@@ -134,7 +167,8 @@ def stage(args):
         'hwmon_source_commit': hwmon_head, 'hwmon_patch_sha256': digest(hwmon_patch),
         'nvidia_version': loaded_version,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
-        'npu_source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=NPU, text=True).strip(),
+        'npu_source_commit': provider_commit,
+        'npu_snapshot_sha256': provider_archive_sha256,
         'installed': False, 'modules_loaded': False, 'boot_files_written': False,
         'hardware_qualified': False, 'builds': {},
     }
