@@ -1,0 +1,33 @@
+$ $HOME/p16/video-build/x265-12/build/x265 --input /tmp/n1x-hevc12-lzj0yl9f/source.yuv --input-res 320x180 --fps 10 --input-depth 12 --input-csp i420 --frames 30 --preset ultrafast --crf 22 --output /tmp/n1x-hevc12-lzj0yl9f/hevc12.hevc
+exit_code=0
+
+stdout:
+
+stderr:
+yuv  [info]: 320x180 fps 10000/1000 i420p12 frames 0 - 29 of 30
+raw  [info]: output file: /tmp/n1x-hevc12-lzj0yl9f/hevc12.hevc
+x265 [info]: HEVC encoder version 4.2+3-e444744
+x265 [info]: build info [Linux][GCC 16.1.1][64 bit] 12bit
+x265 [info]: using cpu capabilities: NEON SVE SVE2 Neon_DotProd Neon_I8MM SVE2_BitPerm
+x265 [info]: Main 12 profile, Level-2 (Main tier)
+x265 [info]: Thread pool created using 20 threads
+x265 [warning]: Source height < 720p; disabling lookahead-slices
+x265 [info]: frame threads / pool features       : 4 / wpp(6 rows)
+x265 [info]: Slices                              : 1
+x265 [info]: Coding QT: max CU size, min CU size : 32 / 16
+x265 [info]: Residual QT: max TU size, max depth : 32 / 1 inter / 1 intra
+x265 [info]: ME / range / subpel / merge         : dia / 57 / 0 / 2
+x265 [info]: Lookahead / bframes / badapt        : 5 / 3 / 0
+x265 [info]: b-pyramid / weightp / weightb       : 1 / 0 / 0
+x265 [info]: References / ref-limit  cu / depth  : 1 / off / off
+x265 [info]: AQ: mode / str / qg-size / cu-tree  : 1 / 0.0 / 32 / 1
+x265 [info]: Rate Control / qCompress            : CRF-22.0 / 0.60
+x265 [info]: tools: rd=2 psy-rd=2.00 early-skip rskip mode=1 tmvp fast-intra
+x265 [info]: tools: strong-intra-smoothing deblock
+[3.3%] 1/30 frames, 29.06 fps, 809.52 kb/s, eta 0:00:00
+
+x265 [info]: frame I:      1, Avg QP:21.00  kb/s: 617.20
+x265 [info]: frame P:      8, Avg QP:23.21  kb/s: 438.60
+x265 [info]: frame B:     21, Avg QP:25.62  kb/s: 191.81
+
+encoded 30 frames in 0.04s (757.29 fps), 271.80 kb/s, Avg QP:24.82

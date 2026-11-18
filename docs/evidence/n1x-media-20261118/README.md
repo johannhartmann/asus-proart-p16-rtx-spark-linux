@@ -14,6 +14,7 @@ retained.
 | --- | --- | --- |
 | NVDEC via VA-API | Pass for 30-frame H.264, HEVC Main and AV1 Main 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | `vaapi-*.log` selects `VA-API NVDEC driver [direct backend]` and VA-API frame surfaces; these cases do not qualify the complete codec/profile matrix. |
 | NVDEC via direct CUVID | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | The isolated FFmpeg candidate's `cuvid-*.log` selects the named `*_cuvid` decoder and completes 30 frames per case. This is separate from its failing NVENC encoder API. |
+| HEVC RExt 12-bit decode | Pass for bounded CUVID pixel comparison and VA-API hardware-frame decode | [`hevc12-result.json`](hevc12-result.json) records 30-frame x265 12-bit fixture, CUVID output with all frame hashes equal to software decode, and 30 frames on the NVIDIA VA-API direct backend. VA-API readback and application playback are not qualified. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
 | Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
@@ -71,6 +72,31 @@ The direct probe deliberately exits nonzero when the encoder session fails.
 Its logs show API discovery and function-table creation succeeding before
 status 21. The two header versions use the same source file and runtime driver.
 
+For the HEVC 12-bit decode test, build x265 4.3 from
+`https://github.com/Multicorewareinc/x265/archive/refs/tags/4.3.tar.gz`
+(SHA256 `fb157f809b74dabbef5002af99489fcaebb4d0073724beffdaaf2be15cbaf7ac`)
+in an isolated directory with:
+
+```sh
+cmake -S x265-4.3/source -B build -G Ninja \
+  -D HIGH_BIT_DEPTH=ON -D MAIN12=ON -D ENABLE_SHARED=OFF \
+  -D ENABLE_CLI=ON -D ENABLE_HDR10_PLUS=OFF -D CMAKE_BUILD_TYPE=Release
+cmake --build build -j16
+```
+
+Then run the probe from the repository root:
+
+```sh
+python3 scripts/check-hevc12-nvdec.py \
+  --x265-12 /path/to/isolated/build/x265 \
+  --ffmpeg-cuvid platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x \
+  --output-dir docs/evidence/n1x-media-20261118
+```
+
+The 12-bit test uses generated frames and deletes the raw and encoded fixture
+after verification. `hevc12-*.log` retains the build's runtime behavior and
+frame hashes. x265 was built only for fixture generation, not installed.
+
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
 the physical privacy behavior has not yet been tested. `/dev/video2` is the
 internal IR device; no face-authentication claim follows from capture.
@@ -81,9 +107,8 @@ initial GStreamer `pipewiresrc` target attempt returned `target not found`.
 The graphical permission and portal stream gates remain open.
 
 Still open: NVENC API session on a supported driver; full codec/profile and
-advanced encode matrix, including a valid HEVC 12-bit fixture (the installed
-Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log)
-despite CUVID reporting decode capability);
+advanced encode matrix, including 12-bit hardware encoding (the installed
+Vulkan encoder rejects a 12-bit input in [`hevc12-vulkan-unavailable.log`](hevc12-vulkan-unavailable.log));
 OBS hardware encode or another desktop recording app
 using the validated Vulkan encoder; browser hardware decode, graphical browser
 permission and PipeWire

@@ -1,0 +1,22 @@
+{
+  "status": "pass",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "fixture": {
+    "codec_name": "hevc",
+    "profile": "Rext",
+    "width": 320,
+    "height": 180,
+    "pix_fmt": "yuv420p12le",
+    "nb_read_frames": "30"
+  },
+  "fixture_sha256": "2368975bf70e47d9694b8ee9cf7defe30a1bff573dd526a67bdc9ee92d0c235f",
+  "frames": 30,
+  "cuvid_matches_software_framemd5": true,
+  "frame_hashes_sha256": "983bde18aecaa5ae3b4fb217bbacac6518478d9889728581b0efab9c83ecaca9",
+  "vaapi_hardware_frames": 30,
+  "x265_12_binary_sha256": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
+  "ffmpeg_cuvid_binary_sha256": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
+  "limits": "VA-API frames counted on hardware surfaces; pixel comparison used direct CUVID because VA-API hwdownload was not qualified."
+}
