@@ -38,6 +38,15 @@ logged no new warning. The control returned to its original value 1. This
 qualifies buffer delivery and timing in this run; `v4l2-ctl` did not decode
 the MJPEG payload or validate its pixels.
 
+A separate [3,600-frame live MJPEG decode](mjpeg-decode-kernel38.json) passed
+through FFmpeg to the Null output in 119.954 seconds, with no corrupt-payload
+message or new kernel warning. With input timestamps preserved, the Null
+muxer logged 35 non-increasing DTS warnings. The checker initially treated
+all of those as decode errors; the recorded result separates the passing
+decode gate from the failing timestamp-mux gate. This does not prove every
+camera frame is unique or that a real container can preserve the source
+timestamps without correction.
+
 A separate [120-second Vulkan Video recording with fixed exposure cadence](vulkan-fixed120s-kernel38.json)
 produced exactly **3,600 decodable H.264 frames** with 33–34-ms output gaps
 and no output gap over 50 ms. FFmpeg nevertheless reported `dup=0 drop=16`.
@@ -54,7 +63,8 @@ the remaining gaps originate in one specific component.
 
 Fixed cadence may reduce low-light exposure. The control is therefore kept
 as an explicit recording option; no global camera setting was changed. The
-direct V4L2 sequence result supports sustained buffer timing, while the
-FFmpeg packet-copy corruption and Vulkan resampling observations leave
-end-to-end lossless capture open. A later test must validate MJPEG payloads
-and distinguish input errors from deliberate output-rate conversion.
+direct V4L2 sequence and MJPEG decode runs support sustained buffer delivery
+and decodability, while the prior packet-copy corruption, timestamp mux
+warnings and Vulkan resampling observations leave end-to-end lossless capture
+open. A later test must distinguish sporadic input errors from output-rate
+conversion and produce monotonically timed application output.

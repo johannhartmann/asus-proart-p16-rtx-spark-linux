@@ -35,8 +35,10 @@ but the camera source had 3,585 rather than 3,600 frames. The
 [camera-cadence investigation](n1x-media-20261118/camera-cadence-kernel38.md)
 found strong exposure-rate effects and a smooth 3,600-frame fixed-rate Vulkan
 output with 16 FFmpeg output-rate drops. A direct 3,600-buffer V4L2 run had
-continuous sensor sequence numbers and timestamps under fixed exposure.
-MJPEG payload validity and end-to-end losslessness remain open.
+continuous sensor sequence numbers and timestamps under fixed exposure;
+a separate 3,600-frame MJPEG decode passed without payload errors. FFmpeg's
+passthrough Null muxer still reported non-increasing DTS values. End-to-end
+losslessness and clean application timestamps remain open.
 
 ## Audio boot-profile issue
 

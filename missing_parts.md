@@ -448,10 +448,14 @@ found a severe long-run slowdown with `exposure_dynamic_framerate=1` and a
 much steadier stream with that control temporarily set to 0. A
 [direct 3,600-buffer V4L2 run](docs/evidence/n1x-media-20261118/v4l2-sequence-kernel38.json)
 then had no sequence or timestamp gap above 50 ms and no new kernel warning.
+An independent [3,600-frame MJPEG decode](docs/evidence/n1x-media-20261118/mjpeg-decode-kernel38.json)
+passed without a payload error, while its Null muxer logged 35 non-increasing
+DTS warnings with passthrough timing.
 The fixed-rate Vulkan output has 3,600 smooth encoded frames but FFmpeg
 reports 16 output-rate drops; a 30-second passthrough run showed source
 timestamp irregularities. That drop count must not be labeled USB packet
-loss. MJPEG payload validity and end-to-end losslessness remain open.
+loss. Sporadic payload corruption in the earlier copy run and end-to-end
+losslessness remain open.
 
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.
