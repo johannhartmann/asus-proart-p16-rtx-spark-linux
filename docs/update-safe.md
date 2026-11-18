@@ -33,6 +33,12 @@ The [current clean-boot audit](evidence/kernel36-clean-boot-20261117.json)
 retains kernel36 as the normal default, kernel34 as previous and kernel23 as
 recovery. The normal managed paths are **`Omarchy/linux-p16-platform-36`** and
 **`Omarchy/linux-p16-platform-34`**, with **`Omarchy-P16-Recovery`** separate.
+The [staged kernel37 entry](evidence/kernel37-staged-20261118.md) is additionally
+selectable while kernel36 remains the default. Its install exposed a generic
+DKMS ordering issue: ALS, SPI HID and hwmon were overwritten after the driver
+package was unpacked. Reinstalling that exact package after DKMS and rebuilding
+only the kernel37 UKI restored all 13 package module hashes and embedded SPI HID
+bytes. Recheck those hashes after any later DKMS-triggering transaction.
 The official Limine tools provide the OS-group and kernel metadata. This keeps
 entry regeneration and Snapper synchronization working; standalone aliases
 must not replace the managed OS group. Snapshot menu sync passed, without

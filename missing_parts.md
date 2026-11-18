@@ -128,6 +128,10 @@ now packages that correction with matched 615.78.08 platform modules. Seven
 fresh EFI/KVM cases and all 8,507 split-BTF module checks pass against its
 final Image. The installed system remains on kernel36; native media, camera,
 NVENC and resume results on kernel37 are still open.
+Kernel37 is now installed as an additional [verified boot entry](docs/evidence/kernel37-staged-20261118.md),
+with its 13 production modules hash-matched after the generic DKMS hook and
+its UKI checked against the installed SPI HID bytes. Kernel36 remains the
+running and default kernel; no native kernel37 workload has yet passed.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

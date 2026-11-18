@@ -242,8 +242,10 @@ the MMU notifier Lockdep correction, two matching kernel packages and a
 checks. Seven fresh EFI/KVM cases cover the exact Image, full 30-module boot,
 MMU notifier paths, PCIe/SDHCI hot removal including guest `pm_test=platform`,
 and NVIDIA UVM PM lock order with a positive control. The bundle has not been
-installed or selected for a native boot; physical sleep and real GPU/media
-workloads on kernel37 remain unqualified.
+selected for a native boot. It was subsequently installed as an additional
+[kernel37 boot entry](evidence/kernel37-staged-20261118.md) with all 13 driver
+module hashes restored after generic DKMS ran. The default remains kernel36;
+physical sleep and real GPU/media workloads on kernel37 remain unqualified.
 
 ## Deployment gate
 

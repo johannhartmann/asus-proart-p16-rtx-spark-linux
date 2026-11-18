@@ -1,0 +1,63 @@
+{
+  "recorded_on": "2026-11-18",
+  "machine": "ASUS ProArt P16 H7607BA",
+  "kernel_release": "7.2.8-37-rtx-spark-npu",
+  "kernel_image_sha256": "ff8010b8ddce6f7319a823204069de019bff4ea614d5a617a1279992b5ff083c",
+  "installed_packages": {
+    "linux-p16-platform-37": "7.2.8-37",
+    "linux-p16-platform-37-headers": "7.2.8-37",
+    "linux-p16-platform-37-drivers": "7.2.8-37",
+    "nvidia-utils": "615.78.08-1"
+  },
+  "package_sha256": {
+    "packages/linux-p16-platform-37-7.2.8-37-aarch64.pkg.tar.zst": "ceb9bfd3487bf52f9c7a7e3e6cc53bae961a0336c4e8409e486434d0d24eceae",
+    "packages/linux-p16-platform-37-headers-7.2.8-37-aarch64.pkg.tar.zst": "db529383269c530e7e20674b250c9751a026e05c3940a61a3a73fe6267072e09",
+    "linux-p16-platform-37-drivers-7.2.8-37-aarch64.pkg.tar.xz": "ef7b1549a9e037024099bb085b3b49367e41f624af8f54125c61aad1b5633a57"
+  },
+  "installed_production_module_sha256": {
+    "n1x_adsp.ko": "4e3b89e21588784aea4291c2d6a21c9ce3a8024e016a532f62182a589ddbc87c",
+    "n1x_npu_bootstrap.ko": "5553137b3a3a5c9d28e9229f5f3d08140c6766866d3dcc88734e5bbd8fa24d06",
+    "n1x_pluton.ko": "dc0a169d3b1af3077c2626bdf35e411fe563ad22fabcd964fe5bca3dd7dd110b",
+    "n1x_scp.ko": "24cf10c0e819182da07a86d3b7fcc7fcbf3be62dd70c23fb6e3e088edc3fbc4d",
+    "hid-sensor-als.ko": "9c6d92cc56210ba7a99544f566e9961a6dca66794f731b979794ae61e5c5bc8f",
+    "spi-hid.ko": "50ca059bae55b35cb005ed7459edeac77bb1b2e9bbf6788dc7d13ce14e40536b",
+    "spi-hid-acpi.ko": "5c88f257f34386f2d2fd9c303bf8620e6d9375a6b2ffff15abadd4175602eac0",
+    "spbm.ko": "3034996600e20a93a9b6877c60451ef82ed240b765bbe288981869f0c7e6a591",
+    "nvidia.ko": "4fda3e353346429de81f769cb1f96b2e981b7dddfd0dbe8dcfd737940e1458c5",
+    "nvidia-drm.ko": "4fa9a6af4be9da0c4355aefc964a0be8fd6dc8db4289755af76114d5df8d4ee5",
+    "nvidia-modeset.ko": "2b7464d599cc0fd1b04377400d6dd8b6d608c53bedeb5c8896a2ad02dd382a0f",
+    "nvidia-uvm.ko": "5b8036e5ae18994ccab8606ede3662e4bdc8e01fc203411d94a5225d14b4a103",
+    "nvidia-peermem.ko": "6fdb4cbae46d2465a87a0350225d962f2de7f791930a9a584b5f87bf6e0c7e93"
+  },
+  "installed_module_matches_packaged": 13,
+  "installed_module_btf_checked": 8504,
+  "initramfs_module_btf_checked": 430,
+  "initial_dkms_overwrites": [
+    "hid-sensor-als.ko",
+    "spi-hid.ko",
+    "spi-hid-acpi.ko",
+    "spbm.ko"
+  ],
+  "corrective_action": "Reinstalled exact driver package after DKMS hook and rebuilt only linux-p16-platform-37 UKI; all 13 module hashes then matched.",
+  "pacman_qkk": {
+    "headers_altered": 0,
+    "drivers_altered": 0,
+    "kernel_altered": 36,
+    "kernel_fat_metadata_only": true,
+    "content_mismatch": false,
+    "root_log_sha256": "08db14db4a4e09089e39b46fa51f656e3ce4a9e58e50fa625fff44c43070a995"
+  },
+  "uki_sha256": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+  "retained_uki_sha256": {
+    "kernel36": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "kernel34": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "recovery": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714"
+  },
+  "limine_default": "Omarchy/linux-p16-platform-36",
+  "limine_candidate_entry": "Omarchy/linux-p16-platform-37",
+  "boot_partition_free": "1.1 GiB",
+  "running_kernel": "7.2.8-36-rtx-spark-npu",
+  "native_boot_verified": false,
+  "physical_suspend_qualified": false,
+  "other_active_test_process_prevented_reboot": true
+}
