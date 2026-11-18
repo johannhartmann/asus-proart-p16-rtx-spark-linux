@@ -66,9 +66,9 @@ frame hashes, and installed mpv reaches EOF with explicit Vulkan Video decode
 and a `p412` renderer surface. The distribution FFmpeg's VA-API bridge decodes
 the stream but offers no usable 16-bit readback. Forced `yuv444p` completes
 30 frames with incorrect pixel bytes; it must not be used for this profile.
-An isolated [Q416-mapped FFmpeg candidate](docs/evidence/n1x-media-20261118/hevc44412-vaapi-readback.md)
+An isolated [Q416-mapped FFmpeg candidate](docs/evidence/n1x-media-20261118/hevc444-vaapi-readback.md)
 downloads 30 `yuv444p16le` hardware frames with `-threads 1`; all 10,368,000
-bytes equal software output. Its [patch](platform/video/0001-vaapi-map-q416-planar-16bit-444.patch)
+bytes equal software output for both 10-bit and 12-bit HEVC RExt 4:4:4. Its [patch](platform/video/0001-vaapi-map-q416-planar-16bit-444.patch)
 is in the reproducible package recipe. Package installation and normal
 application use of this corrected VA-API path remain pending.
 The [VA-API capability query](docs/evidence/n1x-media-20261118/vainfo-nvidia.log)

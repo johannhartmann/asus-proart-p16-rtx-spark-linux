@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check whether NVIDIA VA-API preserves HEVC 12-bit 4:4:4 pixels."""
+"""Check whether NVIDIA VA-API preserves HEVC 10/12-bit 4:4:4 pixels."""
 
 import argparse
 from datetime import datetime, timezone
@@ -44,7 +44,9 @@ def compare_planes(a, b):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--x265-12", required=True, type=Path)
+    parser.add_argument("--x265-12", "--x265-binary", dest="x265",
+                        required=True, type=Path)
+    parser.add_argument("--bit-depth", type=int, choices=(10, 12), default=12)
     parser.add_argument("--ffmpeg", type=Path, default=Path("/usr/bin/ffmpeg"))
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
@@ -55,10 +57,11 @@ def main():
         source, bitstream = work / "source.yuv", work / "clip.hevc"
         required([str(args.ffmpeg), "-hide_banner", "-loglevel", "error",
                   "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10",
-                  "-frames:v", str(FRAMES), "-pix_fmt", "yuv444p12le",
+                  "-frames:v", str(FRAMES), "-pix_fmt",
+                  f"yuv444p{args.bit_depth}le",
                   "-f", "rawvideo", "-y", str(source)])
-        required([str(args.x265_12), "--input", str(source), "--input-res", "320x180",
-                  "--fps", "10", "--input-depth", "12", "--input-csp", "i444",
+        required([str(args.x265), "--input", str(source), "--input-res", "320x180",
+                  "--fps", "10", "--input-depth", str(args.bit_depth), "--input-csp", "i444",
                   "--frames", str(FRAMES), "--preset", "ultrafast", "--crf", "22",
                   "--output", str(bitstream)])
         stream = json.loads(required(["/usr/bin/ffprobe", "-v", "error",
@@ -67,12 +70,14 @@ def main():
                                       "-of", "json", str(bitstream)])[1])["streams"][0]
         if (stream["codec_name"], stream["profile"], stream["pix_fmt"],
             stream["width"], stream["height"]) != (
-                "hevc", "Rext", "yuv444p12le", WIDTH, HEIGHT):
-            raise RuntimeError("fixture is not HEVC RExt 12-bit 4:4:4: " + str(stream))
+                "hevc", "Rext", f"yuv444p{args.bit_depth}le", WIDTH, HEIGHT):
+            raise RuntimeError("fixture is not HEVC RExt high-depth 4:4:4: " + str(stream))
         env = {**os.environ, "LIBVA_DRIVER_NAME": "nvidia", "NVD_BACKEND": "direct"}
         checks = {}
-        for fmt, frames in (("yuv444p16le", FRAMES), ("yuv444p12le", 1),
-                            ("p412le", 1), ("yuv444p", FRAMES)):
+        for fmt, frames in (("yuv444p16le", FRAMES),
+                            (f"yuv444p{args.bit_depth}le", 1),
+                            (f"p4{args.bit_depth}le", 1),
+                            ("yuv444p", FRAMES)):
             sw_path, va_path = work / f"sw-{fmt}.raw", work / f"va-{fmt}.raw"
             if fmt in ("yuv444p16le", "yuv444p"):
                 required([
@@ -116,7 +121,8 @@ def main():
             "ffmpeg_package": required(["/usr/bin/pacman", "-Q", "ffmpeg"])[1].strip(),
             "ffmpeg_path": str(args.ffmpeg),
             "ffmpeg_sha256": sha256(args.ffmpeg),
-            "x265_12_sha256": sha256(args.x265_12),
+            "bit_depth": args.bit_depth,
+            f"x265_{args.bit_depth}_sha256": sha256(args.x265),
             "fixture": stream,
             "fixture_sha256": sha256(bitstream),
             "checks": checks,
