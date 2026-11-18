@@ -11,8 +11,9 @@ ASUS RGB camera (`/dev/video0`, node name ending `NVDA8001_00-usb-0_1_1.0`).
 The first `pipewiresrc` attempts failed with `target not found`, even with the
 correct node serial. The missing stream properties were
 `media.type=Video`, `media.category=Capture`, and `media.role=Camera`. After
-adding them, the application captured 30 MJPEG buffers at 800×800/30 fps and
-reached EOS. The final run's buffer sizes ranged from 65,972 to 144,712 bytes.
+adding them and a full-resolution caps filter, the application captured 30
+MJPEG buffers at 1280×720/30 fps and reached EOS. The final run's buffer sizes
+ranged from 94,404 to 248,052 bytes.
 These sizes establish nonempty input without retaining camera images.
 [`camera-portal.json`](camera-portal.json) records the final application result.
 
@@ -28,5 +29,5 @@ through libportal; the user handles any graphical permission prompt. The
 temporary desktop entry used for qualification was removed afterward.
 
 This qualifies native portal-mediated PipeWire capture. It does not qualify a
-sandboxed Flatpak app, permission denial/revocation, full-resolution camera
-format negotiation, or capture after physical suspend/resume.
+sandboxed Flatpak app, permission denial/revocation, or capture after physical
+suspend/resume.

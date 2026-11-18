@@ -81,6 +81,7 @@ def main():
                            "stream-properties=props,media.type=(string)Video,"
                            "media.category=(string)Capture,media.role=(string)Camera",
                            "num-buffers=30", "!",
+                           "image/jpeg,width=1280,height=720,framerate=30/1", "!",
                            "identity", "silent=false", "!", "fakesink", "sync=false"]
                 try:
                     stream = subprocess.run(

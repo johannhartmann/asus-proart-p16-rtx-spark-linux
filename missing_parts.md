@@ -165,7 +165,7 @@ internal RGB camera. GStreamer required `media.type=Video`,
 `media.category=Capture`, and `media.role=Camera` on its stream; without them,
 WirePlumber reported `target not found` even though the node was visible.
 The [result](docs/evidence/n1x-media-20261118/camera-portal.json) records
-800×800/30 caps, varying nonzero buffer sizes, EOS, and no retained pixels.
+1280×720/30 caps, varying nonzero buffer sizes, EOS, and no retained pixels.
 This qualifies the Linux camera portal and PipeWire capture path for a native
 GTK application. A sandboxed Flatpak consumer, permission denial/revocation,
 and a post-resume repeat remain open.
