@@ -4,6 +4,7 @@
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -50,6 +51,8 @@ def sha256(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--camera", action="store_true",
+                        help="use 120 real P16 RGB camera frames as the shared source")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
@@ -59,17 +62,34 @@ def main():
         "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
         "driver": run(["/usr/bin/nvidia-smi", "--query-gpu=driver_version",
                        "--format=csv,noheader"]).stdout.strip(),
-        "fixture": f"testsrc2 {SIZE}/{FPS}, {FRAMES} frames, one shared NV12 raw source",
+        "fixture": (f"P16 RGB camera MJPEG {SIZE}/{FPS}, {FRAMES} real frames, "
+                    "one shared NV12 raw source" if args.camera else
+                    f"testsrc2 {SIZE}/{FPS}, {FRAMES} frames, one shared NV12 raw source"),
         "results": {},
         "temporary_source_and_bitstreams_retained": False,
     }
     with tempfile.TemporaryDirectory(prefix="p16-av1-quality-") as folder:
         work = Path(folder)
         source = work / "source.nv12"
-        run(["/usr/bin/ffmpeg", "-hide_banner", "-loglevel", "error",
-             "-f", "lavfi", "-i", f"testsrc2=size={SIZE}:rate={FPS}",
-             "-frames:v", str(FRAMES), "-pix_fmt", "nv12", "-f", "rawvideo",
-             str(source)])
+        if args.camera:
+            spec = importlib.util.spec_from_file_location(
+                "camera_av1_common", Path(__file__).with_name("check-camera-av1-vulkan.py"))
+            common = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(common)
+            with common.camera_framerate(True) as control:
+                run(["/usr/bin/ffmpeg", "-hide_banner", "-loglevel", "error",
+                     "-f", "v4l2", "-input_format", "mjpeg", "-video_size", SIZE,
+                     "-framerate", FPS, "-i", common.CAMERA,
+                     "-frames:v", str(FRAMES), "-vf", "format=nv12",
+                     "-fps_mode", "passthrough", "-f", "rawvideo", str(source)],
+                    timeout=90)
+            result["camera_dynamic_framerate_control"] = control
+            result["camera_device"] = common.CAMERA
+        else:
+            run(["/usr/bin/ffmpeg", "-hide_banner", "-loglevel", "error",
+                 "-f", "lavfi", "-i", f"testsrc2=size={SIZE}:rate={FPS}",
+                 "-frames:v", str(FRAMES), "-pix_fmt", "nv12", "-f", "rawvideo",
+                 str(source)])
         expected = FRAMES * 1280 * 720 * 3 // 2
         if source.stat().st_size != expected:
             raise RuntimeError("source raw frame count mismatch")

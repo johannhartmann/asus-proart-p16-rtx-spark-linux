@@ -95,3 +95,15 @@ its [30-second real-camera run](camera-av1-intra-30s-kernel38.json) independentl
 decodes 905/905 frames with each decoder, restores the camera control and
 occupies 305 MB versus 277 MB for the previous default-GOP recording.
 Subjective camera-picture acceptance and post-resume use remain open.
+
+The same probe's `--camera` mode captured 120 real P16 RGB MJPEG frames once,
+decoded them to a shared NV12 source, restored
+`exposure_dynamic_framerate=1`, and then encoded that exact source with every
+mode above. The [real-camera source comparison](vulkan-encode-quality-camera-kernel38.json)
+measured 31.89 dB for AV1 default GOP, 41.47 dB for GOP 10, and 53.80 dB for
+all-intra GOP 1. The all-intra minimum frame was 50.15 dB; default GOP fell
+to 28.87 dB. H.264 and HEVC Vulkan scored 47.08 and 58.07 dB respectively.
+Libdav1d and libaom again produced byte-identical 120-frame pixels in all
+six AV1 cases. The raw camera source and bitstreams were deleted; this is
+objective pixel comparison, not subjective scene acceptance or proof of
+post-resume behavior.

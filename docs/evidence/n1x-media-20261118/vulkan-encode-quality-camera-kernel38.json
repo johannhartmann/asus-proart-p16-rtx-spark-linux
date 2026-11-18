@@ -1,0 +1,294 @@
+{
+  "captured_at": "2026-11-18T21:38:28.138400+00:00",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "driver": "615.78.08",
+  "fixture": "P16 RGB camera MJPEG 1280x720/30, 120 real frames, one shared NV12 raw source",
+  "results": {
+    "x264_crf18": {
+      "options": [
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "18"
+      ],
+      "encoded_bytes": 7910877,
+      "encoded_sha256": "443e2fbf0a3b82eb5db6a21d5cdf5284d2b891f53b6ee3df7451d234d14e78db",
+      "psnr_average_db": 43.750697,
+      "psnr_min_frame_db": 40.78,
+      "psnr_min_frame_number": 3,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 42.14,
+        "10": 43.84,
+        "30": 43.89,
+        "31": 43.83,
+        "60": 43.7,
+        "61": 43.74,
+        "90": 43.9,
+        "91": 43.87,
+        "120": 43.57
+      },
+      "psnr_frame_count": 120
+    },
+    "h264_vulkan_default": {
+      "options": [
+        "-c:v",
+        "h264_vulkan"
+      ],
+      "encoded_bytes": 13865113,
+      "encoded_sha256": "cb333780e457bfe8bd36f3775c747697775f4fc3689026dc2b815cd8c06a4099",
+      "psnr_average_db": 47.079603,
+      "psnr_min_frame_db": 46.85,
+      "psnr_min_frame_number": 59,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 47.2,
+        "10": 47.5,
+        "30": 47.09,
+        "31": 47.06,
+        "60": 46.98,
+        "61": 46.97,
+        "90": 47.13,
+        "91": 47.1,
+        "120": 47.09
+      },
+      "psnr_frame_count": 120
+    },
+    "hevc_vulkan_default": {
+      "options": [
+        "-c:v",
+        "hevc_vulkan"
+      ],
+      "encoded_bytes": 60691327,
+      "encoded_sha256": "bc4ce3806fe0321ea78989757f4ad829bba7c3ad867884b7b08b49bc28580bf3",
+      "psnr_average_db": 58.071792,
+      "psnr_min_frame_db": 41.06,
+      "psnr_min_frame_number": 1,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 41.06,
+        "10": 60.3,
+        "30": 60.45,
+        "31": 60.27,
+        "60": 60.39,
+        "61": 60.25,
+        "90": 60.46,
+        "91": 60.28,
+        "120": 60.28
+      },
+      "psnr_frame_count": 120
+    },
+    "av1_default": {
+      "options": [
+        "-c:v",
+        "av1_vulkan"
+      ],
+      "encoded_bytes": 36471121,
+      "encoded_sha256": "96be6d896280fcdaeff9985f712ff913fde4cce436c859a5258db9671eb5f8fd",
+      "psnr_average_db": 31.894728,
+      "psnr_min_frame_db": 28.87,
+      "psnr_min_frame_number": 112,
+      "psnr_frames_below_30_db": 24,
+      "psnr_frame_db": {
+        "1": 50.34,
+        "10": 41.25,
+        "30": 33.19,
+        "31": 32.24,
+        "60": 33.07,
+        "61": 32.09,
+        "90": 31.08,
+        "91": 30.36,
+        "120": 29.83
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "5af791ae9b3b1ca5096d52474bdd8925ee41a4c837c8f141f972feb29e612046",
+        "libaom_raw_sha256": "5af791ae9b3b1ca5096d52474bdd8925ee41a4c837c8f141f972feb29e612046",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    },
+    "av1_default_g1": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "1"
+      ],
+      "encoded_bytes": 40243887,
+      "encoded_sha256": "690d7ac60815a7ca53499d89f1effb5a03e22c5785fad949a9818427b2162e0b",
+      "psnr_average_db": 53.796067,
+      "psnr_min_frame_db": 50.15,
+      "psnr_min_frame_number": 2,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 50.34,
+        "10": 54.19,
+        "30": 54.02,
+        "31": 53.97,
+        "60": 53.93,
+        "61": 53.92,
+        "90": 54.05,
+        "91": 54.0,
+        "120": 54.02
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "f9ec1cc4c70b9ddff6e923f89363741485aabeb953e01bd6298ad550ebceab27",
+        "libaom_raw_sha256": "f9ec1cc4c70b9ddff6e923f89363741485aabeb953e01bd6298ad550ebceab27",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    },
+    "av1_default_g10": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "10"
+      ],
+      "encoded_bytes": 36815222,
+      "encoded_sha256": "85c56788d819041f50b33bf4de8a230cbe6fd7387375ab21bf4b3bdda1c03265",
+      "psnr_average_db": 41.466584,
+      "psnr_min_frame_db": 34.77,
+      "psnr_min_frame_number": 100,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 50.34,
+        "10": 41.25,
+        "30": 35.75,
+        "31": 53.97,
+        "60": 36.65,
+        "61": 53.92,
+        "90": 35.79,
+        "91": 54.0,
+        "120": 36.99
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "2ee7da9a442b7b24d4cf28af662376f87dd86c52d188e786dbdf2633f9ea6453",
+        "libaom_raw_sha256": "2ee7da9a442b7b24d4cf28af662376f87dd86c52d188e786dbdf2633f9ea6453",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    },
+    "av1_default_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 36612689,
+      "encoded_sha256": "1d08c0dead2fb358759974d198e774e5e377ac9ee865d6bede5a4299aa41bc5a",
+      "psnr_average_db": 33.597129,
+      "psnr_min_frame_db": 25.18,
+      "psnr_min_frame_number": 118,
+      "psnr_frames_below_30_db": 11,
+      "psnr_frame_db": {
+        "1": 50.34,
+        "10": 41.25,
+        "30": 32.2,
+        "31": 53.97,
+        "60": 32.44,
+        "61": 53.92,
+        "90": 34.67,
+        "91": 54.0,
+        "120": 25.52
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "2cfcc6ac9eeabb2c6c34bd7868f1154509ea870b9e682d69f454c2cac2dc849c",
+        "libaom_raw_sha256": "2cfcc6ac9eeabb2c6c34bd7868f1154509ea870b9e682d69f454c2cac2dc849c",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    },
+    "av1_cqp25_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "25",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 10795907,
+      "encoded_sha256": "3ecf3abf80a1f43fc777f66d17158e8c6f01ca4a36eaa74df0262bdd4fa191fe",
+      "psnr_average_db": 39.583897,
+      "psnr_min_frame_db": 33.53,
+      "psnr_min_frame_number": 118,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 47.99,
+        "10": 46.87,
+        "30": 35.43,
+        "31": 49.22,
+        "60": 37.68,
+        "61": 49.18,
+        "90": 40.45,
+        "91": 49.24,
+        "120": 34.63
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "446a192d20d8d85545f88a07305b07b5c6ec7d317ebdc2bfeec66234d066d879",
+        "libaom_raw_sha256": "446a192d20d8d85545f88a07305b07b5c6ec7d317ebdc2bfeec66234d066d879",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    },
+    "av1_cqp15_g30": {
+      "options": [
+        "-c:v",
+        "av1_vulkan",
+        "-rc_mode",
+        "cqp",
+        "-qp",
+        "15",
+        "-g",
+        "30"
+      ],
+      "encoded_bytes": 16086856,
+      "encoded_sha256": "7996e7d3627d04d32ab3ec39890e44713922d443352c8b623c28ee8eced016dc",
+      "psnr_average_db": 38.374781,
+      "psnr_min_frame_db": 30.15,
+      "psnr_min_frame_number": 120,
+      "psnr_frames_below_30_db": 0,
+      "psnr_frame_db": {
+        "1": 48.78,
+        "10": 45.27,
+        "30": 36.7,
+        "31": 50.75,
+        "60": 35.87,
+        "61": 50.7,
+        "90": 34.7,
+        "91": 50.78,
+        "120": 30.15
+      },
+      "psnr_frame_count": 120,
+      "cross_decoder": {
+        "dav1d_raw_sha256": "d40b4ceba4889fee2a77a771d7550253252b85e49dee8e67f8a756177e26ae8b",
+        "libaom_raw_sha256": "d40b4ceba4889fee2a77a771d7550253252b85e49dee8e67f8a756177e26ae8b",
+        "pixel_equal": true,
+        "frames": 120
+      }
+    }
+  },
+  "temporary_source_and_bitstreams_retained": false,
+  "camera_dynamic_framerate_control": {
+    "before": 1,
+    "lock_30fps_requested": true,
+    "during": 0,
+    "after": 1
+  },
+  "camera_device": "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+  "source_sha256": "e54d7ddc916ec16a84fdd14f686c6bb086d38427ac8f8d0c05d20603f772ff6f",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "aomdec_sha256": "647f782b3ea4c10bf5fc3d9499056f288e10c951cbce481270e89bf717e6053c"
+}

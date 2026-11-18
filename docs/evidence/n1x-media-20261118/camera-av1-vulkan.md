@@ -95,6 +95,10 @@ Complete decode does not prove picture fidelity. The
 finds severe AV1 inter-frame drift on kernel38/driver 615.78.08; H.264 and
 HEVC Vulkan outputs from the same source do not show it. AV1 GOP 1 yields
 63.74 dB PSNR over 120 synthetic frames versus 19.81 dB at the default GOP.
+An additional [shared-source real-camera comparison](vulkan-encode-quality-camera-kernel38.json)
+uses 120 RGB camera frames and finds 53.80 dB all-intra versus 31.89 dB at
+the default GOP. Both decoders produce identical pixels for every AV1 mode;
+the camera control returns to `1` and no footage is retained.
 
 The [direct 30-second all-intra camera run](camera-av1-intra-30s-kernel38.json)
 encoded 905 packets from 906 read frames, with strictly increasing timestamps
