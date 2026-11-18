@@ -57,9 +57,24 @@ aarch64` vermagic. The patched file hashes are:
 
 `nvidia-smi` and the loaded `nvidia` module still report **615.78.08**. The
 installed `nvidia-open-dkms 615.78.08-3`, `nvidia-utils 615.78.08-1`, and
-`n1x-nvidia-drm-fix 615.78.08-4` are version-bound. NVIDIA's 620 userspace
-libraries and firmware are only in the extracted archive. The 620 changelog
+`n1x-nvidia-drm-fix 615.78.08-4` are version-bound. The 620 changelog
 contains no explicit claim that N1X NVENC session error 21 is corrected.
+
+The ARM64 distribution's `extra` repository now publishes a matched
+`nvidia-utils 620.70.06-1` and `nvidia-open-dkms 620.70.06-1` pair. Both
+archives were downloaded to an ignored local build directory and their
+detached package signatures verified with the installed Arch Linux ARM
+Build System key (`68B3537F39A313B3E574D06777193F152BDBE6A6`, full trust).
+Their SHA256 values are respectively
+`bc4b8afd35bc14b963b4a2d5d123a76ca72bba3d56c8237ae44b1439ac2bd3da`
+and
+`e333f8744caa175bccca649b165ff5a31c94de6b7ca573364a0106231351af92`.
+The utils archive contains matching `libnvidia-encode.so`, `libnvcuvid.so`,
+`nvidia-smi` and versioned firmware. The DKMS package depends on utils
+`=620.70.06`. A direct upgrade on the running 615 root is rejected by
+versioned dependencies from the kernel34/36/37 driver packages and
+`n1x-nvidia-drm-fix`; no 620 package was installed. A separate root and boot
+candidate is required for a native comparison while keeping the 615 rollback.
 
 Before a native 620 experiment, make a boot-selectable, fully matched 620
 module/userspace/firmware candidate and retain a verified 615 rollback path.
