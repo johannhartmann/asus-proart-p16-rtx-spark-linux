@@ -1,0 +1,252 @@
+{
+  "package": "p16-nvof-tools 0.1.0-1",
+  "sdkCommit": "edb50da3cf849840d680249aa6dbef248ebce2ca",
+  "analyzerSha256": "6ec43f65de9e2ab90fcfaa8a6b2d6173adbcfb5299d676dc88d07972f874552e",
+  "wrapperSha256": "7df80fea8bd8792445038fa305b5567082ddc396dc64dd333abc80beec7bc39a",
+  "staticControl": {
+    "backend": "NVIDIA NVOFA CUDA",
+    "header_api_version": 32,
+    "driver_api_version": 80,
+    "width": 320,
+    "height": 180,
+    "grid": 4,
+    "pairs": [
+      {
+        "mean_dx": -0.0001,
+        "mean_dy": -0.0001,
+        "mean_magnitude": 0.0002,
+        "nonzero_fraction": 0.0
+      }
+    ],
+    "pair_count": 1,
+    "mean_magnitude": 0.0002,
+    "mean_nonzero_fraction": 0.0
+  },
+  "eightPixelTranslation": {
+    "backend": "NVIDIA NVOFA CUDA",
+    "header_api_version": 32,
+    "driver_api_version": 80,
+    "width": 320,
+    "height": 180,
+    "grid": 4,
+    "pairs": [
+      {
+        "mean_dx": 8.0,
+        "mean_dy": -0.0001,
+        "mean_magnitude": 8.0,
+        "nonzero_fraction": 1.0
+      }
+    ],
+    "pair_count": 1,
+    "mean_magnitude": 8.0,
+    "mean_nonzero_fraction": 1.0
+  },
+  "cameraRecordingSha256": "0e7e6b40ccfcfaa2efebf916c682a030a09944727dcec2730a19465948d01b9e",
+  "cameraRecordingProbe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 720,
+        "nb_read_frames": "60"
+      }
+    ]
+  },
+  "cameraAnalysis": {
+    "backend": "NVIDIA NVOFA CUDA",
+    "header_api_version": 32,
+    "driver_api_version": 80,
+    "width": 320,
+    "height": 180,
+    "grid": 4,
+    "pairs": [
+      {
+        "mean_dx": -0.0047,
+        "mean_dy": 0.0022,
+        "mean_magnitude": 0.0134,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": -0.0021,
+        "mean_dy": -0.0008,
+        "mean_magnitude": 0.0135,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0512,
+        "mean_dy": -0.0215,
+        "mean_magnitude": 0.1018,
+        "nonzero_fraction": 0.0319
+      },
+      {
+        "mean_dx": 0.0023,
+        "mean_dy": 0.2172,
+        "mean_magnitude": 0.4187,
+        "nonzero_fraction": 0.32
+      },
+      {
+        "mean_dx": -0.0139,
+        "mean_dy": 0.3681,
+        "mean_magnitude": 0.715,
+        "nonzero_fraction": 0.4875
+      },
+      {
+        "mean_dx": 0.0424,
+        "mean_dy": 0.257,
+        "mean_magnitude": 0.8293,
+        "nonzero_fraction": 0.43
+      },
+      {
+        "mean_dx": 0.1714,
+        "mean_dy": -0.0036,
+        "mean_magnitude": 0.4767,
+        "nonzero_fraction": 0.2558
+      },
+      {
+        "mean_dx": 0.0454,
+        "mean_dy": 0.2063,
+        "mean_magnitude": 0.3938,
+        "nonzero_fraction": 0.2086
+      },
+      {
+        "mean_dx": 0.0071,
+        "mean_dy": 0.0511,
+        "mean_magnitude": 0.0998,
+        "nonzero_fraction": 0.0103
+      },
+      {
+        "mean_dx": 0.074,
+        "mean_dy": 0.1091,
+        "mean_magnitude": 0.2247,
+        "nonzero_fraction": 0.1369
+      },
+      {
+        "mean_dx": 0.0391,
+        "mean_dy": 0.0335,
+        "mean_magnitude": 0.3798,
+        "nonzero_fraction": 0.28
+      },
+      {
+        "mean_dx": 0.0554,
+        "mean_dy": 0.1419,
+        "mean_magnitude": 0.2996,
+        "nonzero_fraction": 0.2258
+      },
+      {
+        "mean_dx": 0.0384,
+        "mean_dy": 0.0623,
+        "mean_magnitude": 0.1796,
+        "nonzero_fraction": 0.0911
+      },
+      {
+        "mean_dx": 0.0495,
+        "mean_dy": 0.1078,
+        "mean_magnitude": 0.5035,
+        "nonzero_fraction": 0.3794
+      },
+      {
+        "mean_dx": -0.0086,
+        "mean_dy": 0.0629,
+        "mean_magnitude": 0.1104,
+        "nonzero_fraction": 0.0014
+      },
+      {
+        "mean_dx": 0.0191,
+        "mean_dy": 0.0093,
+        "mean_magnitude": 0.0584,
+        "nonzero_fraction": 0.0061
+      },
+      {
+        "mean_dx": 0.0006,
+        "mean_dy": -0.0044,
+        "mean_magnitude": 0.0439,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0023,
+        "mean_dy": 0.0046,
+        "mean_magnitude": 0.0455,
+        "nonzero_fraction": 0.0008
+      },
+      {
+        "mean_dx": 0.0362,
+        "mean_dy": 0.0045,
+        "mean_magnitude": 0.066,
+        "nonzero_fraction": 0.0208
+      },
+      {
+        "mean_dx": 0.0135,
+        "mean_dy": 0.0036,
+        "mean_magnitude": 0.058,
+        "nonzero_fraction": 0.0122
+      },
+      {
+        "mean_dx": 0.0128,
+        "mean_dy": 0.015,
+        "mean_magnitude": 0.0614,
+        "nonzero_fraction": 0.0047
+      },
+      {
+        "mean_dx": 0.0468,
+        "mean_dy": -0.0005,
+        "mean_magnitude": 0.0823,
+        "nonzero_fraction": 0.0222
+      },
+      {
+        "mean_dx": 0.0282,
+        "mean_dy": -0.0064,
+        "mean_magnitude": 0.0632,
+        "nonzero_fraction": 0.0147
+      },
+      {
+        "mean_dx": 0.0052,
+        "mean_dy": 0.0126,
+        "mean_magnitude": 0.058,
+        "nonzero_fraction": 0.0028
+      },
+      {
+        "mean_dx": 0.0349,
+        "mean_dy": 0.0184,
+        "mean_magnitude": 0.0745,
+        "nonzero_fraction": 0.0222
+      },
+      {
+        "mean_dx": 0.0198,
+        "mean_dy": -0.0102,
+        "mean_magnitude": 0.0622,
+        "nonzero_fraction": 0.0136
+      },
+      {
+        "mean_dx": 0.017,
+        "mean_dy": -0.0051,
+        "mean_magnitude": 0.057,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0106,
+        "mean_dy": 0.0004,
+        "mean_magnitude": 0.0373,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": -0.0094,
+        "mean_dy": 0.0077,
+        "mean_magnitude": 0.0382,
+        "nonzero_fraction": 0.0
+      },
+      {
+        "mean_dx": 0.0056,
+        "mean_dy": -0.0,
+        "mean_magnitude": 0.0389,
+        "nonzero_fraction": 0.0
+      }
+    ],
+    "pair_count": 30,
+    "mean_magnitude": 0.1868,
+    "mean_nonzero_fraction": 0.0993
+  },
+  "cameraRecordingRetained": false,
+  "pass": true
+}

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if (( $# < 1 || $# > 2 )); then
+  echo 'Usage: p16-optical-flow VIDEO [MAX_PAIRS]' >&2
+  exit 2
+fi
+video=$1
+pairs=${2:-30}
+if [[ ! -f $video ]]; then
+  echo "Video file not found: $video" >&2
+  exit 2
+fi
+if [[ ! $pairs =~ ^[0-9]+$ ]] || (( pairs < 1 || pairs > 300 )); then
+  echo 'MAX_PAIRS must be an integer from 1 to 300' >&2
+  exit 2
+fi
+/usr/bin/ffmpeg -hide_banner -loglevel error -i "$video" -an \
+  -vf scale=320:180:flags=bicubic,format=gray -frames:v "$((pairs + 1))" \
+  -fps_mode passthrough -f rawvideo - | \
+  /usr/bin/p16-nvof-analyze 320 180 "$pairs"

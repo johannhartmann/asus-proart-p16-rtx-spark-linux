@@ -36,7 +36,7 @@ cannot qualify that separate platform pipeline.
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling, while mpv 4:2:2 and Chromium/Chrome H.264 fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
-| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED also carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata; SDR restores after playback and even launcher SIGKILL. Proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
+| GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. The N1X Optical Flow Accelerator also runs through a packaged Linux CUDA API command: a zero-motion control, exact 8-pixel translation and 30 pairs from real P16 camera video pass. Frame export and proprietary Linux ARM64 video effects SDK remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, frame interpolation/export, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
@@ -293,6 +293,20 @@ advertise HDR. The synthetic fixture verifies signaling and the playback path;
 it is not a photometric quality pattern. Luminance, gamut accuracy, tone
 mapping quality, long playback and proprietary TrueHDR remain open.
 
+The [NVIDIA Optical Flow SDK](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK)
+CUDA API is usable on this N1X, independent of the NVENC session failure. The
+installed [`p16-nvof-tools`](platform/video/nvof/README.md) package pins SDK
+headers to commit `edb50da3cf849840d680249aa6dbef248ebce2ca`, compiles a
+small CUDA API client and exposes `p16-optical-flow VIDEO [MAX_PAIRS]`. It
+decodes ordinary video with FFmpeg and computes 4×4-grid optical flow on the
+NVIDIA hardware for each frame pair. The [application test](docs/evidence/n1x-media-20261118/nvof-application.md)
+measures approximately zero motion for identical textured frames, exactly
+8-pixel horizontal flow for a controlled translation, and 30 frame pairs
+from a temporary real P16 camera recording. The camera video was deleted.
+This closes the NVOFA device/API and motion-analysis **used** gate. It does
+not create interpolated video frames, qualify motion artifacts or assert that
+NVIDIA's proprietary Frame Generation SDK works on Linux ARM64.
+
 1. For each effect, establish the documented Linux ARM64 artifact, supported
    GPU list, runtime/driver requirements, license and redistributability.
    If NVIDIA adds N1X support, package the exact SDK and its models, run its
@@ -316,10 +330,10 @@ mapping quality, long playback and proprietary TrueHDR remain open.
    display/compositor/SDK path cannot carry a feature, leave its desktop gate
    open and publish the precise blocker instead of enabling an inert toggle.
 
-Optical flow and JPEG acceleration may be investigated separately by querying
-the exact N1X driver/API capabilities. Do not infer dedicated OFA/NVJPEG blocks
-from another NVIDIA SoC or from the presence of CUDA libraries; add a test row
-only after a device-specific capability and runtime path are established.
+Optical flow and JPEG acceleration require device-specific capability and
+runtime tests; library presence alone is insufficient. The NVOFA application
+result above establishes an actual engine computation, while the nvJPEG
+probe below establishes the absence of dedicated JPEG hardware in this runtime.
 The [N1X nvJPEG capability probe](docs/evidence/n1x-media-20261118/nvjpeg-capability.json)
 uses CUDA 13.4.2 on this P16. The default and GPU-hybrid handles report zero
 dedicated JPEG decoder and encoder engines; the explicit hardware decoder and
