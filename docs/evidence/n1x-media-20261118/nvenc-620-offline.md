@@ -75,6 +75,9 @@ The utils archive contains matching `libnvidia-encode.so`, `libnvcuvid.so`,
 versioned dependencies from the kernel34/36/37 driver packages and
 `n1x-nvidia-drm-fix`; no 620 package was installed. A separate root and boot
 candidate is required for a native comparison while keeping the 615 rollback.
+The signed DKMS archive's source was extracted without installing it. All
+three local patches applied with fuzz zero, and the four modified file hashes
+exactly matched the earlier independently extracted NVIDIA `.run` audit above.
 
 Before a native 620 experiment, make a boot-selectable, fully matched 620
 module/userspace/firmware candidate and retain a verified 615 rollback path.
