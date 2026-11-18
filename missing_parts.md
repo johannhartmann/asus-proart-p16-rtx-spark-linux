@@ -96,6 +96,12 @@ installed recording command produced a 60-frame H.264 file from the live RGB
 camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
 NVENC, OBS hardware recording, HDR or power-management gates.
+The [interactive A/V playback test](scripts/check-n1x-av-playback.py) uses a
+24-second H.264/AAC fixture in that installed player. It confirms VA-API
+decoding, Vulkan rendering, PipeWire audio, forward/backward seeks, a stable
+pause, resumed playback and EOF. Sampled mpv audio/video clocks differed by
+at most 22 ms during playback after those operations. This is a bounded
+clock/interaction check, not a human listening test or a long playback run.
 The [media resume preflight](docs/evidence/n1x-media-resume-20261118/README.md)
 stopped before sleep: ACPI TAD RTC1 returned `Input/output error` and EFI RTC0
 returned `Invalid argument` when asked to arm a wake alarm. NVIDIA kernel

@@ -1,0 +1,77 @@
+{
+  "player": "/usr/bin/p16-video-play",
+  "player_sha256": "fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688",
+  "kernel": "7.2.8-36-rtx-spark-npu",
+  "driver": "615.78.08",
+  "steps": {
+    "playing": {
+      "video_time_s": 0.0,
+      "audio_time_s": 0.021333,
+      "av_delta_s": 0.0213,
+      "hwdec_current": "vaapi",
+      "paused": false,
+      "mistimed_frames": 0
+    },
+    "forward_seek": {
+      "video_time_s": 10.933333,
+      "audio_time_s": 10.938096,
+      "av_delta_s": 0.0048,
+      "hwdec_current": "vaapi",
+      "paused": false,
+      "mistimed_frames": 5
+    },
+    "paused": {
+      "video_time_s": 10.933333,
+      "audio_time_s": 10.940644,
+      "av_delta_s": 0.0073,
+      "hwdec_current": "vaapi",
+      "paused": true,
+      "mistimed_frames": 5
+    },
+    "paused_after_one_second": {
+      "video_time_s": 10.933333,
+      "audio_time_s": 10.970179,
+      "av_delta_s": 0.0368,
+      "hwdec_current": "vaapi",
+      "paused": true,
+      "mistimed_frames": 5
+    },
+    "resumed": {
+      "video_time_s": 11.933333,
+      "audio_time_s": 11.943187,
+      "av_delta_s": 0.0099,
+      "hwdec_current": "vaapi",
+      "paused": false,
+      "mistimed_frames": 6
+    },
+    "backward_seek": {
+      "video_time_s": 4.933333,
+      "audio_time_s": 4.92979,
+      "av_delta_s": -0.0035,
+      "hwdec_current": "vaapi",
+      "paused": false,
+      "mistimed_frames": 2
+    },
+    "near_end": {
+      "video_time_s": 18.9,
+      "audio_time_s": 18.921066,
+      "av_delta_s": 0.0211,
+      "hwdec_current": "vaapi",
+      "paused": false,
+      "mistimed_frames": 2
+    }
+  },
+  "status": "pass",
+  "fixture": {
+    "sha256": "af2f622aefe77810e167714f5569e112e3adf5a649b160177530d8a7df456ae8",
+    "duration_s": 24,
+    "video": "H.264 640x360 30 fps",
+    "audio": "AAC 48 kHz mono"
+  },
+  "checks": {
+    "hardware_decode": true,
+    "pipewire_audio": true,
+    "vulkan_renderer": true,
+    "end_of_file": true
+  }
+}
