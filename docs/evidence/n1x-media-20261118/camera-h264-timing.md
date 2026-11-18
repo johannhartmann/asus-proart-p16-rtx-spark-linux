@@ -29,6 +29,17 @@ the control before and after but does not independently sample it while that
 command runs. Each 30-second run reads one frame beyond the `-t 30` output
 boundary, so strict retention of every read input remains open.
 
+The [120-second direct microsecond run](camera-h264-microsecond-120s-kernel38.json)
+extends the timing gate: FFmpeg read 3,619 camera frames and encoded 3,618
+H.264 packets; independent software decode returned 3,618 distinct frames.
+Packet DTS and decoded frame PTS had zero non-increasing steps, decoded PTS
+gaps were 31–37 ms with none over 50 ms, and the packet PTS span was 119.955
+seconds. The original camera control value `1` was restored after a temporary
+value of `0`. No new DMA-API, NVRM Xid, IOMMU fault, KASAN, BUG or WARNING
+line appeared in the boot journal during the run. The one extra frame read
+at the timed boundary remains outside the strict retention claim; the
+120-second result is a direct FFmpeg test, not an installed-command run.
+
 `p16-media-tools 0.1.0-12` applies `-enc_time_base 1/1000000` to both H.264
 and AV1. Its clean package build passes all source hashes. The package
 archive SHA256 is

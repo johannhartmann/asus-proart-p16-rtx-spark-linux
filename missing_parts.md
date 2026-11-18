@@ -273,6 +273,11 @@ normal and is checked separately. Candidate 0.1.0-12 applies the camera's
 microsecond time base to H.264 as well: its exact extracted command encoded
 and independently decoded 905/905 distinct frames with strictly increasing
 decoded timestamps and DTS, and the AV1 branch passed a short regression.
+The [120-second direct H.264 repeat](docs/evidence/n1x-media-20261118/camera-h264-microsecond-120s-kernel38.json)
+then independently decoded all 3,618 encoded frames with distinct hashes,
+monotonic decoded timestamps and DTS, no gap above 50 ms and restored camera
+control. It remains a direct FFmpeg result rather than installed application
+qualification.
 The candidate still requires installation and a repeat through
 `/usr/bin/p16-record-camera-vulkan`; subjective quality and post-resume use
 remain open.
