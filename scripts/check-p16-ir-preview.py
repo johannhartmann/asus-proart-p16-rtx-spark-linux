@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--direct-demux", action="store_true",
                         help="disable mpv's demux thread and cache to test V4L2 close")
+    parser.add_argument("--renderer", choices=("gpu-next", "wlshm"),
+                        default="gpu-next", help="Wayland renderer for close comparison")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("choose a new output path")
@@ -43,6 +45,7 @@ def main():
         "kernel": Path("/proc/sys/kernel/osrelease").read_text().strip(),
         "camera": CAMERA,
         "direct_demux": args.direct_demux,
+        "renderer": args.renderer,
         "mpv_version": subprocess.run(["/usr/bin/mpv", "--version"],
                                       capture_output=True, text=True,
                                       check=True).stdout.splitlines()[0],
@@ -52,11 +55,13 @@ def main():
         work = Path(folder)
         ipc = work / "mpv.sock"
         log = work / "mpv.log"
-        command = ["/usr/bin/mpv", "--no-config", "--vo=gpu-next",
-                   "--gpu-api=vulkan", "--hwdec=no", "--profile=low-latency",
+        command = ["/usr/bin/mpv", "--no-config", f"--vo={args.renderer}",
+                   "--hwdec=no", "--profile=low-latency",
                    "--demuxer-lavf-format=v4l2",
                    "--demuxer-lavf-o=video_size=360x360,input_format=gray,framerate=15",
                    f"--input-ipc-server={ipc}", f"--log-file={log}"]
+        if args.renderer == "gpu-next":
+            command += ["--gpu-api=vulkan"]
         if args.direct_demux:
             command += ["--demuxer-thread=no", "--cache=no"]
         command += [f"av://v4l2:{CAMERA}"]
@@ -106,7 +111,7 @@ def main():
                     process.communicate()
         log_text = log.read_text(errors="replace") if log.exists() else ""
         report["mpv_exit_code"] = process.returncode
-        report["renderer_selected"] = "VO: [gpu-next] 360x360 gray" in stdout
+        report["renderer_selected"] = f"VO: [{args.renderer}] 360x360 gray" in stdout
         report["vulkan_device_logged"] = "NVIDIA RTX Spark N1X" in log_text
         report["v4l2_close_warning"] = "Some buffers are still owned by the caller on close" in stdout
         report["v4l2_qbuf_after_close_count"] = len(re.findall(
@@ -122,7 +127,7 @@ def main():
     params = report.get("video_params") or {}
     report["pass"] = (report["mpv_exit_code"] == 0 and
                       report["renderer_selected"] and
-                      report["vulkan_device_logged"] and
+                      (args.renderer != "gpu-next" or report["vulkan_device_logged"]) and
                       params.get("w") == 360 and params.get("h") == 360 and
                       params.get("pixelformat") == "gray" and
                       len(stamps) >= 3 and stamps[-1] - stamps[0] >= 1.5 and

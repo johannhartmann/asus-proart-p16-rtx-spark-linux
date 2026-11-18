@@ -347,7 +347,9 @@ seconds, the process exits normally through IPC, and a new FFmpeg capture
 reopens the camera. Mpv logs a V4L2 owned-buffer warning but no QBUF bad-fd
 line in this verified standard run. A [direct-demux repeat](docs/evidence/n1x-media-20261118/ir-mpv-preview-direct-demux-kernel38.json)
 retains the warning and logs two QBUF lines. Both runs reopen the camera, so
-the device is not left stuck; the clean-shutdown gate remains open. No IR
+the device is not left stuck. A [Wayland SHM renderer repeat](docs/evidence/n1x-media-20261118/ir-mpv-preview-wlshm-kernel38.json)
+also retains the warning with zero QBUF lines, so it is not specific to
+Vulkan output. The clean-shutdown gate remains open. No IR
 pixels or recording are retained.
 This is a usable preview path, not biometric face-authentication support or
 subjective image-quality acceptance.
