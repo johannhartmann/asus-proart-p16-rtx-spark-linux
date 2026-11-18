@@ -1,0 +1,206 @@
+$ /usr/bin/ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=codec_name,profile,pix_fmt,width,height,nb_read_frames:packet=pts_time -of json $WORKDIR/camera.ivf
+exit_code=0
+
+stdout:
+{
+    "packets": [
+        {
+            "pts_time": "0.000000"
+        },
+        {
+            "pts_time": "0.033333"
+        },
+        {
+            "pts_time": "0.066667"
+        },
+        {
+            "pts_time": "0.100000"
+        },
+        {
+            "pts_time": "0.133333"
+        },
+        {
+            "pts_time": "0.166667"
+        },
+        {
+            "pts_time": "0.200000"
+        },
+        {
+            "pts_time": "0.233333"
+        },
+        {
+            "pts_time": "0.266667"
+        },
+        {
+            "pts_time": "0.300000"
+        },
+        {
+            "pts_time": "0.333333"
+        },
+        {
+            "pts_time": "0.366667"
+        },
+        {
+            "pts_time": "0.400000"
+        },
+        {
+            "pts_time": "0.433333"
+        },
+        {
+            "pts_time": "0.466667"
+        },
+        {
+            "pts_time": "0.500000"
+        },
+        {
+            "pts_time": "0.533333"
+        },
+        {
+            "pts_time": "0.566667"
+        },
+        {
+            "pts_time": "0.600000"
+        },
+        {
+            "pts_time": "0.633333"
+        },
+        {
+            "pts_time": "0.666667"
+        },
+        {
+            "pts_time": "0.700000"
+        },
+        {
+            "pts_time": "0.733333"
+        },
+        {
+            "pts_time": "0.766667"
+        },
+        {
+            "pts_time": "0.800000"
+        },
+        {
+            "pts_time": "0.833333"
+        },
+        {
+            "pts_time": "0.866667"
+        },
+        {
+            "pts_time": "0.900000"
+        },
+        {
+            "pts_time": "0.933333"
+        },
+        {
+            "pts_time": "0.966667"
+        },
+        {
+            "pts_time": "1.000000"
+        },
+        {
+            "pts_time": "1.033333"
+        },
+        {
+            "pts_time": "1.066667"
+        },
+        {
+            "pts_time": "1.100000"
+        },
+        {
+            "pts_time": "1.133333"
+        },
+        {
+            "pts_time": "1.166667"
+        },
+        {
+            "pts_time": "1.200000"
+        },
+        {
+            "pts_time": "1.233333"
+        },
+        {
+            "pts_time": "1.266667"
+        },
+        {
+            "pts_time": "1.300000"
+        },
+        {
+            "pts_time": "1.333333"
+        },
+        {
+            "pts_time": "1.366667"
+        },
+        {
+            "pts_time": "1.400000"
+        },
+        {
+            "pts_time": "1.433333"
+        },
+        {
+            "pts_time": "1.466667"
+        },
+        {
+            "pts_time": "1.500000"
+        },
+        {
+            "pts_time": "1.533333"
+        },
+        {
+            "pts_time": "1.566667"
+        },
+        {
+            "pts_time": "1.600000"
+        },
+        {
+            "pts_time": "1.633333"
+        },
+        {
+            "pts_time": "1.666667"
+        },
+        {
+            "pts_time": "1.700000"
+        },
+        {
+            "pts_time": "1.733333"
+        },
+        {
+            "pts_time": "1.766667"
+        },
+        {
+            "pts_time": "1.800000"
+        },
+        {
+            "pts_time": "1.833333"
+        },
+        {
+            "pts_time": "1.866667"
+        },
+        {
+            "pts_time": "1.900000"
+        },
+        {
+            "pts_time": "1.933333"
+        },
+        {
+            "pts_time": "1.966667"
+        }
+    ],
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "codec_name": "av1",
+            "profile": "Main",
+            "width": 1280,
+            "height": 720,
+            "pix_fmt": "yuv420p",
+            "nb_read_frames": "60"
+        }
+    ]
+}
+
+stderr:

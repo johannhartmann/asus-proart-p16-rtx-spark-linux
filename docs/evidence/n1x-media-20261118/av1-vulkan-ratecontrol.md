@@ -44,3 +44,9 @@ an explicit CQP option. No application should infer a safe QP interval from
 two sampled values. The default encoder path remains the only general
 recording candidate here; the per-option passes need longer and real-content
 qualification before becoming user controls.
+
+The [live RGB camera AV1 capture](camera-av1-vulkan.md) extends the default
+mode result to 60 distinct 1280×720 camera frames with full libdav1d and
+libaom decode. Its temporary fixed-rate V4L2 setting produced a bounded
+1.967-second span for 60 frames and was restored. It does not repair or
+requalify the corrupt explicit bitrate and CQP 30 cases above.

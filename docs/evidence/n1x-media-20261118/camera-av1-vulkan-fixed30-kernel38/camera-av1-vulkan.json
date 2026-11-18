@@ -1,0 +1,48 @@
+{
+  "captured_at": "2026-11-18T20:14:22.363004+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "driver": "615.78.08",
+  "ffmpeg_sha256": "fc5db7b88a2a96e9a9036fbc9533d8b3ec16abbc31526b285e996ae1d81b9fcd",
+  "aomdec_sha256": "647f782b3ea4c10bf5fc3d9499056f288e10c951cbce481270e89bf717e6053c",
+  "camera": "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+  "requested_frames": 60,
+  "encode_wall_seconds_including_camera_open": 4.009,
+  "input_frames": 60,
+  "output_frames": 60,
+  "stream": {
+    "codec_name": "av1",
+    "profile": "Main",
+    "width": 1280,
+    "height": 720,
+    "pix_fmt": "yuv420p",
+    "nb_read_frames": "60"
+  },
+  "packet_pts_span_s": 1.967,
+  "bitstream_bytes": 18036132,
+  "bitstream_sha256": "e6f3ce8efba30f942dc5b5e5096092a80d10d09ff7c39d74c4e0f48a2462b9f3",
+  "dav1d_frames": 60,
+  "libaom_frames": 60,
+  "distinct_decoded_frame_hashes": 60,
+  "checks": {
+    "n1x_vulkan_encoder": true,
+    "camera_input_frames": true,
+    "encoded_output_frames": true,
+    "av1_main_720p": true,
+    "packet_timestamps": true,
+    "dav1d_complete": true,
+    "libaom_complete": true,
+    "varying_camera_frames": true,
+    "camera_control_restored": true,
+    "fixed_30fps_control": true
+  },
+  "pass": true,
+  "camera_pixels_or_recording_retained": false,
+  "limit": "Default AV1 Vulkan rate control only; explicit bitrate/CQP modes, A/V sync, visual quality and post-resume use remain separate gates.",
+  "camera_dynamic_framerate_control": {
+    "before": 1,
+    "lock_30fps_requested": true,
+    "during": 0,
+    "after": 1
+  }
+}
