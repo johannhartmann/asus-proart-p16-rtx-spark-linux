@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-11-18T19:53:55.499303+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "installed_package_count": 1123,
+  "new_archive_inputs": {
+    "nvidia-utils": {
+      "path": "build/nvidia620-packages/nvidia-utils-620.70.06-1-aarch64.pkg.tar.xz",
+      "sha256": "bc4b8afd35bc14b963b4a2d5d123a76ca72bba3d56c8237ae44b1439ac2bd3da",
+      "file_count": 209
+    },
+    "nvidia-open-dkms": {
+      "path": "build/nvidia620-packages/nvidia-open-dkms-620.70.06-1-aarch64.pkg.tar.xz",
+      "sha256": "e333f8744caa175bccca649b165ff5a31c94de6b7ca573364a0106231351af92",
+      "file_count": 4052
+    },
+    "n1x-nvidia-drm-fix-620": {
+      "path": "build/nvidia620-packages/n1x-nvidia-drm-fix-620-620.70.06-1-any.pkg.tar.xz",
+      "sha256": "23b3ef76307ab1668a2a6666f081a7e5a52e9f1af25708ffd2d89ab90e10e023",
+      "file_count": 5
+    },
+    "linux-p16-platform-38-drivers-nvidia620": {
+      "path": "build/uvc-kernel38-drivers620-package-20261118/linux-p16-platform-38-drivers-nvidia620-7.2.8-38-aarch64.pkg.tar.xz",
+      "sha256": "2f669e17dc68f4f3227c1e9e2a4c54405c8e54c72eeb2bc4d89982cdb77a6232",
+      "file_count": 15
+    }
+  },
+  "unique_proposed_file_count": 4281,
+  "expected_replaced_file_count": 180,
+  "expected_replaced_owner_counts": {
+    "linux-p16-platform-34-drivers": 0,
+    "linux-p16-platform-36-drivers": 0,
+    "linux-p16-platform-37-drivers": 0,
+    "linux-p16-platform-38-drivers": 13,
+    "n1x-nvidia-drm-fix": 3,
+    "nvidia-open-dkms": 1,
+    "nvidia-utils": 163
+  },
+  "cross_new_package_collisions": {},
+  "unexpected_installed_owner_collisions": {},
+  "unowned_existing_file_collisions": [],
+  "pass": true,
+  "limit": "Path/ownership preflight only; actual package extraction, ALPM hooks, initramfs, module behavior and boot are not tested."
+}

@@ -144,8 +144,9 @@ pins the Btrfs snapshot, package, candidate UKI and rollback checks needed
 before a native 620 boot. A [copied Pacman database transaction](docs/evidence/nvidia620-pacman-db-transaction-20261118.json)
 accepts the six-package 615 removal and four-package 620 installation with
 matched 620 versions, without changing the live root. File installation,
-hooks and UKI are outside that simulation; the candidate root and UKI have
-not yet been created.
+hooks and UKI are outside that simulation. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
+found 4,281 candidate files with zero unexpected package or unowned-path
+overlaps. The candidate root and UKI have not yet been created.
 A later CUDA/UVM fault on the running 615/kernel36 stack produced a recursive
 `mmap_lock` Lockdep warning. The [MMU notifier candidate and three EFI/KVM
 cases](docs/evidence/mmu-notifier-lockdep-20261118.md) reproduce the warning

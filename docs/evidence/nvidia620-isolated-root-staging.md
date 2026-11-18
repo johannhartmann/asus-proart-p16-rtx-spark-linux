@@ -35,6 +35,13 @@ packages while the live 615 package versions stayed unchanged. This is a
 database-only check; it does not prove file conflict resolution, hook safety,
 module placement, the UKI or a boot. The repeatable simulator is
 [`simulate-nvidia620-pacman-transaction.py`](../../scripts/simulate-nvidia620-pacman-transaction.py).
+A separate [file-path collision audit](nvidia620-file-collisions-20261118.json)
+reads all four archive manifests and the live Pacman ownership database:
+4,281 distinct candidate files, 180 expected replacements owned only by the
+615 packages scheduled for removal or `nvidia-utils`, and zero collisions
+among the new archives, with other installed packages, or with existing
+unowned files. The [audit script](../../scripts/check-nvidia620-file-collisions.py)
+is read-only. Actual extraction into the candidate snapshot remains a gate.
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never
