@@ -56,6 +56,11 @@ A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
 H.264 hardware encode and independently verified 60 frames. OBS's advanced
 FFmpeg output failed to open `h264_vulkan` with `Invalid argument`; its hardware
 recording gate remains open. Neither Vulkan result proves NVENC API use.
+The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
+mpv hardware playback and P16 RGB/Vulkan recording commands without replacing
+system codecs. Its camera command produced a 60-frame file when run directly
+from the source tree; package installation and installed-command use are a
+separate gate.
 
 ## Common evidence and release gates
 

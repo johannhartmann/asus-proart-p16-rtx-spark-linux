@@ -127,6 +127,8 @@ RGB camera recording, mpv playback and camera use in Chromium WebRTC and OBS
 are recorded in the [media evidence](docs/evidence/n1x-media-20261118/README.md).
 The isolated NVENC FFmpeg candidate fails to open an encoder session on the
 current driver; Vulkan Video encode is a separate API.
+Optional [P16 media commands](platform/video/tools/README.md) expose the tested
+mpv playback and Vulkan camera-recording paths without replacing FFmpeg.
 The [media support plan](missing_parts.md) defines the codec, video-effects and
 camera implementation and application-use gates.
 

@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (( $# != 2 )); then
+  echo 'Usage: p16-record-camera-vulkan SECONDS OUTPUT.mkv' >&2
+  exit 2
+fi
+
+duration=$1
+output=$2
+if [[ ! $duration =~ ^[0-9]+$ ]] || (( duration < 1 || duration > 3600 )); then
+  echo 'SECONDS must be an integer from 1 to 3600' >&2
+  exit 2
+fi
+if [[ -e $output ]]; then
+  echo "Output already exists: $output" >&2
+  exit 2
+fi
+
+device=${P16_RGB_DEVICE:-/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0}
+if [[ ! -e $device ]]; then
+  echo "P16 RGB camera not available: $device" >&2
+  exit 1
+fi
+
+exec /usr/bin/ffmpeg -hide_banner \
+  -init_hw_device vulkan=vk:0 -filter_hw_device vk \
+  -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30 \
+  -i "$device" -t "$duration" \
+  -vf format=nv12,hwupload -c:v h264_vulkan -an \
+  -f matroska -n "$output"
