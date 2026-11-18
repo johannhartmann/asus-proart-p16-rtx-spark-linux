@@ -121,8 +121,11 @@ firmware-framebuffer boot policy, early NVIDIA initramfs loading and module/UKI
 version checks. `cuda/vector-add.cu` and `scripts/check-cuda.sh` provide the
 project's arithmetic smoke test (`sm_121`); compiler/device compatibility is
 checked by CUDA rather than a BIOS-version restriction.
-Hardware video encode/decode has no recorded qualification here. CUDA or
-desktop rendering results do not establish that capability.
+Hardware video encode/decode has no complete qualification here. A bounded
+H.264 NVDEC smoke test is recorded in the media plan; CUDA or desktop rendering
+results do not establish codec support.
+The [media support plan](missing_parts.md) defines the codec, video-effects and
+camera implementation and application-use gates.
 
 ## Components
 
