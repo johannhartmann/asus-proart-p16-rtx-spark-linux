@@ -1,0 +1,4 @@
+$ pkexec --disable-internal-agent /usr/bin/rtcwake -d /dev/rtc0 -m no -s 45
+exit: 1
+rtcwake: assuming RTC uses UTC ...
+rtcwake: set rtc wake alarm failed: Invalid argument

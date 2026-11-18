@@ -1,0 +1,10 @@
+{
+  "physical_suspend_started": false,
+  "mem_sleep": "[s2idle] deep",
+  "nvidia_notifier": "UseKernelSuspendNotifiers: 1",
+  "rtc1": "acpi-tad ACPI000E:00",
+  "rtc0": "rtc-efi rtc-efi.0",
+  "rtc1_alarm": "Input/output error",
+  "rtc0_alarm": "Invalid argument",
+  "post_resume_test": "not run"
+}

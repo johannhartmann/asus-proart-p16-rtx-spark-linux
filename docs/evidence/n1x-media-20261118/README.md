@@ -65,3 +65,5 @@ camera portal; device privacy and contention; audio sync, seek and longer playba
 fresh boot and physical s2idle/resume; HDR display output; proprietary NVIDIA
 VSR/Frame Generation/TrueHDR Linux ARM64 artifacts; camera drivers on a
 separate N1X MIPI/CSI machine. No MIPI/CSI devices are present on this P16.
+The [resume preflight](../n1x-media-resume-20261118/README.md) did not start
+sleep because neither tested RTC accepted a wake alarm.

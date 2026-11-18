@@ -64,6 +64,11 @@ installed recording command produced a 60-frame H.264 file from the live RGB
 camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
 NVENC, OBS hardware recording, HDR or power-management gates.
+The [media resume preflight](docs/evidence/n1x-media-resume-20261118/README.md)
+stopped before sleep: ACPI TAD RTC1 returned `Input/output error` and EFI RTC0
+returned `Invalid argument` when asked to arm a wake alarm. NVIDIA kernel
+suspend notifiers are active and the verified VT handoff must be preserved.
+No after-resume media result is claimed.
 
 ## Common evidence and release gates
 
