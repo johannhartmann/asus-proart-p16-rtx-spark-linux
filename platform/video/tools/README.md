@@ -37,6 +37,15 @@ automatic low-light exposure from lowering the camera frame rate, but may
 produce a darker picture. The default leaves the camera's exposure policy
 alone. The option does not guarantee a lossless stream; check frame timestamps
 and corruption warnings for long recordings.
+Use `--av1` before `SECONDS` to select `av1_vulkan` with its default rate
+control. The camera input and output use passthrough timestamps so FFmpeg
+does not manufacture extra frames when low-light exposure reduces the true
+camera rate. On kernel38/615, a bounded 60-real-frame AV1 camera capture
+passed full libdav1d and libaom decode; the [record](../../../docs/evidence/n1x-media-20261118/camera-av1-vulkan.md)
+also shows why `--fixed-fps` was needed for about 30 real frames/s on that
+run. Explicit AV1 bitrate and CQP 30 controls have produced corrupt output
+on this stack and are not exposed by this command. AV1 recording here uses
+Vulkan Video, not the NVENC API.
 
 `p16-record-camera-gstreamer SECONDS OUTPUT.h264` records the same live camera
 through GStreamer's `vulkanh264enc`. FFmpeg reads and converts the camera's

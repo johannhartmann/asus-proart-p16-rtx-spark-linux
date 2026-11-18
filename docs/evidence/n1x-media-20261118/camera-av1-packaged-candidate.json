@@ -1,0 +1,64 @@
+{
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "driver": "615.78.08",
+  "package": "p16-media-tools 0.1.0-9 (extracted candidate, not installed)",
+  "package_sha256": "831547c882d36f44a969055d1c9ae679af10a8ac39aaef516a11745bf4b66dd4",
+  "camera_control_before": 1,
+  "camera_control_after": 1,
+  "results": [
+    {
+      "codec": "h264",
+      "command_options": [
+        "--fixed-fps",
+        "2"
+      ],
+      "returncode": 0,
+      "output_frames": 60,
+      "software_decoded_frames": 60,
+      "distinct_decoded_frames": 60,
+      "libaom_decoded_frames": null,
+      "packet_pts_span_s": 1.933,
+      "encode_wall_s": 4.086,
+      "camera_control_after": 1,
+      "stream": {
+        "codec_name": "h264",
+        "profile": "High",
+        "width": 1280,
+        "height": 720,
+        "nb_read_frames": "60"
+      },
+      "bitstream_sha256": "7a4fefb8b2db6c620ae6795e8a828c7927f184385def7602f55f7fa528359242",
+      "bitstream_bytes": 6295073,
+      "pass": true
+    },
+    {
+      "codec": "av1",
+      "command_options": [
+        "--fixed-fps",
+        "--av1",
+        "2"
+      ],
+      "returncode": 0,
+      "output_frames": 60,
+      "software_decoded_frames": 60,
+      "distinct_decoded_frames": 60,
+      "libaom_decoded_frames": 60,
+      "packet_pts_span_s": 1.967,
+      "encode_wall_s": 3.918,
+      "camera_control_after": 1,
+      "stream": {
+        "codec_name": "av1",
+        "profile": "Main",
+        "width": 1280,
+        "height": 720,
+        "nb_read_frames": "60"
+      },
+      "bitstream_sha256": "72039419b5ea38aed0c1060d0f77b0e7407409d43323d0a61ff971f460f82607",
+      "bitstream_bytes": 17863732,
+      "pass": true
+    }
+  ],
+  "recordings_retained": false,
+  "pass": true
+}

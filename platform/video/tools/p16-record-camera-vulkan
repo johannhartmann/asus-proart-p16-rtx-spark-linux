@@ -2,12 +2,28 @@
 set -euo pipefail
 
 fixed_fps=false
-if (( $# == 3 )) && [[ $1 == --fixed-fps ]]; then
-  fixed_fps=true
-  shift
-fi
+codec=h264_vulkan
+while (( $# > 0 )); do
+  case $1 in
+    --fixed-fps)
+      if $fixed_fps; then
+        echo 'Duplicate --fixed-fps option' >&2
+        exit 2
+      fi
+      fixed_fps=true
+      shift ;;
+    --av1)
+      if [[ $codec == av1_vulkan ]]; then
+        echo 'Duplicate --av1 option' >&2
+        exit 2
+      fi
+      codec=av1_vulkan
+      shift ;;
+    *) break ;;
+  esac
+done
 if (( $# != 2 )); then
-  echo 'Usage: p16-record-camera-vulkan [--fixed-fps] SECONDS OUTPUT.mkv' >&2
+  echo 'Usage: p16-record-camera-vulkan [--fixed-fps] [--av1] SECONDS OUTPUT.mkv' >&2
   exit 2
 fi
 
@@ -32,7 +48,7 @@ command=(/usr/bin/ffmpeg -hide_banner
   -init_hw_device vulkan=vk:0 -filter_hw_device vk
   -f v4l2 -input_format mjpeg -video_size 1280x720 -framerate 30
   -i "$device" -t "$duration"
-  -vf format=nv12,hwupload -c:v h264_vulkan -an
+  -vf format=nv12,hwupload -c:v "$codec" -fps_mode passthrough -an
   -f matroska -n "$output")
 
 if ! $fixed_fps; then

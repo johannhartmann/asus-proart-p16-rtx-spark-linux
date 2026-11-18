@@ -40,6 +40,20 @@ output with a 2 Mbit/s target and CQP 30 on this stack. Recording applications
 must not assume those options are safe because this default-mode capture
 passed.
 
+## Packaged recorder candidate
+
+The extracted `p16-media-tools 0.1.0-9` candidate adds `--av1` to
+`p16-record-camera-vulkan`, uses passthrough timestamps for both codecs, and
+offers `--fixed-fps` with restoration of the original camera control. The
+[candidate test](camera-av1-packaged-candidate.json) invoked the exact binary
+from the package build for two-second H.264 and AV1 recordings. Each produced
+60 distinct, software-decodable 1280×720 frames with a roughly two-second PTS
+span; libaom also decoded all 60 AV1 frames. The camera control returned to
+`1` after each run and both temporary recordings were deleted. The package
+archive SHA256 is in the report. The candidate is **not installed** at this
+point, so this is application-command qualification of the extracted package,
+not an installed-path result.
+
 Repeat from the repository root with new output directories:
 
 ```sh

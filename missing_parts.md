@@ -231,6 +231,11 @@ installed recording command produced a 60-frame H.264 file from the live RGB
 camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
 NVENC, direct in-process OBS Vulkan encoding or power-management gates.
+The 0.1.0-9 package candidate adds an AV1 mode and passthrough timestamps to
+the camera recording command. Its [extracted-package test](docs/evidence/n1x-media-20261118/camera-av1-packaged-candidate.json)
+passed two-second H.264 and AV1 recordings with 60 distinct frames each,
+complete software decode and a restored camera control. The candidate still
+requires installation and a repeat through `/usr/bin/p16-record-camera-vulkan`.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;
