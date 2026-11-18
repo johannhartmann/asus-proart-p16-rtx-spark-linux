@@ -112,12 +112,33 @@ def check_case(chroma, depth, args, work):
             (chroma == "422" and vulkan_hardware)):
         raise RuntimeError(f"{label}: unexpected application decode path")
 
+    ffplay_hardware = None
+    ffplay_texture = None
+    if chroma == "422" and args.ffplay_cuvid:
+        ffplay = run([args.ffplay_cuvid, "-hide_banner", "-autoexit", "-an",
+                      "-loglevel", "verbose", "-vcodec", "hevc_cuvid",
+                      "-framerate", "10", "-f", "hevc", str(video)],
+                     f"{label}-ffplay-cuvid", evidence, work,
+                     env={"SDL_VIDEODRIVER": "wayland"}, timeout=20)
+        texture = re.search(r"Created \d+x\d+ texture with (SDL_PIXELFORMAT_\w+)",
+                            ffplay.stderr)
+        ffplay_hardware = (ffplay.returncode == 0 and
+                           "CUVID capabilities for hevc_cuvid" in ffplay.stderr and
+                           f"{depth} bit: supported: 1" in ffplay.stderr and
+                           "Formats: Original:" in ffplay.stderr and
+                           texture is not None)
+        ffplay_texture = texture.group(1) if texture else None
+        if not ffplay_hardware:
+            raise RuntimeError(f"{label}: FFplay did not use CUVID through EOF")
+
     return {"status": "observed", "fixture": stream,
             "fixture_sha256": sha256(video), "software_cuvid_pixel_match": True,
             "frame_hashes_sha256": hashlib.sha256("\n".join(reference).encode()).hexdigest(),
             "vaapi_hardware": vaapi_hardware, "vaapi_software_fallback": vaapi_fallback,
             "player_vulkan_hardware": vulkan_hardware, "player_surface": surface,
-            "hardware_decode_used_in_player": vulkan_hardware,
+            "mpv_hardware_decode": vulkan_hardware,
+            "ffplay_cuvid_hardware_decode": ffplay_hardware,
+            "ffplay_texture": ffplay_texture,
             "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."}
 
 
@@ -127,6 +148,7 @@ def main():
         parser.add_argument(f"--x265-{depth}", required=True)
     parser.add_argument("--ffmpeg-cuvid", required=True)
     parser.add_argument("--player", default="/usr/bin/p16-video-play")
+    parser.add_argument("--ffplay-cuvid", help="isolated FFplay binary for 4:2:2 application test")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -140,7 +162,8 @@ def main():
             "x265_8": sha256(args.x265_8), "x265_10": sha256(args.x265_10),
             "x265_12": sha256(args.x265_12),
             "ffmpeg_cuvid": sha256(args.ffmpeg_cuvid),
-            "player": sha256(args.player)},
+            "player": sha256(args.player),
+            "ffplay_cuvid": sha256(args.ffplay_cuvid) if args.ffplay_cuvid else None},
         "cases": {},
     }
     failures = 0

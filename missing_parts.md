@@ -34,7 +34,7 @@ cannot qualify that separate platform pipeline.
 
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
-| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; 4:2:2 and Chromium H.264 playback fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
+| NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; isolated FFplay uses CUVID for 4:2:2 while mpv and Chromium H.264 fall back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package built; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API, including a 60-frame real RGB camera recording in FFmpeg | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback; connected displays run in sRGB with no active HDR metadata; proprietary Linux ARM64 SDK path unverified | Each selected effect runs through a supported Linux implementation and is consumed by a real application; unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, and six-second OBS recording pass | Privacy, graphical browser permission, PipeWire portal and resume tested independently |
@@ -69,7 +69,11 @@ also verifies 4:4:4 8/10-bit hardware playback (`nv24`/`p410`) and direct CUVID
 pixel equality for 4:2:2 8/10/12-bit. VA-API has no 4:2:2 entrypoint here;
 FFmpeg's zero exit status masked a decoder initialization failure and software
 fallback. Mpv's requested Vulkan path likewise fell back to software for all
-three 4:2:2 cases. A desktop 4:2:2 hardware consumer remains open.
+three 4:2:2 cases. An isolated [`ffplay-n1x`](platform/video/PKGBUILD) package
+candidate now opens all three 4:2:2 fixtures with `hevc_cuvid` in a visible
+SDL player. Its SDL texture is `IYUV`, so the display path converts chroma and
+bit depth; direct CUVID pixel checks prove the decoder output separately.
+The package has not yet been authenticated/installed on the reference P16.
 The [NVENC API-version comparison](docs/evidence/n1x-media-20261118/nvenc-api-version-compare.json)
 uses identical FFmpeg 9.0.2 sources with pinned NVIDIA codec headers 12.2 and
 13.1. All three NVENC codecs fail at `OpenEncodeSessionEx` with error 21 on

@@ -16,7 +16,8 @@ retained.
 | NVDEC via direct CUVID | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, HEVC/AV1 10-bit, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG | The isolated FFmpeg candidate's `cuvid-*.log` selects the named `*_cuvid` decoder and completes 30 frames per case. This is separate from its failing NVENC encoder API. |
 | HEVC RExt 12-bit decode | Pass for bounded CUVID pixel comparison, VA-API decode and installed player | [`hevc12-result.json`](hevc12-result.json) records a 30-frame x265 12-bit fixture, CUVID output with all frame hashes equal to software decode, and 30 frames on the NVIDIA VA-API direct backend. [`hevc12-player.log`](hevc12-player.log) shows the installed `p16-video-play` selected VA-API `p012`, rendered with `gpu-next` and reached EOF. The raw bitstream has no timestamps, so playback timing and audio sync are not qualified. |
 | HEVC RExt 4:4:4 12-bit decode | Pass for CUVID pixel comparison and installed Vulkan Video playback | [`hevc44412-result.json`](hevc44412-result.json) records 30 frames with CUVID pixels matching software decode and 30 VA-API hardware frames. The installed player with `--hwdec=hevc-vulkan` reports `vulkan[p412]` and EOF in [`hevc44412-player-vulkan.log`](hevc44412-player-vulkan.log). Its default VA-API path reports `vaapi[yuv444p]`; preservation of 12-bit precision there is not established. The raw fixture has no PTS. |
-| HEVC pro-format matrix | 4:4:4 8/10-bit Vulkan playback passes; 4:2:2 8/10/12-bit desktop hardware use open | [`hevc-pro-matrix.json`](hevc-pro-matrix.json) records 30-frame software/CUVID pixel-hash equality for all five cases. Mpv with explicit Vulkan Video decoding selects `nv24` for 4:4:4 8-bit and `p410` for 4:4:4 10-bit. VA-API advertises neither 4:2:2 profile; FFmpeg logs a failed VA-API setup then finishes through software. Mpv likewise plays all three 4:2:2 cases through software despite the requested Vulkan backend. Process exit 0 alone is therefore not a hardware pass. |
+| HEVC pro-format matrix | 4:4:4 8/10-bit Vulkan playback passes; 4:2:2 mpv hardware path open | [`hevc-pro-matrix.json`](hevc-pro-matrix.json) records 30-frame software/CUVID pixel-hash equality for all five cases. Mpv with explicit Vulkan Video decoding selects `nv24` for 4:4:4 8-bit and `p410` for 4:4:4 10-bit. VA-API advertises neither 4:2:2 profile; FFmpeg logs a failed VA-API setup then finishes through software. Mpv likewise plays all three 4:2:2 cases through software despite the requested Vulkan backend. Process exit 0 alone is therefore not a hardware pass. |
+| Isolated HEVC 4:2:2 CUVID player | Pass for extracted FFplay candidate, pending installed test | [`hevc-pro-matrix.json`](hevc-pro-matrix.json) and `hevc-422-*bit-ffplay-cuvid.log` show all three 4:2:2 fixtures opening through `hevc_cuvid` in the SDL player. Its output texture is `SDL_PIXELFORMAT_IYUV`, which does not preserve 4:2:2/10–12-bit display precision. Package `ffmpeg-n1x-video 9.0.2-4` built successfully with FFplay enabled; archive SHA256 is `44167e245744659c472a6927a96c6a6fd45c72588a90d98f1a94079ce07a7fd9`. Installation requires a pending graphical Polkit authentication. |
 | NVIDIA Vulkan Video encode | Pass for 30-frame H.264, HEVC and AV1 8-bit samples, plus HEVC and AV1 10-bit samples | `vulkan-*.log` selects RTX Spark N1X and the codec encode extension; `*-probe.log` and `*-decode.log` verify output metadata, 10-bit pixel format where applicable, and independent software decode. This is a distinct API from NVENC. |
 | Live RGB camera → Vulkan Video H.264 | Pass for a 60-frame recording in FFmpeg | `camera-vulkan-h264.log`, probe and decode logs show `/dev/video0` MJPEG 1280×720/30, N1X Vulkan Video encode, and 60 independently decoded nonconstant frames. The temporary recording was deleted. This is real camera usage of a supported Linux hardware encoder, not an NVENC API result. |
 | Packaged P16 media commands | Installed; both commands pass | [`p16-media-tools`](../../../platform/video/tools/README.md) 0.1.0-1 is installed. [`installed-tools.json`](installed-tools.json) records matching `/usr/bin` hashes. `p16-video-play-installed.log.gz` and its summary show VA-API hardware decoding, NVIDIA Vulkan/libplacebo rendering and playback to EOF. `p16-record-camera-vulkan-installed.log` plus its probe show a two-second live RGB recording with 60 H.264 1280×720/30 frames. Temporary footage was deleted. The package archive SHA256 is `05d0a675be4d2254fad424aa292095f70b0d082be00ac801026d7fbf50f96090`. |
@@ -99,6 +100,7 @@ python3 scripts/check-hevc12-nvdec.py \
   --x265-12 /path/to/isolated/build/x265 \
   --ffmpeg-cuvid platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x \
   --player /usr/bin/p16-video-play \
+  --ffplay-cuvid platform/video/pkg/ffmpeg-n1x-video/usr/bin/ffplay-n1x \
   --output-dir docs/evidence/n1x-media-20261118
 python3 scripts/check-hevc12-nvdec.py \
   --x265-12 /path/to/isolated/build/x265 \
@@ -127,8 +129,8 @@ python3 scripts/check-hevc-pro-matrix.py \
 ```
 
 Each `hevc-{422,444}-*bit-*.log` retains the source, decoder and application
-output with temporary paths redacted. The test expects the observed software
-fallback for 4:2:2 and keeps `hardware_decode_used_in_player=false`.
+output with temporary paths redacted. The test expects mpv's software fallback
+for 4:2:2 and separately verifies the isolated FFplay CUVID path.
 
 The internal RGB camera's V4L2 `privacy` control reported 0 and read-only;
 the physical privacy behavior has not yet been tested. `/dev/video2` is the

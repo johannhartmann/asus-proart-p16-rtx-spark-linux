@@ -1,11 +1,11 @@
 pkgname=ffmpeg-n1x-video
 pkgver=9.0.2
-pkgrel=3
+pkgrel=4
 pkgdesc='Isolated ARM64 FFmpeg candidate with NVIDIA NVENC and NVDEC support'
 arch=('aarch64')
 url='https://ffmpeg.org/'
 license=('GPL-2.0-or-later')
-depends=('glibc' 'gcc-libs' 'nvidia-utils' 'x264' 'x265' 'libvpx')
+depends=('glibc' 'gcc-libs' 'nvidia-utils' 'x264' 'x265' 'libvpx' 'sdl2-compat')
 makedepends=('gcc' 'make' 'pkgconf' 'clang')
 _nvcodec_ver=13.1.15.0
 source=("https://ffmpeg.org/releases/ffmpeg-${pkgver}.tar.xz"
@@ -13,7 +13,7 @@ source=("https://ffmpeg.org/releases/ffmpeg-${pkgver}.tar.xz"
         'README.md')
 sha256sums=('8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e'
             '2255bc74d038b95aa4be30f5f66322c2176acbdb90ada1851db6993536fbeaf7'
-            '6fe1a432aa7de27ab106cd9b7dfc4865c677295d1aede9b594a78c2edd821e24')
+            '63305eaad4b37cafabfb805a84f23e5917a7c57f96bed4f895f9665abc3322b5')
 
 build() {
   make -C "$srcdir/nv-codec-headers-n$_nvcodec_ver" \
@@ -34,8 +34,7 @@ build() {
       --enable-nvdec \
       --enable-cuvid \
       --enable-cuda-llvm \
-      --disable-doc \
-      --disable-ffplay
+      --disable-doc
   make
 }
 
@@ -47,6 +46,7 @@ check() {
   grep -q av1_nvenc "$srcdir/encoders.txt"
   grep -q h264_cuvid "$srcdir/decoders.txt"
   "$srcdir/ffmpeg-$pkgver/ffprobe-n1x" -version >/dev/null
+  "$srcdir/ffmpeg-$pkgver/ffplay-n1x" -version >/dev/null
 }
 
 package() {
@@ -54,6 +54,8 @@ package() {
     "$pkgdir/usr/bin/ffmpeg-n1x"
   install -Dm755 "$srcdir/ffmpeg-$pkgver/ffprobe-n1x" \
     "$pkgdir/usr/bin/ffprobe-n1x"
+  install -Dm755 "$srcdir/ffmpeg-$pkgver/ffplay-n1x" \
+    "$pkgdir/usr/bin/ffplay-n1x"
   install -Dm644 "$srcdir/ffmpeg-$pkgver/COPYING.GPLv2" \
     "$pkgdir/usr/share/licenses/$pkgname/COPYING.GPLv2"
   install -Dm644 "$srcdir/README.md" \

@@ -6,8 +6,9 @@
     "x265_8": "8725bcdbe1669a3210be2d336ec454cd6c1d2c1eed4909b51fe3111c17b7bbf3",
     "x265_10": "9af3342972a127d796a9079910499955c9666d5d94795247eb34f2ad03f1c926",
     "x265_12": "f9fcb72e2270e8c6788cf133f155d91a69a7911696abe08487c9dddfcafab6f1",
-    "ffmpeg_cuvid": "896013daa8df612aa39dd05f9195eefd9d22d193629634f78fc3ec02edfd003e",
-    "player": "fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688"
+    "ffmpeg_cuvid": "973f05fc318ab33bb4c3349c4868ee73ffa5069ec7ff824ea1bc7fb901068ca5",
+    "player": "fbc1e8c5715e4491e4bd7cc5d2761f595c02f1170326bcafbd0b02f1e8694688",
+    "ffplay_cuvid": "50ddc21fbb6e3e7f952c39f61dcd908c90ec9510a5884a69f9eb3dbf1fe40768"
   },
   "cases": {
     "hevc_444_8bit": {
@@ -27,8 +28,10 @@
       "vaapi_software_fallback": false,
       "player_vulkan_hardware": true,
       "player_surface": "vulkan[nv24]",
-      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
-      "hardware_decode_used_in_player": true
+      "mpv_hardware_decode": true,
+      "ffplay_cuvid_hardware_decode": null,
+      "ffplay_texture": null,
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."
     },
     "hevc_444_10bit": {
       "status": "observed",
@@ -47,8 +50,10 @@
       "vaapi_software_fallback": false,
       "player_vulkan_hardware": true,
       "player_surface": "vulkan[p410]",
-      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
-      "hardware_decode_used_in_player": true
+      "mpv_hardware_decode": true,
+      "ffplay_cuvid_hardware_decode": null,
+      "ffplay_texture": null,
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."
     },
     "hevc_422_8bit": {
       "status": "observed",
@@ -67,8 +72,10 @@
       "vaapi_software_fallback": true,
       "player_vulkan_hardware": false,
       "player_surface": "yuv422p",
-      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
-      "hardware_decode_used_in_player": false
+      "mpv_hardware_decode": false,
+      "ffplay_cuvid_hardware_decode": true,
+      "ffplay_texture": "SDL_PIXELFORMAT_IYUV",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."
     },
     "hevc_422_10bit": {
       "status": "observed",
@@ -87,8 +94,10 @@
       "vaapi_software_fallback": true,
       "player_vulkan_hardware": false,
       "player_surface": "yuv422p10",
-      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
-      "hardware_decode_used_in_player": false
+      "mpv_hardware_decode": false,
+      "ffplay_cuvid_hardware_decode": true,
+      "ffplay_texture": "SDL_PIXELFORMAT_IYUV",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."
     },
     "hevc_422_12bit": {
       "status": "observed",
@@ -107,8 +116,10 @@
       "vaapi_software_fallback": true,
       "player_vulkan_hardware": false,
       "player_surface": "yuv422p12",
-      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified.",
-      "hardware_decode_used_in_player": false
+      "mpv_hardware_decode": false,
+      "ffplay_cuvid_hardware_decode": true,
+      "ffplay_texture": "SDL_PIXELFORMAT_IYUV",
+      "limits": "Raw HEVC fixture has no timestamps; playback pacing and audio sync are not qualified."
     }
   }
 }
