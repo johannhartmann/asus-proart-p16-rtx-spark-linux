@@ -1,0 +1,59 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v hevc_cuvid -i /tmp/n1x-media-4eewi2w2/vulkan-hevc.mkv -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+Input #0, matroska,webm, from '/tmp/n1x-media-4eewi2w2/vulkan-hevc.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 473 kb/s
+  Stream #0:0: Video: hevc (Main), 1 reference frame, yuv420p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 hevc_vulkan
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xb10302192c00] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xb10302192fb0] Created video stream from input stream 0:0
+[hevc_cuvid @ 0xb10302173370] CUVID capabilities for hevc_cuvid:
+[hevc_cuvid @ 0xb10302173370] 8 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xb10302173370] 10 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+[hevc_cuvid @ 0xb10302173370] 12 bit: supported: 1, min_width: 144, max_width: 8192, min_height: 144, max_height: 8192
+Stream mapping:
+  Stream #0:0 -> #0:0 (hevc (hevc_cuvid) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xb10302192fb0] Starting thread...
+[vf#0:0 @ 0xb10302193790] Starting thread...
+[vist#0:0/hevc @ 0xb103021724b0] [dec:hevc_cuvid @ 0xb10302173040] Starting thread...
+[in#0/matroska,webm @ 0xb1030216eea0] Starting thread...
+Press [q] to stop, [?] for help
+[hevc_cuvid @ 0xb10302173370] Formats: Original: nv12 | HW: nv12 | SW: nv12
+[graph -1 input from stream 0:0 @ 0xe765d8003020] w:320 h:180 pixfmt:nv12 tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xe765d8003020] video frame properties congruent with link at pts_time: 0
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, nv12(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xb10302192c00] Starting thread...
+[in#0/matroska,webm @ 0xb1030216eea0] EOF while reading input
+[in#0/matroska,webm @ 0xb1030216eea0] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xb103021724b0] [dec:hevc_cuvid @ 0xb10302173040] Decoder thread received EOF packet
+[vist#0:0/hevc @ 0xb103021724b0] [dec:hevc_cuvid @ 0xb10302173040] Decoder returned EOF, finishing
+[vf#0:0 @ 0xb10302193790] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xb10302192fb0] [enc:wrapped_avframe @ 0xb10302193320] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xb10302192fb0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xb10302192c00] All streams finished
+[out#0/null @ 0xb10302192c00] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xb10302193790] Terminating thread with return code 0 (success)
+[vist#0:0/hevc @ 0xb103021724b0] [dec:hevc_cuvid @ 0xb10302173040] Terminating thread with return code 0 (success)
+[out#0/null @ 0xb10302192c00] Output file #0 (pipe:):
+[out#0/null @ 0xb10302192c00]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xb10302192c00]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xb10302192c00] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=13.3x elapsed=0:00:00.22
+[in#0/matroska,webm @ 0xb1030216eea0] Input file #0 (/tmp/n1x-media-4eewi2w2/vulkan-hevc.mkv):
+[in#0/matroska,webm @ 0xb1030216eea0]   Input stream #0:0 (video): 30 packets read (176618 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xb1030216eea0]   Total: 30 packets (176618 bytes) demuxed
+[AVIOContext @ 0xb10302177b80] Statistics: 177529 bytes read, 0 seeks
+
+Exiting with exit code 0

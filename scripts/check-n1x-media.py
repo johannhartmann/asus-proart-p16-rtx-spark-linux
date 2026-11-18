@@ -235,6 +235,49 @@ def camera(ffmpeg, path, pixfmt, size, rate, frames, evidence, label):
             "note": "Frame statistics are not image-quality or privacy qualification"}
 
 
+def camera_vulkan_record(ffmpeg, ffprobe, work, evidence):
+    output = work / "p16-rgb-vulkan-h264.mkv"
+    label = "camera-vulkan-h264"
+    encoded = command(
+        [ffmpeg, "-hide_banner", "-loglevel", "verbose",
+         "-init_hw_device", "vulkan=vk:0", "-filter_hw_device", "vk",
+         "-f", "v4l2", "-input_format", "mjpeg", "-video_size", "1280x720",
+         "-framerate", "30", "-i", "/dev/video0", "-frames:v", "60",
+         "-vf", "format=nv12,hwupload", "-c:v", "h264_vulkan",
+         "-y", str(output)], label, evidence, timeout=30,
+    )
+    require(encoded.returncode == 0, f"camera Vulkan encode exited {encoded.returncode}")
+    require("Device 0 selected: NVIDIA RTX Spark N1X" in encoded.stderr and
+            "VK_KHR_video_encode_h264" in encoded.stderr,
+            "N1X Vulkan Video encoder not selected")
+    probe = command(
+        [ffprobe, "-v", "error", "-select_streams", "v:0", "-count_frames",
+         "-show_entries", "stream=codec_name,width,height,avg_frame_rate,nb_read_frames",
+         "-of", "json", str(output)], f"{label}-probe", evidence,
+    )
+    require(probe.returncode == 0, "camera Vulkan recording ffprobe failed")
+    stream = json.loads(probe.stdout)["streams"][0]
+    require(stream.get("codec_name") == "h264" and
+            (stream.get("width"), stream.get("height")) == (1280, 720) and
+            stream.get("avg_frame_rate") == "30/1" and
+            stream.get("nb_read_frames") == "60", f"camera output invalid: {stream}")
+    decoded = command(
+        [ffmpeg, "-hide_banner", "-loglevel", "info", "-i", str(output),
+         "-frames:v", "60", "-vf", "signalstats,metadata=print",
+         "-f", "null", "-"], f"{label}-decode", evidence,
+    )
+    require(decoded.returncode == 0 and re.search(r"frame=\s*60\b", decoded.stderr),
+            "camera Vulkan recording failed independent decode")
+    means = [float(value) for value in
+             re.findall(r"lavfi\.signalstats\.YAVG=([0-9.]+)", decoded.stderr)]
+    require(len(means) == 60 and max(means) - min(means) > 1,
+            "camera recording did not contain 60 varying frames")
+    return {"stream": stream, "sha256": hashlib.sha256(output.read_bytes()).hexdigest(),
+            "bytes": output.stat().st_size, "mean_min": min(means),
+            "mean_max": max(means),
+            "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264"}
+
+
 def nvenc_candidate(ffmpeg, evidence):
     result = command(
         [ffmpeg, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
@@ -247,12 +290,28 @@ def nvenc_candidate(ffmpeg, evidence):
     return {"frames": 10, "hardware_evidence": "NVENC session and frames completed"}
 
 
+def cuvid_candidate(ffmpeg, codec, source, evidence, label):
+    result = command(
+        [ffmpeg, "-hide_banner", "-loglevel", "verbose",
+         "-c:v", f"{codec}_cuvid", "-i", str(source),
+         "-frames:v", "30", "-f", "null", "-"], label, evidence,
+    )
+    require(result.returncode == 0, f"{label}: CUVID exited {result.returncode}")
+    require(f"{codec}_cuvid" in result.stderr and
+            re.search(r"frame=\s*30\b", result.stderr),
+            f"{label}: decoder selection or frame count missing")
+    return {"frames": 30, "codec": codec,
+            "hardware_evidence": f"{codec}_cuvid decoder selected and 30 frames decoded"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--ffmpeg", default="ffmpeg")
     parser.add_argument("--ffprobe", default="ffprobe")
     parser.add_argument("--camera", action="store_true", help="capture P16 cameras to /dev/null")
+    parser.add_argument("--camera-vulkan-record", action="store_true",
+                        help="record 60 live P16 RGB frames through Vulkan Video into a temporary file")
     parser.add_argument("--nvenc-candidate", help="also test this isolated FFmpeg NVENC binary")
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -302,7 +361,25 @@ def main():
             record(report["results"], "p16_ir",
                    lambda: camera(args.ffmpeg, "/dev/video2", "gray", "360x360",
                                   15, 15, args.output_dir, "p16-ir"))
+        if args.camera_vulkan_record:
+            record(report["results"], "p16_rgb_vulkan_record",
+                   lambda: camera_vulkan_record(args.ffmpeg, args.ffprobe,
+                                                work, args.output_dir))
         if args.nvenc_candidate:
+            for codec in CODECS:
+                if report["results"].get(f"vulkan_{codec}", {}).get("status") == "pass":
+                    record(report["results"], f"cuvid_{codec}",
+                           lambda codec=codec: cuvid_candidate(
+                               args.nvenc_candidate, codec,
+                               work / f"vulkan-{codec}.mkv", args.output_dir,
+                               f"cuvid-{codec}"))
+            for codec in ("hevc", "av1"):
+                if report["results"].get(f"vulkan_{codec}_10bit_roundtrip", {}).get("status") == "pass":
+                    record(report["results"], f"cuvid_{codec}_10bit",
+                           lambda codec=codec: cuvid_candidate(
+                               args.nvenc_candidate, codec,
+                               work / f"vulkan-{codec}-10bit.mkv", args.output_dir,
+                               f"cuvid-{codec}-10bit"))
             record(report["results"], "nvenc_h264",
                    lambda: nvenc_candidate(args.nvenc_candidate, args.output_dir))
     path = args.output_dir / "result.json"

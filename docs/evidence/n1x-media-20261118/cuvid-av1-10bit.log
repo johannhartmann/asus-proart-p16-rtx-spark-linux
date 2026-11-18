@@ -1,0 +1,59 @@
+$ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -c:v av1_cuvid -i /tmp/n1x-media-4eewi2w2/vulkan-av1-10bit.mkv -frames:v 30 -f null -
+
+stdout:
+
+stderr:
+Input #0, matroska,webm, from '/tmp/n1x-media-4eewi2w2/vulkan-av1-10bit.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 719 kb/s
+  Stream #0:0: Video: av1 (Main), 1 reference frame, yuv420p10le(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 av1_vulkan
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xc69f7c8a2020] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xc69f7c8a00f0] Created video stream from input stream 0:0
+[av1_cuvid @ 0xc69f7c89ea70] CUVID capabilities for av1_cuvid:
+[av1_cuvid @ 0xc69f7c89ea70] 8 bit: supported: 1, min_width: 128, max_width: 8192, min_height: 128, max_height: 8192
+[av1_cuvid @ 0xc69f7c89ea70] 10 bit: supported: 1, min_width: 128, max_width: 8192, min_height: 128, max_height: 8192
+[av1_cuvid @ 0xc69f7c89ea70] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+Stream mapping:
+  Stream #0:0 -> #0:0 (av1 (av1_cuvid) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xc69f7c8a00f0] Starting thread...
+[vf#0:0 @ 0xc69f7c8a0c10] Starting thread...
+[vist#0:0/av1 @ 0xc69f7c8a1ea0] [dec:av1_cuvid @ 0xc69f7c8a38a0] Starting thread...
+[in#0/matroska,webm @ 0xc69f7c89aea0] Starting thread...
+Press [q] to stop, [?] for help
+[av1_cuvid @ 0xc69f7c89ea70] Formats: Original: p010le | HW: p010le | SW: p010le
+[graph -1 input from stream 0:0 @ 0xfcee7c003020] w:320 h:180 pixfmt:p010le tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xfcee7c003020] video frame properties congruent with link at pts_time: 0
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, p010le(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xc69f7c8a2020] Starting thread...
+[in#0/matroska,webm @ 0xc69f7c89aea0] EOF while reading input
+[in#0/matroska,webm @ 0xc69f7c89aea0] Terminating thread with return code 0 (success)
+[vist#0:0/av1 @ 0xc69f7c8a1ea0] [dec:av1_cuvid @ 0xc69f7c8a38a0] Decoder thread received EOF packet
+[vist#0:0/av1 @ 0xc69f7c8a1ea0] [dec:av1_cuvid @ 0xc69f7c8a38a0] Decoder returned EOF, finishing
+[vf#0:0 @ 0xc69f7c8a0c10] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xc69f7c8a00f0] [enc:wrapped_avframe @ 0xc69f7c8a0550] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xc69f7c8a00f0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc69f7c8a2020] All streams finished
+[out#0/null @ 0xc69f7c8a2020] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xc69f7c8a0c10] Terminating thread with return code 0 (success)
+[vist#0:0/av1 @ 0xc69f7c8a1ea0] [dec:av1_cuvid @ 0xc69f7c8a38a0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc69f7c8a2020] Output file #0 (pipe:):
+[out#0/null @ 0xc69f7c8a2020]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (12720 bytes);
+[out#0/null @ 0xc69f7c8a2020]   Total: 30 packets (12720 bytes) muxed
+[out#0/null @ 0xc69f7c8a2020] video:12KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=   30 fps=0.0 q=-0.0 Lsize=N/A time=00:00:03.00 bitrate=N/A speed=12.2x elapsed=0:00:00.24
+[in#0/matroska,webm @ 0xc69f7c89aea0] Input file #0 (/tmp/n1x-media-4eewi2w2/vulkan-av1-10bit.mkv):
+[in#0/matroska,webm @ 0xc69f7c89aea0]   Input stream #0:0 (video): 30 packets read (268928 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xc69f7c89aea0]   Total: 30 packets (268928 bytes) demuxed
+[AVIOContext @ 0xc69f7c8a3ba0] Statistics: 269723 bytes read, 0 seeks
+
+Exiting with exit code 0

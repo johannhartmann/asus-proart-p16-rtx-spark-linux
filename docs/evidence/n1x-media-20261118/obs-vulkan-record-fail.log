@@ -1,0 +1,8 @@
+OBS 32.2.2-1 isolated advanced FFmpeg recording profile: FFVEncoder=h264_vulkan, FFVEncoderId=27, FFFormat=matroska, FFExtension=mkv, FFVBitrate=2500, FFAudioMixes=0.
+WebSocket StartRecord returned success, but GetRecordStatus after 5 s: outputActive=false, outputBytes=0. StopRecord returned 501.
+09:12:43.564: v4l2-input: Start capture from /dev/video0
+09:12:43.661: v4l2-input: Resolution: 1280x720
+09:12:43.662: v4l2-input: Pixelformat: MJPG
+09:12:58.958: Failed to open video codec: Invalid argument
+09:12:58.958: ffmpeg_data_init failed
+09:12:58.959: ==== Recording Stop ================================================

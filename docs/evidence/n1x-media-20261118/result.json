@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-11-18T08:04:52.412653+00:00",
+  "captured_at": "2026-11-18T08:16:25.749839+00:00",
   "host": {
     "bios": "H7607BA.300",
     "kernel": "7.2.8-36-rtx-spark-npu",
@@ -11,6 +11,36 @@
     "Camera frame statistics do not establish image quality or face authentication"
   ],
   "results": {
+    "cuvid_av1": {
+      "codec": "av1",
+      "frames": 30,
+      "hardware_evidence": "av1_cuvid decoder selected and 30 frames decoded",
+      "status": "pass"
+    },
+    "cuvid_av1_10bit": {
+      "codec": "av1",
+      "frames": 30,
+      "hardware_evidence": "av1_cuvid decoder selected and 30 frames decoded",
+      "status": "pass"
+    },
+    "cuvid_h264": {
+      "codec": "h264",
+      "frames": 30,
+      "hardware_evidence": "h264_cuvid decoder selected and 30 frames decoded",
+      "status": "pass"
+    },
+    "cuvid_hevc": {
+      "codec": "hevc",
+      "frames": 30,
+      "hardware_evidence": "hevc_cuvid decoder selected and 30 frames decoded",
+      "status": "pass"
+    },
+    "cuvid_hevc_10bit": {
+      "codec": "hevc",
+      "frames": 30,
+      "hardware_evidence": "hevc_cuvid decoder selected and 30 frames decoded",
+      "status": "pass"
+    },
     "nvenc_h264": {
       "reason": "NVENC failed (exit 187); see nvenc-h264.log",
       "status": "fail"
@@ -27,8 +57,8 @@
       "rate": 15,
       "size": "360x360",
       "status": "pass",
-      "yavg_max": 111.316,
-      "yavg_min": 23.1779
+      "yavg_max": 116.442,
+      "yavg_min": 19.5137
     },
     "p16_rgb": {
       "device": "/dev/video0",
@@ -42,8 +72,23 @@
       "rate": 30,
       "size": "1280x720",
       "status": "pass",
-      "yavg_max": 115.137,
-      "yavg_min": 108.035
+      "yavg_max": 116.28,
+      "yavg_min": 109.803
+    },
+    "p16_rgb_vulkan_record": {
+      "bytes": 3927998,
+      "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264",
+      "mean_max": 130.129,
+      "mean_min": 108.453,
+      "sha256": "8dc2d21689273f00f320052eb325b2417523a48b569cf9868b8149e487206225",
+      "status": "pass",
+      "stream": {
+        "avg_frame_rate": "30/1",
+        "codec_name": "h264",
+        "height": 720,
+        "nb_read_frames": "60",
+        "width": 1280
+      }
     },
     "vaapi_av1_from_vulkan": {
       "codec": "av1",
@@ -72,7 +117,7 @@
     "vulkan_av1": {
       "bytes": 179253,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "b14f2b38d1c30dba91772cb8a979e13c849d30275ce0ef7db1d129a0a7e3be0c",
+      "sha256": "735cbb83913b39da69164d926b2c354ed716cd04ae9c38daa768ae8bf54cf69f",
       "status": "pass",
       "stream": {
         "codec_name": "av1",
@@ -84,7 +129,7 @@
     "vulkan_av1_10bit_roundtrip": {
       "bytes": 269723,
       "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
-      "sha256": "4b8d85dd4e19fc09d337d0d69f5c59c3546dcd8fb0e40251e900f161f4fa0184",
+      "sha256": "f231d471af69901aa0462ba87730b6f3d0c0738b4a2420ebd3d9b273eeb796e0",
       "status": "pass",
       "stream": {
         "codec_name": "av1",
@@ -103,7 +148,7 @@
     "vulkan_h264": {
       "bytes": 119643,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "578a2cc6863ae381cee4d1aa3c799dca519f6829b12c5c04574d498139853e7f",
+      "sha256": "6656c14ea986224e89336a86058ec5a071411fd5ba75d51a0b7c696653492ab7",
       "status": "pass",
       "stream": {
         "codec_name": "h264",
@@ -115,7 +160,7 @@
     "vulkan_hevc": {
       "bytes": 177529,
       "hardware_evidence": "N1X Vulkan device and codec encode extension logged",
-      "sha256": "e817d773ab798d4ba445937b63af679ecbeba60b38de164cd763fb71bf84d8f1",
+      "sha256": "3a0fbc0de3546484ddede52e0edd383f0c7fd962004801a27bca2673935928fd",
       "status": "pass",
       "stream": {
         "codec_name": "hevc",
@@ -127,7 +172,7 @@
     "vulkan_hevc_10bit_roundtrip": {
       "bytes": 169556,
       "hardware_evidence": "N1X Vulkan encode extension and NVDEC VA-API frames logged",
-      "sha256": "94b8ff20cb834d95804d4bf03c19beebd8573635fa77ac43c65b9bf2ea717cce",
+      "sha256": "dba95ca2a4c6944203de59dc40615beeb016902feadb2f08191c46ec5d5a23cc",
       "status": "pass",
       "stream": {
         "codec_name": "hevc",

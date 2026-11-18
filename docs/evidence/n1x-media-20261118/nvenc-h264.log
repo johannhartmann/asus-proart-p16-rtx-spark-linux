@@ -3,45 +3,44 @@ $ platform/video/src/ffmpeg-9.0.2/ffmpeg-n1x -hide_banner -loglevel verbose -f l
 stdout:
 
 stderr:
-[Parsed_testsrc2_0 @ 0xbd48350cb7d0] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
+[Parsed_testsrc2_0 @ 0xb91b6a4897d0] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
 Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
   Duration: N/A, start: 0.000000, bitrate: N/A
   Stream #0:0: Video: wrapped_avframe, 1 reference frame, yuv420p, 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 10 tbn
-[out#0/null @ 0xbd48350e4a60] No explicit maps, mapping streams automatically...
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] Created video stream from input stream 0:0
+[out#0/null @ 0xb91b6a4a2a60] No explicit maps, mapping streams automatically...
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] Created video stream from input stream 0:0
 Stream mapping:
   Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (h264_nvenc))
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] Starting thread...
-[vf#0:0 @ 0xbd4835100620] Starting thread...
-[vist#0:0/wrapped_avframe @ 0xbd48350e48e0] [dec:wrapped_avframe @ 0xbd4835101850] Starting thread...
-[in#0/lavfi @ 0xbd48350c8e40] Starting thread...
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] Starting thread...
+[vf#0:0 @ 0xb91b6a4be620] Starting thread...
+[vist#0:0/wrapped_avframe @ 0xb91b6a4a28e0] [dec:wrapped_avframe @ 0xb91b6a4bf850] Starting thread...
+[in#0/lavfi @ 0xb91b6a486e40] Starting thread...
 Press [q] to stop, [?] for help
-[graph -1 input from stream 0:0 @ 0xf984b0002f30] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
-[graph -1 input from stream 0:0 @ 0xf984b0002f30] video frame properties congruent with link at pts_time: 0
-[h264_nvenc @ 0xbd48350e5440] Loaded Nvenc version 13.1
-[h264_nvenc @ 0xbd48350e5440] Nvenc initialized successfully
-[h264_nvenc @ 0xbd48350e5440] 1 CUDA capable devices found
-[h264_nvenc @ 0xbd48350e5440] [ GPU #0 - < NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) > has Compute SM 12.1 ]
-[h264_nvenc @ 0xbd48350e5440] OpenEncodeSessionEx failed: incompatible client key (21): (no details)
-[h264_nvenc @ 0xbd48350e5440] No capable devices found
-[h264_nvenc @ 0xbd48350e5440] Nvenc unloaded
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] [enc:h264_nvenc @ 0xbd48350e53c0] Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height.
-[vf#0:0 @ 0xbd4835100620] Error sending frames to consumers: Generic error in an external library
-[vf#0:0 @ 0xbd4835100620] Task finished with error code: -542398533 (Generic error in an external library)
-[vf#0:0 @ 0xbd4835100620] Terminating thread with return code -542398533 (Generic error in an external library)
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] [enc:h264_nvenc @ 0xbd48350e53c0] Encoder thread received EOF
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] [enc:h264_nvenc @ 0xbd48350e53c0] Could not open encoder before EOF
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] Task finished with error code: -22 (Invalid argument)
-[in#0/lavfi @ 0xbd48350c8e40] Terminating thread with return code 0 (success)
-[vist#0:0/wrapped_avframe @ 0xbd48350e48e0] [dec:wrapped_avframe @ 0xbd4835101850] Decoder thread received EOF packet
-[vist#0:0/wrapped_avframe @ 0xbd48350e48e0] [dec:wrapped_avframe @ 0xbd4835101850] Decoder returned EOF, finishing
-[vist#0:0/wrapped_avframe @ 0xbd48350e48e0] [dec:wrapped_avframe @ 0xbd4835101850] Terminating thread with return code 0 (success)
-[vost#0:0/h264_nvenc @ 0xbd48350e4e10] Terminating thread with return code -22 (Invalid argument)
-[out#0/null @ 0xbd48350e4a60] Nothing was written into output file, because at least one of its streams received no packets.
+[graph -1 input from stream 0:0 @ 0xfcd234002f30] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xfcd234002f30] video frame properties congruent with link at pts_time: 0
+[h264_nvenc @ 0xb91b6a4a3440] Loaded Nvenc version 13.1
+[h264_nvenc @ 0xb91b6a4a3440] Nvenc initialized successfully
+[h264_nvenc @ 0xb91b6a4a3440] 1 CUDA capable devices found
+[h264_nvenc @ 0xb91b6a4a3440] [ GPU #0 - < NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) > has Compute SM 12.1 ]
+[h264_nvenc @ 0xb91b6a4a3440] OpenEncodeSessionEx failed: incompatible client key (21): (no details)
+[h264_nvenc @ 0xb91b6a4a3440] No capable devices found
+[h264_nvenc @ 0xb91b6a4a3440] Nvenc unloaded
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] [enc:h264_nvenc @ 0xb91b6a4a33c0] Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height.
+[vf#0:0 @ 0xb91b6a4be620] Error sending frames to consumers: Generic error in an external library
+[vf#0:0 @ 0xb91b6a4be620] Task finished with error code: -542398533 (Generic error in an external library)
+[vf#0:0 @ 0xb91b6a4be620] Terminating thread with return code -542398533 (Generic error in an external library)
+[in#0/lavfi @ 0xb91b6a486e40] Terminating thread with return code 0 (success)
+[vist#0:0/wrapped_avframe @ 0xb91b6a4a28e0] [dec:wrapped_avframe @ 0xb91b6a4bf850] Decoder returned EOF, finishing
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] [enc:h264_nvenc @ 0xb91b6a4a33c0] Encoder thread received EOF
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] [enc:h264_nvenc @ 0xb91b6a4a33c0] Could not open encoder before EOF
+[vist#0:0/wrapped_avframe @ 0xb91b6a4a28e0] [dec:wrapped_avframe @ 0xb91b6a4bf850] Terminating thread with return code 0 (success)
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] Task finished with error code: -22 (Invalid argument)
+[vost#0:0/h264_nvenc @ 0xb91b6a4a2e10] Terminating thread with return code -22 (Invalid argument)
+[out#0/null @ 0xb91b6a4a2a60] Nothing was written into output file, because at least one of its streams received no packets.
 frame=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.44
-[in#0/lavfi @ 0xbd48350c8e40] Input file #0 (testsrc2=size=320x180:rate=10):
-[in#0/lavfi @ 0xbd48350c8e40]   Input stream #0:0 (video): 2 packets read (848 bytes); 1 frames decoded; 0 decode errors;
-[in#0/lavfi @ 0xbd48350c8e40]   Total: 2 packets (848 bytes) demuxed
+[in#0/lavfi @ 0xb91b6a486e40] Input file #0 (testsrc2=size=320x180:rate=10):
+[in#0/lavfi @ 0xb91b6a486e40]   Input stream #0:0 (video): 4 packets read (1696 bytes); 3 frames decoded; 0 decode errors;
+[in#0/lavfi @ 0xb91b6a486e40]   Total: 4 packets (1696 bytes) demuxed
 Conversion failed!
 
 Exiting with exit code -542398533
