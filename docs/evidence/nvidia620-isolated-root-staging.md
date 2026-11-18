@@ -42,6 +42,18 @@ reads all four archive manifests and the live Pacman ownership database:
 among the new archives, with other installed packages, or with existing
 unowned files. The [audit script](../../scripts/check-nvidia620-file-collisions.py)
 is read-only. Actual extraction into the candidate snapshot remains a gate.
+A [full-payload fakeroot transaction](nvidia620-pacman-payload-transaction-20261118.json)
+now uses the simulator's `--extract-payload` mode to remove the six 615
+driver packages from a copied package database and extract all four pinned
+620 archives into a disposable partial root. All 4,281 non-directory archive
+entries were present afterward; the 13 kernel38 modules were present, and
+`pacman -Qkk` reported zero altered files for every new package. Live 615
+package versions stayed unchanged. Pacman emitted 245 expected warnings
+about old 615 files absent from the partial root; it emitted no other stderr.
+The normal database-only mode still passes. This extends the offline gate to
+real package payload extraction, but it is **not** an installation into the
+Btrfs candidate snapshot. Actual snapshot file replacement, hooks, module
+load, UKI and boot remain untested.
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never
@@ -113,6 +125,13 @@ Any failed package, hash, command-line or image check stops before EFI entry
 creation. The candidate snapshot can then be discarded without affecting
 the running root. The direct-boot entry is staged only after every offline
 gate passes.
+
+Repeat the disposable payload check with:
+
+```sh
+fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
+  --extract-payload --output NEW_JSON_PATH
+```
 
 ## Batched native qualification
 

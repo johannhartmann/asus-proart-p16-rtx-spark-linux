@@ -61,6 +61,8 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--extract-payload", action="store_true",
+                        help="also extract package files into the disposable root")
     args = parser.parse_args()
     if not os.environ.get("FAKEROOTKEY"):
         parser.error("run as: fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py ...")
@@ -82,36 +84,92 @@ def main():
                         copy_function=shutil.copy2)
         shutil.copytree("/var/lib/pacman/sync", database / "sync",
                         copy_function=shutil.copy2)
+        hookdir = candidate / "empty-hooks"
+        hookdir.mkdir()
+        (candidate / "usr/share/libalpm/hooks").mkdir(parents=True)
+        (candidate / "etc/pacman.d/hooks").mkdir(parents=True)
+        cache = candidate / "var/cache/pacman/pkg"
+        cache.mkdir(parents=True)
         base = ["/usr/bin/pacman", "--root", str(candidate), "--dbpath",
-                str(database), "--config", "/etc/pacman.conf", "--dbonly",
+                str(database), "--config", "/etc/pacman.conf",
+                "--cachedir", str(cache), "--hookdir", str(hookdir),
                 "--noscriptlet", "--noconfirm"]
+        if not args.extract_payload:
+            base.append("--dbonly")
         steps = []
         for label, operation in (("remove_615_drivers", ["-Rdd", *REMOVE]),
                                  ("install_620", ["-U", *(str(ROOT / path)
                                   for path, _ in ARCHIVES.values())])):
             result = run([*base, *operation])
+            stderr_lines = result.stderr.splitlines()
+            missing_old_files = [line for line in stderr_lines
+                                 if line.startswith("warning: could not get file information for ")]
+            unexpected_stderr = [line for line in stderr_lines
+                                 if line not in missing_old_files]
             steps.append({"name": label, "exit_code": result.returncode,
                           "stdout_tail": result.stdout[-1500:].replace(str(folder), "$TMPROOT"),
-                          "stderr_tail": result.stderr[-1000:].replace(str(folder), "$TMPROOT")})
+                          "stderr_tail": result.stderr[-1000:].replace(str(folder), "$TMPROOT"),
+                          "missing_old_payload_warning_count": len(missing_old_files),
+                          "unexpected_stderr": unexpected_stderr[:20]})
             if result.returncode:
                 break
         candidate_versions = versions(["/usr/bin/pacman", "--root", str(candidate),
                                        "--dbpath", str(database), "-Q", *LIVE_PACKAGES])
+        payload_audit = None
+        if args.extract_payload and len(steps) == 2 and all(
+                step["exit_code"] == 0 for step in steps):
+            payload_audit = {"packages": {}, "all_files_present": True}
+            for name, (relative, _) in ARCHIVES.items():
+                listed = run(["/usr/bin/bsdtar", "-tf", str(ROOT / relative)],
+                             timeout=90)
+                if listed.returncode:
+                    raise RuntimeError(f"could not list archive {relative}")
+                entries = listed.stdout.splitlines()
+                files = [entry for entry in entries
+                         if entry and not entry.startswith(".") and
+                         not entry.endswith("/")]
+                if not files:
+                    raise RuntimeError(f"empty archive manifest: {relative}")
+                missing = [entry for entry in files
+                           if not os.path.lexists(candidate / entry)]
+                payload_audit["packages"][name] = {
+                    "archive_files": len(files), "present": len(files) - len(missing),
+                    "missing": missing[:20], "missing_count": len(missing)}
+                payload_audit["all_files_present"] &= not missing
+            modules = sorted((candidate / "usr/lib/modules/7.2.8-38-rtx-spark-npu")
+                             .rglob("*.ko"))
+            payload_audit["extracted_module_count"] = len(modules)
+            payload_audit["all_files_present"] &= len(modules) == 13
+            qkk = run(["/usr/bin/pacman", "--root", str(candidate),
+                       "--dbpath", str(database), "-Qkk", *EXPECTED], timeout=120)
+            payload_audit["pacman_qkk"] = {
+                "exit_code": qkk.returncode,
+                "stdout_tail": qkk.stdout[-2000:].replace(str(folder), "$TMPROOT"),
+                "stderr_tail": qkk.stderr[-1000:].replace(str(folder), "$TMPROOT")}
+            payload_audit["all_files_present"] &= qkk.returncode == 0
     live_after = versions(["/usr/bin/pacman", "-Q", *LIVE_PACKAGES])
     passed = (len(steps) == 2 and all(step["exit_code"] == 0 for step in steps)
+              and all(not step["unexpected_stderr"] for step in steps)
               and all(candidate_versions.get(name) == version
                       for name, version in EXPECTED.items())
               and all(name not in candidate_versions for name in REMOVE
                       if name != "nvidia-open-dkms")
               and live_before == live_after
-              and live_after.get("nvidia-utils", "").startswith("615."))
+              and live_after.get("nvidia-utils", "").startswith("615.")
+              and (not args.extract_payload or
+                   (payload_audit is not None and payload_audit["all_files_present"])))
     report = {"captured_at": datetime.now(timezone.utc).isoformat(),
               "boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
-              "operation": "fakeroot pacman --dbonly transaction on copied local/sync database",
+              "operation": ("fakeroot pacman transaction with payload extraction into disposable root"
+                            if args.extract_payload else
+                            "fakeroot pacman --dbonly transaction on copied local/sync database"),
               "live_before": live_before, "live_after": live_after,
               "candidate_versions": candidate_versions, "archive_inputs": archives,
               "steps": steps, "pass": passed,
-              "limit": "Database dependency and conflict resolution only; file conflicts, hooks, modules, UKI and boot are not tested."}
+              "payload_audit": payload_audit,
+              "limit": ("Disposable partial root only; actual Btrfs snapshot installation, ALPM hooks, module load, UKI and boot are untested."
+                        if args.extract_payload else
+                        "Database dependency and conflict resolution only; file conflicts, hooks, modules, UKI and boot are not tested.")}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({"pass": passed, "candidate_versions": candidate_versions,

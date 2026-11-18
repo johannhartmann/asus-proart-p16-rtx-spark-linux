@@ -155,7 +155,12 @@ pins the Btrfs snapshot, package, candidate UKI and rollback checks needed
 before a native 620 boot. A [copied Pacman database transaction](docs/evidence/nvidia620-pacman-db-transaction-20261118.json)
 accepts the six-package 615 removal and four-package 620 installation with
 matched 620 versions, without changing the live root. File installation,
-hooks and UKI are outside that simulation. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
+hooks and UKI are outside that database-only simulation. A
+[full-payload fakeroot repeat](docs/evidence/nvidia620-pacman-payload-transaction-20261118.json)
+extracted all 4,281 candidate files into a disposable partial root, found all
+13 kernel38 modules and passed `pacman -Qkk` for the four new packages with
+zero altered files; the live 615 versions stayed unchanged. It still does
+not test the actual snapshot, hooks or UKI. A [read-only file collision audit](docs/evidence/nvidia620-file-collisions-20261118.json)
 found 4,281 candidate files with zero unexpected package or unowned-path
 overlaps. The candidate root and UKI have not yet been created.
 The [snapshot helper](scripts/stage-nvidia620-snapshot.py) passes its
