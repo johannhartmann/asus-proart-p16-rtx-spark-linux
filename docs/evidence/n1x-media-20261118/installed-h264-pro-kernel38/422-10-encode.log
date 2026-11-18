@@ -1,0 +1,70 @@
+$ /usr/bin/ffmpeg -hide_banner -loglevel verbose -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 30 -pix_fmt yuv422p10le -c:v libx264 -preset ultrafast -x264-params log-level=error -y $WORKDIR/422-10.mkv
+exit_code=0
+
+stdout:
+
+stderr:
+[Parsed_testsrc2_0 @ 0xad6692809820] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
+Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, yuv420p, 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 10 tbn
+[out#0/matroska @ 0xad6692822830] No explicit maps, mapping streams automatically...
+[vost#0:0/libx264 @ 0xad6692822be0] Created video stream from input stream 0:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+[vost#0:0/libx264 @ 0xad6692822be0] Starting thread...
+[vf#0:0 @ 0xad6692823fc0] Starting thread...
+[vist#0:0/wrapped_avframe @ 0xad66928226b0] [dec:wrapped_avframe @ 0xad6692825200] Starting thread...
+[in#0/lavfi @ 0xad6692806630] Starting thread...
+Press [q] to stop, [?] for help
+[graph -1 input from stream 0:0 @ 0xeb1514003d40] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
+[auto_scale_0 @ 0xeb1514004900] w:iw h:ih flags:'' interl:0
+[format @ 0xeb1514004290] auto-inserting filter 'auto_scale_0' between the filter 'Parsed_null_0' and the filter 'format'
+[auto_scale_0 @ 0xeb1514004900] w:320 h:180 fmt:yuv420p csp:unknown range:unknown sar:1/1 -> w:320 h:180 fmt:yuv422p10le csp:unknown range:tv sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xeb1514004900] [framesync @ 0xeb15140049c0] Selected 1/10 time base
+[auto_scale_0 @ 0xeb1514004900] [framesync @ 0xeb15140049c0] Sync level 1
+[graph -1 input from stream 0:0 @ 0xeb1514003d40] video frame properties congruent with link at pts_time: 0
+[libx264 @ 0xad66928231d0] Error parsing option 'log-level = error'.
+[libx264 @ 0xad66928231d0] using SAR=1/1
+[libx264 @ 0xad66928231d0] using cpu capabilities: ARMv8 NEON DotProd I8MM SVE SVE2
+[libx264 @ 0xad66928231d0] profile High 4:2:2, level 1.1, 4:2:2, 10-bit
+[libx264 @ 0xad66928231d0] 264 - core 165 r3222M b35605a - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=0 ref=1 deblock=0:0:0 analyse=0:0 me=dia subme=0 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=0 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=6 lookahead_threads=1 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=0 keyint=250 keyint_min=10 scenecut=0 intra_refresh=0 rc=crf mbtree=0 crf=23.0 qcomp=0.60 qpmin=0 qpmax=81 qpstep=4 ip_ratio=1.40 aq=0
+Output #0, matroska, to '$WORKDIR/422-10.mkv':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: h264, 1 reference frame (H264 / 0x34363248), yuv422p10le(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 10 fps, 1k tbn
+    Metadata:
+      encoder         : Lavc63.1.102 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[out#0/matroska @ 0xad6692822830] Starting thread...
+[vost#0:0/libx264 @ 0xad6692822be0] [enc:libx264 @ 0xad6692823150] Encoder thread received EOF
+[vf#0:0 @ 0xad6692823fc0] All consumers returned EOF
+[vost#0:0/libx264 @ 0xad6692822be0] Terminating thread with return code 0 (success)
+[out#0/matroska @ 0xad6692822830] All streams finished
+[out#0/matroska @ 0xad6692822830] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xad6692823fc0] Terminating thread with return code 0 (success)
+[vist#0:0/wrapped_avframe @ 0xad66928226b0] [dec:wrapped_avframe @ 0xad6692825200] Decoder returned EOF, finishing
+[vist#0:0/wrapped_avframe @ 0xad66928226b0] [dec:wrapped_avframe @ 0xad6692825200] Terminating thread with return code 0 (success)
+[vist#0:0/wrapped_avframe @ 0xad66928226b0] All consumers of this stream are done
+[in#0/lavfi @ 0xad6692806630] All consumers are done
+[in#0/lavfi @ 0xad6692806630] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xad6692866660] Statistics: 149906 bytes written, 0 seeks, 1 writeouts
+[out#0/matroska @ 0xad6692822830] Output file #0 ($WORKDIR/422-10.mkv):
+[out#0/matroska @ 0xad6692822830]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (149067 bytes);
+[out#0/matroska @ 0xad6692822830]   Total: 30 packets (149067 bytes) muxed
+[out#0/matroska @ 0xad6692822830] video:146KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.562834%
+frame=   30 fps=0.0 q=-1.0 Lsize=     146KiB time=00:00:03.00 bitrate= 399.7kbits/s speed=81.9x elapsed=0:00:00.03
+[libx264 @ 0xad66928231d0] frame I:1     Avg QP:32.00  size:  8525
+[libx264 @ 0xad66928231d0] frame P:29    Avg QP:30.72  size:  4826
+[libx264 @ 0xad66928231d0] mb I  I16..4: 100.0%  0.0%  0.0%
+[libx264 @ 0xad66928231d0] mb P  I16..4: 10.4%  0.0%  0.0%  P16..4: 30.6%  0.0%  0.0%  0.0%  0.0%    skip:59.0%
+[libx264 @ 0xad66928231d0] coded y,uvDC,uvAC intra: 19.0% 51.2% 41.1% inter: 16.6% 31.9% 29.6%
+[libx264 @ 0xad66928231d0] i16 v,h,dc,p: 80% 13%  5%  1%
+[libx264 @ 0xad66928231d0] i8c dc,h,v,p: 30% 18% 48%  3%
+[libx264 @ 0xad66928231d0] kb/s:395.91
+[in#0/lavfi @ 0xad6692806630] Input file #0 (testsrc2=size=320x180:rate=10):
+[in#0/lavfi @ 0xad6692806630]   Input stream #0:0 (video): 43 packets read (18232 bytes); 34 frames decoded; 0 decode errors;
+[in#0/lavfi @ 0xad6692806630]   Total: 43 packets (18232 bytes) demuxed
+
+Exiting with exit code 0

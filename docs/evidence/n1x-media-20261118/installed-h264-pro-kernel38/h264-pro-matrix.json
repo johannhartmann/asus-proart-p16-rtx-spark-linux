@@ -1,0 +1,117 @@
+{
+  "captured_at": "2026-11-18T20:03:13.447662+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "nvidia_driver": "615.78.08",
+  "ffmpeg": "/usr/bin/ffmpeg-n1x",
+  "ffmpeg_sha256": "b5d63d453fe2d776e84b0c3aaba27310113148d3dd40864508f320b244b57b7b",
+  "ffplay": "/usr/bin/ffplay-n1x",
+  "ffplay_sha256": "7cfad747713ae6c2c156c5cf57370f5694da0ab5f9c768589f4ac6b63aac59bd",
+  "cases": {
+    "422-8": {
+      "status": "pass",
+      "expected_hardware_support": true,
+      "fixture": {
+        "codec_name": "h264",
+        "profile": "High 4:2:2",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "335e80560ba9de36b5d4f221592d52bfda83957fea1aa6c7434c8635ce8b5953",
+      "software_sha256": "8354328491047bc76c800bbdeb879d0cb086cff43a524fb9296b5d3de917cb9c",
+      "cuvid_sha256": "8354328491047bc76c800bbdeb879d0cb086cff43a524fb9296b5d3de917cb9c",
+      "expected_output_bytes": 3456000,
+      "checks": {
+        "software_output_size": true,
+        "cuvid_capability_reported": true,
+        "vaapi_software_fallback_control": true,
+        "cuvid_exit": true,
+        "cuvid_output_size": true,
+        "cuvid_pixels_equal": true,
+        "cuvid_surface": true,
+        "cuvid_frames": true,
+        "ffplay_eof": true,
+        "ffplay_vulkan_surface": true
+      }
+    },
+    "422-10": {
+      "status": "pass",
+      "expected_hardware_support": true,
+      "fixture": {
+        "codec_name": "h264",
+        "profile": "High 4:2:2",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv422p10le",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "90d82fd4b0ddf508b26bb55d005db465e1bb72b170c3636f54f15a0edb4d50ea",
+      "software_sha256": "5241500cabaeaf6e6ce5403fe0517d7def6d3e1db98eea76fbb5cb023c15b89a",
+      "cuvid_sha256": "5241500cabaeaf6e6ce5403fe0517d7def6d3e1db98eea76fbb5cb023c15b89a",
+      "expected_output_bytes": 6912000,
+      "checks": {
+        "software_output_size": true,
+        "cuvid_capability_reported": true,
+        "vaapi_software_fallback_control": true,
+        "cuvid_exit": true,
+        "cuvid_output_size": true,
+        "cuvid_pixels_equal": true,
+        "cuvid_surface": true,
+        "cuvid_frames": true,
+        "ffplay_eof": true,
+        "ffplay_vulkan_surface": true
+      }
+    },
+    "444-8": {
+      "status": "pass",
+      "expected_hardware_support": false,
+      "fixture": {
+        "codec_name": "h264",
+        "profile": "High 4:4:4 Predictive",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv444p",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "7ffaa3f48576b55b21924d82f2acddc31742da2c274a55878492fbb8733f98df",
+      "software_sha256": "7f5587713f1277fed9dfd09924e5d45fd9535ca29692d1ceb2eddde1e439b095",
+      "cuvid_sha256": null,
+      "expected_output_bytes": 5184000,
+      "checks": {
+        "software_output_size": true,
+        "cuvid_capability_reported": true,
+        "vaapi_software_fallback_control": true,
+        "cuvid_rejects_profile": true,
+        "no_output_frames": true
+      }
+    },
+    "444-10": {
+      "status": "pass",
+      "expected_hardware_support": false,
+      "fixture": {
+        "codec_name": "h264",
+        "profile": "High 4:4:4 Predictive",
+        "width": 320,
+        "height": 180,
+        "pix_fmt": "yuv444p10le",
+        "nb_read_frames": "30"
+      },
+      "fixture_sha256": "5b420107f001a3ad60b856e93f4dab98ab434e445c3f9a222be2a8a2a6b862c4",
+      "software_sha256": "01f97f04175f51533271886f7b0d2c20a08447f6c8f20615abbc853e2007df58",
+      "cuvid_sha256": null,
+      "expected_output_bytes": 10368000,
+      "checks": {
+        "software_output_size": true,
+        "cuvid_capability_reported": true,
+        "vaapi_software_fallback_control": true,
+        "cuvid_rejects_profile": true,
+        "no_output_frames": true
+      }
+    }
+  },
+  "status": "pass",
+  "temporary_pixels_retained": false,
+  "limit": "H.264 4:4:4 CUVID is rejected on this 615 N1X stack; VA-API does not advertise High 4:2:2/4:4:4. No post-resume or display color measurement."
+}

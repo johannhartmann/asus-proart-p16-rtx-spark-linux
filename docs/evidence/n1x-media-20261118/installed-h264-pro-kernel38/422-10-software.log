@@ -1,0 +1,58 @@
+$ /usr/bin/ffmpeg -hide_banner -loglevel verbose -i $WORKDIR/422-10.mkv -frames:v 30 -pix_fmt yuv422p10le -f rawvideo -y $WORKDIR/422-10-sw.raw
+exit_code=0
+
+stdout:
+
+stderr:
+[h264 @ 0xc5a016366410] Reinit context to 320x192, pix_fmt: yuv422p10le
+Input #0, matroska,webm, from '$WORKDIR/422-10.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 399 kb/s
+  Stream #0:0: Video: h264 (High 4:2:2), 1 reference frame, yuv422p10le(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx264
+      DURATION        : 00:00:03.000000000
+[out#0/rawvideo @ 0xc5a016367960] No explicit maps, mapping streams automatically...
+[vost#0:0/rawvideo @ 0xc5a0163ef0f0] Created video stream from input stream 0:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> rawvideo (native))
+[vost#0:0/rawvideo @ 0xc5a0163ef0f0] Starting thread...
+[vf#0:0 @ 0xc5a0163ef890] Starting thread...
+[vist#0:0/h264 @ 0xc5a016364bd0] [dec:h264 @ 0xc5a0163e8d20] Starting thread...
+[in#0/matroska,webm @ 0xc5a016364600] Starting thread...
+Press [q] to stop, [?] for help
+[h264 @ 0xc5a0163efe50] Reinit context to 320x192, pix_fmt: yuv422p10le
+[graph -1 input from stream 0:0 @ 0xfcc18c003d40] w:320 h:180 pixfmt:yuv422p10le tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xfcc18c003d40] video frame properties congruent with link at pts_time: 0
+Output #0, rawvideo, to '$WORKDIR/422-10-sw.raw':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: rawvideo, 1 reference frame (Y3[10][10] / 0xA0A3359), yuv422p10le(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 11520 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 rawvideo
+      DURATION        : 00:00:03.000000000
+[out#0/rawvideo @ 0xc5a016367960] Starting thread...
+[in#0/matroska,webm @ 0xc5a016364600] EOF while reading input
+[in#0/matroska,webm @ 0xc5a016364600] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc5a016364bd0] [dec:h264 @ 0xc5a0163e8d20] Decoder thread received EOF packet
+[vist#0:0/h264 @ 0xc5a016364bd0] [dec:h264 @ 0xc5a0163e8d20] Decoder returned EOF, finishing
+[vf#0:0 @ 0xc5a0163ef890] All consumers returned EOF
+[vost#0:0/rawvideo @ 0xc5a0163ef0f0] [enc:rawvideo @ 0xc5a016368120] Encoder thread received EOF
+[vf#0:0 @ 0xc5a0163ef890] Terminating thread with return code 0 (success)
+[vost#0:0/rawvideo @ 0xc5a0163ef0f0] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc5a016364bd0] [dec:h264 @ 0xc5a0163e8d20] Terminating thread with return code 0 (success)
+[out#0/rawvideo @ 0xc5a016367960] All streams finished
+[out#0/rawvideo @ 0xc5a016367960] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xc5a0163ea8f0] Statistics: 6912000 bytes written, 0 seeks, 27 writeouts
+[out#0/rawvideo @ 0xc5a016367960] Output file #0 ($WORKDIR/422-10-sw.raw):
+[out#0/rawvideo @ 0xc5a016367960]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (6912000 bytes);
+[out#0/rawvideo @ 0xc5a016367960]   Total: 30 packets (6912000 bytes) muxed
+[out#0/rawvideo @ 0xc5a016367960] video:6750KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.000000%
+frame=   30 fps=0.0 q=-0.0 Lsize=    6750KiB time=00:00:03.00 bitrate=18432.0kbits/s speed=  66x elapsed=0:00:00.04
+[in#0/matroska,webm @ 0xc5a016364600] Input file #0 ($WORKDIR/422-10.mkv):
+[in#0/matroska,webm @ 0xc5a016364600]   Input stream #0:0 (video): 30 packets read (149068 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xc5a016364600]   Total: 30 packets (149068 bytes) demuxed
+[AVIOContext @ 0xc5a01636ce50] Statistics: 149906 bytes read, 0 seeks
+
+Exiting with exit code 0

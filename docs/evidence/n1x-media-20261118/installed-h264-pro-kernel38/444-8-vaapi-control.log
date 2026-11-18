@@ -1,0 +1,66 @@
+$ /usr/bin/ffmpeg -hide_banner -loglevel verbose -hwaccel vaapi -hwaccel_device /dev/dri/renderD128 -hwaccel_output_format vaapi -i $WORKDIR/444-8.mkv -frames:v 2 -f null -
+exit_code=0
+
+stdout:
+
+stderr:
+[h264 @ 0xc6b6b8676520] Reinit context to 320x192, pix_fmt: yuv444p
+[vist#0:0/h264 @ 0xc6b6b8674ce0] Selecting decoder 'h264' because of requested hwaccel method vaapi
+Input #0, matroska,webm, from '$WORKDIR/444-8.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 381 kb/s
+  Stream #0:0: Video: h264 (High 4:4:4 Predictive), 1 reference frame, yuv444p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx264
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xc6b6b8677a70] No explicit maps, mapping streams automatically...
+[vost#0:0/wrapped_avframe @ 0xc6b6b86f8c40] Created video stream from input stream 0:0
+[VAAPI @ 0xc6b6b86f9bd0] libva: VA-API version 1.24.0
+[VAAPI @ 0xc6b6b86f9bd0] libva: User environment variable requested driver 'nvidia'
+[VAAPI @ 0xc6b6b86f9bd0] libva: Trying to open /usr/lib/dri/nvidia_drv_video.so
+[VAAPI @ 0xc6b6b86f9bd0] libva: Found init function __vaDriverInit_1_0
+[VAAPI @ 0xc6b6b86f9bd0] libva: va_openDriver() returns 0
+[VAAPI @ 0xc6b6b86f9bd0] Initialised VAAPI connection: version 1.24
+[VAAPI @ 0xc6b6b86f9bd0] VAAPI driver: VA-API NVDEC driver [direct backend].
+[VAAPI @ 0xc6b6b86f9bd0] Driver not found in known nonstandard list, using standard behaviour.
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+[vost#0:0/wrapped_avframe @ 0xc6b6b86f8c40] Starting thread...
+[vf#0:0 @ 0xc6b6b86f93a0] Starting thread...
+[vist#0:0/h264 @ 0xc6b6b8674ce0] [dec:h264 @ 0xc6b6b869e110] Starting thread...
+[in#0/matroska,webm @ 0xc6b6b86746e0] Starting thread...
+Press [q] to stop, [?] for help
+[h264 @ 0xc6b6b93ba440] Reinit context to 320x192, pix_fmt: yuv444p
+[graph -1 input from stream 0:0 @ 0xfecbd80045b0] w:320 h:180 pixfmt:yuv444p tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xfecbd80045b0] video frame properties congruent with link at pts_time: 0
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, yuv444p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 200 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 wrapped_avframe
+      DURATION        : 00:00:03.000000000
+[out#0/null @ 0xc6b6b8677a70] Starting thread...
+[vf#0:0 @ 0xc6b6b86f93a0] All consumers returned EOF
+[vost#0:0/wrapped_avframe @ 0xc6b6b86f8c40] [enc:wrapped_avframe @ 0xc6b6b8678230] Encoder thread received EOF
+[vost#0:0/wrapped_avframe @ 0xc6b6b86f8c40] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc6b6b8677a70] All streams finished
+[out#0/null @ 0xc6b6b8677a70] Terminating thread with return code 0 (success)
+[vf#0:0 @ 0xc6b6b86f93a0] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc6b6b8674ce0] [dec:h264 @ 0xc6b6b869e110] Decoder returned EOF, finishing
+[vist#0:0/h264 @ 0xc6b6b8674ce0] [dec:h264 @ 0xc6b6b869e110] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xc6b6b8674ce0] All consumers of this stream are done
+[in#0/matroska,webm @ 0xc6b6b86746e0] All consumers are done
+[in#0/matroska,webm @ 0xc6b6b86746e0] Terminating thread with return code 0 (success)
+[out#0/null @ 0xc6b6b8677a70] Output file #0 (pipe:):
+[out#0/null @ 0xc6b6b8677a70]   Output stream #0:0 (video): 2 frames encoded; 2 packets muxed (848 bytes);
+[out#0/null @ 0xc6b6b8677a70]   Total: 2 packets (848 bytes) muxed
+[out#0/null @ 0xc6b6b8677a70] video:1KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=    2 fps=0.0 q=-0.0 Lsize=N/A time=00:00:00.20 bitrate=N/A speed=9.26x elapsed=0:00:00.02
+[in#0/matroska,webm @ 0xc6b6b86746e0] Input file #0 ($WORKDIR/444-8.mkv):
+[in#0/matroska,webm @ 0xc6b6b86746e0]   Input stream #0:0 (video): 30 packets read (142373 bytes); 6 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xc6b6b86746e0]   Total: 30 packets (142373 bytes) demuxed
+[AVIOContext @ 0xc6b6b867cf60] Statistics: 143212 bytes read, 0 seeks
+
+Exiting with exit code 0

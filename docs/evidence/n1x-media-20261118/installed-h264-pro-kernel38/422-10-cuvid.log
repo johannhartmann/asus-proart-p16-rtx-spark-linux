@@ -1,0 +1,68 @@
+$ /usr/bin/ffmpeg-n1x -hide_banner -loglevel verbose -c:v h264_cuvid -i $WORKDIR/422-10.mkv -frames:v 30 -pix_fmt yuv422p10le -f rawvideo -y $WORKDIR/422-10-cuvid.raw
+exit_code=0
+
+stdout:
+
+stderr:
+[h264 @ 0xab7bb2e74bf0] Reinit context to 320x192, pix_fmt: yuv422p10le
+Input #0, matroska,webm, from '$WORKDIR/422-10.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 399 kb/s
+  Stream #0:0: Video: h264 (High 4:2:2), 1 reference frame, yuv422p10le(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx264
+      DURATION        : 00:00:03.000000000
+[out#0/rawvideo @ 0xab7bb2f43f70] No explicit maps, mapping streams automatically...
+[vost#0:0/rawvideo @ 0xab7bb2f44040] Created video stream from input stream 0:0
+[h264_cuvid @ 0xab7bb2ef7d70] CUVID capabilities for h264_cuvid:
+[h264_cuvid @ 0xab7bb2ef7d70] 8 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
+[h264_cuvid @ 0xab7bb2ef7d70] 10 bit: supported: 1, min_width: 48, max_width: 8192, min_height: 64, max_height: 8192
+[h264_cuvid @ 0xab7bb2ef7d70] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (h264_cuvid) -> rawvideo (native))
+[vost#0:0/rawvideo @ 0xab7bb2f44040] Starting thread...
+[vf#0:0 @ 0xab7bb2ef7200] Starting thread...
+[vist#0:0/h264 @ 0xab7bb2e761c0] [dec:h264_cuvid @ 0xab7bb2ef7ab0] Starting thread...
+[in#0/matroska,webm @ 0xab7bb2e72b60] Starting thread...
+Press [q] to stop, [?] for help
+[h264_cuvid @ 0xab7bb2ef7d70] Formats: Original: p210le | HW: p210le | SW: p210le
+[graph -1 input from stream 0:0 @ 0xe190ec0032f0] w:320 h:180 pixfmt:p210le tb:1/1000 fr:10/1 sar:1/1 csp:unknown range:tv alpha:unspecified
+[auto_scale_0 @ 0xe190ec003e60] w:iw h:ih flags:'' interl:0
+[format @ 0xe190ec003840] auto-inserting filter 'auto_scale_0' between the filter 'Parsed_null_0' and the filter 'format'
+[auto_scale_0 @ 0xe190ec003e60] w:320 h:180 fmt:p210le csp:unknown range:tv sar:1/1 -> w:320 h:180 fmt:yuv422p10le csp:unknown range:tv sar:1/1 flags:0x00000004
+[auto_scale_0 @ 0xe190ec003e60] [framesync @ 0xe190ec003f20] Selected 1/1000 time base
+[auto_scale_0 @ 0xe190ec003e60] [framesync @ 0xe190ec003f20] Sync level 1
+[graph -1 input from stream 0:0 @ 0xe190ec0032f0] video frame properties congruent with link at pts_time: 0
+Output #0, rawvideo, to '$WORKDIR/422-10-cuvid.raw':
+  Metadata:
+    encoder         : Lavf63.1.102
+  Stream #0:0: Video: rawvideo, 1 reference frame (Y3[10][10] / 0xA0A3359), yuv422p10le(tv, progressive), 320x180 [SAR 1:1 DAR 16:9], q=2-31, 11520 kb/s, 10 fps, 10 tbn
+    Metadata:
+      encoder         : Lavc63.1.102 rawvideo
+      DURATION        : 00:00:03.000000000
+[out#0/rawvideo @ 0xab7bb2f43f70] Starting thread...
+[in#0/matroska,webm @ 0xab7bb2e72b60] EOF while reading input
+[in#0/matroska,webm @ 0xab7bb2e72b60] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xab7bb2e761c0] [dec:h264_cuvid @ 0xab7bb2ef7ab0] Decoder thread received EOF packet
+[vist#0:0/h264 @ 0xab7bb2e761c0] [dec:h264_cuvid @ 0xab7bb2ef7ab0] Decoder returned EOF, finishing
+[auto_scale_0 @ 0xe190ec003e60] [framesync @ 0xe190ec003f20] Sync level 0
+[vf#0:0 @ 0xab7bb2ef7200] All consumers returned EOF
+[vost#0:0/rawvideo @ 0xab7bb2f44040] [enc:rawvideo @ 0xab7bb2e76980] Encoder thread received EOF
+[vf#0:0 @ 0xab7bb2ef7200] Terminating thread with return code 0 (success)
+[vost#0:0/rawvideo @ 0xab7bb2f44040] Terminating thread with return code 0 (success)
+[out#0/rawvideo @ 0xab7bb2f43f70] All streams finished
+[out#0/rawvideo @ 0xab7bb2f43f70] Terminating thread with return code 0 (success)
+[vist#0:0/h264 @ 0xab7bb2e761c0] [dec:h264_cuvid @ 0xab7bb2ef7ab0] Terminating thread with return code 0 (success)
+[AVIOContext @ 0xab7bb2ef9120] Statistics: 6912000 bytes written, 0 seeks, 27 writeouts
+[out#0/rawvideo @ 0xab7bb2f43f70] Output file #0 ($WORKDIR/422-10-cuvid.raw):
+[out#0/rawvideo @ 0xab7bb2f43f70]   Output stream #0:0 (video): 30 frames encoded; 30 packets muxed (6912000 bytes);
+[out#0/rawvideo @ 0xab7bb2f43f70]   Total: 30 packets (6912000 bytes) muxed
+[out#0/rawvideo @ 0xab7bb2f43f70] video:6750KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.000000%
+frame=   30 fps=0.0 q=-0.0 Lsize=    6750KiB time=00:00:03.00 bitrate=18432.0kbits/s speed=11.7x elapsed=0:00:00.25
+[in#0/matroska,webm @ 0xab7bb2e72b60] Input file #0 ($WORKDIR/422-10.mkv):
+[in#0/matroska,webm @ 0xab7bb2e72b60]   Input stream #0:0 (video): 30 packets read (149068 bytes); 30 frames decoded; 0 decode errors;
+[in#0/matroska,webm @ 0xab7bb2e72b60]   Total: 30 packets (149068 bytes) demuxed
+[AVIOContext @ 0xab7bb2e7b4d0] Statistics: 149906 bytes read, 0 seeks
+
+Exiting with exit code 0

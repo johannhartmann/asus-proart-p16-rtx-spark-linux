@@ -1,0 +1,28 @@
+$ /usr/bin/ffmpeg-n1x -hide_banner -loglevel verbose -c:v h264_cuvid -i $WORKDIR/444-8.mkv -frames:v 30 -pix_fmt yuv444p -f rawvideo -y $WORKDIR/444-8-cuvid.raw
+exit_code=234
+
+stdout:
+
+stderr:
+[h264 @ 0xb676e0bbfbf0] Reinit context to 320x192, pix_fmt: yuv444p
+Input #0, matroska,webm, from '$WORKDIR/444-8.mkv':
+  Metadata:
+    ENCODER         : Lavf63.1.102
+  Duration: 00:00:03.00, start: 0.000000, bitrate: 381 kb/s
+  Stream #0:0: Video: h264 (High 4:4:4 Predictive), 1 reference frame, yuv444p(tv, progressive, left), 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 1k tbn
+    Metadata:
+      ENCODER         : Lavc63.1.102 libx264
+      DURATION        : 00:00:03.000000000
+[out#0/rawvideo @ 0xb676e0bed460] No explicit maps, mapping streams automatically...
+[vost#0:0/rawvideo @ 0xb676e0bed530] Created video stream from input stream 0:0
+[h264_cuvid @ 0xb676e0be7f90] CUVID capabilities for h264_cuvid:
+[h264_cuvid @ 0xb676e0be7f90] 8 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[h264_cuvid @ 0xb676e0be7f90] 10 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[h264_cuvid @ 0xb676e0be7f90] 12 bit: supported: 0, min_width: 0, max_width: 0, min_height: 0, max_height: 0
+[h264_cuvid @ 0xb676e0be7f90] Codec h264_cuvid is not supported with this chroma format.
+[vist#0:0/h264 @ 0xb676e0bc11c0] [dec:h264_cuvid @ 0xb676e0bee330] Error while opening decoder: Invalid argument
+Error opening output file $WORKDIR/444-8-cuvid.raw.
+Error opening output files: Invalid argument
+[AVIOContext @ 0xb676e0bc64d0] Statistics: 65536 bytes read, 0 seeks
+
+Exiting with exit code -22
