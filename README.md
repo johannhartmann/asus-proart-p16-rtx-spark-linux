@@ -124,7 +124,8 @@ checked by CUDA rather than a BIOS-version restriction.
 Hardware video encode/decode remains only partly qualified. Bounded H.264,
 HEVC and AV1 VA-API and CUVID/NVDEC decode, short H.264/VP9/AV1 hardware
 playback in the installed Chrome launcher, Vulkan Video encode including a live P16
-RGB camera recording, mpv playback and camera use in Chromium WebRTC and OBS
+RGB camera recording, an OBS raw-output bridge that records H.264/AAC with
+Vulkan Video, mpv playback and camera use in Chromium WebRTC and OBS
 are recorded in the [media evidence](docs/evidence/n1x-media-20261118/README.md).
 The isolated NVENC FFmpeg candidate fails to open an encoder session on the
 current driver; Vulkan Video encode is a separate API. Explicit AV1 Vulkan

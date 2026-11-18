@@ -35,9 +35,9 @@ cannot qualify that separate platform pipeline.
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
-| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder. Explicit AV1 Vulkan rate control produced corrupt 720p output despite encoder success; default options decoded correctly | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. Explicit AV1 Vulkan rate control produced corrupt 720p output despite encoder success; default options decoded correctly | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. | Electronic privacy/LED behavior and post-resume capture tested independently |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), OBS recording through x264 and through an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. | Electronic privacy/LED behavior and post-resume capture tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -106,9 +106,17 @@ without FFmpeg; the cause within the installed driver/platform remains unknown.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
-H.264 hardware encode and independently verified 60 frames. OBS's advanced
-FFmpeg output failed to open `h264_vulkan` with `Invalid argument`; its hardware
-recording gate remains open. Neither Vulkan result proves NVENC API use.
+H.264 hardware encode and independently verified 60 frames. OBS's direct
+advanced FFmpeg output failed to open `h264_vulkan` with `Invalid argument`.
+The installed [`p16-record-obs-vulkan`](platform/video/tools/README.md) bridge
+instead receives OBS's raw NUT output through a private Linux FIFO and uses
+FFmpeg's explicit Vulkan device and `hwupload` path. A real camera plus a
+generated tone recorded 208 distinct 1280×720 frames with H.264/AAC;
+independent decode passed and video/audio packet ends differed by 21 ms.
+The [bridge record](docs/evidence/n1x-media-20261118/obs-vulkan-bridge.md)
+pins the application and package result. Direct in-process OBS Vulkan
+encoding and longer or post-resume use remain open. Neither Vulkan path
+proves NVENC API use.
 GStreamer 1.28.8 exposes `vulkanh264enc` for the N1X. The installed
 `p16-record-camera-gstreamer` command connects the P16's real MJPEG camera
 through FFmpeg's MJPEG decode and NV12 conversion to GStreamer's `rawvideoparse`,
@@ -116,18 +124,16 @@ through FFmpeg's MJPEG decode and NV12 conversion to GStreamer's `rawvideoparse`
 independently decoded 60 H.264 1280×720 frames; all 60 downscaled frame hashes
 were distinct. The elementary stream was then deleted. This qualifies a
 second Linux media framework's Vulkan hardware encoder in a real recording,
-but does not change the NVENC API or OBS failure.
+but does not change the NVENC API or direct OBS encoder failure.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback, on-demand HDR10 output and P16 RGB/Vulkan recording
-commands without replacing system codecs. Version 0.1.0-6 is installed on the
+commands without replacing system codecs. Version 0.1.0-7 is installed on the
 reference P16: the installed
 mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
 installed recording command produced a 60-frame H.264 file from the live RGB
 camera. The temporary footage was deleted after independent probing. This
 qualifies those specific Linux workflows on this machine; it does not close
-NVENC, OBS hardware recording or power-management gates. Revision 0.1.0-6
-updates the packaged browser documentation after the VP9/AV1 tests; command
-payloads match the prior installed release.
+NVENC, direct in-process OBS Vulkan encoding or power-management gates.
 The [HDR output test](scripts/check-p16-hdr-output.py) then played a 10-bit
 PQ/BT.2020 HEVC stream with the installed `p16-hdr-play` command on the internal
 Samsung OLED. Mpv selected Vulkan hardware decode and an HDR10 ST2084 surface;

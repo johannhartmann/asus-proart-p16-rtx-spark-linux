@@ -40,6 +40,22 @@ existing file and removes partial output on failure. A 60-frame camera run
 was independently decoded and checked for changing frames. This is another
 standard Linux Vulkan Video API path, not NVENC or OBS integration.
 
+`p16-record-obs-vulkan OUTPUT.mkv` lets OBS record through the NVIDIA Vulkan
+Video H.264 encoder. In OBS Output settings, select Advanced → Recording →
+Custom Output (FFmpeg), output to URL, container `nut`, video encoder
+`rawvideo`, audio encoder `pcm_s16le`, and audio track 1. Use
+`${XDG_RUNTIME_DIR}/p16-obs-vulkan/feed.nut` as the URL. Start the bridge
+command first, then Start Recording in OBS; Stop Recording closes the pipe and
+finalizes the Matroska file. The helper creates the private FIFO, refuses to
+overwrite an output, accepts `--bitrate 2500k` or another positive k/M value,
+and removes the FIFO when it exits. Audio is optional when OBS has no active
+audio track. OBS sends uncompressed NV12 frames and PCM audio; FFmpeg uploads
+the video to Vulkan, encodes H.264 with `h264_vulkan`, and encodes AAC audio.
+This is a standard local FFmpeg output from OBS, with a CPU copy between the
+applications. It does not use the NVENC API. The [bounded camera and tone
+recording](../../../docs/evidence/n1x-media-20261118/obs-vulkan-bridge.md)
+independently decoded 208 changing camera frames and a 997 Hz audio tone.
+
 `p16-video-chrome [URL or Chrome options]` starts Google Chrome with the
 NVIDIA VA-API direct backend and the flags that selected `VaapiVideoDecoder`
 on this P16. It uses a dedicated profile in

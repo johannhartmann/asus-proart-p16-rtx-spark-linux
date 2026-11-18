@@ -1,0 +1,34 @@
+{
+  "recording": "/tmp/n1x-obs-vulkan-bridge/recording-installed.mkv",
+  "video": {
+    "codec": "h264",
+    "width": 1280,
+    "height": 720,
+    "encoder": "Lavc63.1.102 h264_vulkan",
+    "frames": 208,
+    "distinct_downscaled_frames": 208
+  },
+  "audio": {
+    "codec": "aac",
+    "sample_rate": "48000",
+    "channels": 2,
+    "tone_hz_estimate": 997.0,
+    "middle_rms": 0.12462
+  },
+  "packet_timing": {
+    "0": {
+      "start": 0.0,
+      "end": 6.933000000000001,
+      "packets": 208
+    },
+    "1": {
+      "start": -0.021,
+      "end": 6.912,
+      "packets": 325
+    }
+  },
+  "av_end_delta_ms": 21.0,
+  "independent_decode_exit_code": 0,
+  "pixels_or_audio_retained": false,
+  "pass": true
+}

@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Encode OBS's local NUT output with the N1X Vulkan Video H.264 encoder."""
+
+import argparse
+import fcntl
+import os
+from pathlib import Path
+import signal
+import stat
+import subprocess
+import sys
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output", type=Path, help="new Matroska recording path")
+    parser.add_argument("--bitrate", default="2500k", help="H.264 target bitrate (default: 2500k)")
+    args = parser.parse_args()
+
+    output = args.output.expanduser().absolute()
+    if output.suffix.lower() != ".mkv" or not output.parent.is_dir() or output.exists():
+        parser.error("OUTPUT must be a new .mkv file in an existing directory")
+    if not args.bitrate[:-1].isdigit() or args.bitrate[-1:].lower() not in ("k", "m"):
+        parser.error("--bitrate must use a positive integer with k or M suffix")
+    if int(args.bitrate[:-1]) < 1:
+        parser.error("--bitrate must be positive")
+
+    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
+    if runtime.stat().st_uid != os.getuid():
+        parser.error("XDG_RUNTIME_DIR is not owned by this user")
+    directory = runtime / "p16-obs-vulkan"
+    directory.mkdir(mode=0o700, exist_ok=True)
+    if directory.is_symlink() or directory.stat().st_uid != os.getuid() or directory.stat().st_mode & 0o077:
+        parser.error("OBS bridge runtime directory must be private and owned by this user")
+
+    with (directory / "bridge.lock").open("w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            parser.error("another OBS Vulkan bridge is already running")
+
+        fifo = directory / "feed.nut"
+        if fifo.exists() or fifo.is_symlink():
+            status = fifo.lstat()
+            if not stat.S_ISFIFO(status.st_mode) or status.st_uid != os.getuid():
+                parser.error(f"refusing to replace non-owned or non-FIFO path: {fifo}")
+            fifo.unlink()
+        os.mkfifo(fifo, 0o600)
+        command = ["/usr/bin/ffmpeg", "-hide_banner", "-nostdin", "-stats_period", "5",
+                   "-init_hw_device", "vulkan=vk:0", "-filter_hw_device", "vk",
+                   "-i", str(fifo), "-map", "0:v:0", "-map", "0:a:0?",
+                   "-vf", "format=nv12,hwupload", "-c:v", "h264_vulkan",
+                   "-b:v", args.bitrate, "-c:a", "aac", "-b:a", "128k",
+                   "-f", "matroska", "-n", str(output)]
+        print(f"OBS Custom Output (FFmpeg) URL: {fifo}", flush=True)
+        print("Set container to nut, video encoder to rawvideo, and audio encoder to pcm_s16le.", flush=True)
+        print("Start recording in OBS; this command exits after OBS stops.", flush=True)
+        process = None
+        try:
+            process = subprocess.Popen(command)
+            def interrupt(_signal, _frame):
+                raise KeyboardInterrupt
+            signal.signal(signal.SIGTERM, interrupt)
+            try:
+                return process.wait()
+            except KeyboardInterrupt:
+                process.send_signal(signal.SIGINT)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+                return 130
+        finally:
+            if process and process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+            fifo.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
