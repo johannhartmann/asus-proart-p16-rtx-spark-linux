@@ -103,6 +103,13 @@ An independent [CUDA/NVENC C probe](scripts/probe-nvenc-session.c) also reaches
 `NvEncodeAPICreateInstance` successfully with API 12.2 and 13.1, but
 `NvEncOpenEncodeSessionEx` returns 21 for both. This reproduces the failure
 without FFmpeg; the cause within the installed driver/platform remains unknown.
+An [EGL/OpenGL NVENC session probe](docs/evidence/n1x-media-20261118/nvenc-opengl-session.md)
+also opened a real N1X GL context and returned 21 for both API header sets.
+Thus switching the API device type does not bypass this driver failure.
+NVIDIA's aarch64 620.70.06 release lists the P16's N1X PCI ID `2E03`, but
+NVENC on that version is untested here; the currently running stack remains
+615.78.08. A separate ARM64 RTX 5050 report suggests a 615 driver regression,
+but it does not prove the N1X's cause or a 620 fix.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

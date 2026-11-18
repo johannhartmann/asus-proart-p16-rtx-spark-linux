@@ -1,0 +1,32 @@
+{
+  "source": "/home/johann/p16/p16rtx_linux/scripts/probe-nvenc-session-opengl.c",
+  "driver_and_gpu": "615.78.08, NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)",
+  "device_type": "NV_ENC_DEVICE_TYPE_OPENGL",
+  "cases": {
+    "12.2": {
+      "header_tree": "/home/johann/p16/video-build/nv12.2/nv-codec-headers-n12.2.72.0",
+      "compile_exit_code": 0,
+      "probe_exit_code": 5,
+      "gl_vendor": "NVIDIA Corporation",
+      "gl_renderer": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)/PCIe",
+      "header_api_version": "0x200000c",
+      "driver_max_api_version": "0xd1",
+      "create_instance_status": 0,
+      "open_session_status": 21,
+      "stderr": ""
+    },
+    "13.1": {
+      "header_tree": "/home/johann/p16/video-build/nv-codec-headers-n13.1.15.0",
+      "compile_exit_code": 0,
+      "probe_exit_code": 5,
+      "gl_vendor": "NVIDIA Corporation",
+      "gl_renderer": "NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU)/PCIe",
+      "header_api_version": "0x100000d",
+      "driver_max_api_version": "0xd1",
+      "create_instance_status": 0,
+      "open_session_status": 21,
+      "stderr": ""
+    }
+  },
+  "pass": false
+}
