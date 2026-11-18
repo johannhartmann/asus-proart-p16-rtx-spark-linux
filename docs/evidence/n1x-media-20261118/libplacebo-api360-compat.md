@@ -30,6 +30,15 @@ The API 360 output and earlier private API 387 output differ slightly but
 have nearly identical aggregate metrics. Neither result qualifies subjective
 image quality or steady-state GPU speed.
 
+Three additional tagged API 360 filter runs all processed 60 frames:
+[Lanczos](libplacebo-upscale-api360-package7-lanczos-20261118.json) scored
+33.79 dB / 0.96014,
+[EWA Lanczos sharp](libplacebo-upscale-api360-package7-ewa_lanczossharp-20261118.json)
+33.66 dB / 0.95934, and
+[Spline64](libplacebo-upscale-api360-package7-spline64-20261118.json)
+33.79 dB / 0.96027. None beats the CPU bicubic control on this source, so
+there is no quality-based default change from this test.
+
 The same extracted package binary passed [10-bit](hevc44410-vaapi-q416-package7-kernel38.json)
 and [12-bit](hevc44412-vaapi-q416-package7-kernel38.json) Q416 VA-API readback:
 30 `yuv444p16le` frames per case match software bytes. The

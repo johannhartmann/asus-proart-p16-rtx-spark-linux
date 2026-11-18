@@ -72,7 +72,9 @@ def main():
     parser.add_argument("--frames", type=int, default=60)
     parser.add_argument("--color-tagged", action="store_true",
                         help="tag the raw input and output as limited-range BT.709")
-    parser.add_argument("--upscaler", choices=("ewa_lanczos", "spline36", "bilinear"),
+    parser.add_argument("--upscaler", choices=("ewa_lanczos", "ewa_lanczossharp",
+                                               "lanczos", "spline36", "spline64",
+                                               "bilinear"),
                         default="ewa_lanczos")
     parser.add_argument("--minimum-libplacebo-api", type=int, default=365,
                         help="minimum API version accepted for this candidate")
