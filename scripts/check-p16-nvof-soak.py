@@ -96,7 +96,8 @@ def main():
                            record.stderr.replace("\r", "\n").splitlines()
                            if re.search(r"warning|error|drop|corrupt|invalid", line, re.I)]
         counters = re.findall(r"dup=\s*(\d+)\s+drop=\s*(\d+)", record.stderr)
-        duplicates, dropped = map(int, counters[-1]) if counters else (None, None)
+        # FFmpeg omits both counters from progress when neither has occurred.
+        duplicates, dropped = map(int, counters[-1]) if counters else (0, 0)
         encoded_cadence_pass = (args.seconds * 30 - 1 <= source_frames <= args.seconds * 31 and
                                 source_timing["gaps_over_50ms"] == 0 and
                                 source_timing["nonpositive_gaps"] == 0)
