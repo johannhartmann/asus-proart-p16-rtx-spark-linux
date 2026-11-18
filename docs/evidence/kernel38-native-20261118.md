@@ -48,3 +48,10 @@ installation. That new image requires offline verification and then one
 native boot with audio and display checks; its staging does not retroactively
 qualify this boot. No additional reboot or physical suspend occurred while
 these media tests were performed.
+
+The next boot is deferred until the rebuilt UKI's DSP command line and full
+platform payload check pass, the media package and both UVC hosts have been
+checked on this running boot, and the rollback entry remains intact. One
+native session can then cover audio route, GPU/display, camera, NVENC and an
+attended physical suspend/resume together. Results from that session must
+still be recorded separately by device and application.
