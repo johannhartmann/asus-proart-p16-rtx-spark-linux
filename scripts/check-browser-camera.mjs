@@ -8,9 +8,11 @@ import { join } from 'node:path';
 
 const output = process.argv[2];
 if (!output) {
-  console.error('Usage: node scripts/check-browser-camera.mjs RESULT.json');
+  console.error('Usage: node scripts/check-browser-camera.mjs RESULT.json [--graphical-permission] [--browser=chromium|google-chrome-stable]');
   process.exit(2);
 }
+const graphicalPermission = process.argv.includes('--graphical-permission');
+const browser = process.argv.find(arg => arg.startsWith('--browser='))?.split('=', 2)[1] ?? 'chromium';
 
 const html = `<!doctype html><video id="preview" autoplay playsinline muted></video><script>
 window.mediaResult = (async () => {
@@ -56,9 +58,11 @@ let chromium;
 try {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const pagePort = server.address().port;
-  chromium = spawn('chromium', [
-    '--headless=new', `--user-data-dir=${temp}`, '--remote-debugging-address=127.0.0.1',
-    '--remote-debugging-port=0', '--use-fake-ui-for-media-stream',
+  chromium = spawn(browser, [
+    ...(!graphicalPermission ? ['--headless=new', '--use-fake-ui-for-media-stream'] :
+      ['--ozone-platform=wayland', '--window-size=900,650']),
+    `--user-data-dir=${temp}`, '--remote-debugging-address=127.0.0.1',
+    '--remote-debugging-port=0',
     '--no-first-run', '--disable-extensions', 'about:blank',
   ], {stdio:'ignore'});
   let port;
@@ -89,10 +93,25 @@ try {
   try {
     await request('Page.navigate', {url:`http://127.0.0.1:${pagePort}/`});
     await delay(500);
-    const reply = await Promise.race([
-      request('Runtime.evaluate', {expression:'window.mediaResult',awaitPromise:true,returnByValue:true}),
-      delay(15000).then(() => { throw Error('Chromium camera test timed out'); }),
-    ]);
+    let reply;
+    let timeoutHandle;
+    try {
+      reply = await Promise.race([
+        request('Runtime.evaluate', {expression:'window.mediaResult',awaitPromise:true,returnByValue:true}),
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(Error(`${browser} camera test timed out`)),
+            graphicalPermission ? 75000 : 15000);
+        }),
+      ]);
+    } catch (error) {
+      await writeFile(output, JSON.stringify({status:'fail', browser,
+        method:graphicalPermission ? 'graphical getUserMedia permission' :
+          'headless getUserMedia', reason:String(error),
+        retained_camera_pixels:false}, null, 2) + '\n');
+      throw error;
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
     const result = reply.result?.result?.value;
     if (reply.error || reply.result?.exceptionDetails || result?.error) {
       throw Error(JSON.stringify(reply.error || reply.result?.exceptionDetails || result));
@@ -101,9 +120,13 @@ try {
       result.width === 1280 && result.height === 720 &&
       result.frameRate === 30 && result.frames === 30 &&
       result.meanMax - result.meanMin > 1;
-    const report = {status:accepted ? 'pass' : 'fail', browser:'chromium',
-      method:'getUserMedia, real V4L2 device, headless WebRTC preview',
-      camera:result, note:'Fake permission UI only; no fake media device or retained frame'};
+    const report = {status:accepted ? 'pass' : 'fail', browser,
+      method:graphicalPermission ?
+        'getUserMedia, real V4L2 device, graphical permission and preview' :
+        'getUserMedia, real V4L2 device, headless WebRTC preview',
+      camera:result, note:graphicalPermission ?
+        'Real browser permission UI; no fake media device or retained frame' :
+        'Fake permission UI only; no fake media device or retained frame'};
     await writeFile(output, JSON.stringify(report, null, 2) + '\n');
     console.log(`${report.status}: ${result.selectedLabel}, ${result.frames} frames`);
     if (!accepted) process.exitCode = 1;

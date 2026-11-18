@@ -37,7 +37,7 @@ cannot qualify that separate platform pipeline.
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit CUVID pixels match software; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API at 1280×720 with the P16 launcher, while Arch ARM Chromium 156 falls back to software | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
 | NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera now has 60-frame recordings through both FFmpeg and GStreamer's packaged Vulkan Video encoder | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. Visual quality and long-run performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC, six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass | Privacy, graphical browser permission and resume tested independently |
+| P16 USB cameras | RGB and IR live capture passes; RGB preview in mpv and Chromium WebRTC (including a graphical permission grant), six-second OBS recording, and a GTK/libportal 30-frame PipeWire portal capture pass | Privacy and resume tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -173,6 +173,12 @@ The [result](docs/evidence/n1x-media-20261118/camera-portal.json) records
 This qualifies the Linux camera portal and PipeWire capture path for a native
 GTK application. A sandboxed Flatpak consumer, permission denial/revocation,
 and a post-resume repeat remain open.
+Chromium's [graphical WebRTC camera test](docs/evidence/n1x-media-20261118/browser-camera-graphical.json)
+also passed after the user approved its real permission prompt. With a fresh
+temporary browser profile and no fake media or permission-UI flags, it selected
+`ASUS FHD webcam`, negotiated 1280×720/30, and sampled 30 varying preview
+frames without retaining pixels. That browser test is separate from the GTK
+PipeWire portal test.
 
 ## Common evidence and release gates
 

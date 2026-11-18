@@ -115,10 +115,18 @@ try {
     await request('Media.enable');
     await request('Page.navigate', {url:`http://127.0.0.1:${server.address().port}/`});
     await delay(500);
-    const reply = await Promise.race([
-      request('Runtime.evaluate', {expression:'window.playResult',awaitPromise:true,returnByValue:true}),
-      delay(18000).then(() => { throw Error('Chromium playback timed out'); }),
-    ]);
+    let timeoutHandle;
+    let reply;
+    try {
+      reply = await Promise.race([
+        request('Runtime.evaluate', {expression:'window.playResult',awaitPromise:true,returnByValue:true}),
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(() => reject(Error('Chromium playback timed out')), 18000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
     const playback = reply.result?.result?.value;
     if (reply.error || reply.result?.exceptionDetails || !playback) {
       throw Error(JSON.stringify(reply.error || reply.result?.exceptionDetails || reply));
