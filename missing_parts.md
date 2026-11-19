@@ -214,7 +214,10 @@ staged for a later qualified boot. A separate [NVIDIA 620 candidate root and
 UKI](docs/evidence/nvidia620-isolated-root-staging.md) is now fully staged
 with a direct UEFI entry outside BootOrder; the running `@` root still uses
 615.78.08. Both native audio/suspend qualification and matched 620 runtime
-remain open. The candidates were prepared without another reboot.
+remain open. The candidates were prepared without another reboot. The
+[native qualification plan](docs/evidence/nvidia620-isolated-root-staging.md)
+uses one attended 620 boot for audio, media, GPU and physical resume together;
+a separate 615 boot is conditional on a concrete comparison finding.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

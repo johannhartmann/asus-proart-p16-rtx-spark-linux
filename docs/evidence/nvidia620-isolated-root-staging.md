@@ -222,7 +222,7 @@ performed. Native 620 operation is still unqualified.
    ```
 
    This does not select a next boot. The resulting UEFI entry is available
-   for the later attended 620 qualification after the 615 boot is complete.
+   for one attended 620 qualification session.
 
 Any failed package, hash, command-line or image check stops before EFI entry
 creation. The candidate snapshot can then be discarded without affecting
@@ -238,17 +238,21 @@ fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
   --extract-payload --sysroot-mode --output ANOTHER_NEW_JSON_PATH
 ```
 
-## Batched native qualification
+## One attended native qualification session
 
 The [both-host UVC trace](n1x-media-20261118/uvc-dma-both-hosts-kernel38.md)
 passes on the current kernel38/615 boot. The audio-enabled kernel38/615 UKI
-has passed the source-image check during candidate UKI construction, but its
-native audio and physical suspend/resume still require an attended boot.
-Then use one attended kernel38/615 boot to qualify audio, GPU/display,
-camera and physical suspend/resume together. A separate attended boot of
-the fully staged `@nvidia620` candidate can compare display, module and
-firmware identities, audio, physical resume, CUDA and OpenGL NVENC session
-probes, H.264/HEVC/AV1 bitstreams with independent decode, and an installed
-application recording. Both boot candidates are prepared and checked before
-either boot. A failed candidate returns through the existing Limine/kernel36
-root-`@` path; no package repair is required on that rollback root.
+passed the source-image check during candidate UKI construction. Its DSP
+parameters are preserved in the verified 620 UKI, so a separate 615 boot is
+not a prerequisite for testing audio on 620.
+
+Use one attended boot of the fully staged `@nvidia620` candidate. In that
+session, check root and module identities, GPU/display, ADSP audio playback
+and capture, internal RGB/IR and external UVC capture, CUDA and OpenGL,
+H.264/HEVC/AV1 NVENC session probes and independently decoded output,
+an installed application recording, and physical suspend/resume followed
+by the same essential device and application checks. Collect the complete
+results before changing any image or package. A separate 615 boot is only
+justified by a concrete 620 finding that needs an A/B comparison; record that
+reason first. If the candidate fails to boot, the existing Limine/kernel36
+root-`@` path is the rollback. No package repair is required on that root.

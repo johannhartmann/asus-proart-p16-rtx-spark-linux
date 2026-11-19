@@ -63,3 +63,8 @@ checked on this running boot, and the rollback entry remains intact. One
 native session can then cover audio route, GPU/display, camera, NVENC and an
 attended physical suspend/resume together. Results from that session must
 still be recorded separately by device and application.
+
+The later [19 November staging plan](nvidia620-isolated-root-staging.md)
+supersedes this boot order: the verified 620 UKI preserves the same audio
+command-line profile, so one attended 620 boot now covers these checks.
+A separate 615 boot is reserved for a specific A/B finding.
