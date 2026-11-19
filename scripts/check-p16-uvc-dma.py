@@ -8,6 +8,7 @@ No image or video data is kept.
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -28,6 +29,11 @@ CASES = (
 URB = re.compile(r"uvcvideo\s+(\S+?):\s+Allocated \d+ URB buffers of (\d+)x(\d+) bytes each")
 LIMIT = re.compile(r"uvcvideo\s+(\S+?):\s+Limiting URB to (\d+) packets")
 WARNINGS = ("DMA-API:", "WARNING:", "BUG:", "KASAN:", "NVRM: Xid")
+RGB_PACKET_BYTES = 2940
+IR_PACKET_BYTES = 1176
+# StreamCam 1920x1080/30 MJPEG selects alternate setting 7, as measured in
+# uvc-streamcam-urb-size-current-boot.json. The 3072-byte setting is 720p.
+STREAMCAM_1080P_MJPEG_PACKET_BYTES = 6144
 
 
 def interface_for(device):
@@ -61,13 +67,109 @@ def capture(name, device, fmt, size, fps, frames, directory):
             "expected_frames": frames}
 
 
+def allocations_from_trace(uvc, max_segment):
+    allocations = []
+    for line in uvc:
+        match = URB.search(line)
+        if match:
+            interface = match.group(1)
+            packets, packet_bytes = map(int, match.groups()[1:])
+            requested = packets * packet_bytes
+            rounded = (requested + 4095) // 4096 * 4096
+            allocations.append({"usb_interface": interface,
+                                "packets": packets, "packet_bytes": packet_bytes,
+                                "requested_bytes": requested,
+                                "page_rounded_bytes": rounded,
+                                "within_dma_limit": rounded <= max_segment})
+    return allocations
+
+
+def evaluate(result):
+    max_segment = result["max_dma_segment_bytes"]
+    allocations = allocations_from_trace(result["uvc_trace_lines"], max_segment)
+    if allocations != result["allocations"]:
+        raise RuntimeError("recorded allocations differ from raw UVC trace")
+    rgb_interface = result["cases"]["rgb-720p"]["usb_interface"]
+    ir_interface = result["cases"]["ir-360p"]["usb_interface"]
+    streamcam_interface = (result["cases"]["streamcam-1080p"]["usb_interface"]
+                           if result["streamcam_included"] else None)
+    expected_allocations = Counter({rgb_interface: 2, ir_interface: 1})
+    expected_packet_bytes = {rgb_interface: RGB_PACKET_BYTES,
+                             ir_interface: IR_PACKET_BYTES}
+    if streamcam_interface:
+        expected_allocations[streamcam_interface] = 1
+        expected_packet_bytes[streamcam_interface] = STREAMCAM_1080P_MJPEG_PACKET_BYTES
+    observed_allocations = Counter(item["usb_interface"] for item in allocations)
+    limits = [(match.group(1), int(match.group(2)))
+              for line in result["uvc_trace_lines"]
+              if (match := LIMIT.search(line))]
+    expected_rgb_packets = max_segment // 4096 * 4096 // RGB_PACKET_BYTES
+    rgb_capped = limits.count((rgb_interface, expected_rgb_packets)) >= 2
+    expected_streamcam_packets = (max_segment // 4096 * 4096 //
+                                  STREAMCAM_1080P_MJPEG_PACKET_BYTES)
+    streamcam_capped = not result["streamcam_included"] or (
+        (streamcam_interface, expected_streamcam_packets) in limits)
+    interfaces_covered = all(observed_allocations[interface] >= count
+                             for interface, count in expected_allocations.items())
+    packet_sizes_match = all(
+        item["packet_bytes"] == expected_packet_bytes[item["usb_interface"]]
+        for item in allocations
+        if item["usb_interface"] in expected_packet_bytes)
+    result["interface_checks"] = {
+        "expected_allocations": dict(expected_allocations),
+        "observed_allocations": dict(observed_allocations),
+        "expected_packet_bytes": expected_packet_bytes,
+        "interfaces_covered": interfaces_covered,
+        "packet_sizes_match": packet_sizes_match,
+        "rgb_capped": rgb_capped,
+        "streamcam_capped": streamcam_capped,
+    }
+    result["pass"] = (all(item["exit_code"] == 0 and
+                          item["frames"] == item["expected_frames"]
+                          for item in result["cases"].values()) and
+                      interfaces_covered and packet_sizes_match and
+                      all(item["within_dma_limit"] for item in allocations) and
+                      rgb_capped and streamcam_capped and
+                      not result["new_kernel_warnings"])
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--max-segment", type=int, default=65536)
     parser.add_argument("--include-streamcam", action="store_true",
                         help="also capture the external Logitech host at 1080p MJPEG")
+    parser.add_argument("--recheck", type=Path,
+                        help="re-evaluate a prior raw trace without capture or root")
+    parser.add_argument("--output", type=Path,
+                        help="new receipt path for --recheck")
     args = parser.parse_args()
+    if args.recheck:
+        if args.output_dir or not args.output or args.output.exists():
+            parser.error("--recheck needs a new --output and no --output-dir")
+        raw = args.recheck.read_bytes()
+        result = json.loads(raw)
+        if result["max_dma_segment_bytes"] != args.max_segment:
+            parser.error("recheck DMA limit differs from original capture")
+        original_pass = result["pass"]
+        result = evaluate(result)
+        result["rechecked_at"] = datetime.now(timezone.utc).isoformat()
+        result["rechecked_from"] = str(args.recheck)
+        result["original_sha256"] = hashlib.sha256(raw).hexdigest()
+        result["original_pass"] = original_pass
+        result["packet_size_correction"] = {
+            "case": "streamcam-1080p", "old_expected_bytes": 3072,
+            "correct_expected_bytes": STREAMCAM_1080P_MJPEG_PACKET_BYTES,
+            "basis": "prior StreamCam 1080p MJPEG alternate-setting 7 trace"}
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(result, indent=2) + "\n")
+        print(json.dumps({"pass": result["pass"],
+                          "packet_sizes_match": result["interface_checks"]["packet_sizes_match"],
+                          "streamcam_capped": result["interface_checks"]["streamcam_capped"]}))
+        return 0 if result["pass"] else 1
+    if args.output_dir is None or args.output is not None:
+        parser.error("capture needs --output-dir and no --output")
     trace = int(Path("/sys/module/uvcvideo/parameters/trace").read_text().strip())
     if not trace & 1024:
         parser.error("enable uvcvideo trace bit 1024 before this check")
@@ -94,60 +196,11 @@ def main():
     uvc = [line for line in journal if "uvcvideo" in line and
            ("Limiting URB" in line or "Allocated " in line)]
     warnings = [line for line in journal if any(token in line for token in WARNINGS)]
-    allocations = []
-    for line in uvc:
-        match = URB.search(line)
-        if match:
-            interface = match.group(1)
-            packets, packet_bytes = map(int, match.groups()[1:])
-            requested = packets * packet_bytes
-            rounded = (requested + 4095) // 4096 * 4096
-            allocations.append({"usb_interface": interface,
-                                "packets": packets, "packet_bytes": packet_bytes,
-                                "requested_bytes": requested,
-                                "page_rounded_bytes": rounded,
-                                "within_dma_limit": rounded <= args.max_segment})
+    allocations = allocations_from_trace(uvc, args.max_segment)
     result["uvc_trace_lines"] = uvc
     result["allocations"] = allocations
     result["new_kernel_warnings"] = warnings
-    expected_rgb_packets = args.max_segment // 4096 * 4096 // 2940
-    rgb_interface = result["cases"]["rgb-720p"]["usb_interface"]
-    ir_interface = result["cases"]["ir-360p"]["usb_interface"]
-    streamcam_interface = (result["cases"]["streamcam-1080p"]["usb_interface"]
-                           if args.include_streamcam else None)
-    expected_allocations = Counter({rgb_interface: 2, ir_interface: 1})
-    expected_packet_bytes = {rgb_interface: 2940, ir_interface: 1176}
-    if streamcam_interface:
-        expected_allocations[streamcam_interface] = 1
-        expected_packet_bytes[streamcam_interface] = 3072
-    observed_allocations = Counter(item["usb_interface"] for item in allocations)
-    limits = [(match.group(1), int(match.group(2))) for line in uvc
-              if (match := LIMIT.search(line))]
-    rgb_capped = limits.count((rgb_interface, expected_rgb_packets)) >= 2
-    expected_streamcam_packets = args.max_segment // 4096 * 4096 // 3072
-    streamcam_capped = not args.include_streamcam or (
-        (streamcam_interface, expected_streamcam_packets) in limits)
-    interfaces_covered = all(observed_allocations[interface] >= count
-                             for interface, count in expected_allocations.items())
-    packet_sizes_match = all(
-        item["packet_bytes"] == expected_packet_bytes[item["usb_interface"]]
-        for item in allocations
-        if item["usb_interface"] in expected_packet_bytes)
-    result["interface_checks"] = {
-        "expected_allocations": dict(expected_allocations),
-        "observed_allocations": dict(observed_allocations),
-        "expected_packet_bytes": expected_packet_bytes,
-        "interfaces_covered": interfaces_covered,
-        "packet_sizes_match": packet_sizes_match,
-        "rgb_capped": rgb_capped,
-        "streamcam_capped": streamcam_capped,
-    }
-    result["pass"] = (all(item["exit_code"] == 0 and
-                          item["frames"] == item["expected_frames"]
-                          for item in result["cases"].values()) and
-                      interfaces_covered and packet_sizes_match and
-                      all(item["within_dma_limit"] for item in allocations) and
-                      rgb_capped and streamcam_capped and not warnings)
+    result = evaluate(result)
     (args.output_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps({"pass": result["pass"], "cases": result["cases"],
                       "allocations": allocations, "warnings": len(warnings)}))

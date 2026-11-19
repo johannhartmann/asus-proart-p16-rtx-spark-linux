@@ -63,8 +63,8 @@ USB interface from sysfs and requires separate allocation/limit evidence for
 the internal RGB, internal IR and external StreamCam interfaces. Allocation
 counts from one host cannot satisfy another host's gate.
 
-The [single-auth wrapper](../../../scripts/run-p16-uvc-dma-trace.py) is
-prepared for the remaining kernel38 both-host trace. It uses one graphical
+The [single-auth wrapper](../../../scripts/run-p16-uvc-dma-trace.py) was
+prepared for the kernel38 both-host trace. It uses one graphical
 Polkit invocation to set trace bit 1024, runs the checker as the original
 desktop user, and restores the original bit in `finally` even when a capture
 fails or times out. It refuses an existing output directory and verifies the
@@ -77,8 +77,10 @@ pkexec --disable-internal-agent /usr/bin/python3 \
   --include-streamcam
 ```
 
-That privileged trace run has not occurred yet. The wrapper does not require
-a reboot or install a module.
+The [19 November native kernel38 trace](uvc-dma-both-hosts-kernel38.md)
+subsequently passed on the internal and external hosts after correcting
+the checker's StreamCam 1080p packet-size expectation. The wrapper did not
+require a reboot or install a module.
 
 This boot also has a distinct NVIDIA UVM Lockdep warning from 17 November
 16:47:15. A physical suspend test performed now would not provide a clean

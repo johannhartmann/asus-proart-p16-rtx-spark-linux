@@ -1,0 +1,56 @@
+{
+  "captured_at": "2026-11-19T07:38:55.712372+00:00",
+  "pass": true,
+  "candidate_subvolume": "@nvidia620",
+  "candidate_id": 268,
+  "image": "/boot/EFI/Linux/p16_nvidia620_kernel38.efi",
+  "image_sha256": "6a625780543ab527f02ce40b7afb8343f9c54ac3f7dc82f1ae4f9375d62e15d2",
+  "audio_root_profile": {
+    "image": "/home/johann/p16/nvidia620-uki-stage-20261119/kernel38-nvidia620.efi",
+    "release": "7.2.8-38-rtx-spark-npu",
+    "expected_release": "7.2.8-38-rtx-spark-npu",
+    "required_dsp_tokens_present_once": true,
+    "missing_or_duplicated": [],
+    "placeholder_sof_blacklisted": true,
+    "expected_root_subvolume": "@nvidia620",
+    "observed_rootflags": [
+      "rootflags=subvol=@nvidia620"
+    ],
+    "root_subvolume_preserved": true,
+    "pass": true
+  },
+  "entry": "0004",
+  "label": "P16 Kernel38 NVIDIA 620 Candidate",
+  "loader": "\\EFI\\Linux\\p16_nvidia620_kernel38.efi",
+  "boot_before": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "boot_after": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "efi_sha256_before": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "efi_sha256_after": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/Linux/p16_nvidia620_kernel38.efi": "6a625780543ab527f02ce40b7afb8343f9c54ac3f7dc82f1ae4f9375d62e15d2",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "live_packages_unchanged": true,
+  "boot_next_set": false,
+  "reboot_executed": false,
+  "hardware_qualified": false
+}

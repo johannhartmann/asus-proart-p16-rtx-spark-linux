@@ -47,5 +47,18 @@ passed in both CUVID and VA-API modes against the installed 9.0.2-5 control
 and extracted 9.0.2-7 player. The first attempt was invalid because both
 monitors had DPMS off under Omarchy's screensaver; the test now checks DPMS
 before starting. Waking the monitors, without unlocking or changing config,
-let all four playback paths reach EOF. The package remains uninstalled;
-installed-package filter, readback and application use are the next gates.
+let all four playback paths reach EOF.
+
+After graphical installation on the same kernel38/615 boot, `ffmpeg-n1x-video
+9.0.2-7` reports 12 files and zero altered files under `pacman -Qkk`. The
+installed `/usr/bin/ffmpeg-n1x` SHA256 is the exact extracted binary hash
+`9e0a2fe0939faac9cfbc440a179d7deb5bafd3c1c781411f77092cb81f171314`;
+installed `/usr/bin/ffplay-n1x` SHA256
+`ec0ac9067baa2692340b089cf28cbaa9d70f67ca5c51b399c25a9cafef3a40ac`
+also matches the extracted player from the timed test. The
+[installed Spline36 repeat](libplacebo-upscale-installed-package7-kernel38.json)
+processes 60 distinct GPU frames against libplacebo API 360 with the same
+33.78 dB Y PSNR and 0.96023 SSIM. CPU bicubic still scores 35.68 dB and
+0.96887 on this fixture, so no quality-based default filter change follows.
+Normal export-application color tagging, human visual review, steady latency
+and post-resume use remain open.

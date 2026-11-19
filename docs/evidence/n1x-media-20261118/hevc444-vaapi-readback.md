@@ -37,17 +37,25 @@ checksum-verified sources. Its archive SHA256 is
 The extracted package binary SHA256 is
 `6a82cf0c63e8aae9918281135a7091449308346c1f834fa5f8a0a56a2292c3ea`;
 its separate [hardware readback result](hevc44412-vaapi-q416-package-kernel38.json)
-also matches all 30 software frames. The package is not installed yet.
+also matches all 30 software frames. This earlier 9.0.2-6 package was tested
+after extraction, before installation of the later 9.0.2-7 build.
 The [timed 12-bit FFplay test](hevc44412-vaapi-player-kernel38/hevc44412-vaapi-playback.json)
 qualifies application playback through VA-API and libplacebo for both the
 installed 9.0.2-5 player and the extracted 9.0.2-6 player. This does not
-exercise FFmpeg's CPU readback conversion; package installation and its
-installed readback regression are separate gates.
+exercise FFmpeg's CPU readback conversion; the installed readback regression
+is recorded separately below.
 The later [9.0.2-7 package](libplacebo-api360-compat.md) retains this Q416
 patch. Its extracted binary again matches all 30 software frames for
 [10-bit](hevc44410-vaapi-q416-package7-kernel38.json) and
-[12-bit](hevc44412-vaapi-q416-package7-kernel38.json) input. The installed
-package is still 9.0.2-5 while graphical authentication is pending.
+[12-bit](hevc44412-vaapi-q416-package7-kernel38.json) input. Version
+`ffmpeg-n1x-video 9.0.2-7` is now installed. Its executable
+`/usr/bin/ffmpeg-n1x` has SHA256
+`9e0a2fe0939faac9cfbc440a179d7deb5bafd3c1c781411f77092cb81f171314`.
+The installed [10-bit](hevc44410-vaapi-q416-installed-package7-kernel38.json)
+and [12-bit](hevc44412-vaapi-q416-installed-package7-kernel38.json) Q416
+readback checks each produced 30 `yuv444p16le` frames byte-identical to
+independent software decode. Direct 10/12-bit planar downloads still fail;
+forced 8-bit download still differs. The running system FFmpeg is unchanged.
 
 The separate [8-bit 4:4:4 VA-API readback](hevc4448-vaapi-readback-kernel38.json)
 uses the installed distribution FFmpeg, the installed x265 8-bit encoder,

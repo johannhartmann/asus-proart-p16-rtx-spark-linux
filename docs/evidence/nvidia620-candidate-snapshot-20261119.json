@@ -1,0 +1,86 @@
+{
+  "status": "pass",
+  "source_subvolume": "@",
+  "source_id": 256,
+  "candidate_subvolume": "@nvidia620",
+  "candidate_id": 268,
+  "before": {
+    "captured_at": "2026-11-19T07:31:26.483325+00:00",
+    "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+    "kernel": "7.2.8-38-rtx-spark-npu",
+    "running_nvidia_driver": "615.78.08",
+    "mount": {
+      "device": "/dev/mapper/root",
+      "uuid": "deec6ec4-3325-4489-85e2-d8f28c431604",
+      "subvolume": "@",
+      "source": "/dev/mapper/root[/@]"
+    },
+    "packages": {
+      "nvidia-utils": "615.78.08-1",
+      "nvidia-open-dkms": "615.78.08-3",
+      "n1x-nvidia-drm-fix": "615.78.08-4",
+      "linux-p16-platform-38-drivers": "7.2.8-38"
+    },
+    "boot": {
+      "BootCurrent": "BootCurrent: 0003",
+      "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+      "BootNext": null
+    },
+    "pending_pacman_auth": [],
+    "boot_filesystem": "vfat",
+    "pacman_database_locked": false,
+    "ready_to_stage": true,
+    "target_subvolume": "@nvidia620",
+    "no_reboot_or_boot_entry_change": true
+  },
+  "after": {
+    "captured_at": "2026-11-19T07:31:30.693690+00:00",
+    "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+    "kernel": "7.2.8-38-rtx-spark-npu",
+    "running_nvidia_driver": "615.78.08",
+    "mount": {
+      "device": "/dev/mapper/root",
+      "uuid": "deec6ec4-3325-4489-85e2-d8f28c431604",
+      "subvolume": "@",
+      "source": "/dev/mapper/root[/@]"
+    },
+    "packages": {
+      "nvidia-utils": "615.78.08-1",
+      "nvidia-open-dkms": "615.78.08-3",
+      "n1x-nvidia-drm-fix": "615.78.08-4",
+      "linux-p16-platform-38-drivers": "7.2.8-38"
+    },
+    "boot": {
+      "BootCurrent": "BootCurrent: 0003",
+      "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+      "BootNext": null
+    },
+    "pending_pacman_auth": [],
+    "boot_filesystem": "vfat",
+    "pacman_database_locked": false,
+    "ready_to_stage": true,
+    "target_subvolume": "@nvidia620",
+    "no_reboot_or_boot_entry_change": true
+  },
+  "efi_file_sha256_before": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "efi_file_sha256_after": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "package_transaction_executed": false,
+  "candidate_pacman_lock_removed": true,
+  "boot_entry_created": false,
+  "reboot_executed": false,
+  "next_gate": "mount @nvidia620 privately, perform the isolated 620 package transaction and build/verify its distinct UKI"
+}

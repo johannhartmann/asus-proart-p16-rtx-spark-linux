@@ -1,9 +1,10 @@
 # Isolated NVIDIA 620 root: staging and qualification boundary
 
 This is the staging procedure for the ASUS ProArt P16 H7607BA, written from
-the live kernel38/615 system on 18 November 2026. It is **not** evidence that
-620 has been installed or booted. No reboot belongs to the preparation
-phase. The machine currently uses a LUKS-backed Btrfs root subvolume `@`
+the live kernel38/615 system on 18 November 2026 and updated with the
+19 November staging results. NVIDIA 620 is installed in the isolated
+`@nvidia620` snapshot and has **not** been booted. No reboot belongs to the
+preparation phase. The machine currently uses a LUKS-backed Btrfs root subvolume `@`
 (ID 256), with separate `@home`, `@log` and `@pkg` subvolumes. `/boot` is a
 separate 2 GiB FAT EFI partition with about 801 MiB free. Limine remains the
 kernel36 default; direct UEFI `Boot0003` currently selects kernel38 only when
@@ -41,7 +42,8 @@ reads all four archive manifests and the live Pacman ownership database:
 615 packages scheduled for removal or `nvidia-utils`, and zero collisions
 among the new archives, with other installed packages, or with existing
 unowned files. The [audit script](../../scripts/check-nvidia620-file-collisions.py)
-is read-only. Actual extraction into the candidate snapshot remains a gate.
+is read-only. The later native-root stage below completed the actual
+candidate extraction gate.
 A [full-payload fakeroot transaction](nvidia620-pacman-payload-transaction-20261118.json)
 now uses the simulator's `--extract-payload` mode to remove the six 615
 driver packages from a copied package database and extract all four pinned
@@ -51,9 +53,10 @@ entries were present afterward; the 13 kernel38 modules were present, and
 package versions stayed unchanged. Pacman emitted 245 expected warnings
 about old 615 files absent from the partial root; it emitted no other stderr.
 The normal database-only mode still passes. This extends the offline gate to
-real package payload extraction, but it is **not** an installation into the
-Btrfs candidate snapshot. Actual snapshot file replacement, hooks, module
-load, UKI and boot remain untested.
+real package payload extraction. This disposable check was not itself an
+installation into the Btrfs candidate snapshot; the later native-root stage
+completed snapshot replacement and UKI build. Module load and boot remain
+untested on 620.
 A second [disposable transaction using Pacman's guest-system `--sysroot`
 option](nvidia620-pacman-sysroot-transaction-20261118.json) also passed:
 all four 620 packages have matching versions, all 4,281 archive file entries
@@ -62,7 +65,8 @@ It leaves live 615 versions unchanged and emits no Pacman stderr. The partial
 test root uses a minimal Pacman configuration with signature checking disabled;
 the separate signed-archive preflight remains the signature gate. This test
 exercises the Pacman mode intended for the eventual mounted Btrfs candidate,
-but still does not exercise that actual snapshot, its full config or its UKI.
+but did not exercise the actual snapshot, its full config or its UKI; the
+native-root staging results below now cover those separate gates.
 
 The running `@` root, its NVIDIA 615 packages, the existing kernel36/37/38
 UKIs and Limine default are the rollback path. A candidate must never
@@ -74,14 +78,14 @@ staging.
 
 ## Candidate preparation, without booting
 
-The [snapshot staging helper](../../scripts/stage-nvidia620-snapshot.py) now
+The [snapshot staging helper](../../scripts/stage-nvidia620-snapshot.py)
 performs a read-only preflight by default. It verifies that `/` is Btrfs
 subvolume `@`, the current kernel is 38 with NVIDIA 615 packages, `/boot` is
-the separate VFAT partition, and Limine is first in BootOrder. It currently
-returns `ready_to_stage: false` while the graphical media-package Pacman
-transaction is waiting; it will not take a package-database snapshot during
-that transaction. Its root-only `--stage --output NEW_MANIFEST` mode is
-prepared but has **not** been run. That mode takes an exclusive Pacman lock,
+the separate VFAT partition, and Limine is first in BootOrder. Its
+[19 November receipt](nvidia620-candidate-snapshot-20261119.json) records
+a passing root-only stage: live `@` is ID 256, candidate `@nvidia620` is
+ID 268, and EFI hashes, BootOrder, packages and boot ID were unchanged.
+That mode takes an exclusive Pacman lock,
 mounts the Btrfs top level at a private `/run` path, creates `@nvidia620`
 only if absent, checks distinct subvolume IDs and the copied package database,
 removes the **copied** Pacman lock from the candidate while retaining the live
@@ -98,13 +102,37 @@ only the candidate at a private `/run` path, and verifies that its database
 is still 615 and its `/boot` is not mounted. It refuses package-owned hooks
 before masking both candidate hook directories; the isolated `pacman
 --sysroot` removal/install runs with scriptlets disabled. It then checks
-candidate package files with `pacman -Qkk`, requires 13 kernel38 modules and
+candidate package files with `pacman -Qkk`, requires the 13 packaged kernel38 modules and
 runs `depmod -b` for the candidate. Finally it unmounts safely and compares
 the live package versions, EFI hashes, BootOrder and boot ID against the
 pre-stage state. It does not create a UKI, set a boot entry or reboot.
-The helper's read-only plan and unprivileged refusal have been checked; its
-privileged mode has **not** run, because the media-package Polkit transaction
-is still pending and the `@nvidia620` snapshot has not been created.
+The helper's read-only plan, unprivileged refusal and privileged stage have
+all been checked.
+
+The first [package-stage receipt](nvidia620-candidate-packages-20261119.json)
+records successful removal of six 615 packages and installation of all four
+620 archives in the candidate, with zero altered files. Its final gate failed
+because it counted every `*.ko` in the copied kernel tree. The
+[first read-only resumption](nvidia620-candidate-packages-resumed-20261119.json)
+still failed after narrowing the count to `updates/dkms`: the copied root
+also contains the pre-existing, unowned `cpuid.ko`. The checker now compares
+the exact 13 module names from the verified package archive, accepts only
+that additional `cpuid.ko` when byte-identical to the live file, and records
+it explicitly. The [final package receipt](nvidia620-candidate-packages-verified-20261119.json)
+passes `pacman -Qkk`, module identity and candidate `depmod` without
+reinstalling packages. All three receipts report unchanged live packages,
+EFI hashes, BootOrder and boot ID.
+
+The [candidate UKI receipt](nvidia620-candidate-uki-20261119.json) records a
+successful `mkinitcpio --nopost` build inside `@nvidia620`, the candidate
+platform verifier, four embedded 620 NVIDIA modules, the exact kernel38
+payload and the checked `@nvidia620` root/audio command line. Its SHA256 is
+`6a625780543ab527f02ce40b7afb8343f9c54ac3f7dc82f1ae4f9375d62e15d2`.
+The image was built outside EFI first. The [EFI-stage receipt](nvidia620-candidate-efi-20261119.json)
+records the same image at `EFI/Linux/p16_nvidia620_kernel38.efi` and direct
+UEFI entry `Boot0004`. `BootOrder` remains `0002,0001,2001,2002,2003`,
+`BootNext` remains absent, the live root remains `@`/615, and no reboot was
+performed. Native 620 operation is still unqualified.
 
 1. Mount the Btrfs top level (`subvolid=5`) at a private root-only directory
    and take a writable point-in-time snapshot of `@` named `@nvidia620`.
@@ -130,8 +158,10 @@ is still pending and the `@nvidia620` snapshot has not been created.
    install must leave exactly one file per module. Run `depmod` explicitly
    for kernel38 before image construction because ALPM hooks were masked.
    No host module is installed or loaded during this step.
-   After the snapshot exists and the live package transaction is complete,
-   run the prepared helper with a new receipt path:
+   On a new candidate snapshot, run the prepared helper with a new receipt
+   path. The current `@nvidia620` snapshot already contains 620; do not run
+   the install mode again on it. The recorded recovery used `--resume-from`
+   with the first failed receipt and a new output path:
 
    ```sh
    pkexec --disable-internal-agent /usr/bin/python3 \
@@ -157,10 +187,9 @@ is still pending and the `@nvidia620` snapshot has not been created.
    DSP flags, runs `mkinitcpio --nopost` inside `@nvidia620`, then checks the
    resulting 620 module payload, platform verifier and exact candidate root
    command line. It publishes the verified image and a receipt to a **new
-   directory outside EFI**. Its privileged mode has not run yet; the package
-   stage and graphical media-package authentication are still pending. After
-   those stages pass, invoke it with the actual package receipt and a new
-   output directory:
+   directory outside EFI**. Its privileged mode passed on 19 November with
+   the verified package receipt. A repeat would require a new output
+   directory:
 
    ```sh
    pkexec --disable-internal-agent /usr/bin/python3 \
@@ -182,8 +211,8 @@ is still pending and the `@nvidia620` snapshot has not been created.
    NVIDIA module hashes, then copies the exact image to a new EFI filename.
    `efibootmgr -C` creates an active entry **outside BootOrder**;
    the helper checks that Limine's order and BootNext stay unchanged and
-   records the result. This root-only mode is prepared but has not run. It
-   must run only after the prior receipts pass:
+   records the result. This root-only mode passed on 19 November. A repeat
+   must use new output and EFI paths and must follow fresh passing receipts:
 
    ```sh
    pkexec --disable-internal-agent /usr/bin/python3 \
@@ -211,7 +240,10 @@ fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
 
 ## Batched native qualification
 
-Finish the pending kernel38/615 audio-UKI and both-host UVC checks first.
+The [both-host UVC trace](n1x-media-20261118/uvc-dma-both-hosts-kernel38.md)
+passes on the current kernel38/615 boot. The audio-enabled kernel38/615 UKI
+has passed the source-image check during candidate UKI construction, but its
+native audio and physical suspend/resume still require an attended boot.
 Then use one attended kernel38/615 boot to qualify audio, GPU/display,
 camera and physical suspend/resume together. A separate attended boot of
 the fully staged `@nvidia620` candidate can compare display, module and

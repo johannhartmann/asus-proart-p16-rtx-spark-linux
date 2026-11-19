@@ -1,0 +1,47 @@
+$ /usr/bin/ffmpeg-n1x -hide_banner -loglevel verbose -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 10 -c:v hevc_nvenc -f null -
+exit_code=187
+
+stdout:
+
+stderr:
+[Parsed_testsrc2_0 @ 0xb6859d9d73d0] size:320x180 rate:10/1 duration:-1.000000 sar:1/1
+Input #0, lavfi, from 'testsrc2=size=320x180:rate=10':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, 1 reference frame, yuv420p, 320x180 [SAR 1:1 DAR 16:9], 10 fps, 10 tbr, 10 tbn
+[out#0/null @ 0xb6859d9f0660] No explicit maps, mapping streams automatically...
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] Created video stream from input stream 0:0
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> hevc (hevc_nvenc))
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] Starting thread...
+[vf#0:0 @ 0xb6859da0c220] Starting thread...
+[vist#0:0/wrapped_avframe @ 0xb6859d9f04e0] [dec:wrapped_avframe @ 0xb6859da0d450] Starting thread...
+[in#0/lavfi @ 0xb6859d9d4ae0] Starting thread...
+Press [q] to stop, [?] for help
+[graph -1 input from stream 0:0 @ 0xf2757c003200] w:320 h:180 pixfmt:yuv420p tb:1/10 fr:10/1 sar:1/1 csp:unknown range:unknown alpha:unspecified
+[graph -1 input from stream 0:0 @ 0xf2757c003200] video frame properties congruent with link at pts_time: 0
+[hevc_nvenc @ 0xb6859d9f1040] Loaded Nvenc version 13.1
+[hevc_nvenc @ 0xb6859d9f1040] Nvenc initialized successfully
+[hevc_nvenc @ 0xb6859d9f1040] 1 CUDA capable devices found
+[hevc_nvenc @ 0xb6859d9f1040] [ GPU #0 - < NVIDIA RTX Spark N1X (6144-core Blackwell RTX GPU) > has Compute SM 12.1 ]
+[hevc_nvenc @ 0xb6859d9f1040] OpenEncodeSessionEx failed: incompatible client key (21): (no details)
+[hevc_nvenc @ 0xb6859d9f1040] No capable devices found
+[hevc_nvenc @ 0xb6859d9f1040] Nvenc unloaded
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] [enc:hevc_nvenc @ 0xb6859d9f0fc0] Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height.
+[vf#0:0 @ 0xb6859da0c220] Error sending frames to consumers: Generic error in an external library
+[vf#0:0 @ 0xb6859da0c220] Task finished with error code: -542398533 (Generic error in an external library)
+[vf#0:0 @ 0xb6859da0c220] Terminating thread with return code -542398533 (Generic error in an external library)
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] [enc:hevc_nvenc @ 0xb6859d9f0fc0] Encoder thread received EOF
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] [enc:hevc_nvenc @ 0xb6859d9f0fc0] Could not open encoder before EOF
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] Task finished with error code: -22 (Invalid argument)
+[vost#0:0/hevc_nvenc @ 0xb6859d9f0a10] Terminating thread with return code -22 (Invalid argument)
+[in#0/lavfi @ 0xb6859d9d4ae0] Terminating thread with return code 0 (success)
+[vist#0:0/wrapped_avframe @ 0xb6859d9f04e0] [dec:wrapped_avframe @ 0xb6859da0d450] Decoder returned EOF, finishing
+[vist#0:0/wrapped_avframe @ 0xb6859d9f04e0] [dec:wrapped_avframe @ 0xb6859da0d450] Terminating thread with return code 0 (success)
+[out#0/null @ 0xb6859d9f0660] Nothing was written into output file, because at least one of its streams received no packets.
+frame=    0 fps=0.0 q=0.0 Lsize=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.71
+[in#0/lavfi @ 0xb6859d9d4ae0] Input file #0 (testsrc2=size=320x180:rate=10):
+[in#0/lavfi @ 0xb6859d9d4ae0]   Input stream #0:0 (video): 3 packets read (1272 bytes); 2 frames decoded; 0 decode errors;
+[in#0/lavfi @ 0xb6859d9d4ae0]   Total: 3 packets (1272 bytes) demuxed
+Conversion failed!
+
+Exiting with exit code -542398533

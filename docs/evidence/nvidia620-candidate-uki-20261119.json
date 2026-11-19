@@ -1,0 +1,104 @@
+{
+  "captured_at": "2026-11-19T07:38:07.050497+00:00",
+  "pass": true,
+  "candidate_subvolume": "@nvidia620",
+  "candidate_id": 268,
+  "package_receipt": "/home/johann/p16/p16rtx_linux/docs/evidence/nvidia620-candidate-packages-verified-20261119.json",
+  "source_uki": "/boot/EFI/Linux/omarchy_linux-p16-platform-38.efi",
+  "source_uki_sha256": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+  "checks": {
+    "candidate_packages": {
+      "nvidia-utils": "620.70.06-1",
+      "nvidia-open-dkms": "620.70.06-1",
+      "n1x-nvidia-drm-fix-620": "620.70.06-1",
+      "linux-p16-platform-38-drivers-nvidia620": "7.2.8-38"
+    },
+    "mkinitcpio_stdout_tail": "f'\n==> Using drop-in configuration file: 'nvidia.conf'\n==> Using drop-in configuration file: 'omarchy-n1x-input.conf'\n==> Using drop-in configuration file: 'omarchy_hooks.conf'\n==> Using drop-in configuration file: 'omarchy_vconsole.conf'\n==> Using drop-in configuration file: 'thunderbolt_module.conf'\n==> Using drop-in configuration file: 'zz-omarchy-n1x-boot-brightness.conf'\n==> Using drop-in configuration file: 'zz-p16-hardware-fixes.conf'\n==> Using drop-in configuration file: 'zz-p16-input.conf'\n==> Using drop-in configuration file: 'zz-p16-keyboard.conf'\n==> Starting build: '7.2.8-38-rtx-spark-npu'\n  -> Running build hook: [base]\n  -> Running build hook: [udev]\n  -> Running build hook: [plymouth]\n  -> Running build hook: [omarchy-n1x-boot-brightness]\n  -> Running build hook: [keyboard]\n  -> Running build hook: [autodetect]\n  -> Running build hook: [microcode]\n  -> Running build hook: [modconf]\n  -> Running build hook: [keymap]\n  -> Running build hook: [consolefont]\n  -> Running build hook: [block]\n  -> Running build hook: [encrypt]\n  -> Running build hook: [filesystems]\n  -> Running build hook: [fsck]\n  -> Running build hook: [btrfs-overlayfs]\n  -> Running build hook: [p16-acpi]\n==> Generating module dependencies\n==> Creating gzip-compressed initcpio image\n  -> Early uncompressed CPIO image generation successful\n==> Initcpio image generation successful\n==> Creating unified kernel image: '/run/p16-nvidia620-uki/candidate.efi'\n==> Unified kernel image generation successful\n",
+    "platform_verifier": "{\"modules_checked\": 8504, \"modules_with_btf\": 8504, \"kernel_btf_sha256\": \"91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768\"}\n{\"modules_checked\": 430, \"modules_with_btf\": 430, \"kernel_btf_sha256\": \"91aeed91e77746e07706770b1d0810f290f447cab58dcbcc86e5304393dd1768\"}\nACPI initramfs profile valid: legacy\nP16 kernel, DKMS dependencies and UKI payload valid: 7.2.8-38-rtx-spark-npu",
+    "dsp_root_cmdline": {
+      "image": "/run/p16-nvidia620-uki-6hxa2tbz/shared/candidate.efi",
+      "release": "7.2.8-38-rtx-spark-npu",
+      "expected_release": "7.2.8-38-rtx-spark-npu",
+      "required_dsp_tokens_present_once": true,
+      "missing_or_duplicated": [],
+      "placeholder_sof_blacklisted": true,
+      "expected_root_subvolume": "@nvidia620",
+      "observed_rootflags": [
+        "rootflags=subvol=@nvidia620"
+      ],
+      "root_subvolume_preserved": true,
+      "pass": true
+    },
+    "embedded_nvidia": {
+      "nvidia": {
+        "version": "620.70.06",
+        "vermagic": "7.2.8-38-rtx-spark-npu",
+        "embedded_sha256": "7ef30e54dd06d0cc6c2cfd7d4ea7e0cf1de4cb30ab723b9a9758823a91884438",
+        "installed_sha256": "7ef30e54dd06d0cc6c2cfd7d4ea7e0cf1de4cb30ab723b9a9758823a91884438"
+      },
+      "nvidia-modeset": {
+        "version": "620.70.06",
+        "vermagic": "7.2.8-38-rtx-spark-npu",
+        "embedded_sha256": "c3dd55bbfbef1c2d9ec36ff5747ed16e062a799f2d91d00cd4ed09969106f54d",
+        "installed_sha256": "c3dd55bbfbef1c2d9ec36ff5747ed16e062a799f2d91d00cd4ed09969106f54d"
+      },
+      "nvidia-uvm": {
+        "version": "620.70.06",
+        "vermagic": "7.2.8-38-rtx-spark-npu",
+        "embedded_sha256": "695df7647ddc585cf5f69337545325f31bc4284a164d144f74bc8b9c3300d4b0",
+        "installed_sha256": "695df7647ddc585cf5f69337545325f31bc4284a164d144f74bc8b9c3300d4b0"
+      },
+      "nvidia-drm": {
+        "version": "620.70.06",
+        "vermagic": "7.2.8-38-rtx-spark-npu",
+        "embedded_sha256": "874d64c40dfe22b78ee671b881580754fd022e8b8bf96a2fb77798aae86fbac9",
+        "installed_sha256": "874d64c40dfe22b78ee671b881580754fd022e8b8bf96a2fb77798aae86fbac9"
+      }
+    },
+    "image_bytes": 255611904,
+    "image_sha256": "6a625780543ab527f02ce40b7afb8343f9c54ac3f7dc82f1ae4f9375d62e15d2",
+    "efi_free_bytes": 839897088
+  },
+  "efi_sha256_before": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "efi_sha256_after": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "boot_before": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "boot_after": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "live_packages_before": {
+    "nvidia-utils": "615.78.08-1",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "linux-p16-platform-38-drivers": "7.2.8-38"
+  },
+  "live_packages_after": {
+    "nvidia-utils": "615.78.08-1",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "linux-p16-platform-38-drivers": "7.2.8-38"
+  },
+  "boot_files_written": false,
+  "boot_entry_created": false,
+  "reboot_executed": false,
+  "hardware_qualified": false
+}

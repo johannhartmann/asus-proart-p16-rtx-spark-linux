@@ -137,7 +137,11 @@ regression](camera-av1-package12-short-kernel38.json) encoded 61 packets with
 strictly increasing PTS, all decoded by libdav1d and libaom. The 0.1.0-11
 30-second AV1 run above remains the longer test of the unchanged AV1 options;
 the [new H.264 30-second gate](camera-h264-timing.md) qualifies the added
-H.264 behavior. Candidate 0.1.0-12 is not installed yet.
+H.264 behavior. Version 0.1.0-12 was subsequently installed. Its
+[installed-path AV1 gate](camera-av1-installed-package12-kernel38.json)
+passes 905/905 distinct camera frames through both libdav1d and libaom,
+with monotonic packet and decoded timestamps. Post-resume and subjective
+picture-quality gates remain open.
 
 Repeat the timing gate with a new report path:
 

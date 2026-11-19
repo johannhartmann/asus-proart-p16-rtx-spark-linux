@@ -1,0 +1,191 @@
+{
+  "captured_at": "2026-11-19T07:25:31.867700+00:00",
+  "boot_id": "806fab11-2c93-426d-805b-8a82426047b8",
+  "kernel": "7.2.8-38-rtx-spark-npu",
+  "trace_during": 1024,
+  "max_dma_segment_bytes": 65536,
+  "camera_pixels_retained": false,
+  "streamcam_included": true,
+  "cases": {
+    "rgb-720p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "mjpeg",
+        "-framerate",
+        "30",
+        "-video_size",
+        "1280x720",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+        "-frames:v",
+        "60",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "usb_interface": "7-1:1.0",
+      "frames": 60,
+      "expected_frames": 60
+    },
+    "rgb-1080p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "mjpeg",
+        "-framerate",
+        "30",
+        "-video_size",
+        "1920x1080",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.0-video-index0",
+        "-frames:v",
+        "60",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "usb_interface": "7-1:1.0",
+      "frames": 60,
+      "expected_frames": 60
+    },
+    "ir-360p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "gray",
+        "-framerate",
+        "15",
+        "-video_size",
+        "360x360",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8001:00-usb-0:1:1.2-video-index0",
+        "-frames:v",
+        "30",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "usb_interface": "7-1:1.2",
+      "frames": 30,
+      "expected_frames": 30
+    },
+    "streamcam-1080p": {
+      "command": [
+        "ffmpeg",
+        "-hide_banner",
+        "-nostdin",
+        "-f",
+        "v4l2",
+        "-input_format",
+        "mjpeg",
+        "-framerate",
+        "30",
+        "-video_size",
+        "1920x1080",
+        "-i",
+        "/dev/v4l/by-path/platform-NVDA8000:00-usb-0:1.1:1.0-video-index0",
+        "-frames:v",
+        "60",
+        "-f",
+        "null",
+        "-"
+      ],
+      "exit_code": 0,
+      "usb_interface": "2-1.1:1.0",
+      "frames": 60,
+      "expected_frames": 60
+    }
+  },
+  "uvc_trace_lines": [
+    "2026-11-19T08:25:32+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-19T08:25:32+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-19T08:25:34+01:00 p16 kernel: uvcvideo 7-1:1.0: Limiting URB to 22 packets (DMA max 65536 bytes)",
+    "2026-11-19T08:25:34+01:00 p16 kernel: uvcvideo 7-1:1.0: Allocated 5 URB buffers of 22x2940 bytes each",
+    "2026-11-19T08:25:36+01:00 p16 kernel: uvcvideo 7-1:1.2: Allocated 5 URB buffers of 32x1176 bytes each",
+    "2026-11-19T08:25:39+01:00 p16 kernel: uvcvideo 2-1.1:1.0: Limiting URB to 10 packets (DMA max 65536 bytes)",
+    "2026-11-19T08:25:39+01:00 p16 kernel: uvcvideo 2-1.1:1.0: Allocated 5 URB buffers of 10x6144 bytes each"
+  ],
+  "allocations": [
+    {
+      "usb_interface": "7-1:1.0",
+      "packets": 22,
+      "packet_bytes": 2940,
+      "requested_bytes": 64680,
+      "page_rounded_bytes": 65536,
+      "within_dma_limit": true
+    },
+    {
+      "usb_interface": "7-1:1.0",
+      "packets": 22,
+      "packet_bytes": 2940,
+      "requested_bytes": 64680,
+      "page_rounded_bytes": 65536,
+      "within_dma_limit": true
+    },
+    {
+      "usb_interface": "7-1:1.2",
+      "packets": 32,
+      "packet_bytes": 1176,
+      "requested_bytes": 37632,
+      "page_rounded_bytes": 40960,
+      "within_dma_limit": true
+    },
+    {
+      "usb_interface": "2-1.1:1.0",
+      "packets": 10,
+      "packet_bytes": 6144,
+      "requested_bytes": 61440,
+      "page_rounded_bytes": 61440,
+      "within_dma_limit": true
+    }
+  ],
+  "new_kernel_warnings": [],
+  "interface_checks": {
+    "expected_allocations": {
+      "7-1:1.0": 2,
+      "7-1:1.2": 1,
+      "2-1.1:1.0": 1
+    },
+    "observed_allocations": {
+      "7-1:1.0": 2,
+      "7-1:1.2": 1,
+      "2-1.1:1.0": 1
+    },
+    "expected_packet_bytes": {
+      "7-1:1.0": 2940,
+      "7-1:1.2": 1176,
+      "2-1.1:1.0": 6144
+    },
+    "interfaces_covered": true,
+    "packet_sizes_match": true,
+    "rgb_capped": true,
+    "streamcam_capped": true
+  },
+  "pass": true,
+  "rechecked_at": "2026-11-19T07:27:55.307293+00:00",
+  "rechecked_from": "docs/evidence/n1x-media-20261118/uvc-dma-both-hosts-kernel38-installed/result.json",
+  "original_sha256": "096e41d51d544b23943fb07be9ba2fadb667bb2f1c5d179b0089e93a28908a8b",
+  "original_pass": false,
+  "packet_size_correction": {
+    "case": "streamcam-1080p",
+    "old_expected_bytes": 3072,
+    "correct_expected_bytes": 6144,
+    "basis": "prior StreamCam 1080p MJPEG alternate-setting 7 trace"
+  }
+}

@@ -128,13 +128,31 @@ def run_preflight(folder):
             "efi_free_bytes": result["efi_free_bytes"]}
 
 
-def stage(state, output):
+def stage(state, output, resume_from=None):
     if os.geteuid() != 0:
         raise RuntimeError("--stage requires root through graphical Polkit")
     if not state["ready_for_root_stage"]:
         raise RuntimeError("live/auth/archive preflight is not ready")
     if output.exists():
         raise RuntimeError("choose a new output receipt")
+    prior = None
+    if resume_from is not None:
+        raw = resume_from.read_bytes()
+        prior = json.loads(raw)
+        expected_steps = ("remove_615_drivers", "install_620", "verify_620_files")
+        if prior.get("pass") is not False or \
+                prior.get("failure") != "candidate does not have 13 kernel38 modules" or \
+                prior.get("candidate_subvolume") != TARGET or \
+                [(item.get("name"), item.get("exit_code"))
+                 for item in prior.get("steps", [])] != [(name, 0) for name in expected_steps] or \
+                prior.get("live_packages_before") != state["live"]["packages"] or \
+                prior.get("live_packages_after") != state["live"]["packages"] or \
+                prior.get("boot_before") != state["live"]["boot"] or \
+                prior.get("boot_after") != state["live"]["boot"] or \
+                prior.get("efi_sha256_before") != prior.get("efi_sha256_after") or \
+                prior.get("reboot_executed") is not False:
+            raise RuntimeError("prior receipt is not the exact successful transaction with module-count check failure")
+        prior_sha256 = hashlib.sha256(raw).hexdigest()
     before_boot = state["live"]["boot"]
     before_packages = state["live"]["packages"]
     live_changed_names = tuple(dict.fromkeys((*SIM.REMOVE, "nvidia-utils")))
@@ -144,6 +162,8 @@ def stage(state, output):
     before_efi = SNAPSHOT.boot_hashes()
     if not before_efi:
         raise RuntimeError("no readable EFI images")
+    if prior and before_efi != prior["efi_sha256_after"]:
+        raise RuntimeError("EFI rollback files changed after prior transaction")
     inputs = archives()
     if any(item["sha256"] != item["expected"] for item in inputs.values()):
         raise RuntimeError("620 package archive changed after plan")
@@ -172,7 +192,7 @@ def stage(state, output):
     lock_inode = os.fstat(lock_fd).st_ino
     os.write(lock_fd, (str(os.getpid()) + "\n").encode())
     mounted = []
-    steps = []
+    steps = list(prior["steps"]) if prior else []
     candidate_id = None
     failure = None
     try:
@@ -184,33 +204,43 @@ def stage(state, output):
         candidate_id = snapshot_id(candidate)
         if candidate_id == 256 or (candidate / "var/lib/pacman/db.lck").exists():
             raise RuntimeError("candidate subvolume ID or Pacman lock is invalid")
+        if prior and candidate_id != prior["candidate_id"]:
+            raise RuntimeError("candidate subvolume differs from prior transaction")
         if run(["/usr/bin/findmnt", "-M", str(candidate / "boot")],
                check=False).returncode == 0:
             raise RuntimeError("candidate /boot must remain unmounted")
         initial = versions(candidate, live_changed_names)
-        if initial != live_changed:
-            raise RuntimeError("candidate 615 package state differs from live root")
-        if any(name in initial for name in ("n1x-nvidia-drm-fix-620",
-                                             "linux-p16-platform-38-drivers-nvidia620")):
-            raise RuntimeError("candidate already contains NVIDIA 620 packages")
-        assert_no_package_hook_paths(candidate, inputs)
-        for relative in ("usr/share/libalpm/hooks", "etc/pacman.d/hooks"):
-            target = candidate / relative
-            if not target.is_dir():
-                raise RuntimeError(f"candidate hook directory missing: {relative}")
-            run(["/usr/bin/mount", "--bind", str(empty_hooks), str(target)])
-            mounted.append(target)
-        base = ("--noscriptlet", "--noconfirm")
-        for label, args in (
-                ("remove_615_drivers", (*base, "-Rdd", *SIM.REMOVE)),
-                ("install_620", (*base, "-U", *(str(item["path"])
-                                         for item in inputs.values())))):
-            result = pacman(candidate, *args, check=False)
-            steps.append({"name": label, "exit_code": result.returncode,
-                          "stdout_tail": result.stdout[-1800:].replace(str(folder), "$STAGE").replace(str(ROOT), "$REPO"),
-                          "stderr_tail": result.stderr[-1200:].replace(str(folder), "$STAGE").replace(str(ROOT), "$REPO")})
-            if result.returncode:
-                raise RuntimeError(f"candidate Pacman {label} failed")
+        if prior:
+            expected_installed = {name: SIM.EXPECTED[name]
+                                  for name in live_changed_names if name in SIM.EXPECTED}
+            if initial != expected_installed or versions(candidate, SIM.EXPECTED) != SIM.EXPECTED:
+                raise RuntimeError("candidate no longer has the exact 620 transaction result")
+            steps.append({"name": "resume_existing_620", "exit_code": 0,
+                          "detail": "reverify existing candidate; no package transaction"})
+        else:
+            if initial != live_changed:
+                raise RuntimeError("candidate 615 package state differs from live root")
+            if any(name in initial for name in ("n1x-nvidia-drm-fix-620",
+                                                 "linux-p16-platform-38-drivers-nvidia620")):
+                raise RuntimeError("candidate already contains NVIDIA 620 packages")
+            assert_no_package_hook_paths(candidate, inputs)
+            for relative in ("usr/share/libalpm/hooks", "etc/pacman.d/hooks"):
+                target = candidate / relative
+                if not target.is_dir():
+                    raise RuntimeError(f"candidate hook directory missing: {relative}")
+                run(["/usr/bin/mount", "--bind", str(empty_hooks), str(target)])
+                mounted.append(target)
+            base = ("--noscriptlet", "--noconfirm")
+            for label, args in (
+                    ("remove_615_drivers", (*base, "-Rdd", *SIM.REMOVE)),
+                    ("install_620", (*base, "-U", *(str(item["path"])
+                                             for item in inputs.values())))):
+                result = pacman(candidate, *args, check=False)
+                steps.append({"name": label, "exit_code": result.returncode,
+                              "stdout_tail": result.stdout[-1800:].replace(str(folder), "$STAGE").replace(str(ROOT), "$REPO"),
+                              "stderr_tail": result.stderr[-1200:].replace(str(folder), "$STAGE").replace(str(ROOT), "$REPO")})
+                if result.returncode:
+                    raise RuntimeError(f"candidate Pacman {label} failed")
         qkk = pacman(candidate, "-Qkk", *SIM.EXPECTED, check=False)
         steps.append({"name": "verify_620_files", "exit_code": qkk.returncode,
                       "stdout_tail": qkk.stdout[-1800:].replace(str(folder), "$STAGE").replace(str(ROOT), "$REPO"),
@@ -218,9 +248,23 @@ def stage(state, output):
         if qkk.returncode or "altered files" not in qkk.stdout or re.search(
                 r"[1-9]\d* altered files", qkk.stdout):
             raise RuntimeError("candidate package file verification failed")
-        modules = sorted((candidate / "usr/lib/modules" / RELEASE).rglob("*.ko"))
-        if len(modules) != 13:
-            raise RuntimeError("candidate does not have 13 kernel38 modules")
+        module_dir = candidate / "usr/lib/modules" / RELEASE / "updates/dkms"
+        package_manifest = run(["/usr/bin/bsdtar", "-tf", str(inputs[
+            "linux-p16-platform-38-drivers-nvidia620"]["path"])], timeout=90)
+        package_modules = {Path(path).name for path in package_manifest.stdout.splitlines()
+                           if path.startswith(f"usr/lib/modules/{RELEASE}/updates/dkms/")
+                           and path.endswith(".ko")}
+        installed_modules = {path.name for path in module_dir.glob("*.ko")}
+        extra_modules = installed_modules - package_modules
+        if len(package_modules) != 13 or not package_modules <= installed_modules or \
+                extra_modules not in (set(), {"cpuid.ko"}):
+            raise RuntimeError("candidate packaged kernel38 module set differs from archive")
+        if extra_modules and sha256(module_dir / "cpuid.ko") != sha256(
+                Path("/usr/lib/modules") / RELEASE / "updates/dkms/cpuid.ko"):
+            raise RuntimeError("pre-existing unowned cpuid module changed in candidate")
+        steps.append({"name": "verify_kernel38_modules", "exit_code": 0,
+                      "packaged_modules": sorted(package_modules),
+                      "preexisting_extra_modules": sorted(extra_modules)})
         run(["/usr/bin/depmod", "-b", str(candidate), RELEASE], timeout=90)
         if versions(candidate, SIM.EXPECTED) != SIM.EXPECTED:
             raise RuntimeError("candidate 620 package versions do not match")
@@ -261,6 +305,8 @@ def stage(state, output):
                "pass": pass_, "failure": failure,
                "candidate_subvolume": TARGET, "candidate_id": candidate_id,
                "signed_archive_preflight": preflight,
+               "resumed_from": str(resume_from) if prior else None,
+               "resumed_from_sha256": prior_sha256 if prior else None,
                "steps": steps,
                "live_packages_before": before_packages,
                "live_packages_after": after["packages"],
@@ -285,14 +331,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", action="store_true")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--resume-from", type=Path,
+                        help="failed receipt after completed 620 transaction; reverify without reinstalling")
     args = parser.parse_args()
     if args.stage and args.output is None:
         parser.error("--stage requires --output")
+    if args.resume_from and not args.stage:
+        parser.error("--resume-from requires --stage")
     state = plan()
     if not args.stage:
         print(json.dumps(state, indent=2))
         return 0
-    return stage(state, args.output)
+    return stage(state, args.output, args.resume_from)
 
 
 if __name__ == "__main__":

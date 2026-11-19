@@ -63,6 +63,14 @@ of 10–40 Mbit/s produced delayed decode failures in 30-second camera runs;
 CQP 30 also corrupted short output. These controls are not exposed. The
 all-intra workaround is qualified on this kernel/driver only. AV1 recording here uses
 Vulkan Video, not the NVENC API.
+The installed `p16-media-tools 0.1.0-12` command passed separate 30-second
+`--fixed-fps` H.264 and AV1 camera runs on kernel38/driver 615. H.264
+independently decoded 905/905 distinct output frames with monotonic packet
+DTS and decoded PTS. AV1 decoded 905/905 frames with both libdav1d and
+libaom, monotonic packet PTS and no gap above 50 ms. Both runs restored the
+camera control; each read one input frame beyond the timed output. The
+[installed evidence](../../../docs/evidence/n1x-media-20261118/README.md)
+records the exact checks. Post-resume capture remains open.
 
 `p16-record-camera-gstreamer SECONDS OUTPUT.h264` records the same live camera
 through GStreamer's `vulkanh264enc`. FFmpeg reads and converts the camera's

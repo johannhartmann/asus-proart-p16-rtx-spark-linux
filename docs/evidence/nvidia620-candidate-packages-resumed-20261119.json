@@ -1,0 +1,104 @@
+{
+  "captured_at": "2026-11-19T07:34:24.970097+00:00",
+  "pass": false,
+  "failure": "candidate does not have 13 kernel38 modules",
+  "candidate_subvolume": "@nvidia620",
+  "candidate_id": 268,
+  "signed_archive_preflight": {
+    "pass": true,
+    "driver_module_count": 13,
+    "efi_free_bytes": 839897088
+  },
+  "resumed_from": "/home/johann/p16/p16rtx_linux/docs/evidence/nvidia620-candidate-packages-20261119.json",
+  "resumed_from_sha256": "469e7420416bc809f1435c68b2a264ec67dbf6aa11dfbd5384fccc292cb32bd2",
+  "steps": [
+    {
+      "name": "remove_615_drivers",
+      "exit_code": 0,
+      "stdout_tail": "\nPackage (6)                    Old Version  Net Change \n\nlinux-p16-platform-34-drivers  7.2.8-34     -113.91 MiB\nlinux-p16-platform-36-drivers  7.2.8-36.1   -113.91 MiB\nlinux-p16-platform-37-drivers  7.2.8-37     -113.91 MiB\nlinux-p16-platform-38-drivers  7.2.8-38     -113.88 MiB\nn1x-nvidia-drm-fix             615.78.08-4    -0.01 MiB\nnvidia-open-dkms               615.78.08-3  -111.07 MiB\n\nTotal Removed Size:  566.69 MiB\n\n:: Do you want to remove these packages? [Y/n] \n:: Processing package changes...\nremoving linux-p16-platform-34-drivers...\nremoving linux-p16-platform-36-drivers...\nremoving linux-p16-platform-37-drivers...\nremoving linux-p16-platform-38-drivers...\nremoving nvidia-open-dkms...\nremoving n1x-nvidia-drm-fix...\n",
+      "stderr_tail": ""
+    },
+    {
+      "name": "install_620",
+      "exit_code": 0,
+      "stdout_tail": "loading packages...\nresolving dependencies...\nlooking for conflicting packages...\n\nPackage (4)                              Old Version  New Version  Net Change\n\nlinux-p16-platform-38-drivers-nvidia620               7.2.8-38     114.67 MiB\nn1x-nvidia-drm-fix-620                                620.70.06-1    0.01 MiB\nnvidia-open-dkms                                      620.70.06-1  108.93 MiB\nnvidia-utils                             615.78.08-1  620.70.06-1   53.25 MiB\n\nTotal Installed Size:  1144.85 MiB\nNet Upgrade Size:       276.86 MiB\n\n:: Proceed with installation? [Y/n] \nchecking keyring...\nchecking package integrity...\nloading package files...\nchecking for file conflicts...\nchecking available disk space...\n:: Processing package changes...\nupgrading nvidia-utils...\ninstalling nvidia-open-dkms...\ninstalling n1x-nvidia-drm-fix-620...\ninstalling linux-p16-platform-38-drivers-nvidia620...\n",
+      "stderr_tail": ""
+    },
+    {
+      "name": "verify_620_files",
+      "exit_code": 0,
+      "stdout_tail": "nvidia-utils: 257 total files, 0 altered files\nnvidia-open-dkms: 4703 total files, 0 altered files\nn1x-nvidia-drm-fix-620: 13 total files, 0 altered files\nlinux-p16-platform-38-drivers-nvidia620: 26 total files, 0 altered files\n",
+      "stderr_tail": ""
+    },
+    {
+      "name": "resume_existing_620",
+      "exit_code": 0,
+      "detail": "reverify existing candidate; no package transaction"
+    },
+    {
+      "name": "verify_620_files",
+      "exit_code": 0,
+      "stdout_tail": "nvidia-utils: 257 total files, 0 altered files\nnvidia-open-dkms: 4703 total files, 0 altered files\nn1x-nvidia-drm-fix-620: 13 total files, 0 altered files\nlinux-p16-platform-38-drivers-nvidia620: 26 total files, 0 altered files\n",
+      "stderr_tail": ""
+    }
+  ],
+  "live_packages_before": {
+    "nvidia-utils": "615.78.08-1",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "linux-p16-platform-38-drivers": "7.2.8-38"
+  },
+  "live_packages_after": {
+    "nvidia-utils": "615.78.08-1",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "linux-p16-platform-38-drivers": "7.2.8-38"
+  },
+  "live_changed_packages_before": {
+    "linux-p16-platform-34-drivers": "7.2.8-34",
+    "linux-p16-platform-36-drivers": "7.2.8-36.1",
+    "linux-p16-platform-37-drivers": "7.2.8-37",
+    "linux-p16-platform-38-drivers": "7.2.8-38",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "nvidia-utils": "615.78.08-1"
+  },
+  "live_changed_packages_after": {
+    "linux-p16-platform-34-drivers": "7.2.8-34",
+    "linux-p16-platform-36-drivers": "7.2.8-36.1",
+    "linux-p16-platform-37-drivers": "7.2.8-37",
+    "linux-p16-platform-38-drivers": "7.2.8-38",
+    "nvidia-open-dkms": "615.78.08-3",
+    "n1x-nvidia-drm-fix": "615.78.08-4",
+    "nvidia-utils": "615.78.08-1"
+  },
+  "boot_before": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "boot_after": {
+    "BootCurrent": "BootCurrent: 0003",
+    "BootOrder": "BootOrder: 0002,0001,2001,2002,2003",
+    "BootNext": null
+  },
+  "efi_sha256_before": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "efi_sha256_after": {
+    "EFI/Linux/omarchy_linux-p16-platform-34.efi": "2fa7c8c219f1d74877a2465ea37b80a128ef83b67167e68f30336bb2e63c537e",
+    "EFI/Linux/omarchy_linux-p16-platform-36.efi": "0c520ea93060446ebeb19fe721b74c79af40ea0b1f6e92d2a9c3e520384e9381",
+    "EFI/Linux/omarchy_linux-p16-platform-37.efi": "ff6472443b4e5e9f7690135717ae35f1e8a342c45259467b5a2ad2601931a6bc",
+    "EFI/Linux/omarchy_linux-p16-platform-38.efi": "9f8d53d06a2e8bf642e8536af442d663715a9121962a55535f2e37e3837ba3e4",
+    "EFI/Linux/omarchy_p16-recovery.efi": "f51024bb84598bbf5b3b792cb673f1e178a7a731e449c9716acb3b2f952dd714",
+    "EFI/limine/limine_aa64.efi": "11288bad5042853c8fbad27ddf65f9bc53675959a87e0e67908a173ce1571479"
+  },
+  "reboot_executed": false,
+  "boot_entry_created": false,
+  "next_gate": "build and verify a distinct kernel38/620 UKI from this candidate"
+}

@@ -36,9 +36,9 @@ cannot qualify that separate platform pipeline.
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit plus H.264 High 4:2:2 8/10-bit CUVID pixels match software; H.264 High 4:4:4 8/10-bit is explicitly unsupported by CUVID; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
-| NVENC | Isolated ARM64 FFmpeg package installed; H.264, HEVC and AV1 NVENC sessions all fail with error 21 on driver 615.78.08 using either API 12.2 or 13.1 codec headers. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. AV1 Vulkan default/inter-frame output decodes but loses fidelity: the same 120 real camera frames score 31.89 dB with default GOP and 53.80 dB all-intra. Explicit 10–40 Mbit/s targets also fail delayed decode in 30-second camera runs. An all-intra AV1 candidate gives 905/905 independently decoded live camera frames from an extracted package; installation remains pending. This does not change the NVENC error. | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| NVENC | Isolated ARM64 FFmpeg package installed; [the installed 9.0.2-7 test](docs/evidence/n1x-media-20261118/installed-nvenc-package7-kernel38/installed-nvenc.json) confirms H.264, HEVC and AV1 NVENC sessions still fail with error 21 on driver 615.78.08. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. AV1 Vulkan default/inter-frame output decodes but loses fidelity: the same 120 real camera frames score 31.89 dB with default GOP and 53.80 dB all-intra. Explicit 10–40 Mbit/s targets also fail delayed decode in 30-second camera runs. Installed `p16-media-tools 0.1.0-12` now gives 905/905 independently decoded live-camera H.264 frames and 905/905 all-intra AV1 frames with both software decoders. This does not change the NVENC error. | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Four 120-second runs missed eight, 14, four and 15 camera input frames respectively, while exporting every captured pair correctly. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
-| P16 USB cameras | RGB and IR live capture passes; RGB and IR preview in installed mpv, RGB Chromium WebRTC with graphical permission, OBS recording through x264 and an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The IR mpv preview renders 360×360 gray with advancing frames and successful camera reopen, but logs V4L2 buffer warnings on close. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Kernel37 exposed overlarge internal and external UVC DMA allocations; native kernel38 caps internal RGB allocations at 65,536 bytes with clean RGB/IR capture. External StreamCam capture also passed 60 frames without a new warning; its kernel38 URB size still needs a trace. | Electronic privacy/LED behavior, warning-free UVC allocation on both hosts, and post-resume capture tested independently |
+| P16 USB cameras | RGB and IR live capture passes; RGB and IR preview in installed mpv, RGB Chromium WebRTC with graphical permission, OBS recording through x264 and an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The IR mpv preview renders 360×360 gray with advancing frames and successful camera reopen, but logs V4L2 buffer warnings on close. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Kernel37 exposed overlarge internal and external UVC DMA allocations; a native kernel38 trace now confirms capped internal RGB/IR and external StreamCam allocations, full captures and no new kernel warnings on both hosts. | Electronic privacy/LED behavior, warning-free post-resume capture and allocation, tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
 
 ### Implementation record, 18 November 2026
@@ -210,8 +210,11 @@ has working NVIDIA display and RGB/IR capture with capped DMA allocations,
 and no new kernel warning. NVENC remains at error 21 on the running 615 stack.
 The first kernel38 UKI omitted the known-good audio DSP flags, so the generic
 SOF placeholder bound instead of `n1x_adsp`; an audio-enabled UKI is now
-staged for a later qualified boot. Physical suspend and matched 620 runtime
-remain open.
+staged for a later qualified boot. A separate [NVIDIA 620 candidate root and
+UKI](docs/evidence/nvidia620-isolated-root-staging.md) is now fully staged
+with a direct UEFI entry outside BootOrder; the running `@` root still uses
+615.78.08. Both native audio/suspend qualification and matched 620 runtime
+remain open. The candidates were prepared without another reboot.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video
@@ -252,7 +255,7 @@ second Linux media framework's Vulkan hardware encoder in a real recording,
 but does not change the NVENC API or direct OBS encoder failure.
 The [`p16-media-tools` package](platform/video/tools/README.md) provides explicit
 mpv hardware playback, on-demand HDR10 output and P16 RGB/Vulkan recording
-commands without replacing system codecs. Version 0.1.0-7 is installed on the
+commands without replacing system codecs. Version 0.1.0-12 is installed on the
 reference P16: the installed
 mpv command played through VA-API and Vulkan/libplacebo to EOF, and the
 installed recording command produced a 60-frame H.264 file from the live RGB
@@ -286,8 +289,13 @@ then independently decoded all 3,618 encoded frames with distinct hashes,
 monotonic decoded timestamps and DTS, no gap above 50 ms and restored camera
 control. It remains a direct FFmpeg result rather than installed application
 qualification.
-The candidate still requires installation and a repeat through
-`/usr/bin/p16-record-camera-vulkan`; subjective quality and post-resume use
+The installed `/usr/bin/p16-record-camera-vulkan` now passes [H.264](docs/evidence/n1x-media-20261118/camera-h264-installed-package12-kernel38.json)
+and [AV1](docs/evidence/n1x-media-20261118/camera-av1-installed-package12-kernel38.json)
+30-second live-camera runs: each outputs 905 frames from 906 read inputs;
+H.264 software-decodes all 905 distinct frames with monotonic DTS and decoded
+PTS, while AV1 gives 905 distinct frames to both libdav1d and libaom with
+monotonic packet PTS. The fixed-frame-rate camera control is restored.
+The one input beyond the timed output, subjective quality and post-resume use
 remain open.
 The [120-second direct all-intra AV1 repeat](docs/evidence/n1x-media-20261118/camera-av1-intra-120s-kernel38.json)
 independently decoded all 3,616 encoded frames with both libdav1d and libaom,
@@ -402,10 +410,13 @@ a direct KVM boot, and all 8,507 modules passed BTF validation. The
 [first native boot](docs/evidence/kernel38-native-20261118.md) captured RGB
 and IR frames with capped internal RGB allocations and no new warning. A
 [separate StreamCam capture](docs/evidence/kernel38-uvc-streamcam-native-20261118.json)
-passed 60 frames at 1080p without a new warning. External URB sizing and
-physical suspend remain open. A [single-auth UVC trace wrapper](scripts/run-p16-uvc-dma-trace.py)
-is prepared to measure internal and external URBs and restore trace state on
-the current boot, without another reboot.
+passed 60 frames at 1080p without a new warning. The [both-host native trace](docs/evidence/n1x-media-20261118/uvc-dma-both-hosts-kernel38.md)
+confirms internal RGB 65,536-byte, IR 40,960-byte and external StreamCam
+61,440-byte page-rounded allocations, all within the 65,536-byte DMA limit,
+with full captures and no new kernel warnings. The original checker used the
+StreamCam's 720p packet size for its 1080p case; a read-only recheck of the
+unchanged trace passes with the measured 6,144-byte packet size. Physical
+suspend and post-resume capture remain open.
 
 ## Common evidence and release gates
 
@@ -542,11 +553,13 @@ before a frame is processed. `scale_vulkan` processes a bounded frame on
 the N1X. A [private API 387 candidate](docs/evidence/n1x-media-20261118/libplacebo-upscale-private.md)
 processes 60 GPU frames. A [scoped API 360 queue-import patch and package 9.0.2-7](docs/evidence/n1x-media-20261118/libplacebo-api360-compat.md)
 now process the same 60-frame tagged Spline36 test against the installed
-libplacebo library; extracted-package Q416 readback and timed FFplay playback
+libplacebo library. The [installed 9.0.2-7 repeat](docs/evidence/n1x-media-20261118/libplacebo-upscale-installed-package7-kernel38.json)
+passes 60 GPU frames; its binary hash matches the extracted package.
+Extracted-package Q416 readback and timed FFplay playback
 also pass. Tagged GPU Spline36 still scores below CPU bicubic on this one
 synthetic reference, and untagged raw input is markedly worse. The installed
-mpv/libplacebo playback result stands separately. Package 9.0.2-7 installation,
-explicit color tags in a normal export application, visual review and steady
+mpv/libplacebo playback result stands separately. Explicit color tags in a
+normal export application, visual review and steady
 latency remain open.
 
 The [NVIDIA Optical Flow SDK](https://github.com/NVIDIA/NVIDIAOpticalFlowSDK)

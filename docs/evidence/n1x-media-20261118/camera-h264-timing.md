@@ -47,5 +47,7 @@ archive SHA256 is
 An [AV1 short regression from the exact package](camera-av1-package12-short-kernel38.json)
 encoded 61 frames with increasing packet PTS and full libdav1d/libaom decode;
 the previous package's [30-second AV1 gate](camera-av1-packaged-intra-30s-kernel38.json)
-remains the longer application-command check. The 0.1.0-12 package is not
-installed yet; installed-path and post-resume gates remain open.
+remains the longer application-command check. The later
+[installed-path H.264 check](camera-h264-installed-package12-kernel38.json)
+passes 905/905 independently decoded frames with monotonic decoded PTS and
+packet DTS. The package is now installed; post-resume use remains open.
