@@ -62,10 +62,14 @@ loopback result.
 
 In a real Meet call, check `chrome://webrtc-internals` for the outbound codec,
 frame count and encode time; H.264 must be negotiated for this driver to be
-used. Compare CPU load with the same resolution, effects and participants in
-ordinary Chrome and this isolated profile. Meet may negotiate VP8, VP9 or AV1,
-for which this H.264-only driver does not provide encode. The camera's MJPEG
-decode and Meet's effects remain separate CPU costs.
+used. The [first live check](../../../docs/evidence/n1x-media-20261120/chrome-live-meet-vulkan-vaapi.md)
+joined Meet with this profile and observed an active AV1 stream using the
+software `libaom` encoder. The bridge loaded, but Meet did not select H.264.
+Compare CPU load with the same resolution, effects and participants in
+ordinary Chrome and this isolated profile only after hardware encode is
+actually selected. Meet may negotiate VP8, VP9 or AV1, for which this
+H.264-only driver does not provide encode. Camera decode and Meet's effects
+remain separate CPU costs.
 
 No reboot is required. To roll back, close the dedicated Chrome window and
 remove `~/.local/bin/p16-meet-chrome` and

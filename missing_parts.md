@@ -361,10 +361,15 @@ now gives Chrome 156 a functional `VaapiVideoEncodeAccelerator` for H.264
 Constrained Baseline with CBR on the running 615 stack. In an isolated
 Chrome/WebRTC loopback with the installed user-local driver, 151 frames were
 hardware-encoded, sent, received and decoded with zero browser encoder errors.
-This is Chrome/WebRTC integration, not yet a Google Meet call or a measured
-CPU/power improvement. Meet must negotiate H.264; VP8/VP9/AV1 sends remain
-software paths through this bridge. The ordinary Chrome profile and installed
-NVDEC VA-API driver remain unchanged.
+The [20 November live Meet check](docs/evidence/n1x-media-20261120/chrome-live-meet-vulkan-vaapi.md)
+confirmed that the dedicated Chrome profile loads this driver and joins a
+camera-on call. Its active outbound video stream nevertheless negotiated AV1
+and reported `encoderImplementation=libaom` at 180 pixels high. The H.264
+bridge cannot accelerate that selected stream, and no Meet CPU/power benefit
+has been demonstrated. Meet must negotiate H.264 to use the current bridge;
+an AV1 Vulkan Video VA-API encode implementation or another supported way to
+choose H.264 is still needed for the observed Meet configuration. The ordinary
+Chrome profile and installed NVDEC VA-API driver remain unchanged.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.
