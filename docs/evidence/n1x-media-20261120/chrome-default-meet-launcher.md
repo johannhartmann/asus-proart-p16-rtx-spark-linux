@@ -30,6 +30,11 @@ Both generated desktop files passed `desktop-file-validate`. Omarchy
 continued to resolve `google-chrome.desktop`, whose user entry now points at
 the P16 launcher.
 
+A separate headless H.264 playback fixture at 1280 × 720 completed all
+72 frames with zero drops. Chrome reported `FFmpegVideoDecoder` and
+`kIsPlatformVideoDecoder=false`. This run verifies playback and leaves
+hardware decoding through the new launcher unqualified.
+
 ## Real Meet call
 
 Qualification requires a new call in the regular signed-in profile after
