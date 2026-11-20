@@ -24,8 +24,8 @@ safe suspend, device removal, firmware recovery, or support on another board.
 
 ## Normal module startup
 
-The production drivers are native C `.ko` modules registered with the Linux
-platform/ACPI, HID/IIO, hwmon, ALSA/ASoC and DRM accelerator subsystems. Their
+The separately packaged platform drivers are native C `.ko` modules registered
+with the Linux platform/ACPI, HID/IIO, hwmon, ALSA/ASoC and DRM accelerator subsystems. Their
 probe, firmware, IRQ, DMA and PM paths execute in the kernel. The N1X driver
 admission rules use ACPI hardware IDs, revisions, resources, coherency and
 firmware ABI validation, not an ASUS product/BIOS allowlist, `:00` instance
@@ -77,6 +77,23 @@ cross-head warning with shared classes, avoids it with per-head classes and
 still detects a same-head positive control. This supports a classification
 explanation; it is not a fix or proof that the complete native graph is safe.
 No Lockdep reset or driver-core annotation patch was applied to the host.
+
+## Platform providers built into the kernel
+
+On the running P16 kernel `7.2.8-38-rtx-spark-npu`, module loading and
+unloading are enabled. The [kernel configuration](../kernel/config.aarch64)
+builds the following platform providers into the kernel.
+
+| Provider | Build and reload constraints |
+| --- | --- |
+| MT8901 pinctrl | NVIDIA defines `PINCTRL_MT8901` as a boolean and registers the GPIO and interrupt provider at `arch_initcall` without a module exit path. The SPI HID sensor depends on its interrupt routing. A modular driver needs an unregister path and qualification of GPIO and IRQ consumer lifetimes, including probe and resume ordering. [NVIDIA Kconfig](https://raw.githubusercontent.com/NVIDIA/NV-Kernels/2234cd7f/drivers/pinctrl/mediatek/Kconfig) · [P16 interrupt fixes](../improvements/kernel/README.md) |
+| SSPM CI | NVIDIA defines both `MTK_SSPM_CI` and its direct caller `MTK_POWER_WRAP` as booleans. Power Wrap calls the SSPM firmware mailbox for device power transitions and gives consumers pointers into its configuration table. That table is designed to live for the lifetime of the kernel. Supporting removal requires a consumer lifetime contract for Power Wrap and a way to quiesce mailbox calls and interrupts during teardown. [NVIDIA Kconfig](https://raw.githubusercontent.com/NVIDIA/NV-Kernels/2234cd7f/drivers/soc/mediatek/Kconfig) · [MediaTek platform source patch](../improvements/kernel/1000-n1x-mediatek-platform.patch) |
+| ARM SMMUv3 | Linux supports `ARM_SMMU_V3=m`; our configuration uses `=y`. Sysfs on this P16 showed both NVMe controllers, the NVIDIA GPU and the NPU/SROOT devices attached to SMMUv3 instances. A module build would need to load during early boot before the root disk is accessed. The IOMMU core holds a module reference for each attached device, so building it as a module would still leave it in use during normal operation. [Linux Kconfig](https://github.com/torvalds/linux/blob/master/drivers/iommu/arm/Kconfig) |
+
+Changing any of these built-in implementations requires booting a new kernel
+image. The [UVC live replacement](evidence/n1x-media-20261118/uvc-dma-live-kernel37.md)
+and [checked DSP/AFE reload](audio.md#module-reload-qualification) are examples
+of changes that were qualified without rebooting.
 
 ## Subsystem boundaries
 
