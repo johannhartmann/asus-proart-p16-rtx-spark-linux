@@ -346,6 +346,16 @@ includes the flags, negative controls and upstream references. Arch ARM
 Chromium 156 still selected `FFmpegVideoDecoder` at 1280×720 even with the
 extended flags. HEVC and deeper browser profiles, real sites, longer or
 concurrent playback, other resolutions and post-resume playback remain open.
+A [20 November solo Google Meet audit](docs/evidence/n1x-media-20261120/chrome-solo-meet-video-engines.md)
+found GPU rendering active but no video encode-engine use while the internal
+camera ran at 1280×720/30 MJPEG. The ordinary Chrome process lacked the
+separate playback launcher's VA-API flags; with no remote participant, playback
+decode was not the workload bottleneck. VA-API provides no encode entrypoint
+and NVENC still fails at session open on driver 615, so the proven Vulkan Video
+FFmpeg/GStreamer encoders are not a Chrome/Meet hardware encoder. Renderer,
+capture and GPU-process CPU costs were measured, but Meet's negotiated send
+codec, effects and camera-off delta remain unobserved. No experimental
+browser flags were enabled in the running call.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.
