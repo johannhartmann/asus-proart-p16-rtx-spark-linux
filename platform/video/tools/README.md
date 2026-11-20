@@ -113,6 +113,9 @@ sites, other profiles and resolutions, hours-long playback and resume still
 need qualification. The [browser record](../../../docs/evidence/n1x-media-20261118/browser-vaapi.md)
 contains the exact observations.
 
+For Chrome/WebRTC H.264 **encoding**, use the separate
+[opt-in Vulkan Video bridge and Meet launcher](../vaapi-h264/README.md).
+
 `p16-camera-privacy status|off|on` controls Linux USB authorization for the
 internal ASUS RGB/IR camera only. The privileged helper verifies the P16 ACPI
 parent `NVDA8001:00` and USB ID `636e:0bdb` before changing the standard

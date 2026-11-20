@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+chrome=/usr/bin/google-chrome-stable
+driver_dir=${P16_VAAPI_DRIVER_DIR:-${HOME}/.local/lib/p16-vaapi-h264}
+profile=${P16_MEET_CHROME_PROFILE:-${XDG_DATA_HOME:-${HOME}/.local/share}/p16-meet-chrome}
+[[ -x $chrome ]] || { echo 'Google Chrome is required' >&2; exit 127; }
+[[ -r $driver_dir/nvidia_vulkan_drv_video.so ]] || {
+  echo "Missing N1X VA-API driver: $driver_dir/nvidia_vulkan_drv_video.so" >&2
+  echo 'Run platform/video/vaapi-h264/build-install-user first' >&2
+  exit 2
+}
+mkdir -p "$profile"
+meet_args=("$@")
+if (( $# == 0 )); then
+  meet_args=(https://meet.google.com/)
+fi
+
+# Chrome discards new GPU flags when it reuses an already running profile.
+exec env LIBVA_DRIVER_NAME=nvidia_vulkan LIBVA_DRIVERS_PATH="$driver_dir" \
+  VKVV_ENABLE_ENCODE=1 "$chrome" \
+  "--user-data-dir=$profile" \
+  --enable-features=AcceleratedVideoEncoder,AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiIgnoreDriverChecks,VaapiVideoDecoder \
+  --ignore-gpu-blocklist --use-gl=angle --use-angle=gl \
+  --ozone-platform=wayland \
+  "${meet_args[@]}"

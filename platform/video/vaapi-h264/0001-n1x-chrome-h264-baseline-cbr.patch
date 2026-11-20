@@ -1,0 +1,541 @@
+diff --git i/src/caps/records.cpp w/src/caps/records.cpp
+index 4e5e80e..abc2fea 100644
+--- i/src/caps/records.cpp
++++ w/src/caps/records.cpp
+@@ -116,7 +116,7 @@ namespace {
+     }
+ 
+     bool is_h264_encode_capability(const VkvvProfileCapability* cap) {
+-        return cap != NULL && cap->direction == VKVV_CODEC_DIRECTION_ENCODE && cap->profile == VAProfileH264High && cap->entrypoint == VAEntrypointEncSlice;
++        return cap != NULL && cap->direction == VKVV_CODEC_DIRECTION_ENCODE && cap->profile == VAProfileH264ConstrainedBaseline && cap->entrypoint == VAEntrypointEncSlice;
+     }
+ 
+     unsigned int h264_encode_max_ref_frames(const VkvvProfileCapability* cap) {
+@@ -175,8 +175,8 @@ void vkvv_init_profile_capabilities(VkvvDriver* drv) {
+                               drv->caps.surface_export_nv12);
+     add_vp9_profile2(drv);
+     add_av1_profile0(drv);
+-    const bool advertise_h264_encode = drv->caps.h264_encode && encode_advertising_enabled();
+-    add_single_format_profile(drv, VAProfileH264High, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
++    const bool advertise_h264_encode = drv->caps.h264_encode && drv->caps.h264_encode_cbr && encode_advertising_enabled();
++    add_single_format_profile(drv, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
+                               VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME, VA_RT_FORMAT_YUV420, drv->caps.h264_encode_limits, drv->caps.h264_encode, advertise_h264_encode,
+                               advertise_h264_encode, drv->caps.h264_encode, advertise_h264_encode);
+     add_single_format_profile(drv, VAProfileH264High, VAEntrypointEncSliceLP, VKVV_CODEC_DIRECTION_ENCODE, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
+@@ -243,7 +243,7 @@ void vkvv_fill_config_attribute(const VkvvProfileCapability* cap, VAConfigAttrib
+         case VAConfigAttribDecSliceMode: attrib->value = cap->direction == VKVV_CODEC_DIRECTION_DECODE ? VA_DEC_SLICE_MODE_NORMAL : VA_ATTRIB_NOT_SUPPORTED; break;
+         case VAConfigAttribMaxPictureWidth: attrib->value = cap->max_width; break;
+         case VAConfigAttribMaxPictureHeight: attrib->value = cap->max_height; break;
+-        case VAConfigAttribRateControl: attrib->value = is_h264_encode_capability(cap) ? VA_RC_CQP : VA_ATTRIB_NOT_SUPPORTED; break;
++        case VAConfigAttribRateControl: attrib->value = is_h264_encode_capability(cap) ? (VA_RC_CQP | VA_RC_CBR) : VA_ATTRIB_NOT_SUPPORTED; break;
+         case VAConfigAttribEncPackedHeaders: attrib->value = is_h264_encode_capability(cap) ? VA_ENC_PACKED_HEADER_NONE : VA_ATTRIB_NOT_SUPPORTED; break;
+         case VAConfigAttribEncInterlaced: attrib->value = is_h264_encode_capability(cap) ? VA_ENC_INTERLACED_NONE : VA_ATTRIB_NOT_SUPPORTED; break;
+         case VAConfigAttribEncMaxRefFrames: attrib->value = is_h264_encode_capability(cap) ? h264_encode_max_ref_frames(cap) : VA_ATTRIB_NOT_SUPPORTED; break;
+diff --git i/src/codecs/h264/encode.cpp w/src/codecs/h264/encode.cpp
+index b09a9e3..6c0f573 100644
+--- i/src/codecs/h264/encode.cpp
++++ w/src/codecs/h264/encode.cpp
+@@ -176,6 +176,7 @@ namespace {
+         input->input_surface           = vctx != nullptr ? vctx->render_target : VA_INVALID_ID;
+         input->reconstructed_surface   = h264->picture.CurrPic.picture_id;
+         input->coded_buffer            = h264->picture.coded_buf;
++        input->rate_control_mode       = vctx != nullptr ? vctx->rate_control : VA_RC_CQP;
+         input->frame_type              = frame_type_for_picture(h264);
+         input->has_iq                  = h264->has_iq;
+         input->has_frame_rate          = h264->has_frame_rate;
+@@ -210,17 +211,11 @@ void vkvv_h264_encode_begin_picture(void* state) {
+     h264->has_picture       = false;
+     h264->has_slices        = false;
+     h264->has_iq            = false;
+-    h264->has_frame_rate    = false;
+-    h264->has_rate_control  = false;
+-    h264->has_hrd           = false;
+     h264->has_quality_level = false;
+     h264->has_quantization  = false;
+     h264->has_packed_header = false;
+     h264->picture           = {};
+     h264->iq                = {};
+-    h264->frame_rate        = {};
+-    h264->rate_control      = {};
+-    h264->hrd               = {};
+     h264->quality_level     = {};
+     h264->quantization      = {};
+     h264->packed_header     = {};
+diff --git i/src/codecs/h264/encode.h w/src/codecs/h264/encode.h
+index 25a1fe2..ae47ac0 100644
+--- i/src/codecs/h264/encode.h
++++ w/src/codecs/h264/encode.h
+@@ -37,6 +37,7 @@ typedef struct {
+     VASurfaceID                                 input_surface;
+     VASurfaceID                                 reconstructed_surface;
+     VABufferID                                  coded_buffer;
++    unsigned int                                rate_control_mode;
+     VkvvH264EncodeFrameType                     frame_type;
+     bool                                        has_iq;
+     bool                                        has_frame_rate;
+diff --git i/src/codecs/registry.cpp w/src/codecs/registry.cpp
+index d5f0bc4..c554f19 100644
+--- i/src/codecs/registry.cpp
++++ w/src/codecs/registry.cpp
+@@ -262,7 +262,7 @@ const VkvvDecodeOps* vkvv_decode_ops_for_profile_entrypoint(VAProfile profile, V
+ }
+ 
+ const VkvvEncodeOps* vkvv_encode_ops_for_profile_entrypoint(VAProfile profile, VAEntrypoint entrypoint) {
+-    if (profile == VAProfileH264High && entrypoint == VAEntrypointEncSlice) {
++    if (profile == VAProfileH264ConstrainedBaseline && entrypoint == VAEntrypointEncSlice) {
+         return &h264_encode_ops;
+     }
+     return nullptr;
+diff --git i/src/va/buffers.cpp w/src/va/buffers.cpp
+index 024dd39..64fcea7 100644
+--- i/src/va/buffers.cpp
++++ w/src/va/buffers.cpp
+@@ -158,7 +158,7 @@ VAStatus vkvvUnmapBuffer(VADriverContextP ctx, VABufferID buf_id) {
+         return VA_STATUS_ERROR_INVALID_BUFFER;
+     }
+     buffer->mapped = false;
+-    return VA_STATUS_SUCCESS;
++    return buffer->flush_on_unmap != nullptr ? buffer->flush_on_unmap(ctx, buf_id) : VA_STATUS_SUCCESS;
+ }
+ 
+ VAStatus vkvvDestroyBuffer(VADriverContextP ctx, VABufferID buffer_id) {
+diff --git i/src/va/config.cpp w/src/va/config.cpp
+index f16668c..0c5df0f 100644
+--- i/src/va/config.cpp
++++ w/src/va/config.cpp
+@@ -14,13 +14,13 @@ namespace {
+     }
+ 
+     bool is_h264_encode_config(const VkvvProfileCapability* cap) {
+-        return cap != NULL && cap->direction == VKVV_CODEC_DIRECTION_ENCODE && cap->profile == VAProfileH264High && cap->entrypoint == VAEntrypointEncSlice;
++        return cap != NULL && cap->direction == VKVV_CODEC_DIRECTION_ENCODE && cap->profile == VAProfileH264ConstrainedBaseline && cap->entrypoint == VAEntrypointEncSlice;
+     }
+ 
+     VAStatus validate_h264_encode_config_attrib(const VAConfigAttrib& attrib, unsigned int* rate_control) {
+         switch (attrib.type) {
+             case VAConfigAttribRateControl:
+-                if (attrib.value == VA_RC_CQP) {
++                if (attrib.value == VA_RC_CQP || attrib.value == VA_RC_CBR) {
+                     *rate_control = attrib.value;
+                     return VA_STATUS_SUCCESS;
+                 }
+diff --git i/src/va/context.cpp w/src/va/context.cpp
+index 07f73d1..4031f5d 100644
+--- i/src/va/context.cpp
++++ w/src/va/context.cpp
+@@ -24,7 +24,7 @@ namespace {
+     }
+ 
+     unsigned int codec_operation_for_encode_profile_entrypoint(VAProfile profile, VAEntrypoint entrypoint) {
+-        if (profile == VAProfileH264High && entrypoint == VAEntrypointEncSlice) {
++        if (profile == VAProfileH264ConstrainedBaseline && entrypoint == VAEntrypointEncSlice) {
+             return VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
+         }
+         return 0;
+@@ -93,6 +93,7 @@ VAStatus vkvvCreateContext(VADriverContextP ctx, VAConfigID config_id, int pictu
+     vctx->profile         = config->profile;
+     vctx->entrypoint      = config->entrypoint;
+     vctx->mode            = config->mode;
++    vctx->rate_control    = config->rate_control;
+     vctx->stream_id       = 0;
+     vctx->codec_operation = 0;
+     vctx->width           = (unsigned int)picture_width;
+diff --git i/src/va/driver.cpp w/src/va/driver.cpp
+index 30132d6..861dbbc 100644
+--- i/src/va/driver.cpp
++++ w/src/va/driver.cpp
+@@ -120,7 +120,7 @@ static struct VADriverVTable make_vtable(void) {
+     vt.vaPutSurface               = unsupported_callback(vt.vaPutSurface);
+     vt.vaQueryImageFormats        = vkvvQueryImageFormats;
+     vt.vaCreateImage              = vkvvCreateImage;
+-    vt.vaDeriveImage              = unsupported_callback(vt.vaDeriveImage);
++    vt.vaDeriveImage              = vkvvDeriveImage;
+     vt.vaDestroyImage             = vkvvDestroyImage;
+     vt.vaSetImagePalette          = unsupported_callback(vt.vaSetImagePalette);
+     vt.vaGetImage                 = unsupported_callback(vt.vaGetImage);
+diff --git i/src/va/driver.h w/src/va/driver.h
+index 133220a..6ce805a 100644
+--- i/src/va/driver.h
++++ w/src/va/driver.h
+@@ -80,6 +80,7 @@ typedef struct {
+     bool                   av1_10;
+     bool                   av1_12;
+     bool                   h264_encode;
++    bool                   h264_encode_cbr;
+     bool                   surface_export;
+     bool                   surface_export_nv12;
+     bool                   surface_export_p010;
+@@ -209,6 +210,9 @@ typedef struct VkvvBuffer {
+     void*                   data;
+     VkvvCodedBufferPayload* coded_payload;
+     bool                    mapped;
++    VAImageID               derived_image = VA_INVALID_ID;
++    VASurfaceID             derived_surface = VA_INVALID_ID;
++    VAStatus (*flush_on_unmap)(VADriverContextP, VABufferID) = nullptr;
+ } VkvvBuffer;
+ 
+ typedef struct VkvvImage {
+@@ -250,6 +254,7 @@ typedef struct VkvvContext {
+     VAProfile            profile;
+     VAEntrypoint         entrypoint;
+     VkvvContextMode      mode;
++    unsigned int         rate_control;
+     uint64_t             stream_id;
+     unsigned int         codec_operation;
+     unsigned int         width;
+diff --git i/src/va/images.cpp w/src/va/images.cpp
+index 74c9537..8518173 100644
+--- i/src/va/images.cpp
++++ w/src/va/images.cpp
+@@ -142,6 +142,50 @@ VAStatus vkvvCreateImage(VADriverContextP ctx, VAImageFormat* format, int width,
+     return VA_STATUS_SUCCESS;
+ }
+ 
++VAStatus vkvvDeriveImage(VADriverContextP ctx, VASurfaceID surface_id, VAImage* image) {
++    VkvvDriver* drv = vkvv_driver_from_ctx(ctx);
++    if (drv == nullptr || image == nullptr) {
++        return VA_STATUS_ERROR_INVALID_PARAMETER;
++    }
++    auto* surface = vkvv_surface_get_locked(drv, surface_id);
++    if (surface == nullptr) {
++        return VA_STATUS_ERROR_INVALID_SURFACE;
++    }
++    LockedSurface lock(surface);
++    if (surface->destroying || surface->decoded || surface->work_state == VKVV_SURFACE_WORK_RENDERING) {
++        return VA_STATUS_ERROR_OPERATION_FAILED;
++    }
++    VAImageFormat format{};
++    format.fourcc = surface->fourcc;
++    VAStatus status = vkvvCreateImage(ctx, &format, surface->width, surface->height, image);
++    if (status != VA_STATUS_SUCCESS) {
++        return status;
++    }
++    auto* buffer = static_cast<VkvvBuffer*>(vkvv_object_get(drv, image->buf, VKVV_OBJECT_BUFFER));
++    if (buffer == nullptr) {
++        (void)vkvvDestroyImage(ctx, image->image_id);
++        return VA_STATUS_ERROR_INVALID_BUFFER;
++    }
++    buffer->derived_image = image->image_id;
++    buffer->derived_surface = surface_id;
++    buffer->flush_on_unmap = vkvvFlushDerivedImage;
++    return VA_STATUS_SUCCESS;
++}
++
++VAStatus vkvvFlushDerivedImage(VADriverContextP ctx, VABufferID buffer_id) {
++    VkvvDriver* drv = vkvv_driver_from_ctx(ctx);
++    auto* buffer = static_cast<VkvvBuffer*>(vkvv_object_get(drv, buffer_id, VKVV_OBJECT_BUFFER));
++    if (buffer == nullptr || buffer->derived_image == VA_INVALID_ID || buffer->derived_surface == VA_INVALID_ID) {
++        return VA_STATUS_SUCCESS;
++    }
++    auto* image = static_cast<VkvvImage*>(vkvv_object_get(drv, buffer->derived_image, VKVV_OBJECT_IMAGE));
++    if (image == nullptr) {
++        return VA_STATUS_ERROR_INVALID_IMAGE;
++    }
++    return vkvvPutImage(ctx, buffer->derived_surface, buffer->derived_image, 0, 0, image->image.width, image->image.height,
++                        0, 0, image->image.width, image->image.height);
++}
++
+ VAStatus vkvvDestroyImage(VADriverContextP ctx, VAImageID image_id) {
+     VkvvDriver* drv = vkvv_driver_from_ctx(ctx);
+     if (drv == nullptr) {
+diff --git i/src/va/private.h w/src/va/private.h
+index e079c29..75d1085 100644
+--- i/src/va/private.h
++++ w/src/va/private.h
+@@ -84,6 +84,8 @@ VAStatus vkvvQuerySurfaceStatus(VADriverContextP ctx, VASurfaceID render_target,
+ VAStatus vkvvQuerySurfaceError(VADriverContextP ctx, VASurfaceID render_target, VAStatus error_status, void** error_info);
+ VAStatus vkvvQueryImageFormats(VADriverContextP ctx, VAImageFormat* format_list, int* num_formats);
+ VAStatus vkvvCreateImage(VADriverContextP ctx, VAImageFormat* format, int width, int height, VAImage* image);
++VAStatus vkvvDeriveImage(VADriverContextP ctx, VASurfaceID surface, VAImage* image);
++VAStatus vkvvFlushDerivedImage(VADriverContextP ctx, VABufferID buffer);
+ VAStatus vkvvDestroyImage(VADriverContextP ctx, VAImageID image);
+ VAStatus vkvvPutImage(VADriverContextP ctx, VASurfaceID surface, VAImageID image, int src_x, int src_y, unsigned int src_width, unsigned int src_height, int dest_x, int dest_y,
+                       unsigned int dest_width, unsigned int dest_height);
+diff --git i/src/vulkan/codecs/h264/encode.cpp w/src/vulkan/codecs/h264/encode.cpp
+index 508ef61..d1dbcd2 100644
+--- i/src/vulkan/codecs/h264/encode.cpp
++++ w/src/vulkan/codecs/h264/encode.cpp
+@@ -99,7 +99,7 @@ namespace vkvv {
+         sps.flags.frame_cropping_flag              = seq->frame_cropping_flag;
+         sps.flags.seq_scaling_matrix_present_flag  = seq->seq_fields.bits.seq_scaling_matrix_present_flag && input->iq != nullptr;
+         sps.flags.vui_parameters_present_flag      = seq->vui_parameters_present_flag;
+-        sps.profile_idc                            = STD_VIDEO_H264_PROFILE_IDC_HIGH;
++        sps.profile_idc                            = STD_VIDEO_H264_PROFILE_IDC_BASELINE;
+         sps.level_idc                              = seq->level_idc != 0 ? clamp_h264_level(static_cast<StdVideoH264LevelIdc>(seq->level_idc), session->max_level) :
+                                                                            derive_h264_level_idc(seq->picture_width_in_mbs, seq->picture_height_in_mbs, session->max_level);
+         sps.chroma_format_idc                      = std_chroma_from_va(seq->seq_fields.bits.chroma_format_idc);
+@@ -470,7 +470,9 @@ namespace vkvv {
+         header->disable_deblocking_filter_idc          = static_cast<StdVideoH264DisableDeblockingFilterIdc>(slice.disable_deblocking_filter_idc);
+     }
+ 
+-    void fill_h264_encode_rate_control(const VkvvH264EncodeInput* input, VkVideoEncodeH264RateControlInfoKHR* h264_rate_control, VkVideoEncodeRateControlInfoKHR* rate_control) {
++    void fill_h264_encode_rate_control(const VkvvH264EncodeInput* input, VkVideoEncodeH264RateControlInfoKHR* h264_rate_control,
++                                       VkVideoEncodeRateControlInfoKHR* rate_control, VkVideoEncodeRateControlLayerInfoKHR* layer,
++                                       VkVideoEncodeH264RateControlLayerInfoKHR* h264_layer) {
+         const uint32_t gop_frames = input != nullptr && input->sequence != nullptr && input->sequence->intra_period > 0 ? input->sequence->intra_period : 1;
+         const uint32_t idr_period = input != nullptr && input->sequence != nullptr && input->sequence->intra_idr_period > 0 ? input->sequence->intra_idr_period : gop_frames;
+ 
+@@ -480,13 +482,32 @@ namespace vkvv {
+         h264_rate_control->idrPeriod              = idr_period;
+         h264_rate_control->consecutiveBFrameCount = 0;
+         h264_rate_control->temporalLayerCount     = 1;
++        h264_rate_control->flags                  = VK_VIDEO_ENCODE_H264_RATE_CONTROL_REFERENCE_PATTERN_FLAT_BIT_KHR |
++                                                   VK_VIDEO_ENCODE_H264_RATE_CONTROL_REGULAR_GOP_BIT_KHR;
+ 
+         *rate_control                 = {};
+         rate_control->sType           = VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR;
+         rate_control->pNext           = h264_rate_control;
+-        rate_control->rateControlMode = VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
++        rate_control->rateControlMode = input->rate_control_mode == VA_RC_CBR ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR
++                                                                              : VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
+         rate_control->layerCount      = 0;
+         rate_control->pLayers         = nullptr;
++        if (input->rate_control_mode == VA_RC_CBR) {
++            const uint32_t packed_fps = input->frame_rate != nullptr ? input->frame_rate->framerate : 30;
++            *layer = {};
++            layer->sType                = VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR;
++            *h264_layer                 = {};
++            h264_layer->sType           = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_RATE_CONTROL_LAYER_INFO_KHR;
++            layer->pNext                = h264_layer;
++            layer->averageBitrate       = input->rate_control->bits_per_second;
++            layer->maxBitrate           = input->rate_control->bits_per_second;
++            layer->frameRateNumerator   = std::max<uint32_t>(packed_fps & 0xffff, 1);
++            layer->frameRateDenominator = std::max<uint32_t>(packed_fps >> 16, 1);
++            rate_control->layerCount    = 1;
++            rate_control->pLayers       = layer;
++            rate_control->virtualBufferSizeInMs = input->rate_control->window_size;
++            rate_control->initialVirtualBufferSizeInMs = rate_control->virtualBufferSizeInMs / 2;
++        }
+     }
+ 
+     void fill_h264_encode_reference_info(const VkvvH264EncodeInput* input, StdVideoEncodeH264ReferenceInfo* reference) {
+@@ -877,8 +898,14 @@ VAStatus vkvv_vulkan_encode_h264(void* runtime_ptr, void* session_ptr, VkvvDrive
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, &session->readback, "H.264 encoded readback", reason, reason_size)) {
+         return fail_coded(VA_STATUS_ERROR_ALLOCATION_FAILED);
+     }
+-    if ((session->rate_control_modes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) == 0) {
+-        std::snprintf(reason, reason_size, "H.264 encode CQP requires disabled Vulkan rate-control mode, supported=0x%x", session->rate_control_modes);
++    const bool cbr = input->rate_control_mode == VA_RC_CBR;
++    if (cbr && (input->rate_control == nullptr || input->rate_control->bits_per_second == 0)) {
++        std::snprintf(reason, reason_size, "H.264 encode CBR requires a nonzero bitrate");
++        return fail_coded(VA_STATUS_ERROR_INVALID_PARAMETER);
++    }
++    const auto requested_mode = cbr ? VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR : VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR;
++    if ((session->rate_control_modes & requested_mode) == 0) {
++        std::snprintf(reason, reason_size, "H.264 encode rate-control mode 0x%x unsupported, available=0x%x", requested_mode, session->rate_control_modes);
+         return fail_coded(VA_STATUS_ERROR_UNSUPPORTED_RT_FORMAT);
+     }
+ 
+@@ -891,7 +918,7 @@ VAStatus vkvv_vulkan_encode_h264(void* runtime_ptr, void* session_ptr, VkvvDrive
+ 
+     VkVideoEncodeH264NaluSliceInfoKHR nalu_slice{};
+     nalu_slice.sType           = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_NALU_SLICE_INFO_KHR;
+-    nalu_slice.constantQp      = std::clamp<int32_t>(input->picture->pic_init_qp, 0, 51);
++    nalu_slice.constantQp      = cbr ? 0 : std::clamp<int32_t>(input->picture->pic_init_qp, 0, 51);
+     nalu_slice.pStdSliceHeader = &std_slice;
+ 
+     VkVideoEncodeH264PictureInfoKHR h264_picture{};
+@@ -936,7 +963,9 @@ VAStatus vkvv_vulkan_encode_h264(void* runtime_ptr, void* session_ptr, VkvvDrive
+ 
+     VkVideoEncodeH264RateControlInfoKHR h264_rate_control{};
+     VkVideoEncodeRateControlInfoKHR     rate_control{};
+-    fill_h264_encode_rate_control(input, &h264_rate_control, &rate_control);
++    VkVideoEncodeRateControlLayerInfoKHR rate_control_layer{};
++    VkVideoEncodeH264RateControlLayerInfoKHR h264_rate_control_layer{};
++    fill_h264_encode_rate_control(input, &h264_rate_control, &rate_control, &rate_control_layer, &h264_rate_control_layer);
+ 
+     std::lock_guard<std::mutex> command_lock(runtime->command_mutex);
+     if (!ensure_command_resources_for_queue(runtime, runtime->encode_queue_family, runtime->encode_queue, reason, reason_size)) {
+@@ -1086,8 +1115,9 @@ VAStatus vkvv_vulkan_encode_h264(void* runtime_ptr, void* session_ptr, VkvvDrive
+             reconstructed_resource->content_generation++;
+         }
+     }
+-    std::snprintf(reason, reason_size, "submitted H.264 Vulkan encode: %ux%u params=%llu bytes=%u coded=%u rc=disabled input_mem=%llu recon_mem=%llu output_mem=%llu",
++    std::snprintf(reason, reason_size, "submitted H.264 Vulkan encode: %ux%u params=%llu bytes=%u coded=%u rc=%s input_mem=%llu recon_mem=%llu output_mem=%llu",
+                   coded_extent.width, coded_extent.height, static_cast<unsigned long long>(parameter_prefix.size()), feedback.bytes_written, input->coded_buffer,
++                  cbr ? "cbr" : "cqp",
+                   static_cast<unsigned long long>(input_resource->allocation_size),
+                   static_cast<unsigned long long>(reconstructed_resource != nullptr ? reconstructed_resource->allocation_size : 0),
+                   static_cast<unsigned long long>(session->output.allocation_size));
+diff --git i/src/vulkan/codecs/h264/internal.h w/src/vulkan/codecs/h264/internal.h
+index 518aa92..29f4c8e 100644
+--- i/src/vulkan/codecs/h264/internal.h
++++ w/src/vulkan/codecs/h264/internal.h
+@@ -54,7 +54,7 @@ namespace vkvv {
+     inline constexpr VideoProfileSpec h264_encode_profile_spec{
+         .operation   = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
+         .bit_depth   = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+-        .std_profile = STD_VIDEO_H264_PROFILE_IDC_HIGH,
++        .std_profile = STD_VIDEO_H264_PROFILE_IDC_BASELINE,
+     };
+ 
+     struct H264StdParameters {
+diff --git i/src/vulkan/probe.cpp w/src/vulkan/probe.cpp
+index 786c2eb..b580a51 100644
+--- i/src/vulkan/probe.cpp
++++ w/src/vulkan/probe.cpp
+@@ -114,6 +114,7 @@ namespace {
+         caps->av1_10              = true;
+         caps->av1_12              = true;
+         caps->h264_encode         = true;
++        caps->h264_encode_cbr     = true;
+         caps->surface_export      = true;
+         caps->surface_export_nv12 = true;
+         caps->surface_export_p010 = true;
+@@ -339,6 +340,7 @@ namespace {
+ 
+     bool device_supports_h264_encode_profile(PFN_vkGetPhysicalDeviceQueueFamilyProperties2 get_queue_family_properties2,
+                                              PFN_vkGetPhysicalDeviceVideoCapabilitiesKHR get_video_capabilities, VkPhysicalDevice device, VkvvVideoProfileLimits* limits,
++                                             bool* cbr_supported,
+                                              char* reason, size_t reason_size) {
+         if (!device_has_required_encode_extensions(device, VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME)) {
+             std::snprintf(reason, reason_size, "missing-ext");
+@@ -352,7 +354,7 @@ namespace {
+ 
+         VkVideoEncodeH264ProfileInfoKHR h264_profile{};
+         h264_profile.sType         = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR;
+-        h264_profile.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_HIGH;
++        h264_profile.stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_BASELINE;
+ 
+         VkVideoProfileInfoKHR profile{};
+         profile.sType               = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+@@ -383,6 +385,9 @@ namespace {
+             limits->max_dpb_slots         = capabilities.video.maxDpbSlots;
+             limits->max_active_references = capabilities.video.maxActiveReferencePictures;
+         }
++        if (cbr_supported != nullptr) {
++            *cbr_supported = (capabilities.encode.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR) != 0;
++        }
+ 
+         std::snprintf(reason, reason_size, "ok");
+         return true;
+@@ -558,7 +563,8 @@ namespace {
+             caps->h264 =
+                 probe_one_profile(caps->h264, get_queue_family_properties2, get_video_capabilities, device, probes[0], &caps->h264_limits, h264_reason, sizeof(h264_reason));
+             if (!caps->h264_encode) {
+-                caps->h264_encode = device_supports_h264_encode_profile(get_queue_family_properties2, get_video_capabilities, device, &caps->h264_encode_limits, h264_enc_reason,
++                caps->h264_encode = device_supports_h264_encode_profile(get_queue_family_properties2, get_video_capabilities, device, &caps->h264_encode_limits,
++                                                                        &caps->h264_encode_cbr, h264_enc_reason,
+                                                                         sizeof(h264_enc_reason));
+             }
+             caps->h265 =
+diff --git i/tests/smoke/generic/codec_smoke.cpp w/tests/smoke/generic/codec_smoke.cpp
+index 5619607..77f721f 100644
+--- i/tests/smoke/generic/codec_smoke.cpp
++++ w/tests/smoke/generic/codec_smoke.cpp
+@@ -460,7 +460,7 @@ int main(void) {
+         ok = check_av1_parser(av1, 0, 8, VA_FOURCC_NV12, "AV1 NV12") && ok;
+         ok = check_av1_parser(av1, 1, 10, VA_FOURCC_P010, "AV1 P010") && ok;
+     }
+-    const VkvvEncodeOps* h264_encode_ops = vkvv_encode_ops_for_profile_entrypoint(VAProfileH264High, VAEntrypointEncSlice);
++    const VkvvEncodeOps* h264_encode_ops = vkvv_encode_ops_for_profile_entrypoint(VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice);
+     ok                                   = check(encode_ops_complete(h264_encode_ops), "H.264 EncSlice encode parser ops are incomplete") && ok;
+     if (h264_encode_ops != nullptr) {
+         ok = check(std::strcmp(h264_encode_ops->name, "h264-encode") == 0, "H.264 encode ops used the wrong name") && ok;
+@@ -483,6 +483,7 @@ int main(void) {
+     drv.caps.av1                 = true;
+     drv.caps.av1_10              = true;
+     drv.caps.h264_encode         = true;
++    drv.caps.h264_encode_cbr     = true;
+     drv.caps.surface_export      = true;
+     drv.caps.surface_export_nv12 = true;
+     drv.caps.surface_export_p010 = true;
+@@ -548,18 +549,18 @@ int main(void) {
+         check(av1_features.value != VA_ATTRIB_NOT_SUPPORTED && av1_feature_value.bits.lst_support == 0, "AV1 feature attribute should be present with large-scale tile disabled") &&
+         ok;
+ 
+-    const VkvvProfileCapability* h264_encode_hidden = vkvv_profile_capability_record(&drv, VAProfileH264High, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE);
++    const VkvvProfileCapability* h264_encode_hidden = vkvv_profile_capability_record(&drv, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE);
+     ok = check(h264_encode_hidden != nullptr && h264_encode_hidden->hardware_supported && !h264_encode_hidden->parser_wired && !h264_encode_hidden->runtime_wired &&
+                    !h264_encode_hidden->surface_wired && !h264_encode_hidden->advertise,
+                "H.264 EncSlice should stay hidden while the encode advertising gate is off") &&
+         ok;
+-    ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264High, VAEntrypointEncSlice) == nullptr, "H.264 EncSlice should not advertise with encode gate off") && ok;
++    ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice) == nullptr, "H.264 EncSlice should not advertise with encode gate off") && ok;
+ 
+     setenv("VKVV_ENABLE_ENCODE", "1", 1);
+     vkvv_init_profile_capabilities(&drv);
+     unsetenv("VKVV_ENABLE_ENCODE");
+ 
+-    const VkvvProfileCapability* h264_encode = vkvv_profile_capability_record(&drv, VAProfileH264High, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE);
++    const VkvvProfileCapability* h264_encode = vkvv_profile_capability_record(&drv, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, VKVV_CODEC_DIRECTION_ENCODE);
+     ok = check(h264_encode != nullptr && h264_encode->hardware_supported && h264_encode->parser_wired && h264_encode->runtime_wired && h264_encode->surface_wired &&
+                    h264_encode->advertise && h264_encode->direction == VKVV_CODEC_DIRECTION_ENCODE,
+                "H.264 EncSlice descriptor should be advertised when encode is supported") &&
+@@ -577,7 +578,7 @@ int main(void) {
+     VAConfigAttrib h264_rate_control{};
+     h264_rate_control.type = VAConfigAttribRateControl;
+     vkvv_fill_config_attribute(h264_encode, &h264_rate_control);
+-    ok = check(h264_rate_control.value == VA_RC_CQP, "H.264 EncSlice should advertise CQP only") && ok;
++    ok = check(h264_rate_control.value == (VA_RC_CQP | VA_RC_CBR), "H.264 EncSlice should advertise CQP and CBR") && ok;
+     VAConfigAttrib h264_max_slices{};
+     h264_max_slices.type = VAConfigAttribEncMaxSlices;
+     vkvv_fill_config_attribute(h264_encode, &h264_max_slices);
+@@ -586,7 +587,7 @@ int main(void) {
+     h264_packed_headers.type = VAConfigAttribEncPackedHeaders;
+     vkvv_fill_config_attribute(h264_encode, &h264_packed_headers);
+     ok = check(h264_packed_headers.value == VA_ENC_PACKED_HEADER_NONE, "H.264 EncSlice should not advertise packed headers yet") && ok;
+-    ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264High, VAEntrypointEncSlice) == h264_encode, "H.264 EncSlice should be advertised") && ok;
++    ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice) == h264_encode, "H.264 EncSlice should be advertised") && ok;
+     ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264High, VAEntrypointEncSliceLP) == nullptr, "H.264 EncSliceLP must remain hidden") && ok;
+     ok = check(vkvv_profile_capability_for_entrypoint(&drv, VAProfileH264High, VAEntrypointEncPicture) == nullptr, "H.264 EncPicture must remain hidden") && ok;
+ 
+diff --git i/tests/smoke/h264/encode_va_smoke.cpp w/tests/smoke/h264/encode_va_smoke.cpp
+index 39581ef..0917915 100644
+--- i/tests/smoke/h264/encode_va_smoke.cpp
++++ w/tests/smoke/h264/encode_va_smoke.cpp
+@@ -248,7 +248,7 @@ int main(void) {
+ 
+     VAEntrypoint entrypoints[4]   = {};
+     int          entrypoint_count = 0;
+-    ok                            = check_va(vaQueryConfigEntrypoints(display, VAProfileH264High, entrypoints, &entrypoint_count), "vaQueryConfigEntrypoints(H264High)") && ok;
++    ok                            = check_va(vaQueryConfigEntrypoints(display, VAProfileH264ConstrainedBaseline, entrypoints, &entrypoint_count), "vaQueryConfigEntrypoints(H264ConstrainedBaseline)") && ok;
+     ok                            = check(entrypoint_present(entrypoints, entrypoint_count, VAEntrypointVLD), "H.264 VLD entrypoint disappeared") && ok;
+     ok                            = check(entrypoint_present(entrypoints, entrypoint_count, VAEntrypointEncSlice), "H.264 EncSlice entrypoint was not advertised") && ok;
+     ok                            = check(!entrypoint_present(entrypoints, entrypoint_count, VAEntrypointEncSliceLP), "H.264 EncSliceLP should stay hidden") && ok;
+@@ -256,7 +256,7 @@ int main(void) {
+ 
+     VAConfigAttrib rt_attrib{};
+     rt_attrib.type = VAConfigAttribRTFormat;
+-    ok             = check_va(vaGetConfigAttributes(display, VAProfileH264High, VAEntrypointEncSlice, &rt_attrib, 1), "vaGetConfigAttributes(H264 EncSlice)") && ok;
++    ok             = check_va(vaGetConfigAttributes(display, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, &rt_attrib, 1), "vaGetConfigAttributes(H264 EncSlice)") && ok;
+     ok             = check((rt_attrib.value & VA_RT_FORMAT_YUV420) != 0, "H.264 EncSlice did not expose YUV420 RTFormat") && ok;
+ 
+     VAConfigAttrib encode_attribs[6]{};
+@@ -266,8 +266,8 @@ int main(void) {
+     encode_attribs[3].type = VAConfigAttribEncSliceStructure;
+     encode_attribs[4].type = VAConfigAttribEncQualityRange;
+     encode_attribs[5].type = VAConfigAttribEncPackedHeaders;
+-    ok                     = check_va(vaGetConfigAttributes(display, VAProfileH264High, VAEntrypointEncSlice, encode_attribs, 6), "vaGetConfigAttributes(H264 encode attrs)") && ok;
+-    ok                     = check(encode_attribs[0].value == VA_RC_CQP, "H.264 EncSlice should expose CQP only") && ok;
++    ok                     = check_va(vaGetConfigAttributes(display, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, encode_attribs, 6), "vaGetConfigAttributes(H264 encode attrs)") && ok;
++    ok                     = check(encode_attribs[0].value == (VA_RC_CQP | VA_RC_CBR), "H.264 EncSlice should expose CQP and CBR") && ok;
+     ok                     = check((encode_attribs[1].value & 0xffffu) >= 1, "H.264 EncSlice should expose at least one L0 reference") && ok;
+     ok                     = check(encode_attribs[2].value == 1, "H.264 EncSlice should expose one slice") && ok;
+     ok                     = check((encode_attribs[3].value & VA_ENC_SLICE_STRUCTURE_ARBITRARY_MACROBLOCKS) != 0, "H.264 EncSlice should expose macroblock slice structure") && ok;
+@@ -279,10 +279,12 @@ int main(void) {
+     cbr_attribs[0].value  = VA_RT_FORMAT_YUV420;
+     cbr_attribs[1].type   = VAConfigAttribRateControl;
+     cbr_attribs[1].value  = VA_RC_CBR;
+-    VAConfigID bad_config = VA_INVALID_ID;
+-    ok                    = expect_va(vaCreateConfig(display, VAProfileH264High, VAEntrypointEncSlice, cbr_attribs, 2, &bad_config), VA_STATUS_ERROR_ATTR_NOT_SUPPORTED,
+-                                      "vaCreateConfig(H264 EncSlice CBR)") &&
+-        ok;
++    VAConfigID cbr_config = VA_INVALID_ID;
++    ok                    = check_va(vaCreateConfig(display, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, cbr_attribs, 2, &cbr_config),
++                                     "vaCreateConfig(H264 EncSlice CBR)") && ok;
++    if (cbr_config != VA_INVALID_ID) {
++        ok = check_va(vaDestroyConfig(display, cbr_config), "vaDestroyConfig(H264 EncSlice CBR)") && ok;
++    }
+ 
+     VAConfigAttrib create_attribs[2]{};
+     create_attribs[0].type  = VAConfigAttribRTFormat;
+@@ -290,7 +292,7 @@ int main(void) {
+     create_attribs[1].type  = VAConfigAttribRateControl;
+     create_attribs[1].value = VA_RC_CQP;
+     VAConfigID config       = VA_INVALID_ID;
+-    ok                      = check_va(vaCreateConfig(display, VAProfileH264High, VAEntrypointEncSlice, create_attribs, 2, &config), "vaCreateConfig(H264 EncSlice CQP)") && ok;
++    ok                      = check_va(vaCreateConfig(display, VAProfileH264ConstrainedBaseline, VAEntrypointEncSlice, create_attribs, 2, &config), "vaCreateConfig(H264 EncSlice CQP)") && ok;
+ 
+     VASurfaceID surfaces[3] = {VA_INVALID_SURFACE, VA_INVALID_SURFACE, VA_INVALID_SURFACE};
+     VAContextID context     = VA_INVALID_ID;

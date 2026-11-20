@@ -356,6 +356,15 @@ FFmpeg/GStreamer encoders are not a Chrome/Meet hardware encoder. Renderer,
 capture and GPU-process CPU costs were measured, but Meet's negotiated send
 codec, effects and camera-off delta remain unobserved. No experimental
 browser flags were enabled in the running call.
+A separate [opt-in Vulkan Video VA-API H.264 bridge](platform/video/vaapi-h264/README.md)
+now gives Chrome 156 a functional `VaapiVideoEncodeAccelerator` for H.264
+Constrained Baseline with CBR on the running 615 stack. In an isolated
+Chrome/WebRTC loopback with the installed user-local driver, 151 frames were
+hardware-encoded, sent, received and decoded with zero browser encoder errors.
+This is Chrome/WebRTC integration, not yet a Google Meet call or a measured
+CPU/power improvement. Meet must negotiate H.264; VP8/VP9/AV1 sends remain
+software paths through this bridge. The ordinary Chrome profile and installed
+NVDEC VA-API driver remain unchanged.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.

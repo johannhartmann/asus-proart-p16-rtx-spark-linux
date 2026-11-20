@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+upstream_commit=18d4c427d01a59ad51be9f28435948567a709ace
+source_url=https://github.com/imperishableSecret/vulkan-video-vaapi.git
+driver_dir=${P16_VAAPI_DRIVER_DIR:-${HOME}/.local/lib/p16-vaapi-h264}
+build_root=$(mktemp -d "${TMPDIR:-/tmp}/p16-vaapi-h264-build.XXXXXXXX")
+trap 'rm -rf -- "$build_root"' EXIT
+
+for command in git meson ninja pkg-config install; do
+  command -v "$command" >/dev/null || { echo "Missing build tool: $command" >&2; exit 127; }
+done
+
+meson_args=()
+if [[ -n ${VULKAN_HEADER_DIR:-} ]]; then
+  [[ -f ${VULKAN_HEADER_DIR}/vulkan/vulkan.h ]] || {
+    echo "VULKAN_HEADER_DIR must contain vulkan/vulkan.h" >&2; exit 2;
+  }
+  meson_args+=("-Dcpp_args=-I${VULKAN_HEADER_DIR}")
+elif [[ ! -f /usr/include/vulkan/vulkan.h ]]; then
+  echo 'Install vulkan-headers or set VULKAN_HEADER_DIR to a Vulkan include directory' >&2
+  exit 2
+fi
+
+git clone --quiet --filter=blob:none --single-branch --branch h264-encode-vulkan "$source_url" "$build_root/source"
+actual_commit=$(git -C "$build_root/source" rev-parse HEAD)
+if [[ $actual_commit != "$upstream_commit" ]]; then
+  echo "Upstream branch moved: expected $upstream_commit, found $actual_commit" >&2
+  exit 1
+fi
+git -C "$build_root/source" apply --check "$script_dir/0001-n1x-chrome-h264-baseline-cbr.patch"
+git -C "$build_root/source" apply "$script_dir/0001-n1x-chrome-h264-baseline-cbr.patch"
+
+meson setup "$build_root/source/build" "$build_root/source" \
+  -Doptimization=2 -Ddebug=false -Db_ndebug=true "${meson_args[@]}"
+meson compile -C "$build_root/source/build"
+meson test -C "$build_root/source/build" --print-errorlogs
+
+install -Dm755 "$build_root/source/build/nvidia_vulkan_drv_video.so" \
+  "$driver_dir/nvidia_vulkan_drv_video.so"
+printf 'Installed %s\n' "$driver_dir/nvidia_vulkan_drv_video.so"
