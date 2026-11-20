@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "P16 Meet H.264 codec preference",
+  "version": "0.1.0",
+  "description": "Restrict Meet video negotiation to H.264 for the P16 Vulkan Video VA-API encoder.",
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["codec-gate.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    }
+  ]
+}

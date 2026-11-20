@@ -8,11 +8,12 @@ import {join} from 'node:path';
 
 const output = process.argv[2];
 const driverPath = process.argv.find(arg => arg.startsWith('--driver-path='))?.slice(14);
+const gatePath = process.argv.find(arg => arg.startsWith('--gate='))?.slice(7);
 const browser = process.argv.find(arg => arg.startsWith('--browser='))?.slice(10) ?? '/usr/bin/google-chrome-stable';
 const profile = process.argv.find(arg => arg.startsWith('--profile='))?.slice(10) ?? 'high';
 if (!['high', 'baseline'].includes(profile)) throw Error(`Invalid profile ${profile}`);
 if (!output || !driverPath) {
-  console.error('Usage: node scripts/check-browser-encode.mjs RESULT.json --driver-path=/absolute/build/dir [--browser=/absolute/chrome]');
+  console.error('Usage: node scripts/check-browser-encode.mjs RESULT.json --driver-path=/absolute/build/dir [--gate=/absolute/codec-gate.js] [--browser=/absolute/chrome]');
   process.exit(2);
 }
 const version = spawnSync(browser, ['--version'], {encoding:'utf8', timeout:5000});
@@ -21,6 +22,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const temp = await mkdtemp(join(tmpdir(), 'p16-browser-encode-'));
   const html = `<!doctype html><video id="remote" autoplay muted playsinline></video><script>
 window.runEncodeTest = async () => {
+  const manualPreference = ${!gatePath};
   const canvas = document.createElement('canvas');
   canvas.width = 640; canvas.height = 360;
   const ctx = canvas.getContext('2d');
@@ -45,7 +47,7 @@ window.runEncodeTest = async () => {
     if (!h264.length) throw Error('Chrome offers no H.264 WebRTC codec');
     h264.sort((a, b) => Number(/profile-level-id=${profile === 'high' ? '6400' : '42e0'}/i.test(b.sdpFmtpLine ?? '')) -
                         Number(/profile-level-id=${profile === 'high' ? '6400' : '42e0'}/i.test(a.sdpFmtpLine ?? '')));
-    transceiver.setCodecPreferences(h264);
+    if (manualPreference) transceiver.setCodecPreferences(h264);
     await sender.setLocalDescription(await sender.createOffer());
     await receiver.setRemoteDescription(sender.localDescription);
     await receiver.setLocalDescription(await receiver.createAnswer());
@@ -64,6 +66,7 @@ window.runEncodeTest = async () => {
     const receiverStats = await receiver.getStats();
     const inbound = [...receiverStats.values()].find(item => item.type === 'inbound-rtp' && item.kind === 'video');
     return {offeredH264:h264.map(item => item.sdpFmtpLine),
+      codecGate:window.__p16MeetH264CodecGate?.counters,
       outbound: outbound && {framesEncoded:outbound.framesEncoded, framesSent:outbound.framesSent,
         encoderImplementation:outbound.encoderImplementation, powerEfficientEncoder:outbound.powerEfficientEncoder,
         totalEncodeTime:outbound.totalEncodeTime, frameWidth:outbound.frameWidth, frameHeight:outbound.frameHeight},
@@ -116,6 +119,13 @@ try {
     ws.send(JSON.stringify({id:number,method,params}));
   });
   try {
+    if (gatePath) {
+      await request('Page.enable');
+      const injection = await request('Page.addScriptToEvaluateOnNewDocument', {
+        source:await readFile(gatePath, 'utf8'),
+      });
+      if (injection.error) throw Error(JSON.stringify(injection.error));
+    }
     await request('Page.navigate', {url:`http://127.0.0.1:${server.address().port}/`});
     await delay(500);
     const result = await Promise.race([

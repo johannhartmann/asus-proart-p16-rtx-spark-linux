@@ -367,9 +367,17 @@ camera-on call. Its active outbound video stream nevertheless negotiated AV1
 and reported `encoderImplementation=libaom` at 180 pixels high. The H.264
 bridge cannot accelerate that selected stream, and no Meet CPU/power benefit
 has been demonstrated. Meet must negotiate H.264 to use the current bridge;
-an AV1 Vulkan Video VA-API encode implementation or another supported way to
-choose H.264 is still needed for the observed Meet configuration. The ordinary
-Chrome profile and installed NVDEC VA-API driver remain unchanged.
+the [Meet-scoped H.264 codec gate](docs/evidence/n1x-media-20261120/chrome-meet-h264-codec-gate.md)
+now constrains video senders through WebRTC's codec-preference API. In a local
+Chrome/WebRTC run without a page codec preference, it selected H.264
+Constrained Baseline and sent/received 148 frames with 148 Vulkan submissions
+and zero browser encoder errors. The branded-Chrome launcher loaded the gate
+before page navigation. Live Meet qualification remains pending: the old room
+and a second active room refused entry to the separate, unsigned-in profile
+before any outbound stream existed. A fresh Chrome profile without the gate
+got the same error in the second room, so the extension was not the cause.
+No live CPU/power gain is claimed.
+The ordinary Chrome profile and installed NVDEC VA-API driver remain unchanged.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.

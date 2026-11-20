@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "browser_version": "Google Chrome 156.0.8078.79",
+  "codec": {
+    "mimeType": "video/H264",
+    "sdpFmtpLine": "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f"
+  },
+  "codecGate": {
+    "attempts": 3,
+    "applied": 3,
+    "errors": 0
+  },
+  "outbound": {
+    "framesEncoded": 148,
+    "framesSent": 148,
+    "totalEncodeTime": 1.533,
+    "frameWidth": 640,
+    "frameHeight": 360
+  },
+  "framesReceived": 148,
+  "framesDecoded": 147,
+  "remoteWidth": 640,
+  "hardware_submissions": 148,
+  "browser_encoder_errors": 0
+}

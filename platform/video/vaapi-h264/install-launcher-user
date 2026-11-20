@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+support_dir=${P16_MEET_SUPPORT_DIR:-${XDG_DATA_HOME:-${HOME}/.local/share}/p16-meet-support}
+install -Dm755 "$script_dir/run-meet-chrome.mjs" "$support_dir/run-meet-chrome.mjs"
+install -Dm644 "$script_dir/meet-h264-codec/manifest.json" "$support_dir/meet-h264-codec/manifest.json"
+install -Dm644 "$script_dir/meet-h264-codec/codec-gate.js" "$support_dir/meet-h264-codec/codec-gate.js"
+install -Dm755 "$script_dir/p16-meet-chrome" "${HOME}/.local/bin/p16-meet-chrome"
+printf 'Installed Meet launcher and codec gate in %s\n' "$support_dir"
