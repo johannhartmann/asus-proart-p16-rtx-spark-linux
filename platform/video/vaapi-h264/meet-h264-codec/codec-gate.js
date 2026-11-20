@@ -1,4 +1,4 @@
-// Runs only in the dedicated P16 Meet Chrome profile, before Meet's own code.
+// Runs on Google Meet before the site's own code.
 // Keep changes to the standard WebRTC negotiation API; do not rewrite SDP.
 (() => {
   if (globalThis.__p16MeetH264CodecGate || !globalThis.RTCPeerConnection ||

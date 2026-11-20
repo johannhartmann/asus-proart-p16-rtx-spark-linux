@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+data_dir=${XDG_DATA_HOME:-$HOME/.local/share}
+app_dir="$data_dir/applications"
+state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/p16-meet-chrome
+launcher="$data_dir/p16-meet-chrome-launcher/google-chrome-stable"
+extension_id=$(cat "$state_dir/extension-id")
+if [[ ! $extension_id =~ ^[a-p]{32}$ || ! -r /usr/share/google-chrome/extensions/$extension_id.json ]]; then
+  echo 'Run install-chrome-extension before installing the default Chrome launcher' >&2
+  exit 2
+fi
+
+entries=(google-chrome.desktop com.google.Chrome.desktop)
+for name in "${entries[@]}"; do
+  if [[ -e $app_dir/$name ]] && ! grep -Fxq 'X-P16-Meet-Launcher=true' "$app_dir/$name"; then
+    echo "Existing user desktop entry at $app_dir/$name; refusing to overwrite it" >&2
+    exit 2
+  fi
+done
+
+work_dir=$(mktemp -d)
+trap 'rm -rf -- "$work_dir"' EXIT
+for name in "${entries[@]}"; do
+  # Preserve the desktop ID, URL handlers, translations and actions. Drop the
+  # duplicate or misplaced StartupWMClass entries in the Arch desktop file.
+  awk -v launcher="$launcher" '
+    /^\[/ { main = $0 == "[Desktop Entry]" }
+    /^\[Desktop Entry\]$/ { print; print "X-P16-Meet-Launcher=true"; next }
+    /^StartupWMClass=/ { if (main && !seen++) print "StartupWMClass=google-chrome"; next }
+    /^Exec=\/usr\/bin\/google-chrome-stable( |$)/ {
+      if (main) replaced = 1
+      print "Exec=" launcher substr($0, length("Exec=/usr/bin/google-chrome-stable") + 1)
+      next
+    }
+    { print }
+    END { if (!replaced) exit 1 }
+  ' "/usr/share/applications/$name" > "$work_dir/$name"
+  desktop-file-validate "$work_dir/$name"
+done
+
+install -Dm755 "$script_dir/google-chrome-stable-p16" "$launcher"
+install -Dm644 -t "$app_dir" "${entries[@]/#/$work_dir/}"
+update-desktop-database "$app_dir"
+printf 'Installed Chrome desktop entries for %s\n' "$launcher"

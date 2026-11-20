@@ -376,8 +376,13 @@ before page navigation. Live Meet qualification remains pending: the old room
 and a second active room refused entry to the separate, unsigned-in profile
 before any outbound stream existed. A fresh Chrome profile without the gate
 got the same error in the second room, so the extension was not the cause.
-No live CPU/power gain is claimed.
-The ordinary Chrome profile and installed NVDEC VA-API driver remain unchanged.
+The [normal Chrome integration](docs/evidence/n1x-media-20261120/chrome-default-meet-launcher.md)
+uses Chrome's Linux CRX installation and the ordinary Omarchy browser launcher.
+An isolated Chrome process launched through this path loaded the installed
+extension at the Meet origin and produced 151 H.264 frames with 151 Vulkan
+encode submissions and zero browser encoder errors. A real call in the
+regular signed-in profile still needs qualification and a matched CPU
+comparison. The system NVDEC VA-API installation remains available.
 The [P16 RGB camera contention test](scripts/check-p16-camera-contention.py)
 holds a 120-frame V4L2 capture, observes `Device or resource busy` from a
 second client, then captures 10 frames after release.

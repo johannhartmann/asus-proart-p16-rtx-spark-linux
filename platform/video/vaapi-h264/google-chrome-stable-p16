@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+chrome=/usr/bin/google-chrome-stable
+driver_dir=${P16_VAAPI_DRIVER_DIR:-$HOME/.local/lib/p16-vaapi-h264}
+if [[ ! -r $driver_dir/nvidia_vulkan_drv_video.so ]]; then
+  exec "$chrome" "$@"
+fi
+
+# Chrome uses the last --enable-features option. Preserve the features in
+# Omarchy's chrome-flags.conf when adding the media features.
+features=AcceleratedVideoEncoder,AcceleratedVideoDecodeLinuxGL,VaapiOnNvidiaGPUs,VaapiIgnoreDriverChecks,VaapiVideoDecoder
+config=${XDG_CONFIG_HOME:-$HOME/.config}/chrome-flags.conf
+if [[ -r $config ]]; then
+  while read -r line || [[ -n $line ]]; do
+    if [[ $line == --enable-features=* ]]; then
+      features+=,${line#--enable-features=}
+    fi
+  done < "$config"
+fi
+
+export LIBVA_DRIVER_NAME=nvidia_vulkan LIBVA_DRIVERS_PATH="$driver_dir" VKVV_ENABLE_ENCODE=1
+exec "$chrome" --ignore-gpu-blocklist --use-gl=angle --use-angle=gl \
+  "--enable-features=$features" "$@"

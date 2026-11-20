@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/p16-meet-chrome
+chrome_extensions=/usr/share/google-chrome/extensions
+mkdir -p "$state_dir"
+work_dir=$(mktemp -d)
+trap 'rm -rf -- "$work_dir"' EXIT
+
+# Keep the signing key local so Chrome sees later versions as updates.
+key="$state_dir/extension.pem"
+if [[ ! -f $key ]]; then
+  openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$work_dir/extension.pem" 2>/dev/null
+  install -m600 "$work_dir/extension.pem" "$key"
+fi
+cp -r "$script_dir/meet-h264-codec" "$work_dir/gate"
+/usr/bin/google-chrome-stable --headless "--user-data-dir=$work_dir/chrome" \
+  "--pack-extension=$work_dir/gate" "--pack-extension-key=$key"
+extension_id=$(openssl pkey -in "$key" -pubout -outform DER |
+  sha256sum | cut -c1-32 | tr '0123456789abcdef' 'abcdefghijklmnop')
+mv -- "$work_dir/gate.crx" "$work_dir/$extension_id.crx"
+python3 - "$work_dir/gate/manifest.json" "$chrome_extensions/$extension_id.crx" > "$work_dir/$extension_id.json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1]) as manifest:
+    version = json.load(manifest)["version"]
+print(json.dumps({"external_crx": sys.argv[2], "external_version": version}, indent=2))
+PY
+
+printf 'Installing Chrome extension %s in %s\n' "$extension_id" "$chrome_extensions"
+pkexec --disable-internal-agent /usr/bin/install -Dm644 -t "$chrome_extensions" \
+  "$work_dir/$extension_id.crx" "$work_dir/$extension_id.json"
+printf '%s\n' "$extension_id" > "$state_dir/extension-id"

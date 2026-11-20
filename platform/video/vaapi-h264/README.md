@@ -33,10 +33,59 @@ driver, runs all 22 upstream smoke tests, and installs
 upstream branch has moved. If `/usr/include/vulkan/vulkan.h` is installed,
 `VULKAN_HEADER_DIR` can be omitted. `P16_VAAPI_DRIVER_DIR` changes the user
 installation directory for the driver and launcher. `install-launcher-user`
-installs the Meet-only codec gate and launcher under the user's home directory;
+installs the Meet-only codec gate and isolated test launcher under the user's home directory;
 `P16_MEET_SUPPORT_DIR` changes their installation directory.
 
-## Use and verify
+## Use in the normal Chrome profile
+
+After building the driver, install the extension and the desktop entries:
+
+```bash
+platform/video/vaapi-h264/install-chrome-extension
+platform/video/vaapi-h264/install-default-chrome-user
+```
+
+The first command packs the extension with Chrome and installs the CRX and
+its descriptor in `/usr/share/google-chrome/extensions/`. This uses
+[Chrome's documented Linux extension installation](https://developer.chrome.com/docs/extensions/how-to/distribute/install-extensions)
+and requires graphical Polkit authentication. The extension is available to
+local Chrome profiles and only runs on `meet.google.com`. Its signing key
+stays in the installing user's state directory. Increase the manifest version
+when distributing an update so Chrome replaces its installed copy.
+
+The second command installs user desktop entries under the original Chrome
+desktop IDs. Omarchy's normal browser shortcut and application launcher then
+start Chrome with the VA-API bridge, preserving the signed-in profile and
+the features from `chrome-flags.conf`. Chrome must exit once before the flags
+take effect. After the first restart, open a fresh Meet tab once the extension
+is visible under `chrome://extensions`. The normal profile needs no DevTools
+connection. Starting the vendor binary directly before the desktop launcher
+can still start Chrome without the video flags.
+
+Verify the external CRX and launcher together with the installed-extension
+mode of the loopback test:
+
+```bash
+node scripts/check-browser-encode.mjs /tmp/p16-chrome-encode.json \
+  --profile=baseline --headless \
+  --driver-path="$HOME/.local/lib/p16-vaapi-h264" \
+  --installed-gate="$(cat "${XDG_STATE_HOME:-$HOME/.local/state}/p16-meet-chrome/extension-id")" \
+  --browser="${XDG_DATA_HOME:-$HOME/.local/share}/p16-meet-chrome-launcher/google-chrome-stable"
+```
+
+This test opens an isolated headless Chrome instance, verifies automatic
+extension loading and uses a local fixture at the real Meet origin. It makes
+no call to a Meet server. The [qualification record](../../../docs/evidence/n1x-media-20261120/chrome-default-meet-launcher.md)
+reports the results and tracks the real call separately.
+
+To roll back, remove the two Chrome desktop entries marked
+`X-P16-Meet-Launcher=true` in the user's application directory. Remove the
+extension's `<extension-id>.json` and `<extension-id>.crx` from
+`/usr/share/google-chrome/extensions/` with administrator privileges, using
+the ID saved by the installer. Chrome applies these changes at its next
+full restart.
+
+## Isolated testing
 
 ```bash
 p16-meet-chrome
@@ -49,7 +98,8 @@ node scripts/check-browser-encode.mjs /tmp/p16-webrtc-encode.json \
 `${XDG_DATA_HOME:-$HOME/.local/share}/p16-meet-chrome`. Sign into Meet there.
 `P16_MEET_CHROME_PROFILE` can choose a different profile. A running ordinary
 Chrome process cannot acquire the new VA-API library or flags without a restart;
-the dedicated profile prevents Chrome from silently reusing that process.
+the dedicated profile prevents Chrome from silently reusing that process
+during tests.
 
 The launcher loads a [Meet-only H.264 codec gate](meet-h264-codec/codec-gate.js)
 before opening the site. It calls the standard WebRTC
@@ -58,7 +108,7 @@ offering H.264 with retransmission and error repair. Receive-only transceivers
 keep their original codecs. The gate leaves negotiation alone if Chrome does
 not advertise H.264. The remote peer must still accept H.264 and the requested
 stream must be supported by the hardware encoder. The extension only runs on
-`meet.google.com` in this dedicated profile.
+`meet.google.com`.
 
 Google Chrome 137+ ignores the `--load-extension` flag. The launcher uses a
 local DevTools pipe to load the unpacked extension before Meet opens and keeps
@@ -87,10 +137,8 @@ frame count and encode time; H.264 must be negotiated for this driver to be
 used. The [first live check without the codec gate](../../../docs/evidence/n1x-media-20261120/chrome-live-meet-vulkan-vaapi.md)
 joined Meet with this profile and observed an active AV1 stream using the
 software `libaom` encoder. The bridge loaded, but Meet did not select H.264.
-Compare CPU load with the same resolution, effects and participants in
-ordinary Chrome and this isolated profile only after hardware encode is
-actually selected. Meet may negotiate VP8, VP9 or AV1, for which this
-H.264-only driver does not provide encode. Camera decode and Meet's effects
+Compare CPU load with the same resolution, effects and participants, after
+confirming which encoder each call uses. Camera decode and Meet's effects
 remain separate CPU costs.
 
 No reboot is required. To roll back, close the dedicated Chrome window and use

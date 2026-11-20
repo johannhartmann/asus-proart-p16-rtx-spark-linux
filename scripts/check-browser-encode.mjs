@@ -2,18 +2,20 @@
 // Verify a real H.264 WebRTC sender with an isolated Chrome profile and VA driver.
 import {spawn, spawnSync} from 'node:child_process';
 import {createServer} from 'node:http';
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
+import {mkdtemp, readdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
 const output = process.argv[2];
 const driverPath = process.argv.find(arg => arg.startsWith('--driver-path='))?.slice(14);
 const gatePath = process.argv.find(arg => arg.startsWith('--gate='))?.slice(7);
+const installedGate = process.argv.find(arg => arg.startsWith('--installed-gate='))?.slice(17);
+const headless = process.argv.includes('--headless');
 const browser = process.argv.find(arg => arg.startsWith('--browser='))?.slice(10) ?? '/usr/bin/google-chrome-stable';
 const profile = process.argv.find(arg => arg.startsWith('--profile='))?.slice(10) ?? 'high';
 if (!['high', 'baseline'].includes(profile)) throw Error(`Invalid profile ${profile}`);
-if (!output || !driverPath) {
-  console.error('Usage: node scripts/check-browser-encode.mjs RESULT.json --driver-path=/absolute/build/dir [--gate=/absolute/codec-gate.js] [--browser=/absolute/chrome]');
+if (!output || !driverPath || (installedGate && (gatePath || !/^[a-p]{32}$/.test(installedGate)))) {
+  console.error('Usage: node scripts/check-browser-encode.mjs RESULT.json --driver-path=/absolute/build/dir [--gate=/absolute/codec-gate.js | --installed-gate=EXTENSION_ID] [--browser=/absolute/chrome] [--headless]');
   process.exit(2);
 }
 const version = spawnSync(browser, ['--version'], {encoding:'utf8', timeout:5000});
@@ -22,7 +24,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const temp = await mkdtemp(join(tmpdir(), 'p16-browser-encode-'));
   const html = `<!doctype html><video id="remote" autoplay muted playsinline></video><script>
 window.runEncodeTest = async () => {
-  const manualPreference = ${!gatePath};
+  const manualPreference = ${!gatePath && !installedGate};
   const canvas = document.createElement('canvas');
   canvas.width = 640; canvas.height = 360;
   const ctx = canvas.getContext('2d');
@@ -89,9 +91,10 @@ try {
   const flags = ['AcceleratedVideoEncoder', 'VaapiOnNvidiaGPUs', 'VaapiIgnoreDriverChecks'];
   chrome = spawn(browser, [
     `--user-data-dir=${temp}`, '--remote-debugging-address=127.0.0.1',
-    '--remote-debugging-port=0', '--no-first-run', '--disable-extensions',
-    `--enable-features=${flags.join(',')}`, '--ignore-gpu-blocklist',
-    '--use-gl=angle', '--use-angle=gl', '--ozone-platform=wayland',
+    '--remote-debugging-port=0', '--no-first-run',
+    ...(headless ? ['--headless'] : []),
+    ...(installedGate ? [] : ['--disable-extensions', `--enable-features=${flags.join(',')}`,
+      '--ignore-gpu-blocklist', '--use-gl=angle', '--use-angle=gl', '--ozone-platform=wayland']),
     '--enable-logging=stderr', '--vmodule=vaapi*=3,gpu_video_encode_accelerator_factory*=3,rtc_video_encoder*=3',
     'about:blank',
   ], {stdio:['ignore', 'ignore', 'pipe'], env:{...process.env,
@@ -105,6 +108,18 @@ try {
     catch { await delay(100); }
   }
   if (!port) throw Error('Chrome DevTools port did not open');
+  if (installedGate) {
+    const path = join(temp, 'Default', 'Extensions', installedGate);
+    let versions = [];
+    for (let i = 0; i < 100 && !versions.length; i++) {
+      versions = await readdir(path).catch(error => {
+        if (error.code !== 'ENOENT') throw error;
+        return [];
+      });
+      if (!versions.length) await delay(100);
+    }
+    if (!versions.length) throw Error('Chrome did not install the external codec gate');
+  }
   const pages = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
   const ws = new WebSocket(pages.find(page => page.type === 'page').webSocketDebuggerUrl);
   const pending = new Map();
@@ -113,6 +128,12 @@ try {
   ws.onmessage = event => {
     const reply = JSON.parse(event.data);
     if (pending.has(reply.id)) { pending.get(reply.id)(reply); pending.delete(reply.id); }
+    if (reply.method === 'Fetch.requestPaused') {
+      const {requestId} = reply.params;
+      void request('Fetch.fulfillRequest', {requestId, responseCode:200,
+        responseHeaders:[{name:'content-type', value:'text/html; charset=utf-8'}],
+        body:Buffer.from(html).toString('base64')});
+    }
   };
   const request = (method, params = {}) => new Promise(resolve => {
     const number = ++id; pending.set(number, resolve);
@@ -126,7 +147,15 @@ try {
       });
       if (injection.error) throw Error(JSON.stringify(injection.error));
     }
-    await request('Page.navigate', {url:`http://127.0.0.1:${server.address().port}/`});
+    let url = `http://127.0.0.1:${server.address().port}/`;
+    if (installedGate) {
+      // Serve the test HTML at the extension's real match origin without
+      // contacting Meet. Chrome must inject its installed content script.
+      url = 'https://meet.google.com/p16-codec-test';
+      const interception = await request('Fetch.enable', {patterns:[{urlPattern:url}]});
+      if (interception.error) throw Error(JSON.stringify(interception.error));
+    }
+    await request('Page.navigate', {url});
     await delay(500);
     const result = await Promise.race([
       request('Runtime.evaluate', {expression:'window.runEncodeTest()', awaitPromise:true, returnByValue:true}),
@@ -138,11 +167,12 @@ try {
     }
     const hardwareSubmissions = (stderr.match(/submitted H\.264 Vulkan encode:/g) ?? []).length;
     const encoderErrors = (stderr.match(/NotifyErrorStatus\(|Failed to end picture encode issue/g) ?? []).length;
-    const hardware = values.outbound?.framesEncoded > 30 && values.framesReceived > 30 &&
+    const hardware = (!installedGate || values.codecGate?.applied > 0) &&
+      values.outbound?.framesEncoded > 30 && values.framesReceived > 30 &&
       values.framesDecoded > 30 && values.remoteWidth === 640 &&
       hardwareSubmissions >= values.outbound.framesEncoded * 0.9 && encoderErrors === 0;
     const report = {status:hardware ? 'pass' : 'unqualified', browser_version:version.stdout.trim(),
-      driver_path:driverPath, flags, ...values,
+      driver_path:driverPath, ...(installedGate ? {installed_gate:true} : {flags}), ...values,
       hardware_submissions:hardwareSubmissions, browser_encoder_errors:encoderErrors,
       driver_log:stderr.split('\n').filter(line =>
         /vaapi_video_encode_accelerator|NotifyError|software_fallback|submitted H\.264 Vulkan encode|captured H\.264 encode|ERROR|H\.264 encode .*failed/i.test(line)).slice(-120)};
