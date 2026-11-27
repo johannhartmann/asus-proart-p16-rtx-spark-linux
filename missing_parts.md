@@ -36,7 +36,7 @@ cannot qualify that separate platform pipeline.
 | Track | Current evidence | Required end state |
 | --- | --- | --- |
 | NVDEC | H.264, HEVC and AV1 8-bit plus HEVC/AV1 10-bit, HEVC RExt 12-bit 4:2:0 and 4:4:4, VP9 8/10/12-bit, VP8, MPEG-2 and MJPEG samples pass through tested hardware paths; HEVC 4:4:4 8/10/12-bit and 4:2:2 8/10/12-bit plus H.264 High 4:2:2 8/10-bit CUVID pixels match software; H.264 High 4:4:4 8/10-bit is explicitly unsupported by CUVID; installed mpv uses H.264 VA-API and HEVC 4:4:4 Vulkan Video decode; installed FFplay uses CUVID plus libplacebo/Vulkan for 4:2:2 without observed chroma downsampling. Google Chrome 156 uses VA-API for short H.264, VP9 and AV1 1280×720 tests with the installed P16 launcher, while Arch ARM Chromium 156 fell back to software in the H.264 test. An NVRM allocation warning occurred during the first AV1 run; the identical repeat was clean | Advertised format/profile cases tested where supported; browser and desktop playback, plus boot/resume, demonstrably use hardware decode |
-| NVENC | Isolated ARM64 FFmpeg package installed; [the installed 9.0.2-7 test](docs/evidence/n1x-media-20261118/installed-nvenc-package7-kernel38/installed-nvenc.json) confirms H.264, HEVC and AV1 NVENC sessions still fail with error 21 on driver 615.78.08. Vulkan Video H.264/HEVC/AV1 8-bit plus HEVC/AV1 10-bit encoding works through a different API. The live RGB camera has recordings through FFmpeg, GStreamer and an installed OBS→NUT→Vulkan H.264/AAC bridge. AV1 Vulkan default/inter-frame output decodes but loses fidelity: the same 120 real camera frames score 31.89 dB with default GOP and 53.80 dB all-intra. Explicit 10–40 Mbit/s targets also fail delayed decode in 30-second camera runs. Installed `p16-media-tools 0.1.0-12` now gives 905/905 independently decoded live-camera H.264 frames and 905/905 all-intra AV1 frames with both software decoders. This does not change the NVENC error. | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
+| NVENC | H.264, HEVC and AV1 NVENC sessions fail with error 21 on both 615.78.08 and 620.70.06. Direct CUDA and OpenGL probes on 620 reach RM command `0x20808163`, which returns `0x57` before codec selection. The three Vulkan Video encoders complete 30-frame round trips on 620. The live RGB camera has Vulkan recordings through FFmpeg, GStreamer and the installed OBS bridge. Default/inter-frame AV1 Vulkan output loses fidelity and some explicit bitrate targets fail delayed decode in longer camera runs. Installed `p16-media-tools 0.1.0-12` gives 905/905 independently decoded live-camera H.264 frames and 905/905 all-intra AV1 frames. [620 session and hardware evidence](docs/evidence/nvidia620-native-20261127.md#nvenc-session-failure-and-hardware-encode-control) | A packaged Linux NVENC encoder path, verified H.264/HEVC/AV1 outputs, and an actual recording or stream using NVENC |
 | GPU video effects | Installed mpv/libplacebo Vulkan scaling and interpolation exercised in playback. The P16 OLED carries actual HDR10 HEVC playback through Vulkan decode, 10-bit Hyprland output and nonzero DRM HDR metadata. Installed NVOFA commands provide Linux video motion analysis and source-resolution midpoint export with Vulkan Video H.264: controlled translations at 320×180 and 1280×720, timed A/V, full-resolution P16 camera export and mpv playback pass. A moving-foreground occlusion fixture beats crossfade but retains boundary error. A 20-second live camera export passed at 1280×720/60 fps. Four 120-second runs missed eight, 14, four and 15 camera input frames respectively, while exporting every captured pair correctly. Human visual quality and hours-long performance remain open | Each selected effect runs through a supported Linux implementation and is consumed by a real application; visual quality, SDR-to-HDR conversion and unsupported vendor SDK features remain explicitly open |
 | P16 USB cameras | RGB and IR live capture passes; RGB and IR preview in installed mpv, RGB Chromium WebRTC with graphical permission, OBS recording through x264 and an installed H.264 Vulkan/AAC bridge, and a GTK/libportal 30-frame PipeWire portal capture pass. The IR mpv preview renders 360×360 gray with advancing frames and successful camera reopen, but logs V4L2 buffer warnings on close. The bridge's camera/tone test had 21 ms A/V end difference. UVC privacy is read-only at 0; the owner reports no physical shutter. An installed Linux USB authorization switch passed off/on and post-restore application tests. Kernel37 exposed overlarge internal and external UVC DMA allocations; a native kernel38 trace now confirms capped internal RGB/IR and external StreamCam allocations, full captures and no new kernel warnings on both hosts. | Electronic privacy/LED behavior, warning-free post-resume capture and allocation, tested independently |
 | N1X MIPI/CSI cameras | Reported on other laptop models, absent here | On each affected model: upstreamable sensor/receiver/ISP stack, libcamera/desktop integration, and successful physical capture |
@@ -136,16 +136,18 @@ without FFmpeg; the cause within the installed driver/platform remains unknown.
 An [EGL/OpenGL NVENC session probe](docs/evidence/n1x-media-20261118/nvenc-opengl-session.md)
 also opened a real N1X GL context and returned 21 for both API header sets.
 Thus switching the API device type does not bypass this driver failure.
-NVIDIA's aarch64 620.70.06 release lists the P16's N1X PCI ID `2E03`, but
-NVENC on that version is untested here; the currently running stack remains
-615.78.08. A separate ARM64 RTX 5050 report suggests a 615 driver regression,
-but it does not prove the N1X's cause or a 620 fix.
+The [native 620.70.06 session trace](docs/evidence/nvidia620-native-20261127.md#nvenc-session-failure-and-hardware-encode-control)
+reproduces error 21 with matched kernel, userspace and GSP versions. Both
+direct probes observed `NV_ERR_OBJECT_NOT_FOUND` from RM command `0x20808163`
+immediately before the API error. Vulkan Video allocated the hardware encoder
+and produced decodable H.264, HEVC and AV1 output on the same boot. The
+offline release comparison leaves 620.73.04 and 610.57.04 unqualified on
+this P16.
 The [620.70.06 offline audit](docs/evidence/n1x-media-20261118/nvenc-620-offline.md)
 checks NVIDIA's archive SHA256, applies all three local DRM/PM/UVM patches
 without fuzz, and builds five modules with matching kernel36 `vermagic`.
-The ARM64 distribution's matching 620 utils and DKMS archives are now
-downloaded with valid package signatures. No 620 module was loaded and the
-615 userspace/firmware stack remains installed. Five 620 modules now also
+The ARM64 distribution's matching 620 utils and DKMS archives were verified
+against their package signatures for the offline build. Five 620 modules also
 [build against kernel38](docs/evidence/n1x-media-20261118/nvenc-620-offline.md#matched-kernel38-offline-build)
 with matching `vermagic` and BTF. Versioned dependencies require an isolated
 620 root/boot candidate with a proven 615 rollback, followed by native
@@ -521,11 +523,11 @@ suspend and post-resume capture remain open.
 
 ### Test matrix and acceptance
 
-The first executable smoke checks use generated frames and write no lasting
-video file. Run them with logs captured in the evidence record; replace the
-format/profile and source fixture only after the baseline passes. The first
-command confirms the existing decode path; the second requires the new FFmpeg
-package and must fail explicitly if `h264_nvenc` is unavailable:
+The smoke checks use generated frames and write no lasting video file. The
+first command confirms the existing NVDEC path. The media corpus uses the
+isolated FFmpeg package to run all three explicit NVENC encoders and records
+logs and a JSON result. Each encode passes only after the expected codec,
+dimensions, frame count and independent software decode all pass.
 
 ```sh
 ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -frames:v 10 -c:v libx264 -f h264 - |
@@ -534,14 +536,12 @@ ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=size=320x180:rate=10 -f
     -hwaccel_device /dev/dri/renderD128 -f h264 -i pipe:0 \
     -frames:v 10 -f null -
 
-ffmpeg -hide_banner -f lavfi -i testsrc2=size=320x180:rate=10 \
-  -frames:v 10 -c:v h264_nvenc -f h264 - |
-  ffmpeg -hide_banner -f h264 -i pipe:0 -frames:v 10 -f null -
+python3 scripts/check-n1x-media.py --output-dir /tmp/p16-media-check \
+  --ffmpeg /usr/bin/ffmpeg --nvenc-candidate /usr/bin/ffmpeg-n1x
 ```
 
-Keep the full FFmpeg logs: a zero exit status from a generic decoder after an
-NVENC encode does not by itself prove that NVDEC was used on the second leg.
-For an end-to-end GPU transcode, select and verify the decoder explicitly.
+For an end-to-end GPU transcode, explicitly select NVDEC and verify hardware
+frame surfaces in the FFmpeg logs.
 
 | Test set | Workload | Pass evidence |
 | --- | --- | --- |

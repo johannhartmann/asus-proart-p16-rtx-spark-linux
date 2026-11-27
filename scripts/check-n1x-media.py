@@ -333,17 +333,25 @@ def camera_vulkan_record(ffmpeg, ffprobe, work, evidence):
             "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264"}
 
 
-def nvenc_candidate(ffmpeg, codec, evidence):
+def nvenc_candidate(encoder, ffmpeg, ffprobe, codec, work, evidence):
     label = f"nvenc-{codec}"
+    output = work / f"{label}.mkv"
     result = command(
-        [ffmpeg, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
+        [encoder, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
          "-i", "testsrc2=size=320x180:rate=10", "-frames:v", "10",
-         "-c:v", f"{codec}_nvenc", "-f", "null", "-"], label, evidence,
+         "-c:v", f"{codec}_nvenc", "-y", str(output)], label, evidence,
     )
-    require(result.returncode == 0 and re.search(r"frame=\s*10\b", result.stderr),
+    require(result.returncode == 0,
             f"{codec} NVENC failed (exit {result.returncode}); see {label}.log")
+    stream = probe_stream(ffprobe, output, codec, 10, evidence, label)
+    decoded = command(
+        [ffmpeg, "-v", "error", "-xerror", "-hwaccel", "none",
+         "-i", str(output), "-f", "null", "-"], f"{label}-decode", evidence,
+    )
+    require(decoded.returncode == 0, f"{label}: independent software decode failed")
     return {"frames": 10, "codec": codec,
-            "hardware_evidence": "NVENC session and frames completed"}
+            "stream": stream,
+            "hardware_evidence": "Explicit NVENC encode and independent software decode completed"}
 
 
 def cuvid_candidate(ffmpeg, codec, source, evidence, label):
@@ -478,7 +486,8 @@ def main():
             for codec in CODECS:
                 record(report["results"], f"nvenc_{codec}",
                        lambda codec=codec: nvenc_candidate(
-                           args.nvenc_candidate, codec, args.output_dir))
+                           args.nvenc_candidate, args.ffmpeg, args.ffprobe,
+                           codec, work, args.output_dir))
     path = args.output_dir / "result.json"
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(path)
