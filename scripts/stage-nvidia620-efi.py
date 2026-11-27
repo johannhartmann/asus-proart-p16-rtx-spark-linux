@@ -63,6 +63,19 @@ def disk_partition():
     return disk, columns[1]
 
 
+def verify_candidate_userspace(root):
+    # The signed 620 archive passed pacman -Qkk while missing a transitive
+    # ARM64 dependency. Check the actual loader inside the candidate root.
+    for name in (
+        "libEGL_nvidia.so.0", "libnvidia-eglcore.so.620.70.06",
+        "libGLX_nvidia.so.0", "libnvidia-egl-gbm.so.1",
+        "gbm/nvidia-drm_gbm.so", "libcuda.so.1", "libnvidia-ml.so.1",
+        "libnvidia-encode.so.1", "libnvcuvid.so.1",
+    ):
+        run(["/usr/bin/chroot", str(root), "/usr/lib/ld-linux-aarch64.so.1",
+             "--list", "/usr/lib/" + name])
+
+
 def verify_candidate_root(state, manifest, image):
     listing = run(["/usr/bin/btrfs", "subvolume", "list", "/"])
     matches = re.findall(r"^ID (\d+)\s+.*\bpath @nvidia620$", listing, re.MULTILINE)
@@ -79,6 +92,7 @@ def verify_candidate_root(state, manifest, image):
         if SNAPSHOT.snapshot_id(root) != manifest["candidate_id"]:
             raise RuntimeError("mounted candidate has a different subvolume ID")
         UKI.candidate_versions(root)
+        verify_candidate_userspace(root)
         module_dir = root / "usr/lib/modules" / UKI.RELEASE
         for name, record in manifest["checks"]["embedded_nvidia"].items():
             found = list(module_dir.rglob(name + ".ko*"))

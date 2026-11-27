@@ -1,0 +1,23 @@
+pkgname=p16-nvidia620-rmapi-tegra
+pkgver=620.70.06
+pkgrel=1
+pkgdesc='ARM64 NVIDIA RMAPI library omitted from nvidia-utils 620.70.06-1'
+arch=('aarch64')
+url='https://www.nvidia.com/en-us/drivers/details/283904/'
+license=('LicenseRef-NVIDIA')
+depends=('nvidia-utils=620.70.06-1')
+_installer="NVIDIA-Linux-aarch64-${pkgver}.run"
+source=("https://download.nvidia.com/XFree86/Linux-aarch64/${pkgver}/${_installer}")
+noextract=("${_installer}")
+sha256sums=('3fa65a9271e0dde2a4e58c4965c38885a02a3a42accdcb26fc817410607f3e03')
+options=('!strip')
+
+prepare() {
+  bash "${_installer}" --extract-only --target nvidia-vendor
+}
+
+package() {
+  install -Dm755 "nvidia-vendor/libnvidia-rmapi-tegra.so.${pkgver}" \
+    "${pkgdir}/usr/lib/libnvidia-rmapi-tegra.so.${pkgver}"
+  install -Dm644 nvidia-vendor/LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

@@ -1,0 +1,68 @@
+#!/usr/bin/bash
+# Run as root in a private mount namespace. Only @nvidia620 is writable.
+set -euo pipefail
+export PATH=/usr/bin:/bin
+
+[[ $EUID == 0 && $# == 1 ]] || {
+  echo "Usage: pkexec --disable-internal-agent /usr/bin/unshare --mount --propagation private $0 PACKAGE" >&2
+  exit 2
+}
+[[ $(readlink /proc/self/ns/mnt) != "$(readlink /proc/1/ns/mnt)" ]] || {
+  echo 'A private mount namespace is required' >&2
+  exit 2
+}
+[[ $(findmnt -n -o FSROOT /) == /@ ]] || {
+  echo 'Run from the regular @ root' >&2
+  exit 2
+}
+[[ $(pacman -Q nvidia-utils) == 'nvidia-utils 615.78.08-1' ]] || exit 2
+
+exec 9>/run/lock/boot-partition.lock
+flock -x 9
+work=$(mktemp -d /run/p16-nvidia620-repair.XXXXXX)
+root="$work/candidate"
+hooks="$work/empty-hooks"
+archive="$work/${1##*/}"
+mkdir "$root" "$hooks"
+cleanup() {
+  for path in "$root/etc/pacman.d/hooks" "$root/usr/share/libalpm/hooks" "$root"; do
+    if mountpoint -q "$path"; then umount "$path" || return; fi
+  done
+  unlink "$archive"
+  rmdir "$root" "$hooks" "$work"
+}
+trap cleanup EXIT
+install -m644 "$1" "$archive"
+
+package=p16-nvidia620-rmapi-tegra
+library=usr/lib/libnvidia-rmapi-tegra.so.620.70.06
+expected=10e890c6ad8d76c02f4f957d4867b0c61be80a9400302934e5e424fd5d7f8643
+[[ $(pacman -Qp "$archive") == "$package 620.70.06-1" ]]
+actual=$(bsdtar -xOf "$archive" "$library" | sha256sum)
+[[ ${actual%% *} == "$expected" ]]
+
+device=$(findmnt -n -o SOURCE /)
+mount -t btrfs -o subvol=@nvidia620 "${device%%\[*}" "$root"
+[[ $(findmnt -n -o FSROOT "$root") == /@nvidia620 ]]
+[[ $(pacman --sysroot "$root" -Q nvidia-utils) == 'nvidia-utils 620.70.06-1' ]]
+[[ ! -e $root/var/lib/pacman/db.lck ]]
+for dir in usr/share/libalpm/hooks etc/pacman.d/hooks; do
+  mount --bind "$hooks" "$root/$dir"
+done
+pacman --sysroot "$root" -U --needed --noconfirm --noscriptlet "$archive"
+pacman --sysroot "$root" -Qkk "$package"
+actual=$(sha256sum "$root/$library")
+[[ ${actual%% *} == "$expected" ]]
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+python3 -B - "$script_dir" "$root" <<'PY'
+from importlib.util import module_from_spec, spec_from_file_location
+from pathlib import Path
+import sys
+
+spec = spec_from_file_location("efi", Path(sys.argv[1]) / "stage-nvidia620-efi.py")
+efi = module_from_spec(spec)
+spec.loader.exec_module(efi)
+efi.verify_candidate_userspace(Path(sys.argv[2]))
+print("Candidate EGL, GBM, OpenGL, CUDA, NVML, NVENC and NVDEC ELF dependencies resolve.")
+PY

@@ -2,9 +2,10 @@
 
 This is the staging procedure for the ASUS ProArt P16 H7607BA, written from
 the live kernel38/615 system on 18 November 2026 and updated with the
-19 November staging results. NVIDIA 620 is installed in the isolated
-`@nvidia620` snapshot and has **not** been booted. No reboot belongs to the
-preparation phase. The machine currently uses a LUKS-backed Btrfs root subvolume `@`
+19 November staging results and the 27 November native boot results.
+NVIDIA 620 is installed in the isolated `@nvidia620` snapshot. The first
+start reached the graphical target before an EGL dependency failure.
+No reboot belongs to the preparation phase. The normal system uses a LUKS-backed Btrfs root subvolume `@`
 (ID 256), with separate `@home`, `@log` and `@pkg` subvolumes. `/boot` is a
 separate 2 GiB FAT EFI partition with about 801 MiB free. Limine remains the
 kernel36 default; direct UEFI `Boot0003` currently selects kernel38 only when
@@ -252,6 +253,12 @@ it. The existing `Omarchy/linux-p16-platform-36` default and
 `Omarchy-P16-Recovery` entry passed their image checks. The previous menu
 was saved at `/boot/limine.conf.before-nvidia620-20261127T063058393932Z`.
 The installer did not select the entry or reboot.
+
+The [first native 620 start](nvidia620-desktop-start-20261127.md) reached
+the graphical target but both Hyprland and the greeter crashed while
+initializing EGL. The candidate package omitted the ARM64 RMAPI library
+required by NVIDIA EGL. That record tracks the candidate-only repair and
+the remaining hardware checks.
 
 The [27 November restart](kernel38-615-audio-boot-20261127.md) used the
 regular 615 root through Limine. It confirmed that the corrected DSP
