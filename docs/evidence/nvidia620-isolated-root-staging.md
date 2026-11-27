@@ -240,13 +240,25 @@ fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
 
 ## One attended native qualification session
 
+Select **P16 NVIDIA 620 Test** directly in the normal Limine menu. The direct
+UEFI variable `Boot0004` exists, but the firmware's interactive picker did
+not offer it on this machine. The Limine entry points to the same verified
+UKI and boots the same `@nvidia620` subvolume.
+
+On 27 November, [the Limine installer](../../scripts/add-nvidia620-limine-entry.py)
+rechecked the staged and installed image hashes, the candidate root and
+embedded driver matches, then validated the complete menu before publishing
+it. The existing `Omarchy/linux-p16-platform-36` default and
+`Omarchy-P16-Recovery` entry passed their image checks. The previous menu
+was saved at `/boot/limine.conf.before-nvidia620-20261127T063058393932Z`.
+The installer did not select the entry or reboot.
+
 The [27 November restart](kernel38-615-audio-boot-20261127.md) used the
 regular 615 root through Limine. It confirmed that the corrected DSP
 boot profile binds all three cores and found an internal-speaker stall
 with no DSP period progress. It also reproduced NVENC error 21 and
 recorded a Lockdep warning during desktop use. Measure ALSA hardware
-pointer and DSP period progress on 620 before attempting suspend. Native
-620 qualification still starts at `Boot0004`.
+pointer and DSP period progress on 620 before attempting suspend.
 
 The [both-host UVC trace](n1x-media-20261118/uvc-dma-both-hosts-kernel38.md)
 passes on the current kernel38/615 boot. The audio-enabled kernel38/615 UKI
