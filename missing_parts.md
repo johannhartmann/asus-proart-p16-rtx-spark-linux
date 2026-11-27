@@ -213,8 +213,11 @@ SOF placeholder bound instead of `n1x_adsp`; an audio-enabled UKI is now
 staged for a later qualified boot. A separate [NVIDIA 620 candidate root and
 UKI](docs/evidence/nvidia620-isolated-root-staging.md) is now fully staged
 with a direct UEFI entry outside BootOrder; the running `@` root still uses
-615.78.08. Both native audio/suspend qualification and matched 620 runtime
-remain open. The candidates were prepared without another reboot. The
+615.78.08. The [repaired native 620 boot](docs/evidence/nvidia620-native-20261127.md)
+passed internal display, OpenGL, CUDA, speaker PCM progress, internal cameras
+and a Vulkan H.264 recording. NVENC still fails at session open with error 21,
+and the external monitor via the USB-C hub remains disconnected. A boot-time
+DRM flip warning leaves physical suspend qualification pending. The
 [native qualification plan](docs/evidence/nvidia620-isolated-root-staging.md)
 uses one attended 620 boot for audio, media, GPU and physical resume together;
 a separate 615 boot is conditional on a concrete comparison finding.

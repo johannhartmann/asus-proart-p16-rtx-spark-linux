@@ -260,6 +260,12 @@ initializing EGL. The candidate package omitted the ARM64 RMAPI library
 required by NVIDIA EGL. That record tracks the candidate-only repair and
 the remaining hardware checks.
 
+The [repaired native 620 boot](nvidia620-native-20261127.md) reached a
+working Hyprland desktop. CUDA, OpenGL, internal cameras, speaker PCM
+progress and a Vulkan Video recording passed. NVENC still returned error
+21, and the external monitor via the hub remained disconnected. A DRM
+flip warning appeared during startup, so physical suspend remains pending.
+
 The [27 November restart](kernel38-615-audio-boot-20261127.md) used the
 regular 615 root through Limine. It confirmed that the corrected DSP
 boot profile binds all three cores and found an internal-speaker stall
