@@ -1,5 +1,15 @@
 # N1X FFmpeg codec candidate
 
+On the P16 with NVIDIA 620.70.06, run NVENC through the installed
+[version-gated session correction](../nvidia/620/nvenc/PKGBUILD).
+The same launcher works with `h264_nvenc`, `hevc_nvenc`, and `av1_nvenc`.
+All three completed independent decode checks at 1280×720.
+[Native results](../../docs/evidence/nvidia620-native-20261127.md#nvenc-session-handle-correction-on-6207006).
+
+```sh
+p16-nvenc-run ffmpeg-n1x -i input.mkv -c:v h264_nvenc -c:a copy output.mkv
+```
+
 `ffmpeg-n1x-video` builds FFmpeg 9.0.2 and the pinned FFmpeg NVIDIA codec
 headers for ARM64. Its `ffmpeg-n1x`, `ffprobe-n1x` and `ffplay-n1x` executables coexist with
 the distribution's `ffmpeg` and shared `libav*` libraries. This candidate
@@ -45,8 +55,8 @@ encoders but `h264_nvenc` cannot open a session: `OpenEncodeSessionEx failed:
 incompatible client key (21)`. The [raw log](../../docs/evidence/n1x-media-20261118/nvenc-h264.log)
 is retained. The system FFmpeg's Vulkan Video encoders successfully produced
 H.264, HEVC, and AV1 on this machine; they are a separate Linux API and do not
-establish that the NVENC API works. Keep this candidate isolated pending a
-driver/API fix and full end-user recording qualification.
+establish that the NVENC API works. The results below record the original
+615.78.08 behavior before the 620.70.06 correction.
 The [installed NVENC check](../../docs/evidence/n1x-media-20261118/installed-nvenc/installed-nvenc.json)
 confirms error 21 for H.264, HEVC and AV1 with `/usr/bin/ffmpeg-n1x`.
 

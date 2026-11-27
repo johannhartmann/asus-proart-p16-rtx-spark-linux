@@ -14,4 +14,7 @@ The resulting package conflicts with the 615 fix package and belongs only in
 an isolated 620 test root with matching `nvidia-utils` and DKMS packages.
 The prebuilt 620 platform module bundle is separate; see the
 [offline receipt](../../../docs/evidence/n1x-media-20261118/nvenc-620-kernel38-offline.json).
-No native 620 display, NVENC or suspend result is implied by this recipe.
+The separate [NVENC session correction](nvenc/PKGBUILD) provides
+`p16-nvenc-run` for the affected 620.70.06 userspace build. Its native
+acceptance covers H.264, HEVC and AV1 in FFmpeg.
+[NVENC session and encoding checks](../../../docs/evidence/nvidia620-native-20261127.md#nvenc-session-handle-correction-on-6207006).

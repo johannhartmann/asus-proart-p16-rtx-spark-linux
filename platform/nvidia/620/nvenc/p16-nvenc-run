@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+if (( $# == 0 )); then
+  printf 'Usage: %s COMMAND [ARG...]\n' "${0##*/}" >&2
+  exit 2
+fi
+
+if [[ -r /sys/module/nvidia/version && $(< /sys/module/nvidia/version) == 620.70.06 ]] &&
+    /usr/bin/sha256sum --check --status <<'CHECKSUMS'
+c7e0384043205899d2d95201d7262063662a5df4cf723e28f86a91266c047d94  /usr/lib/libnvidia-encode.so.620.70.06
+514e085fa659c83ffe48668fc1f66f6f2109c61be7bfde1e8b8b809e1cc391d8  /usr/lib/libnvcuvid.so.620.70.06
+CHECKSUMS
+then
+  export LD_PRELOAD="/usr/lib/p16-nvenc/libsession-handle.so:/usr/lib/libnvidia-encode.so.620.70.06:/usr/lib/libnvcuvid.so.620.70.06${LD_PRELOAD:+:$LD_PRELOAD}"
+fi
+
+exec "$@"

@@ -125,3 +125,57 @@ NVML, EGL and GLX from the extracted vendor libraries. The extracted driver
 and build outputs are under `~/p16/video-build/driver610.57.04/`. Actual
 display startup and NVENC qualification require the matched kernel modules,
 firmware and userspace running on this P16.
+
+### Follow-up on 620.70.06
+
+The NVIDIA archive includes `libnvcuextend.so.620.70.06`, which the installed
+Arch package omits. The CUDA session probe tried that library and loaded it
+successfully when it was supplied from a private `LD_LIBRARY_PATH`. The
+matched vendor file left the session result at 21. Tracefs rejected attaching
+a kernel probe to the NVIDIA control function, so the trace establishes the
+userspace/RM boundary and leaves host RM versus GPU firmware attribution open.
+
+### NVENC session handle correction on 620.70.06
+
+A second RM trace recorded the client and object handles. Both direct probes
+allocated a subdevice of class `NV20_SUBDEVICE_0` (`0x2080`) and completed
+`0x20808165` on that object. The next call, `0x20808163`, used the same client
+with object handle `0`. That call returned `NV_ERR_OBJECT_NOT_FOUND`.
+Userspace debugging located both calls in `libnvcuvid` and showed the second
+call reading the zero handle from its session state. The open RM first looks
+up the requested object in the client's resource map. [RM dispatch](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/620.70.06/src/nvidia/src/libraries/resserv/src/rs_server.c#L1589),
+[resource lookup](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/620.70.06/src/nvidia/src/libraries/resserv/src/rs_client.c#L383).
+
+The installed [Arch package](../../platform/nvidia/620/nvenc/PKGBUILD)
+provides `p16-nvenc-run`. Its process-local shim supplies the allocated
+subdevice handle when the same thread, client, and file descriptor have
+just queried that subdevice and then pass handle `0` for the failing
+control. The driver still processes the original command and returns its
+status. The launcher checks the loaded kernel driver version and the exact
+vendor encoder and decoder libraries before loading the shim. The vendor
+libraries and kernel modules on disk retain their original contents.
+
+With `p16-nvenc-run`, the direct CUDA and EGL/OpenGL probes both opened and
+destroyed an NVENC session successfully. The native driver returned zero
+from the corrected control. Installed `ffmpeg-n1x` encoded 90 frames of
+1280×720 motion using each explicit NVENC encoder. System FFmpeg identified
+the requested codec and decoded every frame with `-xerror`. A second FFmpeg
+process opened all three encoders together and wrote 120 frames per stream.
+All three streams decoded cleanly. NVML's active-session counter reported
+zero during the run. In a separate traced run, each of the three NVENC
+encoders allocated NVIDIA's `NVD1B7_VIDEO_ENCODER` class (`0xd1b7`) with
+status zero after the corrected control call. The sequential media corpus
+passed all 35 cases, including all three NVENC encodes. The earlier run
+that overlapped the corpus and the three-stream encode logged one NVRM
+`NV_ERR_NO_MEMORY` warning. The warning was absent from the sequential
+corpus and the traced encode checks.
+
+```sh
+p16-nvenc-run ffmpeg-n1x -f lavfi -i testsrc2=size=1280x720:rate=30 \
+  -frames:v 90 -c:v h264_nvenc /tmp/p16-nvenc-h264.mkv
+```
+
+The same invocation accepts `hevc_nvenc` and `av1_nvenc`. This installation
+and all tests used the running `@nvidia620` root and driver 620.70.06. The
+earlier 610 comparison entry was removed and the original Limine menu
+restored.

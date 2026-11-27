@@ -333,11 +333,12 @@ def camera_vulkan_record(ffmpeg, ffprobe, work, evidence):
             "hardware_evidence": "Live V4L2 camera encoded by N1X Vulkan Video H.264"}
 
 
-def nvenc_candidate(encoder, ffmpeg, ffprobe, codec, work, evidence):
+def nvenc_candidate(encoder, ffmpeg, ffprobe, codec, work, evidence, launcher=None):
     label = f"nvenc-{codec}"
     output = work / f"{label}.mkv"
+    executable = [launcher, encoder] if launcher else [encoder]
     result = command(
-        [encoder, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
+        [*executable, "-hide_banner", "-loglevel", "verbose", "-f", "lavfi",
          "-i", "testsrc2=size=320x180:rate=10", "-frames:v", "10",
          "-c:v", f"{codec}_nvenc", "-y", str(output)], label, evidence,
     )
@@ -377,7 +378,10 @@ def main():
     parser.add_argument("--camera-vulkan-record", action="store_true",
                         help="record 60 live P16 RGB frames through Vulkan Video into a temporary file")
     parser.add_argument("--nvenc-candidate", help="also test this isolated FFmpeg NVENC binary")
+    parser.add_argument("--nvenc-launcher", help="run the NVENC encode cases through this launcher")
     args = parser.parse_args()
+    if args.nvenc_launcher and not args.nvenc_candidate:
+        parser.error("--nvenc-launcher requires --nvenc-candidate")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     report = {
         "captured_at": datetime.now(timezone.utc).isoformat(),
@@ -487,7 +491,7 @@ def main():
                 record(report["results"], f"nvenc_{codec}",
                        lambda codec=codec: nvenc_candidate(
                            args.nvenc_candidate, args.ffmpeg, args.ffprobe,
-                           codec, work, args.output_dir))
+                           codec, work, args.output_dir, args.nvenc_launcher))
     path = args.output_dir / "result.json"
     path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
     print(path)

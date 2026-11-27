@@ -1,0 +1,29 @@
+pkgname=p16-nvenc-session-fix
+pkgver=620.70.06
+pkgrel=1
+pkgdesc='NVENC session initialization correction for the P16 ARM64 NVIDIA 620.70.06 driver'
+arch=('aarch64')
+url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
+license=('MIT')
+depends=('nvidia-utils' 'bash' 'coreutils' 'glibc')
+makedepends=('gcc')
+_nvsource="NVIDIA-kernel-module-source-${pkgver}"
+source=("https://download.nvidia.com/XFree86/NVIDIA-kernel-module-source/${_nvsource}.tar.xz"
+        'nvenc-session-handle.c' 'p16-nvenc-run' 'LICENSE')
+sha256sums=('d65c8bbea3abebc64f83119e4fb7ecb6601fc43d718dbecbec8e3758a246355e'
+            '538e478e19bc2a658e0fb6abeb2140b9e78e1425fac3543deb8775e0d1b79621' '4c27daf2b034c6ccebf529a5d509c037c24ae77cd3bac375f73126c998120762' 'be8abef689a81e0c5d51d89c9061c266e285cae2d7e9a61abe71be8a1c74e763')
+
+build() {
+  local source_root="$srcdir/$_nvsource"
+  cc $CPPFLAGS $CFLAGS -fPIC -shared -fvisibility=hidden -Wall -Wextra -Werror \
+    -I"$source_root/src/common/sdk/nvidia/inc" \
+    -I"$source_root/src/nvidia/arch/nvalloc/unix/include" \
+    -I"$source_root/kernel-open/common/inc" \
+    "$srcdir/nvenc-session-handle.c" $LDFLAGS -o "$srcdir/libsession-handle.so" -ldl -pthread
+}
+
+package() {
+  install -Dm755 "$srcdir/libsession-handle.so" "$pkgdir/usr/lib/p16-nvenc/libsession-handle.so"
+  install -Dm755 "$srcdir/p16-nvenc-run" "$pkgdir/usr/bin/p16-nvenc-run"
+  install -Dm644 "$srcdir/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
