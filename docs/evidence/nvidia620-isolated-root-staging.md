@@ -240,6 +240,14 @@ fakeroot -- python3 scripts/simulate-nvidia620-pacman-transaction.py \
 
 ## One attended native qualification session
 
+The [27 November restart](kernel38-615-audio-boot-20261127.md) used the
+regular 615 root through Limine. It confirmed that the corrected DSP
+boot profile binds all three cores and found an internal-speaker stall
+with no DSP period progress. It also reproduced NVENC error 21 and
+recorded a Lockdep warning during desktop use. Measure ALSA hardware
+pointer and DSP period progress on 620 before attempting suspend. Native
+620 qualification still starts at `Boot0004`.
+
 The [both-host UVC trace](n1x-media-20261118/uvc-dma-both-hosts-kernel38.md)
 passes on the current kernel38/615 boot. The audio-enabled kernel38/615 UKI
 passed the source-image check during candidate UKI construction. Its DSP
