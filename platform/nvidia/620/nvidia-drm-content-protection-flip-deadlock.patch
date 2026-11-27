@@ -1,0 +1,30 @@
+Subject: [PATCH] nvidia-drm: defer content protection work on a busy modeset lock
+
+A blocking atomic commit can hold connection_mutex while waiting for a flip.
+The NVKMS event thread can need mode_config.mutex before delivering that flip.
+Release mode_config.mutex when connection_mutex is busy and retry the pending
+content protection update after the commit can make progress.
+
+--- a/kernel-open/nvidia-drm/nvidia-drm-drv.c
++++ b/kernel-open/nvidia-drm/nvidia-drm-drv.c
+@@ -811,7 +811,19 @@
+     struct drm_connector_list_iter conn_iter;
+ 
+     mutex_lock(&dev->mode_config.mutex);
+-    drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
++    /*
++     * A blocking atomic commit can hold connection_mutex while waiting
++     * for a flip. The NVKMS event thread takes mode_config.mutex to
++     * dispatch content protection events ahead of that flip.
++     */
++    if (!ww_mutex_trylock(&dev->mode_config.connection_mutex.mutex, NULL)) {
++        mutex_unlock(&dev->mode_config.mutex);
++        if (atomic_read(&nv_dev->enable_event_handling)) {
++            schedule_delayed_work(&nv_dev->content_protection_event_work,
++                                  msecs_to_jiffies(10));
++        }
++        return;
++    }
+ 
+     drm_connector_list_iter_begin(dev, &conn_iter);
+ 

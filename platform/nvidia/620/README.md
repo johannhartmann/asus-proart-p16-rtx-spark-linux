@@ -3,10 +3,16 @@
 This recipe packages the repository's DRM colorspace, PM notifier and UVM PM
 lock-order patches for the ARM64 distribution's
 `nvidia-open-dkms 620.70.06`. It installs a version-scoped
-`/etc/dkms/nvidia-620.70.06.conf`, so DKMS applies the three patches without
+`/etc/dkms/nvidia-620.70.06.conf`, so DKMS applies the patches without
 editing vendor source in place. The patch files are symlinks to the shared
 source files in `platform/nvidia/` and were applied with fuzz zero to both
 the official `.run` source and the signed distribution DKMS source.
+
+Release 2 adds a retry for content protection work when an atomic display
+commit already owns the connection lock. The first DPMS test reproduced
+the lock cycle on the internal panel with the original module. The new
+module builds against kernel38 and awaits native qualification.
+[Trace and build record](../../../docs/evidence/nvidia620-native-20261127.md#drm-flip-timeout-on-the-internal-panel).
 
 Build with `makepkg --verifysource` and `makepkg --nodeps`; `--nodeps` is only
 for offline packaging while the normal root still uses NVIDIA 615.78.08.

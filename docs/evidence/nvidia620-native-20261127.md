@@ -179,3 +179,57 @@ The same invocation accepts `hevc_nvenc` and `av1_nvenc`. This installation
 and all tests used the running `@nvidia620` root and driver 620.70.06. The
 earlier 610 comparison entry was removed and the original Limine menu
 restored.
+
+### DRM flip timeout on the internal panel
+
+The journal shows two timeouts on head 0 before the targeted trace. Each
+timeout preceded the empty-queue warning in `__nv_drm_handle_flip_event`.
+The first occurred during desktop startup and the second near an idle
+transition. In the matched 620.70.06 source the timeout path drains the
+flip queue. A later hardware event then reaches a queue with no flip.
+
+Two internal-panel DPMS off/on cycles ran under a timing trace on the same
+boot. The first off transition reproduced the timeout and warning. The
+blocking Hyprland atomic commit took 3,388 ms. The content protection work
+item and the topology handler on the NVIDIA events thread each took 3,010
+ms and returned as the commit finished. The second off transition took
+364 ms and produced no timeout. The trace matches the lock cycle where the
+commit holds `connection_mutex`, the worker holds `mode_config.mutex`
+while waiting for `connection_mutex`, and the NVIDIA events thread needs
+`mode_config.mutex` before it can deliver the flip. NVIDIA tracks the
+symptom as 7126445. [NVIDIA issue](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1553),
+[related lock-cycle trace](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1361).
+
+The [620 patch](../../platform/nvidia/620/nvidia-drm-content-protection-flip-deadlock.patch)
+makes the content protection worker try `connection_mutex` without
+waiting. A busy lock causes it to drop `mode_config.mutex` and defer the
+pending work by 10 ms while events remain enabled. The original hardware
+flip acknowledgement, timeout path and DRM completion accounting remain
+intact. The extracted worker passed contention, retry and teardown checks
+under ASan and UBSan. Matching kernel38 modules built, and `pahole` parsed
+the new `nvidia_drm` split BTF against kernel38 `vmlinux`.
+
+| Artifact | Identity |
+| --- | --- |
+| Patched `nvidia-drm.ko` | `srcversion B0610EE874678B18EA30A07`, SHA-256 `2a9b1b7c2faeb2dfce9e7e8ca09cdaae85922fa577535735d97ed3721ea22e7c` |
+| DKMS patch package `620.70.06-2` | SHA-256 `4d9134ed342396d9e18949a71d09cc4382242a7b3870343cd9ee06bfc147040c` |
+| Loaded `nvidia_drm` | `srcversion 9D0450148A72C2F9BA9F89A` |
+
+Native DPMS qualification of the patched module remains open.
+
+### Physical s2idle preflight
+
+On the loaded 620 modules before a physical test, the internal display,
+direct CUDA and EGL NVENC sessions, independently decoded H.264/HEVC/AV1
+samples, and RGB/IR capture all passed. The speaker and microphone kernel
+PCM positions advanced and the three DSPs reported ASoC ready. The cuDLA
+positive and negative ReLU inputs each returned 3,136 bytes equal to their
+independent references. The installed VT handoff is a dependency of
+`systemd-suspend.service` with kernel suspend notifiers active.
+
+The boot already lost Lockdep validation after a CUDA-thread lock warning
+at 11:13:54 involving `fs_reclaim` and MMU-notifier invalidation. A physical
+test in this boot can establish functional resume. Continuous Lockdep
+qualification requires a clean boot with matching artifacts. EFI RTC has
+no `wakealarm` and ACPI TAD returned `EIO` when setting an alarm. Physical
+sleep requires an attended power-button wake.
