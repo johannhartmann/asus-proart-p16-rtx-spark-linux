@@ -58,3 +58,22 @@ checked libraries successfully. The EFI and Limine staging paths now
 run the same check. The existing UKI requires no rebuild for this
 userspace package. Native display startup, codec calls, audio playback
 and suspend still require qualification after repair.
+
+## Preflight after repair
+
+From the regular Kernel36/NVIDIA 615 system, the repaired candidate was
+mounted read-only in a private mount namespace. The candidate's loader
+opened all nine libraries using `RTLD_NOW`, which also checks relocations.
+The probe checked the exported entry points and the NVIDIA EGL, GBM and
+Vulkan loader manifests. The live GPU was outside the chroot.
+
+The installed `P16 NVIDIA 620 Test` Limine entry points to the verified
+620 UKI. The installed file and the staged image have the same SHA-256.
+The candidate package versions, embedded NVIDIA module hashes and kernel
+payload matched the build record. Limine's image hashes passed, including
+the Kernel36 default and recovery. `BootNext` was unset, and the EFI
+variables matched before and after the check.
+
+Run the [native qualification sequence](nvidia620-isolated-root-staging.md#one-attended-native-qualification-session)
+in the next attended 620 boot. Confirm the desktop starts before testing
+media and audio. Run physical suspend last.

@@ -65,15 +65,41 @@ def disk_partition():
 
 def verify_candidate_userspace(root):
     # The signed 620 archive passed pacman -Qkk while missing a transitive
-    # ARM64 dependency. Check the actual loader inside the candidate root.
-    for name in (
-        "libEGL_nvidia.so.0", "libnvidia-eglcore.so.620.70.06",
-        "libGLX_nvidia.so.0", "libnvidia-egl-gbm.so.1",
-        "gbm/nvidia-drm_gbm.so", "libcuda.so.1", "libnvidia-ml.so.1",
-        "libnvidia-encode.so.1", "libnvcuvid.so.1",
-    ):
-        run(["/usr/bin/chroot", str(root), "/usr/lib/ld-linux-aarch64.so.1",
-             "--list", "/usr/lib/" + name])
+    # ARM64 dependency. Load and relocate the libraries with the candidate's
+    # own loader. Do not pass the live 615 GPU through to that process.
+    if (root / "dev/nvidiactl").exists() or (root / "dev/dri").exists():
+        raise RuntimeError("candidate userspace validation requires an isolated /dev")
+    probe = """
+import ctypes
+import json
+import os
+from pathlib import Path
+
+libraries = {
+    "libEGL_nvidia.so.0": "__egl_Main",
+    "libnvidia-eglcore.so.620.70.06": None,
+    "libGLX_nvidia.so.0": "__glx_Main",
+    "libnvidia-egl-gbm.so.1": "loadEGLExternalPlatform",
+    "/usr/lib/gbm/nvidia-drm_gbm.so": "gbmint_get_backend",
+    "libcuda.so.1": "cuInit",
+    "libnvidia-ml.so.1": "nvmlInit_v2",
+    "libnvidia-encode.so.1": "NvEncodeAPICreateInstance",
+    "libnvcuvid.so.1": "cuvidCreateDecoder",
+}
+for library, symbol in libraries.items():
+    handle = ctypes.CDLL(library, mode=os.RTLD_NOW | os.RTLD_LOCAL)
+    if symbol:
+        getattr(handle, symbol)
+for path, key, expected in (
+    ("/usr/share/glvnd/egl_vendor.d/10_nvidia.json", "ICD", "libEGL_nvidia.so.0"),
+    ("/usr/share/egl/egl_external_platform.d/15_nvidia_gbm.json", "ICD", "libnvidia-egl-gbm.so.1"),
+    ("/usr/share/vulkan/icd.d/nvidia_icd.json", "ICD", "libGLX_nvidia.so.0"),
+):
+    if json.loads(Path(path).read_text())[key]["library_path"] != expected:
+        raise ValueError(f"Unexpected NVIDIA loader manifest: {path}")
+"""
+    run(["/usr/bin/chroot", str(root), "/usr/bin/env", "-i",
+         "/usr/bin/python3", "-I", "-S", "-B", "-c", probe])
 
 
 def verify_candidate_root(state, manifest, image):

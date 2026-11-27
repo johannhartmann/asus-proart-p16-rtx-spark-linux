@@ -64,5 +64,5 @@ spec = spec_from_file_location("efi", Path(sys.argv[1]) / "stage-nvidia620-efi.p
 efi = module_from_spec(spec)
 spec.loader.exec_module(efi)
 efi.verify_candidate_userspace(Path(sys.argv[2]))
-print("Candidate EGL, GBM, OpenGL, CUDA, NVML, NVENC and NVDEC ELF dependencies resolve.")
+print("Candidate NVIDIA libraries load and EGL, GBM and Vulkan manifests pass.")
 PY
