@@ -217,12 +217,14 @@ UKI](docs/evidence/nvidia620-isolated-root-staging.md) is now fully staged
 with a direct UEFI entry outside BootOrder; the running `@` root still uses
 615.78.08. The [repaired native 620 boot](docs/evidence/nvidia620-native-20261127.md)
 passed internal display, OpenGL, CUDA, speaker PCM progress, internal cameras
-and a Vulkan H.264 recording. NVENC still fails at session open with error 21,
-and the external monitor via the USB-C hub remains disconnected. A boot-time
-DRM flip warning leaves physical suspend qualification pending. The
-[native qualification plan](docs/evidence/nvidia620-isolated-root-staging.md)
-uses one attended 620 boot for audio, media, GPU and physical resume together;
-a separate 615 boot is conditional on a concrete comparison finding.
+and a Vulkan H.264 recording. The later NVENC session correction verified
+H.264, HEVC and AV1 with `p16-nvenc-run`. The external monitor via the USB-C
+hub remains disconnected. The attended s2idle attempt on 620.70.06 aborted
+in NVIDIA PM PREPARE with `0x56`. Internal audio recovered through a
+checked DSP/AFE reload in the same boot. The
+[combined candidate](docs/evidence/nvidia620-native-20261127.md#gb20b-s2idle-candidate)
+builds the DRM flip fix and P16 s2idle opt-in into one 620 DKMS package.
+Qualify display and physical resume together in one attended candidate boot.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

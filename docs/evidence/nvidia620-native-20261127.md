@@ -233,3 +233,78 @@ test in this boot can establish functional resume. Continuous Lockdep
 qualification requires a clean boot with matching artifacts. EFI RTC has
 no `wakealarm` and ACPI TAD returned `EIO` when setting an alarm. Physical
 sleep requires an attended power-button wake.
+
+### Physical s2idle attempt and recovery
+
+One attended `systemctl suspend` on kernel38 and NVIDIA 620.70.06 at
+11:45:50 CET aborted in PM PREPARE. The installed VT handoff and user slice
+freeze completed. The kernel logged `PM: suspend entry (s2idle)`,
+`NVRM: PM suspend notifier failed: 0x56` and `PM: suspend exit` within
+549 ms. The success counter stayed at 0, failures rose from 0 to 1, and
+`last_failed_errno` was `-1` (`EPERM`). Hardware sleep stayed at zero and
+systemd thawed the user slice and restored tty1 on the same boot.
+
+The NVIDIA 620.70.06 HAL selects the unsupported power-management handler
+for GB20B. `RmInitPowerManagement()` transfers that result into
+`nv->is_pm_unsupported`. `nv_suspend_devices()` returns
+`NV_ERR_NOT_SUPPORTED` (`0x56`) at its device check, before suspend work
+in modesetting, UVM and allocations. The PCI PM path also checks that flag.
+This P16 has GB20B PCI ID `10de:2e03` and ASUS subsystem `1043:1484`.
+A report on a P16 with the `2e06` variant and 620.73.04 reproduced the same
+refusal and completed four physical cycles after admitting GB20B to the
+existing suspend sequence.
+[620 HAL table](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/620.70.06/src/nvidia/generated/g_gpu_nvoc.c#L956),
+[RM flag assignment](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/620.70.06/src/nvidia/arch/nvalloc/unix/src/dynamic-power.c#L3201),
+[NVIDIA issue #1577](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/1577).
+
+| Check | Result in the same boot |
+| --- | --- |
+| Display and GPU | Internal panel active, NVIDIA EGL/OpenGL renderer available |
+| NVENC via `p16-nvenc-run` | CUDA and EGL sessions opened. Each of H.264, HEVC and AV1 encoded 10 frames that decoded independently. |
+| V4L2 cameras | RGB and IR each captured all 30 requested frames |
+| Internal audio after abort | HiFi1 ASoC readiness dropped to 0, IPC and PCM startup returned `-110`, and PipeWire lost the speaker and microphone nodes. Every DSP recorded zero sleep cycles. |
+| Internal audio after checked DSP/AFE reload | Both PipeWire nodes returned, all three DSPs reported ASoC ready, and hardware PCM pointers advanced for simultaneous playback and capture. Capture returned 384,000 bytes with nonzero samples. |
+| cuDLA | Two ReLU cases after recovery each returned 3,136 bytes equal to an independent reference |
+
+The repository's `scripts/qualify-dsp-reload.py --reload` performed the
+audio recovery after checking the live versions and shutdown support.
+An independent FFmpeg capture through PipeWire's PulseAudio server
+returned 96,000 stereo microphone frames at 48 kHz and exited successfully.
+The camera and encoder checks also passed when repeated after recovery.
+The cause of the DSP IPC failure during abort recovery remains open.
+Physical sleep, device resume, and clean Lockdep qualification remain
+pending. The DRM module loaded during the attempt was
+`9D0450148A72C2F9BA9F89A`.
+
+### GB20B s2idle candidate
+
+The [620 PM patch](../../platform/nvidia/620/nvidia-p16-gb20b-s2idle.patch)
+adds a load-time opt-in for the measured P16 DMI and PCI IDs. It requires
+kernel suspend notifiers and checks the selected s2idle mode in PREPARE,
+then the actual target state during PCI device PM. Both guards use the same
+predicate. The patch keeps NVIDIA's capability flag, modeset and UVM
+operations, allocation preservation and error propagation in place.
+The installed systemd sleep policy selects `mem` with `s2idle`.
+
+The signed 620.70.06 distribution source with all five DKMS patches built
+five ARM64 modules against `7.2.8-38-rtx-spark-npu`. Their split BTF parsed
+against the matching `vmlinux`. The same PM predicate passed 19 focused
+checks under ASan and UBSan. The checks covered PREPARE, the PCI callback,
+opt-in, both device identity checks, legacy PM, S3 and hibernation.
+Reapplying the patch files from the built DKMS package with fuzz zero
+reproduced the compiled PM source.
+
+| Artifact | Identity |
+| --- | --- |
+| Candidate `nvidia.ko` | `srcversion 3D15902633EDCE9CFBEB1C9`, SHA-256 `aa684d0aea475a99b5d9b4340fa73628615f7e50db72822fc34f2577aed74c32` |
+| Candidate `nvidia-drm.ko` | `srcversion B0610EE874678B18EA30A07` |
+| DKMS patch package `620.70.06-3` | SHA-256 `f56c9425135429b28b154c71be7da53a126d44f4eee91fb18efd931696f497e0` |
+
+Release 3 was built offline. For combined native qualification, boot the
+matched candidate with `nvidia.p16_s2idle=1` and confirm both loaded
+srcversions, the module option and active Lockdep. Exercise internal-panel
+DPMS, then run one attended s2idle cycle. Require one additional suspend
+success, zero new failures, return to the same desktop, and repeat the GPU,
+NVENC, RGB/IR, audio PCM and cuDLA tests. Check the kernel journal for flip
+timeouts, NVIDIA faults, audio IPC timeouts and Lockdep warnings. Collect
+the failure state before further sleep requests if the cycle fails.

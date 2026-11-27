@@ -1,0 +1,75 @@
+--- a/kernel-open/nvidia/nv.c
++++ b/kernel-open/nvidia/nv.c
+@@ -92,6 +92,7 @@
+ 
+ #include <linux/pm_runtime.h>
+ #include <linux/pm_domain.h>
++#include <linux/suspend.h>
+ 
+ #if defined(NV_LINUX_CC_PLATFORM_H_PRESENT)
+ #include <linux/cc_platform.h>
+@@ -4605,6 +4606,44 @@
+ #endif // NVCPU_IS_AARCH64
+ 
+ #if defined(CONFIG_PM)
++static bool p16_s2idle;
++module_param(p16_s2idle, bool, 0444);
++MODULE_PARM_DESC(p16_s2idle, "Qualify s2idle on ASUS ProArt P16 GB20B (10de:2e03, 1043:1484)");
++
++static bool
++nv_pm_unsupported_for_action(
++    nv_linux_state_t *nvl,
++    nv_pm_action_t pm_action,
++    bool notifier_phase
++)
++{
++    nv_state_t *nv = NV_STATE_PTR(nvl);
++    struct pci_dev *pdev;
++    suspend_state_t target;
++
++    if (!nv->is_pm_unsupported)
++        return false;
++
++    if (!p16_s2idle || pm_action != NV_PM_ACTION_STANDBY ||
++        !NVreg_UseKernelSuspendNotifiers || !dev_is_pci(nvl->dev))
++        return true;
++
++    pdev = to_pci_dev(nvl->dev);
++    if (pdev->vendor != PCI_VENDOR_ID_NVIDIA || pdev->device != 0x2e03 ||
++        pdev->subsystem_vendor != PCI_VENDOR_ID_ASUSTEK ||
++        pdev->subsystem_device != 0x1484 ||
++        !dmi_match(DMI_SYS_VENDOR, "ASUS") ||
++        !dmi_match(DMI_PRODUCT_NAME, "ProArt P16 H7607BA"))
++        return true;
++
++    /* The Linux PM core sets the target after PREPARE, before device PM. */
++    target = pm_suspend_target_state;
++    if (notifier_phase && target == PM_SUSPEND_ON)
++        return !pm_suspend_default_s2idle();
++
++    return target != PM_SUSPEND_TO_IDLE;
++}
++
+ static NV_STATUS
+ nv_power_management(
+     nv_state_t *nv,
+@@ -4912,7 +4951,7 @@
+         goto done;
+     }
+ 
+-    if (nv->is_pm_unsupported)
++    if (nv_pm_unsupported_for_action(nvl, pm_action, is_procfs_suspend))
+     {
+         status = NV_ERR_NOT_SUPPORTED;
+         goto done;
+@@ -5117,9 +5156,7 @@
+ 
+     for (nvl = nv_linux_devices; nvl != NULL; nvl = nvl->next)
+     {
+-        nv_state_t *nv = NV_STATE_PTR(nvl);
+-
+-        if (nv->is_pm_unsupported)
++        if (nv_pm_unsupported_for_action(nvl, pm_action, true))
+         {
+             UNLOCK_NV_LINUX_DEVICES();
+             return NV_ERR_NOT_SUPPORTED;
