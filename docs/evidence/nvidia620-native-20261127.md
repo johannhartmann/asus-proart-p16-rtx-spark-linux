@@ -308,3 +308,47 @@ success, zero new failures, return to the same desktop, and repeat the GPU,
 NVENC, RGB/IR, audio PCM and cuDLA tests. Check the kernel journal for flip
 timeouts, NVIDIA faults, audio IPC timeouts and Lockdep warnings. Collect
 the failure state before further sleep requests if the cycle fails.
+
+#### Single-reboot staging
+
+The combined candidate was staged on 27 November in a writable clone of
+the working `@nvidia620` root. Select **P16 NVIDIA 620 DRM + Suspend Test**
+in the normal Limine menu. It starts `@nvidia620-r3` (Btrfs ID 270) with
+`nvidia.p16_s2idle=1`. The original **P16 NVIDIA 620 Test** entry still
+selects the original 620 root. **Omarchy/linux-p16-platform-36** is still
+the menu default, and the **Omarchy-P16-Recovery** image also passed
+validation. The firmware boot order stayed `0002,0001,2001,2002,2003`
+with no BootNext, and the running boot ID and loaded module versions
+stayed the same during staging.
+
+| Staged artifact | Identity |
+| --- | --- |
+| UKI `/boot/EFI/Linux/p16_nvidia620_kernel38_r3.efi` | SHA-256 `271fc002d893c400fcc9a9c546b4117fc5c43325a57aa2a412e86e2c4ae7f42b` |
+| `linux-p16-platform-38-drivers-nvidia620 7.2.8-38.1` | SHA-256 `4162d741c400f015d3aa413a794123b9094787c104575b71d2ac079315a77cfe` |
+| Limine backup | `/boot/limine.conf.before-nvidia620-r3-20261127T120529Z` |
+
+The clone's fstab points to its own root subvolume. Its package transaction
+updated the DKMS patch recipe and the matching module bundle.
+Eight platform modules were byte-identical to
+the original bundle. Both candidate packages reported zero altered
+files. `mkinitcpio --nopost` built the image with the legacy ACPI
+profile and the existing audio boot arguments. The platform verifier
+checked BTF for 8,504 installed and 430 embedded modules. The four
+embedded NVIDIA files matched the installed files byte for byte, and
+Limine's full menu passed its image and BLAKE2b checks. The original
+EFI executables retained their hashes. The build emitted a missing
+optional Renesas xHCI firmware warning and skipped the microcode hook
+on ARM64.
+
+Local staging log, bundle recipe and test helpers live under
+`build/nvidia620-r3-single-boot/` in this checkout. The test fixtures
+are on the shared home subvolume and survive reboot. Run
+`qualify/qualify pre` in the logged-in desktop. It checks the loaded
+DRM and PM module identities and the opt-in, then runs two internal
+panel DPMS cycles, GPU and NVENC checks, RGB/IR camera capture and
+internal audio. After that passes and an attended wake is ready, run
+`qualify/qualify suspend` with graphical Polkit. It checks cuDLA before
+sleep, records Lockdep and PM counters, sends one suspend request and
+repeats all device and cuDLA tests after wake. Logs are grouped by boot
+ID. The media and audio checks passed a dry run on the original boot.
+The new boot and physical cycle are pending.
