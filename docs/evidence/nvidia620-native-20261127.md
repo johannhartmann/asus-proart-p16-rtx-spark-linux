@@ -316,9 +316,9 @@ The combined candidate was staged on 27 November in a writable clone of
 the working `@nvidia620` root. Select **P16 NVIDIA 620 DRM + Suspend Test**
 in the normal Limine menu. It starts `@nvidia620-r3` (Btrfs ID 270) with
 `nvidia.p16_s2idle=1`. The original **P16 NVIDIA 620 Test** entry still
-selects the original 620 root. **Omarchy/linux-p16-platform-36** is still
-the menu default, and the **Omarchy-P16-Recovery** image also passed
-validation. The firmware boot order stayed `0002,0001,2001,2002,2003`
+selects the original 620 root. During staging, **Omarchy/linux-p16-platform-36**
+remained the menu default and the **Omarchy-P16-Recovery** image also
+passed validation. The firmware boot order stayed `0002,0001,2001,2002,2003`
 with no BootNext, and the running boot ID and loaded module versions
 stayed the same during staging.
 
@@ -389,3 +389,20 @@ Lockdep warning.
 This was one physical cycle with device workloads run before and after.
 Repeated sleep, allocation retention across sleep and external display
 through the hub remain outside this result.
+
+#### Default boot
+
+After qualification on 28 November, Limine's persistent `default_entry`
+was set to **P16 NVIDIA 620 DRM + Suspend Test**. The menu selects the
+qualified kernel38/620.70.06 UKI and its `@nvidia620-r3` root. The two
+patched NVIDIA modules and `nvidia.p16_s2idle=1` are in that boot.
+The UKI matched its recorded SHA-256 and the complete menu passed its
+image and BLAKE2b checks before publication. The updated menu was read
+back from the EFI partition.
+
+**Omarchy/linux-p16-platform-36**, **P16 NVIDIA 620 Test** (the original
+620 root) and **Omarchy-P16-Recovery** remain available in Limine. The
+firmware boot order is `0002,0001,2001,2002,2003` with no BootNext.
+The prior menu was saved at
+`/boot/limine.conf.before-default-nvidia620-r3-20261128T085627Z`.
+This change used the existing start image and required no reboot.
