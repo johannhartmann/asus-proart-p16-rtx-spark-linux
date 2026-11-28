@@ -352,16 +352,35 @@ The package and EVDI were installed in the current Omarchy root for
 checks. The staging transaction verified the existing Limine configuration
 and UKI hashes before and after installation.
 
-On the running kernel, libusb enumerated `17e9:6000`, udev created the
-device alias, and the manager service and EVDI ran. Creating an EVDI
-device via sysfs produced `card1-DVI-I-1`. It stayed disconnected with
-an empty EDID. Hyprland reported only the internal panel. Both the system
-and vendor libusb variants were tried. Creating a virtual device and
-testing the vendor's USB3 power setting did not activate the external
-screen. Physical dock re-enumeration and external output remain pending.
+The physical replug re-enumerated `17e9:6000`. The original udev
+rule lost its device alias at the USB `bind` event. The updated rule
+applies on `add`, `bind` and `change`. A replay of `add` and
+`bind` verified that the alias resolves to the newly assigned USB
+device. The process trace showed that DisplayLinkManager uses
+`dlopen` for `libevdi.so.1`. The package now builds and installs
+that library beside the manager from the same EVDI revision.
 
-On the next native candidate start, an active EVDI connector in Hyprland
-can qualify the QGeeM display without changing the USB4 procedure for
-the dock on `NVDA8100:01`. Confirm that the service is active and that
-the EVDI connector is connected and enabled, then repeat after the
-planned suspend/resume with the dock attached.
+With package `6.4.0-4` the manager attached EVDI to the USB device
+and read the 256-byte EDID of a BenQ EL2870U. Hyprland listed
+`DVI-I-1` at 3840×2160, 59.997 Hz. The kernel connector was still
+disabled and its CRTC had framebuffer 0. Aquamarine repeatedly
+returned `EINVAL` from the atomic commit. The log shows a linear GBM
+allocation failure followed by an NVIDIA block-linear fallback, and the
+kernel reported a DMA segment-size warning during PRIME import. Those
+observations do not identify the exact rejected atomic property.
+
+Hyprland 0.57.2 aborted twice in `CHyprOpenGLImpl::begin()` on the
+running `7.3.6-10` kernel. The first abort followed a live resolution
+test. The second occurred at 18:30:28, after the service stopped at
+18:30:13 and a physical unplug removed the EVDI device at 18:30:17.
+The second stack starts with a DRM page-flip event reaching the
+renderer. Omarchy restarted Hyprland in safe mode. The
+`displaylink-driver.service` was masked in the running root and in
+Btrfs ID 274 after the crashes. This preserves the installed package
+while preventing automatic activation during a replug or candidate
+boot.
+
+DisplayLink acceptance remains open until the EVDI CRTC has an active
+framebuffer, a physical image is confirmed, and both unplug and resume
+leave Hyprland running. The USB4 procedure on `NVDA8100:01` uses its
+own native DisplayPort path.
