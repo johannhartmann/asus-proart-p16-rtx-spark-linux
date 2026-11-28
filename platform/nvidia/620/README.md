@@ -12,7 +12,7 @@ and the signed distribution DKMS source.
 Release 2 adds a retry for content protection work when an atomic display
 commit already owns the connection lock. The first DPMS test reproduced
 the lock cycle on the internal panel with the original module. The new
-module builds against kernel38 and awaits native qualification.
+module passed two native DPMS cycles on kernel38 as part of release 3.
 [Trace and build record](../../../docs/evidence/nvidia620-native-20261127.md#drm-flip-timeout-on-the-internal-panel).
 
 Release 3 adds an opt-in for s2idle on the ASUS ProArt P16 H7607BA with
@@ -21,9 +21,10 @@ Use `nvidia.p16_s2idle=1` for the candidate boot with kernel suspend
 notifiers and the existing systemd VT handoff and s2idle configuration.
 Verify `/sys/module/nvidia/parameters/p16_s2idle` reports `Y`. Preserve a
 known-working boot entry for recovery. The normal NVIDIA suspend and resume
-sequence still runs when the GPU passes both admission checks. Native
-suspend qualification of release 3 is pending.
-[Suspend examination and qualification steps](../../../docs/evidence/nvidia620-native-20261127.md#gb20b-s2idle-candidate).
+sequence still runs when the GPU passes both admission checks. Release 3
+passed one attended s2idle/resume cycle on the target P16 with Lockdep
+active and functional GPU, audio, camera and NPU checks before and after.
+[Native qualification](../../../docs/evidence/nvidia620-native-20261127.md#native-dpms-and-s2idle-results).
 
 Build with `makepkg --verifysource` and `makepkg`. For offline packaging
 without the matching host dependency installed, use `makepkg --nodeps`.

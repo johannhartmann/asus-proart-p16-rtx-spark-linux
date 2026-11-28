@@ -224,7 +224,10 @@ in NVIDIA PM PREPARE with `0x56`. Internal audio recovered through a
 checked DSP/AFE reload in the same boot. The
 [combined candidate](docs/evidence/nvidia620-native-20261127.md#gb20b-s2idle-candidate)
 builds the DRM flip fix and P16 s2idle opt-in into one 620 DKMS package.
-Qualify display and physical resume together in one attended candidate boot.
+Its [native qualification](docs/evidence/nvidia620-native-20261127.md#native-dpms-and-s2idle-results)
+passed two internal-panel DPMS cycles and one physical s2idle/resume with
+Lockdep active. NVENC H.264/HEVC/AV1, both cameras, internal audio and cuDLA
+passed before and after sleep. Deep platform residency remains unmeasured.
 The OBS camera recording used the existing V4L2 interface and the x264
 software encoder; it proves application camera use, not hardware encode.
 A separate FFmpeg recording used the live RGB camera with NVIDIA Vulkan Video

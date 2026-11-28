@@ -215,7 +215,8 @@ the new `nvidia_drm` split BTF against kernel38 `vmlinux`.
 | DKMS patch package `620.70.06-2` | SHA-256 `4d9134ed342396d9e18949a71d09cc4382242a7b3870343cd9ee06bfc147040c` |
 | Loaded `nvidia_drm` | `srcversion 9D0450148A72C2F9BA9F89A` |
 
-Native DPMS qualification of the patched module remains open.
+The patched module passed two native DPMS cycles in the combined candidate
+boot. See the [native results](#native-dpms-and-s2idle-results).
 
 ### Physical s2idle preflight
 
@@ -351,4 +352,40 @@ internal audio. After that passes and an attended wake is ready, run
 sleep, records Lockdep and PM counters, sends one suspend request and
 repeats all device and cuDLA tests after wake. Logs are grouped by boot
 ID. The media and audio checks passed a dry run on the original boot.
-The new boot and physical cycle are pending.
+
+#### Native DPMS and s2idle results
+
+The first start from **P16 NVIDIA 620 DRM + Suspend Test** reached the
+Hyprland desktop on kernel `7.2.8-38-rtx-spark-npu` and `@nvidia620-r3`.
+The live NVIDIA and DRM srcversions were `3D15902633EDCE9CFBEB1C9` and
+`B0610EE874678B18EA30A07`. The candidate reported `p16_s2idle=Y`
+with NVIDIA suspend notifiers and allocation preservation enabled.
+On 28 November, two DPMS off/on cycles on `eDP-1` completed without a
+DRM flip timeout or empty-queue warning. The panel ran at 3840×2400 at
+120 Hz before suspend and after resume.
+
+One attended s2idle request completed on boot
+`c0c9507c-2d78-4f67-802b-770af443bd26`. The kernel success counter rose
+from 0 to 1, the failure counter stayed at 0, and the desktop returned
+on tty1 with the same boot ID. The systemd sleep operation took 47.0 s
+including device transitions. The hardware residency counter
+`last_hw_sleep` stayed at zero, so the test establishes functional
+s2idle and resume. Deep platform residency remains unmeasured.
+The journal recorded VT handoff, user slice freeze and thaw, NPU
+shutdown and reinitialization, and successful reinitialization of all
+three audio DSPs. All three DSPs reported one sleep cycle with zero
+errors and matching pre/post configuration. Lockdep reported
+`debug_locks=1` before and after the test. The test window contained no
+NVIDIA PM refusal or Xid, DRM flip timeout, audio IPC/ASoC error, or
+Lockdep warning.
+
+| Check | Before and after s2idle |
+| --- | --- |
+| GPU and NVENC | NVIDIA EGL renderer, direct CUDA and EGL encoding sessions. H.264, HEVC and AV1 each produced 10 independently decoded frames via `p16-nvenc-run`. |
+| Cameras | RGB and IR each delivered all 30 requested V4L2 frames. |
+| Audio | Internal speaker and microphone hardware PCM pointers advanced simultaneously. Each capture returned 384,000 bytes with nonzero samples. All three DSPs reported ASoC ready. |
+| NPU | Two numerical ReLU cases each returned 3,136 bytes bit-equal to the independent references, with inputs unchanged. |
+
+This was one physical cycle with device workloads run before and after.
+Repeated sleep, allocation retention across sleep and external display
+through the hub remain outside this result.
