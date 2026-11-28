@@ -432,8 +432,10 @@ The next DRM query found framebuffer 46 on the BenQ's CRTC.
 The old missing HDR property diagnostic still appeared, while the SDR
 modeset succeeded and the kernel emitted no DMA-API warning during the
 test. The service is running, and the USB device still advertises it for
-udev activation. Physical image confirmation, unplug, and resume are
-pending.
+udev activation. The user confirmed the external screen showed an image.
+The final check found both outputs active in the same Hyprland process,
+and DisplayLinkManager reported zero service restarts. The unplug and
+resume checks remain pending.
 
 #### Recovery of the P16 FFmpeg NVENC command
 
