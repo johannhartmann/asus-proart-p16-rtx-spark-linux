@@ -385,6 +385,19 @@ framebuffer, a physical image is confirmed, and both unplug and resume
 leave Hyprland running. The USB4 procedure on `NVDA8100:01` uses its
 own native DisplayPort path.
 
+An isolated GBM probe on the running NVIDIA render node reproduced the
+linear allocation failure for XRGB8888 at 1920×1080 and 3840×2160.
+Both explicit linear allocation and the implicit linear usage flag
+returned `EINVAL`. Rendering allocation without the linear constraint
+returned NVIDIA modifier `0x0300000000e08014` at both sizes.
+An [Aquamarine 0.16.0 candidate](../../ports/aquamarine-0.16.0/evdi-reject-explicit-nonlinear-import.patch)
+rejects an explicit non-linear buffer on EVDI before PRIME import.
+This allows Aquamarine's existing dumb-buffer fallback to run before
+the atomic commit. It builds against upstream tag `v0.16.0` and passes
+its four tests. Hardware scanout and removal with this patch remain
+unverified. The installed compositor and the service mask were kept
+in place during these tests.
+
 #### Recovery of the P16 FFmpeg NVENC command
 
 On the running `7.3.6-10-omarchy-p16` kernel with NVIDIA 620.70.06,

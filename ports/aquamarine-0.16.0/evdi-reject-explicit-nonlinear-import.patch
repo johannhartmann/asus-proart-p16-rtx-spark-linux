@@ -1,0 +1,14 @@
+--- a/src/backend/drm/DRM.cpp
++++ b/src/backend/drm/DRM.cpp
+@@ -3362,6 +3362,11 @@
+         return;
+     }
+ 
++    // EVDI KMS planes accept linear storage. Refuse explicit tiling here so
++    // the caller can use the existing dumb-buffer copy before attempting a modeset.
++    if (backend->driver == AQ_BACKEND_GPU_DRIVER_EVDI && attrs.modifier != DRM_FORMAT_MOD_LINEAR && attrs.modifier != DRM_FORMAT_MOD_INVALID)
++        return;
++
+     // TODO: check format
+     for (int i = 0; i < attrs.planes; ++i) {
+         int ret = drmPrimeFDToHandle(backend->gpu->fd, attrs.fds.at(i), &boHandles[i]);
