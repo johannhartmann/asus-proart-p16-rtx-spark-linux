@@ -403,6 +403,11 @@ The local package passes all four Aquamarine tests and provides
 `libaquamarine.so=15-64`. Relocation checks for Hyprland 0.57.2-9
 and hyprtoolkit 0.7.0-1 resolve all symbols with the new library.
 The signed Omarchy 0.16.0-1.2 archive is available for rollback.
+In a standalone process, its DRM renderer used NVIDIA 620.70.06
+on `renderD128` and read all 8,294,400 pixels of a 4K XR24 test
+frame from NVIDIA modifier `0x0300000000e08014` into a CPU-mapped
+linear buffer. The test verified the copied pixels after the
+renderer selected its CPU fallback.
 
 After reconnecting the QGeeM-6901 (`17e9:6000` on USB `2-1.2`),
 EVDI was assigned a separate temporary logind seat. The running
