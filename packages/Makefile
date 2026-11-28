@@ -4,7 +4,7 @@ OUT ?= $(ROOT)/build/packages
 MAKEPKG ?= makepkg
 PACKAGES := p16-platform-policy p16-acpi-firmware p16-speaker-firmware
 
-.PHONY: all $(PACKAGES) p16-displaylink
+.PHONY: all $(PACKAGES) p16-displaylink p16-aquamarine
 all: $(PACKAGES)
 
 $(PACKAGES):
@@ -19,4 +19,9 @@ $(PACKAGES):
 p16-displaylink:
 	@mkdir -p "$(OUT)/$@"
 	cp "$@/PKGBUILD" "$@/displaylink-driver.service" "$@/80-p16-displaylink.rules" "$(OUT)/$@/"
+	cd "$(OUT)/$@" && $(MAKEPKG) --force --noconfirm
+
+p16-aquamarine:
+	@mkdir -p "$(OUT)/$@"
+	cp "$@/PKGBUILD" "$(ROOT)/ports/aquamarine-0.16.0/evdi-reject-explicit-nonlinear-import.patch" "$(OUT)/$@/"
 	cd "$(OUT)/$@" && $(MAKEPKG) --force --noconfirm

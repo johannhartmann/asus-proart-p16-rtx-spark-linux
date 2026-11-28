@@ -393,10 +393,28 @@ returned NVIDIA modifier `0x0300000000e08014` at both sizes.
 An [Aquamarine 0.16.0 candidate](../../ports/aquamarine-0.16.0/evdi-reject-explicit-nonlinear-import.patch)
 rejects an explicit non-linear buffer on EVDI before PRIME import.
 This allows Aquamarine's existing dumb-buffer fallback to run before
-the atomic commit. It builds against upstream tag `v0.16.0` and passes
-its four tests. Hardware scanout and removal with this patch remain
-unverified. The installed compositor and the service mask were kept
-in place during these tests.
+the atomic commit.
+
+`make -C packages p16-aquamarine` builds ARM64 package
+`aquamarine 0.16.0-1.21` using the five patches from the exact
+[Omarchy 0.16.0-1.2 recipe](https://github.com/omacom/omarchy-pkgs/tree/3a37c44de0c374b69cec311844e38c5e73f6c400/pkgbuilds/aquamarine).
+The original package's `.BUILDINFO` records the same recipe checksum.
+The local package passes all four Aquamarine tests and provides
+`libaquamarine.so=15-64`. Relocation checks for Hyprland 0.57.2-9
+and hyprtoolkit 0.7.0-1 resolve all symbols with the new library.
+The signed Omarchy 0.16.0-1.2 archive is available for rollback.
+
+After reconnecting the QGeeM-6901 (`17e9:6000` on USB `2-1.2`),
+EVDI was assigned a separate temporary logind seat. The running
+Hyprland process held no EVDI device. A standalone DRM client set a
+linear XR24 test image on the BenQ EL2870U at 3840×2160, 60 Hz.
+The atomic test-only request and real modeset both succeeded. CRTC
+39 reported framebuffer 44, and EVDI notified DisplayLinkManager of
+the mode and power-on state. The client disabled the output after
+12 seconds. The manager stopped, the temporary rule was removed,
+and the original Hyprland process and internal panel were active.
+The DisplayLink service is still masked. Scanout from the patched
+compositor, visible desktop output, unplug and resume are pending.
 
 #### Recovery of the P16 FFmpeg NVENC command
 
