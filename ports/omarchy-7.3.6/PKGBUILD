@@ -2,12 +2,12 @@
 pkgbase=linux-p16-platform-omarchy
 pkgname=("$pkgbase" "$pkgbase-headers" "$pkgbase-drivers-nvidia620")
 pkgver=7.3.6
-pkgrel=10
+pkgrel=10.1
 arch=('aarch64')
 url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
 license=('GPL-2.0-only' 'MIT')
 options=('!strip' '!debug')
-_release=7.3.6-10-omarchy-p16
+_release=$pkgver-$pkgrel-omarchy-p16
 
 _check_kernel() {
   [[ -n ${P16_KERNEL_TREE:-} &&

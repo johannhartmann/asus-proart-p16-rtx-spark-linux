@@ -15,7 +15,7 @@ OMARCHY_REVISION = "d9fff5fcc96e4539c009f56884a1d10631e1557a"
 RECIPE_HASH = "8cacf044b0f3616da4b307a550fbfc7d74cf21cbf6dc0a4463e0b12df6eec9d7"
 CONFIG_HASH = "de9d0bf1fc17a49e63c3737964ec5571501497ba8fd72214012e3f17555d39ea"
 KERNEL_VERSION = "7.3.6"
-KERNEL_RELEASE = "7.3.6-10-omarchy-p16"
+KERNEL_RELEASE = "7.3.6-10.1-omarchy-p16"
 HEADERS_HASH = "5e3670786b9ff41c39cd12703d6c11e748e9aeadc5bfe45d9cd9f7692930ce15"
 
 
@@ -108,7 +108,7 @@ def prepare(recipe, source, headers, output, verify_only):
     for path in patches + series:
         apply_patch(tree, path, git=path.name == "asus-arm64-wmi.patch")
     (tree / ".config").write_bytes(config)
-    (tree / "localversion.10-pkgrel").write_text("-10-omarchy-p16\n")
+    (tree / "localversion.10-pkgrel").write_text(KERNEL_RELEASE[len(KERNEL_VERSION):] + "\n")
     subprocess.run(["bash", "scripts/kconfig/merge_config.sh", "-m",
                     ".config", PORT / "config.fragment"], cwd=tree, check=True)
     subprocess.run(["make", "olddefconfig"], cwd=tree, check=True)

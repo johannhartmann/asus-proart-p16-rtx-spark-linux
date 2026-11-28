@@ -16,3 +16,4 @@ kernel/sdhci-irq-ownership.patch
 kernel/pciehp-reset-lock-order.patch
 kernel/mmu-interval-notifier-might-lock.patch
 kernel/uvc-urb-dma-segment-limit.patch
+ports/omarchy-7.3.6/usb4-pm-link-outside-acpi-lookup.patch

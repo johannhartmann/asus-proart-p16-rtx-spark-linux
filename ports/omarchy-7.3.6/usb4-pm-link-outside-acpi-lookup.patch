@@ -1,0 +1,126 @@
+Subject: USB: core: Add the tunneled USB4 PM link after device registration
+
+On the ProArt P16, USB4 enumeration links a tunneled USB3 device to
+its NHI while ACPI companion lookup holds bus_type_sem. WMI device
+registration already establishes device_links_lock -> dpm_list_mtx
+-> bus_type_sem. The USB path closes the cycle.
+
+Keep companion lookup independent of the device link. Register the link
+after successful device and port registration, before dropping the USB
+device's runtime PM reference. The normal disconnect path still removes
+the stateless link. This also avoids creating it on enumeration errors.
+
+---
+diff --git a/drivers/usb/core/usb-acpi.c b/drivers/usb/core/usb-acpi.c
+--- a/drivers/usb/core/usb-acpi.c
++++ b/drivers/usb/core/usb-acpi.c
+@@ -148,49 +148,46 @@
+  * @udev: Tunneled USB3 device connected to a roothub.
+  *
+  * Adds a device link between a tunneled USB3 device and the USB4 Host Interface
+- * device to ensure correct runtime PM suspend and resume order. This function
+- * should only be called for tunneled USB3 devices.
+- * The USB4 Host Interface this tunneled device depends on is found from the roothub
+- * port ACPI device specific data _DSD entry.
+- *
+- * Return: negative error code on failure, 0 otherwise
++ * device to ensure correct runtime PM suspend and resume order. The USB4
++ * Host Interface is found in the root hub port's ACPI _DSD.
+  */
+-static int usb_acpi_add_usb4_devlink(struct usb_device *udev)
++void usb_acpi_add_usb4_devlink(struct usb_device *udev)
+ {
+ 	struct device_link *link;
+ 	struct usb_port *port_dev;
+ 	struct usb_hub *hub;
+ 
++	if (acpi_disabled || udev->speed < USB_SPEED_SUPER ||
++	    udev->tunnel_mode == USB_LINK_NATIVE)
++		return;
++
+ 	if (!udev->parent || udev->parent->parent)
+-		return 0;
++		return;
+ 
+ 	hub = usb_hub_to_struct_hub(udev->parent);
+ 	if (!hub)
+-		return 0;
++		return;
+ 	port_dev = hub->ports[udev->portnum - 1];
+ 
+ 	struct fwnode_handle *nhi_fwnode __free(fwnode_handle) =
+ 		fwnode_find_reference(dev_fwnode(&port_dev->dev), "usb4-host-interface", 0);
+ 
+ 	if (IS_ERR(nhi_fwnode) || !nhi_fwnode->dev)
+-		return 0;
++		return;
+ 
+-	link = device_link_add(&port_dev->child->dev, nhi_fwnode->dev,
++	link = device_link_add(&udev->dev, nhi_fwnode->dev,
+ 			       DL_FLAG_STATELESS |
+ 			       DL_FLAG_RPM_ACTIVE |
+ 			       DL_FLAG_PM_RUNTIME);
+ 	if (!link) {
+-		dev_err(&port_dev->dev, "Failed to created device link from %s to %s\n",
+-			dev_name(&port_dev->child->dev), dev_name(nhi_fwnode->dev));
+-		return -EINVAL;
++		dev_err(&udev->dev, "Failed to create USB4 device link to %s\n",
++			dev_name(nhi_fwnode->dev));
++		return;
+ 	}
+ 
+-	dev_dbg(&port_dev->dev, "Created device link from %s to %s\n",
+-		dev_name(&port_dev->child->dev), dev_name(nhi_fwnode->dev));
+-
++	dev_dbg(&udev->dev, "Created USB4 device link to %s\n",
++		dev_name(nhi_fwnode->dev));
+ 	udev->usb4_link = link;
+-
+-	return 0;
+ }
+ 
+ /*
+@@ -312,12 +309,6 @@
+ 	if (!hub)
+ 		return NULL;
+ 
+-
+-	/* Tunneled USB3 devices depend on USB4 Host Interface, set device link to it */
+-	if (udev->speed >= USB_SPEED_SUPER &&
+-	    udev->tunnel_mode != USB_LINK_NATIVE)
+-		usb_acpi_add_usb4_devlink(udev);
+-
+ 	/*
+ 	 * This is an embedded USB device connected to a port and such
+ 	 * devices share port's ACPI companion.
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -2740,6 +2740,12 @@
+ 		typec_attach(port_dev->connector, &udev->dev);
+ 	}
+ 
++	/*
++	 * The ACPI lookup in device_add() holds bus_type_sem. Add the USB4
++	 * PM link after registration and while the runtime-PM reference
++	 * taken above still prevents autosuspend.
++	 */
++	usb_acpi_add_usb4_devlink(udev);
+ 	(void) usb_create_ep_devs(&udev->dev, &udev->ep0, udev);
+ 	usb_mark_last_busy(udev);
+ 	pm_runtime_put_sync_autosuspend(&udev->dev);
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -209,9 +209,11 @@
+ #ifdef CONFIG_ACPI
+ extern int usb_acpi_register(void);
+ extern void usb_acpi_unregister(void);
++void usb_acpi_add_usb4_devlink(struct usb_device *udev);
+ extern acpi_handle usb_get_hub_port_acpi_handle(struct usb_device *hdev,
+ 	int port1);
+ #else
+ static inline int usb_acpi_register(void) { return 0; };
+ static inline void usb_acpi_unregister(void) { };
++static inline void usb_acpi_add_usb4_devlink(struct usb_device *udev) { }
+ #endif

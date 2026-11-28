@@ -1,6 +1,6 @@
 # Omarchy 7.3.6 for the ASUS ProArt P16
 
-The target release is `7.3.6-10-omarchy-p16`. The base is Omarchy's signed
+The target release is `7.3.6-10.1-omarchy-p16`. The base is Omarchy's signed
 ARM64 kernel package `linux-omarchy 7.3.6-10` and the exact packaging tree
 identified by its `.BUILDINFO` recipe digest.
 [Omarchy source revision](https://github.com/omacom/omarchy-pkgs/tree/d9fff5fcc96e4539c009f56884a1d10631e1557a/pkgbuilds/linux-omarchy-aarch64).
@@ -10,6 +10,9 @@ Most patches apply with zero fuzz. The IPv4 RCU cleanup is already present.
 The ASUS WMI rebase retains Omarchy's firmware-call serialization alongside
 the BIOS .300 battery response handling. The AFE close rebase preserves the
 fixed IRQ reservation and releases the closed PCM pointer.
+The USB4 fix moves creation of the tunneled USB3 power-management link out
+of the ACPI companion lookup. The USB device keeps its runtime PM reference
+until the link has been installed. The normal disconnect path removes it.
 
 | Hardware path | Integration |
 | --- | --- |

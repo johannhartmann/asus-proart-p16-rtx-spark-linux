@@ -214,3 +214,29 @@ free after the final rebuild. The Omarchy login migration enabled
 The final image matched the first managed build hash. Both managed kernel
 images passed the P16 package guard. Limine also verified the standard
 kernel38 entry, the dedicated recovery entry and all listed image hashes.
+
+### USB4 power-management lock ordering
+
+The native failure records `device_links_lock → dpm_list_mtx → bus_type_sem`
+from WMI registration. USB4 enumeration recorded the reverse dependency by
+adding a PM link from inside the protected ACPI companion callback. The
+ACPI semaphore also protects callback lifetime during module unload.
+[Upstream ACPI lookup change](https://lists.openwall.net/linux-kernel/2026/09/10/2532).
+
+The [USB4 patch](../../ports/omarchy-7.3.6/usb4-pm-link-outside-acpi-lookup.patch)
+moves link creation into `usb_new_device()`, after successful device and
+port registration and before release of the enumeration runtime PM
+reference. The root hub and non-tunneled devices skip the link. The
+hotplug caller runs on the freezable USB hub workqueue. The original
+stateless, runtime PM and active-supplier flags and disconnect cleanup
+are preserved. No link is created on a registration error.
+[Kernel device-link rules](https://docs.kernel.org/driver-api/device_link.html).
+
+The resulting release is `7.3.6-10.1-omarchy-p16`. Its `Module.symvers`
+matched the preceding build. The helper passed a mocked C test covering
+tunnel eligibility, absent firmware suppliers, and link allocation
+failure. Both ARM64 KVM boots kept `debug_locks=1` and produced zero
+warnings. The second also enumerated a USB keyboard through emulated
+xHCI. The ten external modules passed split BTF validation against the
+new kernel. The raw image SHA-256 is
+`5fb28a97ec90a873a3e06be536ea2c020570a62cfefae469eeb209c36d1a51c9`.
