@@ -240,3 +240,25 @@ warnings. The second also enumerated a USB keyboard through emulated
 xHCI. The ten external modules passed split BTF validation against the
 new kernel. The raw image SHA-256 is
 `5fb28a97ec90a873a3e06be536ea2c020570a62cfefae469eeb209c36d1a51c9`.
+
+The three `7.3.6-10.1` packages are installed in the separate snapshot
+`@nvidia620-omarchy-usb4-20261128` (Btrfs ID 274). The normal Limine entry
+**Omarchy → linux-p16-platform-omarchy** selects this root and kernel.
+The managed UKI SHA-256 is
+`9afb452dd3db6c6a88e716ff989435a337d56161a0a8f1c0ffaa07038d43b25f`.
+The package guard checked 8,524 installed and 427 embedded modules. The
+NVIDIA module hashes, graphical unlock payload, boot logo, DSP options,
+visible console configuration, and Limine entry hashes also passed.
+The preceding managed image and menu are saved under
+`build/omarchy-kernel-7.3.6/usb4-lockdep/boot-before-usb4-20261128T122346Z/`.
+`P16 NVIDIA 620 DRM + Suspend Test` is the qualified default and
+`P16 Omarchy Update 7.3.6` provides the previous Omarchy snapshot.
+
+Native USB4 and suspend qualification are pending. Start the managed
+entry with the USB4 dock attached, confirm the graphical unlock and
+console, then run `build/omarchy-kernel-7.3.6/usb4-lockdep/qualify/qualify pre`.
+The wrapper checks Lockdep's boot warnings, the dock's runtime PM link,
+and the previously qualified desktop and media paths. Check the link again
+after replugging the dock, then run the single attended suspend phase.
+That phase requires active Lockdep and checks the dock link and device
+workloads again after resume.
