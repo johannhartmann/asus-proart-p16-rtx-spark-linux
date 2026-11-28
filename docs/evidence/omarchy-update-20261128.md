@@ -262,9 +262,10 @@ On this host, the staged qualification wrapper is
 in this order, under the same kernel boot ID.
 
 1. Run `qualify pre` in the desktop session. It verifies the release,
-   root snapshot, loaded module versions, kernel journal, dock runtime
-   PM link, internal panel DPMS, audio, RGB and IR cameras, NVENC and
-   NVDEC for H.264, HEVC and AV1, and platform driver checks.
+   root snapshot, `/boot` mount, graphical target, greetd login, active
+   Wi-Fi or Ethernet, loaded module versions, kernel journal, internal
+   panel DPMS, audio, RGB and IR cameras, NVENC and NVDEC for H.264,
+   HEVC and AV1, and platform driver checks.
 2. Run `qualify hotplug` and follow the unplug and replug prompts. The
    wrapper requires the USB4 link and an active external monitor to
    disappear, then the link and the same monitor to return. It records
@@ -283,3 +284,43 @@ for investigation in the same session. The release guard was verified
 on the preceding running kernel. Simulated sysfs, monitor and journal
 data verified the hotplug transition, external monitor identity, the
 Lockdep failure gate and the single-attempt guard before reboot.
+
+#### Native boot failure and Limine correction
+
+Boot `fa8c933b5c3541039ff31ded5a31d4f1` ran
+`7.3.6-10.1-omarchy-p16` with the menu's stale
+`rootflags=subvol=@nvidia620-omarchy-20261128`. The UKI already named
+the correct snapshot. Limine passed its own command line to the EFI
+stub, and the earlier checks covered the embedded command line and
+image hash alone. The selected old root lacked modules for the running
+release. The failed vfat mount of `/boot` sent systemd into emergency
+mode before greetd and NetworkManager started.
+[Limine configuration](https://github.com/limine-bootloader/limine/blob/v12.x/CONFIG.md),
+[systemd-stub command-line handling](https://www.freedesktop.org/software/systemd/man/257/sd-stub.html).
+
+Corrected the one Limine override to match the UKI command line.
+The UKI hash, boot default and recovery entries were verified. A
+read-only inspection of Btrfs ID 274 resolved the candidate vfat,
+zram, binfmt, Wi-Fi, NVIDIA DRM and platform module dependencies.
+Greetd and NetworkManager were enabled, Hyprland was present, and NSS
+resolved the local user.
+
+Two ARM64 KVM runs used AAVMF from a signature-verified package, Limine,
+the same candidate kernel and a disk with two Btrfs subvolumes. A minimal test
+initramfs took the root selection from the running kernel command line.
+The stale override reproduced the missing modules and failed vfat mount.
+The repaired override selected the candidate subvolume, loaded the
+kernel's FAT modules, and mounted the guest EFI filesystem. UART logs
+are under `build/omarchy-kernel-7.3.6/usb4-lockdep/kvm-limine/`.
+The native test on the corrected snapshot remains pending.
+
+The failed start also reported a USB4-link failure for a USB hub on
+`NVDA8100:00`. The preceding kernel showed the same failure on this
+controller with the QGeeM DisplayLink dock. The USB4 hotplug check still
+requires the dock that previously established its runtime PM link on
+`NVDA8100:01`. Desktop preflight can complete before this dock check.
+
+`scripts/verify-boot.py` now checks explicit Limine root overrides
+against the corresponding UKI for every pinned Linux entry, including
+non-default entries. Its regression test checks the old subvolume, wrong
+device, missing subvolume and duplicate command lines.

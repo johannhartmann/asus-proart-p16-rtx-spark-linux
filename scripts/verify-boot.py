@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 from pathlib import Path
 import re
+import shlex
 import struct
 import subprocess
 import tempfile
@@ -98,12 +99,39 @@ def verify_image(path, *, acpi_mode="legacy"):
         raise ValueError(f'Kernelimage gehört {owner}, erwartet wurde {package}')
     print('UKI, ACPI profile (' + resolved_mode + ') and module dependencies valid:', path)
 
+def root_selection(command_line):
+    args = shlex.split(command_line, comments=False)
+    devices = tuple(arg.removeprefix('root=') for arg in args if arg.startswith('root='))
+    flags = [flag for arg in args if arg.startswith('rootflags=')
+             for flag in arg.removeprefix('rootflags=').split(',')]
+    subvolumes = []
+    for flag in flags:
+        key, _, value = flag.partition('=')
+        if key == 'subvol':
+            subvolumes.append((key, value.lstrip('/')))
+        elif key == 'subvolid':
+            subvolumes.append((key, value))
+    return devices, tuple(subvolumes)
+
+def verify_menu_root(entry, image, overrides):
+    if len(overrides) != 1 or not overrides[0]:
+        raise ValueError('Ambiguous Limine command line: ' + entry)
+    embedded = sections(image).get('.cmdline', b'').rstrip(b'\x00').decode().strip()
+    expected = root_selection(embedded)
+    if not expected[1]:
+        return
+    selected = root_selection(overrides[0])
+    if any(len(value) != 1 for value in expected) or selected != expected:
+        raise ValueError(f'Limine root selection for {entry} differs from {image.name}: '
+                         f'{selected} != {expected}')
+
 def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot'), *, acpi_mode='legacy'):
     config = config_path.read_text()
     defaults = re.findall(r'^default_entry:\s*(.*?)\s*$', config, re.M)
     if len(defaults) != 1:
         raise ValueError('Expected exactly one default_entry')
     entries = {}
+    overrides = {}
     parents = []
     current = None
     for line in config.splitlines():
@@ -119,6 +147,9 @@ def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot'), 
             if current in entries:
                 raise ValueError('Duplicate menu entry: ' + current)
             entries[current] = []
+        command_line = re.fullmatch(r'\s*(?:cmdline|kernel_cmdline):\s*(.*?)\s*', line, re.I)
+        if current is not None and command_line:
+            overrides.setdefault(current, []).append(command_line[1])
         for token in re.findall(r'boot\(\):/EFI/Linux/\S+', line):
             match = re.fullmatch(r'boot\(\):(/EFI/Linux/[^#\s]+\.efi)#([0-9a-fA-F]{128})', token)
             if match is None:
@@ -132,6 +163,9 @@ def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot'), 
             if current is None:
                 raise ValueError('EFI image has no menu entry')
             entries[current].append(image)
+    for entry, command_lines in overrides.items():
+        for image in entries[entry]:
+            verify_menu_root(entry, image, command_lines)
     selected = entries.get(defaults[0], [])
     if len(selected) != 1:
         raise ValueError('Default must select exactly one Linux image')
@@ -145,7 +179,7 @@ def verify_menu(config_path=Path('/boot/limine.conf'), boot_root=Path('/boot'), 
         values = re.findall(r'^' + key + r':\s*(.*?)\s*$', config, re.M)
         if values != [expected]:
             raise ValueError('Limine benötigt genau einmal ' + key + ': ' + expected)
-    print('Limine menu and Linux image hashes valid')
+    print('Limine menu, Linux image hashes and root selection valid')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)

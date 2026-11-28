@@ -74,6 +74,25 @@ class BootPolicyTests(unittest.TestCase):
         self.assertIn('default_entry: Omarchy-P16-Recovery\n', self.config.read_text())
         self.assertIn('/Windows\n', self.config.read_text())
 
+    def test_nondefault_entry_with_stale_root_override_is_rejected(self):
+        cmdline = 'root=/dev/mapper/root rootflags=subvol=/@candidate ro'
+        original = self.config.read_text()
+        entry = '/+Omarchy\n' + self.entry('/linux-p16-platform-omarchy', self.primary)
+        with patch.object(BOOT, 'sections', return_value={'.cmdline': cmdline.encode()}), \
+                patch.object(BOOT, 'verify_image'):
+            for override in ('root=/dev/mapper/root rootflags=subvol=@old ro',
+                             'root=/dev/wrong rootflags=subvol=@candidate ro',
+                             'root=/dev/mapper/root ro',
+                             cmdline + ' rootflags=subvolid=256',
+                             cmdline + '\n kernel_cmdline: ' + cmdline):
+                with self.subTest(override=override):
+                    self.config.write_text(original + entry + f' cmdline: {override}\n')
+                    with self.assertRaisesRegex(ValueError, 'Limine .*Omarchy/linux-p16-platform-omarchy'):
+                        BOOT.verify_menu(self.config, self.boot)
+            for option in ('', ' kernel_cmdline: ' + cmdline.replace('/@candidate', '@candidate') + '\n'):
+                self.config.write_text(original + entry + option)
+                BOOT.verify_menu(self.config, self.boot)
+
     def test_no_valid_image_preserves_menu(self):
         for image in (self.primary, self.recovery):
             image.unlink()
