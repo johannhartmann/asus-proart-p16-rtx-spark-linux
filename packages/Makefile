@@ -4,7 +4,7 @@ OUT ?= $(ROOT)/build/packages
 MAKEPKG ?= makepkg
 PACKAGES := p16-platform-policy p16-acpi-firmware p16-speaker-firmware
 
-.PHONY: all $(PACKAGES)
+.PHONY: all $(PACKAGES) p16-displaylink
 all: $(PACKAGES)
 
 $(PACKAGES):
@@ -14,4 +14,9 @@ $(PACKAGES):
 		cp "$(ROOT)/$$file" "$(OUT)/$@/$${file##*/}"; \
 	done < "$@/sources"
 	cp "$@/PKGBUILD" "$(OUT)/$@/PKGBUILD"
+	cd "$(OUT)/$@" && $(MAKEPKG) --force --noconfirm
+
+p16-displaylink:
+	@mkdir -p "$(OUT)/$@"
+	cp "$@/PKGBUILD" "$@/displaylink-driver.service" "$@/80-p16-displaylink.rules" "$(OUT)/$@/"
 	cd "$(OUT)/$@" && $(MAKEPKG) --force --noconfirm

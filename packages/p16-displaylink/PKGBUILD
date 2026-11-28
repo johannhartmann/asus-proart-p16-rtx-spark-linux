@@ -1,0 +1,41 @@
+pkgname=p16-displaylink
+pkgver=6.4.0
+pkgrel=2
+pkgdesc='DisplayLink USB graphics with EVDI for the ARM64 P16'
+arch=('aarch64')
+url='https://www.synaptics.com/products/displaylink-graphics/downloads/ubuntu'
+license=('custom:DisplayLink' 'GPL-2.0-only')
+depends=('dkms' 'glibc' 'libstdc++' 'libusb' 'util-linux-libs')
+makedepends=('unzip')
+options=('!strip' '!debug')
+conflicts=('displaylink' 'evdi' 'evdi-dkms' 'evdi-git')
+_evdi=51748043f3f884a9eff38f11a7cf90daaa3de755
+_evdiver=1.15.1
+source=("displaylink-6.4.zip::https://www.synaptics.com/sites/default/files/exe_files/2026-10/DisplayLink%20USB%20Graphics%20Software%20for%20Ubuntu6.4-EXE.zip"
+        "evdi-$_evdi.tar.gz::https://codeload.github.com/DisplayLink/evdi/tar.gz/$_evdi"
+        'displaylink-driver.service'
+        '80-p16-displaylink.rules')
+noextract=('displaylink-6.4.zip')
+sha256sums=('7e1a81d2194a40b20de704cb3846d66cbfb1e7837e30de23455729ba14f0296d'
+            '8554c899bcb4c9cf62ba4751644cd539316153c8266c29e0b025680126236a8b'
+            '7a7c500381ea354d7f7f4a775df41ccecb96d799a493808adc59491ab753112b'
+            '0d671753073a86535b0aeb5ca01ba9d2ad8769eccac3a8e6609f35d1baf17dce')
+
+prepare() {
+  unzip -p displaylink-6.4.zip run/displaylink-driver-6.4.0-22.run > displaylink.run
+  bash displaylink.run --noexec --target "$srcdir/displaylink"
+}
+
+package() {
+  local vendor="$srcdir/displaylink" evdi="$srcdir/evdi-$_evdi"
+  local driver="$pkgdir/usr/lib/displaylink" module="$pkgdir/usr/src/evdi-$_evdiver"
+  install -Dm755 "$vendor/aarch64-linux-gnu/DisplayLinkManager" "$driver/DisplayLinkManager"
+  install -m644 "$vendor/"*.spkg "$driver/"
+  install -Dm644 "$vendor/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$vendor/3rd_party_licences.txt" "$pkgdir/usr/share/licenses/$pkgname/3rd_party_licences.txt"
+  install -d "$module"
+  cp -a "$evdi/module/." "$module/"
+  install -m644 "$evdi/LICENSE" "$module/"
+  install -Dm644 "$srcdir/displaylink-driver.service" "$pkgdir/usr/lib/systemd/system/displaylink-driver.service"
+  install -Dm644 "$srcdir/80-p16-displaylink.rules" "$pkgdir/usr/lib/udev/rules.d/80-p16-displaylink.rules"
+}

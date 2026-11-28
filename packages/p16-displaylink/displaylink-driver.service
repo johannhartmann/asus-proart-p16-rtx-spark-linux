@@ -1,0 +1,11 @@
+[Unit]
+Description=Synaptics DisplayLink USB graphics
+After=display-manager.service
+
+[Service]
+ExecStartPre=/usr/bin/modprobe evdi
+ExecStart=/usr/lib/displaylink/DisplayLinkManager
+WorkingDirectory=/usr/lib/displaylink
+Restart=on-failure
+RestartSec=5s
+PrivateTmp=yes

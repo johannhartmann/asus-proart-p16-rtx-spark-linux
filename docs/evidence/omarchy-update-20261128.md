@@ -324,3 +324,44 @@ requires the dock that previously established its runtime PM link on
 against the corresponding UKI for every pinned Linux entry, including
 non-default entries. Its regression test checks the old subvolume, wrong
 device, missing subvolume and duplicate command lines.
+
+#### QGeeM USB DisplayLink
+
+The QGeeM-6901 exposes a USB graphics function `17e9:6000`. The
+`p16-displaylink` package includes the Synaptics ARM64 DisplayLinkManager
+6.4.0 and EVDI 1.15.1 pinned to upstream commit `5174804`. The udev rule
+creates the manager's device link in `/dev/displaylink/by-id` and starts
+`displaylink-driver.service` for matching USB graphics devices. The
+service loads EVDI through kmod. DKMS builds it for each installed target
+kernel with matching headers.
+[Synaptics 6.4 release notes](https://www.synaptics.com/sites/default/files/release_notes/2026-10/DisplayLink%20USB%20Graphics%20Software%20for%20Ubuntu6.4-Release%20Notes.txt),
+[EVDI source](https://github.com/DisplayLink/evdi/tree/51748043f3f884a9eff38f11a7cf90daaa3de755).
+
+Build with `make -C packages p16-displaylink`. The build pins the source
+archive checksums and extracts the vendor payload without running its
+Ubuntu installer. Deploy the package to the intended root with the
+boot regeneration hooks disabled for that transaction. Use
+`dkms install evdi/1.15.1 -k RELEASE` to target the kernel explicitly
+and verify the compiled module against that release's kernel and BTF.
+DisplayLink starts after the root filesystem is mounted, so its module
+is kept in the root's DKMS directory.
+
+The package and EVDI were installed in the current Omarchy root for
+`7.3.6-10-omarchy-p16` and Btrfs ID 274 for
+`7.3.6-10.1-omarchy-p16`. Both targets passed module dependency and BTF
+checks. The staging transaction verified the existing Limine configuration
+and UKI hashes before and after installation.
+
+On the running kernel, libusb enumerated `17e9:6000`, udev created the
+device alias, and the manager service and EVDI ran. Creating an EVDI
+device via sysfs produced `card1-DVI-I-1`. It stayed disconnected with
+an empty EDID. Hyprland reported only the internal panel. Both the system
+and vendor libusb variants were tried. Creating a virtual device and
+testing the vendor's USB3 power setting did not activate the external
+screen. Physical dock re-enumeration and external output remain pending.
+
+On the next native candidate start, an active EVDI connector in Hyprland
+can qualify the QGeeM display without changing the USB4 procedure for
+the dock on `NVDA8100:01`. Confirm that the service is active and that
+the EVDI connector is connected and enabled, then repeat after the
+planned suspend/resume with the dock attached.
