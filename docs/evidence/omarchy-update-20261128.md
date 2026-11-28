@@ -139,4 +139,78 @@ confirm that the external display lights and record the connector state
 before and after a replug. After a passing preflight and an attended wake
 is ready, `qualify suspend` checks the Pluton diagnostic interface and
 cuDLA, requests one s2idle cycle, and repeats the device checks after
-wake. Native startup, external display and physical resume are pending.
+wake.
+
+### First native boot
+
+The laptop booted the new kernel and the updated Btrfs root on 28 November.
+Hyprland drove the internal panel at 3840×2400 at 120 Hz and the attached
+DisplayPort screen at 3840×2160 at 30 Hz. Both internal panel DPMS cycles
+completed. NVENC and NVDEC each processed ten frames of H.264, HEVC and AV1.
+Both integrated cameras delivered all thirty frames. The speaker and
+microphone advanced their hardware PCM pointers, all three DSPs reported
+ASoC ready, and the sensor and SPBM register reads succeeded. The wrapper
+now resolves the `/lib` symlink before checking module ownership paths.
+
+The kernel reported a lock ordering cycle during USB4 hub enumeration.
+`usb_acpi_find_companion()` attempts a device link while the ACPI lookup
+holds `bus_type_sem`, and the WMI probe recorded the opposite dependency
+through `device_links_lock` and `dpm_list_mtx`. Lockdep subsequently
+reported `debug_locks=0`. The attended s2idle run is pending with working
+Lockdep. The startup and peripheral results above are from this boot.
+
+### Omarchy migration interrupted by EFI capacity
+
+Omarchy's migration `1794673542` invokes a rebuild of all installed
+kernels. The 2 GiB EFI partition ran out of space during the atomic copies
+of the kernel38 and Omarchy P16 UKIs. The running candidate's legacy
+command line also still used `quiet loglevel=0 systemd.show_status=false`,
+with deferred framebuffer takeover. The journal and `/var/log/boot.log`
+contain the boot records.
+
+Before repairing the migration, the boot images and menu were copied and
+verified under `build/omarchy-kernel-7.3.6/migration-repair/archive-20261128T115147Z/`.
+The package state was archived in the read-only Btrfs subvolume
+`@nvidia620-omarchy-before-migration-repair-20261128T115147Z`.
+Kernel34 and kernel36 images moved to the archive. The obsolete kernel34,
+kernel36, kernel37 and unused stock Omarchy kernel packages were retired
+from the test root's package database. The explicit firmware entry for
+kernel37 still has its image. The EFI filesystem then had 580 MiB free.
+
+The managed Limine entry **Omarchy → linux-p16-platform-omarchy** now
+points at `/boot/EFI/Linux/omarchy_linux-p16-platform-omarchy.efi`.
+Its package-specific command line selects the updated snapshot and retains
+the DSP and NVIDIA suspend parameters. `fbcon=nodefer`, `loglevel=7` and
+`systemd.show_status=yes` enable the text console and boot messages. The
+UKI embeds the Omarchy logo and the initramfs contains the current
+Omarchy splash with its German unlock keymap and N1X backlight hook.
+The local early-boot hook sets `SWAY_UNSUPPORTED_GPU=true` for the splash's
+pixman renderer on early NVIDIA KMS.
+[Sway GPU check](https://github.com/swaywm/sway/blob/1.12/sway/main.c),
+[systemd-stub splash section](https://www.freedesktop.org/software/systemd/man/latest/systemd-stub.html).
+
+The managed build, UKI payload, ACPI profile, module resolution, DSP
+command line, and Limine menu hashes passed verification. The first managed
+image hash was `eb6c92174945554767e1237d0d4e584a0601ea7980193500772aa8bcb7ae5589`.
+The ESP had 361 MiB free. Trial builds of the two remaining older managed
+images measured 146 MiB for kernel23 and 265 MiB for kernel38. The original
+native candidate, qualified kernel38 entry and dedicated recovery image
+retained their recorded hashes during this build. The updated graphical
+unlock and visible boot console await a native boot.
+
+The clone initially had an empty `/.snapshots` directory because nested
+Btrfs subvolumes are outside a parent snapshot. A dedicated `/.snapshots`
+subvolume was created within the upgraded root. `snapper -c root list` and
+number cleanup both succeeded. The same live boot returned Pluton ABI 1
+and passed two numerical cuDLA tests with 3,136 output bytes per case
+matching the independent references.
+
+The official `omarchy-migrate` runner resumed at `1794673542` and completed
+all 101 pending migrations with exit status zero. Pacman reported a
+consistent local package database, and the EFI filesystem had 305 MiB
+free after the final rebuild. The Omarchy login migration enabled
+`greetd.service` and disabled SDDM for the next start. The migration log is
+`build/omarchy-kernel-7.3.6/migration-repair/migration.log`.
+The final image matched the first managed build hash. Both managed kernel
+images passed the P16 package guard. Limine also verified the standard
+kernel38 entry, the dedicated recovery entry and all listed image hashes.
