@@ -254,11 +254,32 @@ The preceding managed image and menu are saved under
 `P16 NVIDIA 620 DRM + Suspend Test` is the qualified default and
 `P16 Omarchy Update 7.3.6` provides the previous Omarchy snapshot.
 
-Native USB4 and suspend qualification are pending. Start the managed
-entry with the USB4 dock attached, confirm the graphical unlock and
-console, then run `build/omarchy-kernel-7.3.6/usb4-lockdep/qualify/qualify pre`.
-The wrapper checks Lockdep's boot warnings, the dock's runtime PM link,
-and the previously qualified desktop and media paths. Check the link again
-after replugging the dock, then run the single attended suspend phase.
-That phase requires active Lockdep and checks the dock link and device
-workloads again after resume.
+Native qualification uses one start of **Omarchy → linux-p16-platform-omarchy**.
+Keep the USB4 dock and its external monitor attached during startup and
+observe the boot splash, graphical disk unlock, console messages and login.
+On this host, the staged qualification wrapper is
+`build/omarchy-kernel-7.3.6/usb4-lockdep/qualify/qualify`. Its phases run
+in this order, under the same kernel boot ID.
+
+1. Run `qualify pre` in the desktop session. It verifies the release,
+   root snapshot, loaded module versions, kernel journal, dock runtime
+   PM link, internal panel DPMS, audio, RGB and IR cameras, NVENC and
+   NVDEC for H.264, HEVC and AV1, and platform driver checks.
+2. Run `qualify hotplug` and follow the unplug and replug prompts. The
+   wrapper requires the USB4 link and an active external monitor to
+   disappear, then the link and the same monitor to return. It records
+   the transition and checks the corresponding kernel journal.
+3. Run `qualify suspend` with graphical authorization when the user is
+   ready to wake the laptop. Both earlier phases must have passed in
+   this boot, and Lockdep must be active. The wrapper checks Pluton and
+   NPU execution and records one physical s2idle attempt. After resume
+   it checks the desktop VT, internal and external displays, the USB4
+   link, media, audio, platform devices, both NPU vectors and Lockdep.
+
+The wrapper never requests a reboot. A marker created before the
+suspend request prevents a second automated attempt for the same boot.
+Preflight or hotplug failures leave diagnostic logs under the boot ID
+for investigation in the same session. The release guard was verified
+on the preceding running kernel. Simulated sysfs, monitor and journal
+data verified the hotplug transition, external monitor identity, the
+Lockdep failure gate and the single-attempt guard before reboot.
