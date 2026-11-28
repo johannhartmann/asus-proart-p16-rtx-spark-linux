@@ -418,8 +418,22 @@ The atomic test-only request and real modeset both succeeded. CRTC
 the mode and power-on state. The client disabled the output after
 12 seconds. The manager stopped, the temporary rule was removed,
 and the original Hyprland process and internal panel were active.
-The DisplayLink service is still masked. Scanout from the patched
-compositor, visible desktop output, unplug and resume are pending.
+
+With approval for one logout, `aquamarine 0.16.0-1.21` was installed
+in the running root. The new Hyprland process mapped the installed library
+and started normally with the internal panel enabled. The boot ID was
+unchanged. The DisplayLink service was then unmasked and started while
+Hyprland was running. Hyprland logged the dumb-buffer fallback on
+`/dev/dri/card1`. The BenQ on `DVI-I-1` was connected and enabled at
+3840×2160, 59.997 Hz, with CRTC 39 reporting framebuffer 45. The internal
+panel stayed active at 3840×2400, 120 Hz. Both outputs and the same
+Hyprland process remained active through the 20-second monitoring period.
+The next DRM query found framebuffer 46 on the BenQ's CRTC.
+The old missing HDR property diagnostic still appeared, while the SDR
+modeset succeeded and the kernel emitted no DMA-API warning during the
+test. The service is running, and the USB device still advertises it for
+udev activation. Physical image confirmation, unplug, and resume are
+pending.
 
 #### Recovery of the P16 FFmpeg NVENC command
 
