@@ -90,5 +90,12 @@ package_linux-p16-platform-omarchy-drivers-nvidia620() {
   done
   local conf="nvidia-620.70.06-$_release.conf"
   install -Dm644 "$P16_DRIVER_TREE/dkms/$conf" "$pkgdir/etc/dkms/$conf"
+  # The sensor drivers are already in the kernel package for this ABI.
+  # Keep their DKMS packages usable for the older kernel on this root.
+  local sensor
+  for sensor in n1x-sensorhub hid-sensor-als; do
+    printf '%s\n' 'BUILD_EXCLUSIVE_KERNEL="^$"' |
+      install -Dm644 /dev/stdin "$pkgdir/etc/dkms/$sensor--$_release.conf"
+  done
   install -Dm644 "$P16_DRIVER_TREE/bundle/provenance.json" "$pkgdir/usr/share/doc/$pkgname/provenance.json"
 }

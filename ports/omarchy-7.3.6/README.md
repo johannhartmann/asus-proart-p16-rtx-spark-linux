@@ -43,7 +43,9 @@ P16_KERNEL_TREE="$tree" P16_DRIVER_TREE="$candidate/drivers" makepkg --nodeps
 
 The split packages install a separate kernel release and headers. The driver
 package includes the Omarchy NVIDIA patch files and a release-specific DKMS
-override so a rebuild on this kernel retains them. Stage the packages together
-in the updated Omarchy snapshot with the matching NVIDIA userspace. Build
-and verify a separate UKI and keep the qualified kernel38 image and root
-available until native display and suspend/resume pass.
+override so a rebuild on this kernel retains them. Release-specific DKMS
+overrides keep SPI-HID and the ambient light sensor supplied by the kernel
+package and leave their DKMS packages usable for older kernels. Stage the
+packages together in the updated Omarchy snapshot with the matching NVIDIA
+userspace. Build and verify a separate UKI and keep the qualified kernel38
+image and root available until native display and suspend/resume pass.
