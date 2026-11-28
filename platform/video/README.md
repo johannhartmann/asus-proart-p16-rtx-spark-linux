@@ -1,13 +1,14 @@
 # N1X FFmpeg codec candidate
 
-On the P16 with NVIDIA 620.70.06, run NVENC through the installed
+On the P16, `ffmpeg-n1x` automatically uses the installed
 [version-gated session correction](../nvidia/620/nvenc/PKGBUILD).
-The same launcher works with `h264_nvenc`, `hevc_nvenc`, and `av1_nvenc`.
+The correction applies to the affected NVIDIA 620.70.06 build and works
+with `h264_nvenc`, `hevc_nvenc`, and `av1_nvenc`.
 All three completed independent decode checks at 1280×720.
 [Native results](../../docs/evidence/nvidia620-native-20261127.md#nvenc-session-handle-correction-on-6207006).
 
 ```sh
-p16-nvenc-run ffmpeg-n1x -i input.mkv -c:v h264_nvenc -c:a copy output.mkv
+ffmpeg-n1x -i input.mkv -c:v h264_nvenc -c:a copy output.mkv
 ```
 
 `ffmpeg-n1x-video` builds FFmpeg 9.0.2 and the pinned FFmpeg NVIDIA codec

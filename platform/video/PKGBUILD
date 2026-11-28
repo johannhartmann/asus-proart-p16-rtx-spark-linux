@@ -1,23 +1,26 @@
 pkgname=ffmpeg-n1x-video
 pkgver=9.0.2
-pkgrel=7
+pkgrel=8
 pkgdesc='Isolated ARM64 FFmpeg with NVIDIA video codecs and Vulkan playback'
 arch=('aarch64')
 url='https://ffmpeg.org/'
 license=('GPL-2.0-or-later')
 depends=('glibc' 'gcc-libs' 'nvidia-utils' 'x264' 'x265' 'libvpx' 'sdl2-compat' 'libplacebo')
+optdepends=('p16-nvenc-session-fix: NVENC session fix for the affected NVIDIA 620.70.06 build')
 makedepends=('gcc' 'make' 'pkgconf' 'clang' 'vulkan-headers')
 _nvcodec_ver=13.1.15.0
 source=("https://ffmpeg.org/releases/ffmpeg-${pkgver}.tar.xz"
         "https://github.com/FFmpeg/nv-codec-headers/archive/refs/tags/n${_nvcodec_ver}.tar.gz"
         '0001-vaapi-map-q416-planar-16bit-444.patch'
         '0002-libplacebo-import-vulkan-queues-api360.patch'
-        'README.md')
+        'README.md'
+        'ffmpeg-n1x')
 sha256sums=('8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e'
             '2255bc74d038b95aa4be30f5f66322c2176acbdb90ada1851db6993536fbeaf7'
             'bc66ccf3a29b9f6880bfa00a745d59a1e28ff7e89fff409ec71d94d3b2e40533'
             '541ee5427239373b31691bb5fa6845c1e69350e87a4defc9600fec251cd9fee3'
-            '8dd19397706c8d4907a9114461aaf54fb1e43e47ff8cef214d8e069923de85fb')
+            '518c7cd13a585e3057f72e0b56740ee9a42ea7a4738d6026d8d765668b697cc6'
+            'e39ddcc9bf23a47520dc372d189f5b47d7aa6dec359be35d0902984e39c55d08')
 
 prepare() {
   cd "$srcdir/ffmpeg-$pkgver"
@@ -63,6 +66,8 @@ check() {
 
 package() {
   install -Dm755 "$srcdir/ffmpeg-$pkgver/ffmpeg-n1x" \
+    "$pkgdir/usr/lib/$pkgname/ffmpeg-n1x"
+  install -Dm755 "$srcdir/ffmpeg-n1x" \
     "$pkgdir/usr/bin/ffmpeg-n1x"
   install -Dm755 "$srcdir/ffmpeg-$pkgver/ffprobe-n1x" \
     "$pkgdir/usr/bin/ffprobe-n1x"

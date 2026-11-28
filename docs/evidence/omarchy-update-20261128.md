@@ -384,3 +384,20 @@ DisplayLink acceptance remains open until the EVDI CRTC has an active
 framebuffer, a physical image is confirmed, and both unplug and resume
 leave Hyprland running. The USB4 procedure on `NVDA8100:01` uses its
 own native DisplayPort path.
+
+#### Recovery of the P16 FFmpeg NVENC command
+
+On the running `7.3.6-10-omarchy-p16` kernel with NVIDIA 620.70.06,
+the direct `ffmpeg-n1x` invocation from package `9.0.2-7` returned
+NVENC error 21. The same application opened NVENC sessions through the
+installed version-gated `p16-nvenc-run` launcher. Package `9.0.2-8`
+uses that launcher at the `ffmpeg-n1x` entry point when installed and
+preserves older invocations that already use it. The three media
+binaries in the new package match the preceding installed build.
+
+After installing `9.0.2-8`, direct calls encoded 24 frames each in H.264,
+HEVC and AV1 at 640×360. Distribution FFmpeg decoded all 24 frames in
+each case with hardware decoding disabled. The package was installed in
+the running root and in Btrfs ID 274. Both package file checks passed.
+The installed candidate was checked offline, and the workload ran on
+the running kernel. The staging operation verified both boot file hashes.

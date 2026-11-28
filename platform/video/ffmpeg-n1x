@@ -1,0 +1,12 @@
+#!/bin/sh
+binary=/usr/lib/ffmpeg-n1x-video/ffmpeg-n1x
+
+# Older callers already wrap this command explicitly.
+case ${LD_PRELOAD-} in
+    */usr/lib/p16-nvenc/libsession-handle.so*) exec "$binary" "$@" ;;
+esac
+
+if [ -x /usr/bin/p16-nvenc-run ]; then
+    exec /usr/bin/p16-nvenc-run "$binary" "$@"
+fi
+exec "$binary" "$@"
