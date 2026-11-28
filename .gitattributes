@@ -5,3 +5,4 @@ upstream/**/*.patch -whitespace
 
 # Preserve unified-diff context in the portable patch series.
 improvements/**/*.patch -whitespace
+ports/**/*.patch -whitespace

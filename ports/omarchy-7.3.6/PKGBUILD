@@ -1,0 +1,94 @@
+# Package an already built P16 candidate tree and its matching drivers.
+pkgbase=linux-p16-platform-omarchy
+pkgname=("$pkgbase" "$pkgbase-headers" "$pkgbase-drivers-nvidia620")
+pkgver=7.3.6
+pkgrel=10
+arch=('aarch64')
+url='https://github.com/johannhartmann/asus-proart-p16-rtx-spark-linux'
+license=('GPL-2.0-only' 'MIT')
+options=('!strip' '!debug')
+_release=7.3.6-10-omarchy-p16
+
+_check_kernel() {
+  [[ -n ${P16_KERNEL_TREE:-} &&
+     $(<"$P16_KERNEL_TREE/include/config/kernel.release") == "$_release" &&
+     -s $P16_KERNEL_TREE/Module.symvers ]] || {
+    echo "Set P16_KERNEL_TREE to the built $_release source tree" >&2
+    return 1
+  }
+}
+
+package_linux-p16-platform-omarchy() {
+  pkgdesc='Omarchy ARM64 kernel with the ASUS ProArt P16 hardware fixes'
+  depends=('coreutils' 'initramfs' 'kmod' "$pkgbase-headers=$pkgver-$pkgrel")
+  provides=('P16-ASUS-KERNEL')
+  _check_kernel
+  local modules="$pkgdir/usr/lib/modules/$_release"
+  install -Dm644 "$P16_KERNEL_TREE/arch/arm64/boot/Image" "$modules/vmlinuz"
+  install -Dm644 "$P16_KERNEL_TREE/arch/arm64/boot/vmlinuz.efi" "$modules/vmlinuz.efi"
+  printf '%s\n' "$pkgbase" | install -Dm644 /dev/stdin "$modules/pkgbase"
+  make -C "$P16_KERNEL_TREE" INSTALL_MOD_PATH="$pkgdir/usr" \
+    INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
+  rm "$modules/build"
+}
+
+package_linux-p16-platform-omarchy-headers() {
+  pkgdesc='Headers, tools and BTF for the ASUS ProArt P16 Omarchy kernel'
+  depends=('binutils' 'glibc' 'libelf' 'libgcc' 'libcrypto.so' 'pahole' 'xxhash' 'zlib' 'zstd')
+  provides=('LINUX-HEADERS')
+  _check_kernel
+  cd "$P16_KERNEL_TREE"
+  local build="$pkgdir/usr/lib/modules/$_release/build"
+  install -Dt "$build" -m644 .config Makefile Module.symvers System.map localversion.* vmlinux
+  printf '%s\n' "$_release" >"$build/version"
+  install -Dt "$build/kernel" -m644 kernel/Makefile
+  install -Dt "$build/arch/arm64" -m644 arch/arm64/Makefile
+  install -Dt "$build/arch/arm64/kernel" -m644 arch/arm64/kernel/asm-offsets.s
+  cp -a scripts include "$build/"
+  cp -a arch/arm64/include "$build/arch/arm64/"
+  install -Dt "$build/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
+  if [[ -f tools/objtool/objtool ]]; then
+    install -Dt "$build/tools/objtool" tools/objtool/objtool
+  fi
+  # This ACPI-only P16 package uses the separate Omarchy DTB packages for
+  # other platforms. Keep the source headers needed by external providers.
+  install -Dt "$build/drivers/md" -m644 drivers/md/*.h
+  install -Dt "$build/net/mac80211" -m644 net/mac80211/*.h
+  install -Dt "$build/drivers/media/i2c" -m644 drivers/media/i2c/msp3400-driver.h
+  install -Dt "$build/drivers/media/usb/dvb-usb" -m644 drivers/media/usb/dvb-usb/*.h
+  install -Dt "$build/drivers/media/dvb-frontends" -m644 drivers/media/dvb-frontends/*.h
+  install -Dt "$build/drivers/media/tuners" -m644 drivers/media/tuners/*.h
+  install -Dt "$build/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
+  find . -name 'Kconfig*' ! -name '*.orig' -exec install -Dm644 {} "$build/{}" \;
+  local architecture
+  for architecture in "$build"/arch/*/; do
+    [[ $architecture == */arm64/ ]] || rm -r -- "$architecture"
+  done
+  find -L "$build" -type l -delete
+  find "$build" -name '*.o' -type f -delete
+  strip --strip-debug "$build/vmlinux"
+  install -d "$pkgdir/usr/src"
+  ln -sr "$build" "$pkgdir/usr/src/$pkgbase"
+}
+
+package_linux-p16-platform-omarchy-drivers-nvidia620() {
+  pkgdesc='Matched NVIDIA RTX Spark and P16 modules for the Omarchy ARM64 kernel'
+  depends=("$pkgbase=$pkgver-$pkgrel" 'nvidia-utils=620.70.06' 'n1x-nvidia-drm-fix-620=620.70.06-3')
+  _check_kernel
+  [[ -s ${P16_DRIVER_TREE:-}/bundle/provenance.json ]] || {
+    echo 'Set P16_DRIVER_TREE to the validated external module build' >&2
+    return 1
+  }
+  local module
+  for module in "$P16_DRIVER_TREE/bundle/"*.ko; do
+    [[ $(modinfo -F vermagic "$module") == "$_release "* ]] || return 1
+    install -Dm644 "$module" "$pkgdir/usr/lib/modules/$_release/updates/dkms/${module##*/}"
+  done
+  local patch
+  for patch in "$P16_DRIVER_TREE/dkms/"*.patch; do
+    install -Dm644 "$patch" "$pkgdir/etc/dkms/nvidia/patches/${patch##*/}"
+  done
+  local conf="nvidia-620.70.06-$_release.conf"
+  install -Dm644 "$P16_DRIVER_TREE/dkms/$conf" "$pkgdir/etc/dkms/$conf"
+  install -Dm644 "$P16_DRIVER_TREE/bundle/provenance.json" "$pkgdir/usr/share/doc/$pkgname/provenance.json"
+}
